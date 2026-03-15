@@ -128,84 +128,159 @@ batch_calc_gsea_pro <- function(gsea_env, custom_series_name = "Auto_Analysis", 
 }
 
 
-#' @title 查看 GSEA 计算胶囊结果
-#' @description 格式化打印 GseaResPro 对象的元数据和各个对比组的富集状态，避免直接 View 导致卡顿。
-#' @param res_pro batch_calc_gsea_pro() 生成的对象
+#' @title 检查并概览 GSEA 计算胶囊 (Pro 引擎)
+#' @description 快速查看胶囊内的计算状态，并智能列出可用于下游提取的 `target_combo` (子集标签)。
+#' @param res_capsule batch_calc_gsea_pro 返回的计算胶囊
 #' @export
-inspect_gsea_res_pro <- function(res_pro) {
-  if (!inherits(res_pro, "GseaResPro")) stop("❌ 必须传入 GseaResPro 对象！")
+inspect_gsea_res_pro <- function(res_capsule) {
+  if (!is.list(res_capsule) || is.null(res_capsule$results)) {
+    stop("❌ 无效的计算胶囊！请确保传入的是 batch_calc_gsea_pro() 的结果。")
+  }
 
-  cat("\n", rep("=", 65), "\n", sep = "")
-  cat(sprintf("%-18s %s %-18s\n", "", "🌟 GSEA Pro 运行报告 (Capsule)", ""))
-  cat(rep("=", 65), "\n\n", sep = "")
+  message("\n", rep("=", 65))
+  message("🌟 GSEA 计算胶囊概览 (GSEAlens PRO)")
+  message(rep("=", 65))
 
-  cat(sprintf("📅 运行时间 : %s\n", res_pro$metadata$run_time))
-  cat(sprintf("🖥️ 调度核数 : %s Threads 并行\n", res_pro$metadata$workers_used))
-  cat(sprintf("🧬 基因集合 : [%s]\n", res_pro$geneset_info$name)) # 修复了字段名调用
+  # 1. 基础信息提取
+  meta_dict <- res_capsule$geneset_info$meta_dict
+  tag <- res_capsule$geneset_info$name
+  message(sprintf("🏷️  全局 Tag: [%s]", tag))
+  message(sprintf("🧬  总通路数: %d 条", nrow(meta_dict)))
 
-  expr_status <- if (!is.null(res_pro$expr_data)) "✅ 已封装 (支持自动渲染热图)" else "⚠️ 未封装 (仅出折线图)"
-  cat(sprintf("🌡️ 表达矩阵 : %s\n", expr_status))
-  cat("\n", rep("-", 65), "\n", sep = "")
-
-  cat(sprintf("📊 组别运行状态 (共 %d 组):\n\n", length(res_pro$results)))
-  for (i in seq_along(res_pro$results)) {
-    task_name <- names(res_pro$results)[i]
-    task_info <- res_pro$results[[i]]
-
-    if (task_info$status == "Success") {
-      gsea_obj <- task_info$data
-      total_count <- nrow(gsea_obj@result)
-      sig_count <- sum(gsea_obj@result$p.adjust < 0.05, na.rm = TRUE)
-      cat(sprintf("  [%02d] ✅ %-18s | 成功 (总富集: %4d 条, p.adj < 0.05: %3d 条)\n", i, task_name, total_count, sig_count))
+  # 2. 对比组计算状态
+  message("\n📊 对比组计算状态:")
+  for (c_name in names(res_capsule$results)) {
+    status <- res_capsule$results[[c_name]]$status
+    if (status == "Success") {
+      # 粗略统计全局（未切片）显著的数量
+      n_sig <- sum(res_capsule$results[[c_name]]$data@result$p.adjust < 0.05, na.rm = TRUE)
+      message(sprintf("   ✅ [%s] -> 成功 (未切片全局 FDR < 0.05: %d 条)", c_name, n_sig))
     } else {
-      cat(sprintf("  [%02d] ❌ %-18s | 失败 (无显著结果或抛出异常)\n", i, task_name))
+      message(sprintf("   ❌ [%s] -> 失败或无富集", c_name))
     }
   }
 
-  cat("\n", rep("=", 65), "\n", sep = "")
+  # 3. 🌟 核心升级：提取可用的 Combo_Name 列表与统计
+  message("\n" , rep("-", 65))
+  message("💡 下游切片提取指南 (extract_gsea_result_pro):")
+  message("您可以基于以下 [子集标签] 进行精准提取并动态重算 FDR (p.adjust)。")
+
+  # 统计字典中每种子集的通路数量
+  combo_counts <- table(meta_dict$Combo_Name)
+  combo_df <- as.data.frame(combo_counts, stringsAsFactors = FALSE)
+  colnames(combo_df) <- c("Combo_Name", "Count")
+  combo_df <- combo_df[order(-combo_df$Count), ] # 按通路数量降序排列
+
+  message(sprintf("\n📦 本胶囊包含 %d 个可用子集 (前 15 个展示):", nrow(combo_df)))
+  show_n <- min(15, nrow(combo_df))
+  for (i in seq_len(show_n)) {
+    message(sprintf("   - %-25s : %5d 条", combo_df$Combo_Name[i], combo_df$Count[i]))
+  }
+  if (nrow(combo_df) > 15) {
+    message("   ... (剩余子集已省略，完整列表请查看 res_capsule$geneset_info$meta_dict)")
+  }
+
+  # 4. 动态生成保姆级代码示例
+  message("\n👨‍💻 提取代码示例 (支持单选、多选、或全部):")
+  example_contrast <- names(res_capsule$results)[1]
+  example_combo1 <- as.character(combo_df$Combo_Name[1])
+  example_combo2 <- if(nrow(combo_df) > 1) as.character(combo_df$Combo_Name[2]) else "H"
+
+  message(sprintf('  df <- extract_gsea_result_pro('))
+  message(sprintf('    res_capsule = my_res_capsule,'))
+  message(sprintf('    contrast_id = "%s",', example_contrast))
+  message(sprintf('    target_combo  = c("%s", "%s") # <--- 直接填入上面的标签！', example_combo1, example_combo2))
+  message(sprintf('  )'))
+  message(rep("=", 65), "\n")
+
+  invisible(res_capsule)
 }
 
-
-#' @title Pro 数据提取器 (文章精细绘图专用)
-#' @description 直接输入对比组名称，提取并包装成原生 DirectionalGSEA 对象，完美兼容底层画图。
+#' @title Pro 数据提取器 (文章精细绘图与按需切片专用)
+#' @description 提取对比组计算结果。如果使用 ALL 库进行计算，支持传入 target_collection 进行动态切片并自动重算 FDR。
 #' @param gsea_capsule GseaResPro 计算胶囊
-#' @param task_name 想提取的组别名 (如 "LTA_vs_POSTA")
-#' @return DirectionalGSEA 对象。
+#' @param task_name 想提取的组别名 (如 "Treat_vs_Control")
+#' @param target_collection 想要切片的亚组名(如 "H" 或 "C2:CP:KEGG_LEGACY")。默认为 "ALL" (不切片)。
+#' @return DirectionalGSEA 对象，完美兼容底层画图。
 #' @export
-extract_gsea_task_pro <- function(gsea_capsule, task_name) {
+extract_gsea_task_pro <- function(gsea_capsule, task_name, target_collection = "ALL") {
+
   if (!inherits(gsea_capsule, "GseaResPro")) stop("❌ 请传入标准 GseaResPro 胶囊对象！")
   if (!(task_name %in% names(gsea_capsule$results))) stop(sprintf("❌ 任务 '%s' 不存在于胶囊中！", task_name))
 
   task <- gsea_capsule$results[[task_name]]
-  if(task$status != "Success") stop("❌ 该组无成功计算结果！")
+  if (task$status != "Success") stop("❌ 该组无成功计算结果！")
 
+  # 1. 解析对比组名称 (兼容处理兜底)
   parts <- strsplit(task_name, "_vs_")[[1]]
-  left_grp <- parts[1]
-  right_grp <- parts[2]
+  left_grp <- if(length(parts) >= 1) parts[1] else task_name
+  right_grp <- if(length(parts) >= 2) parts[2] else "Background"
 
-  master_geneset_meta <- gsea_capsule$geneset_info$meta_dict
-  current_gsea_ids <- task$data@result$ID
-  matched_indices <- match(current_gsea_ids, master_geneset_meta$ID)
+  # 2. 拿到原始计算对象和全局字典
+  gsea_res <- task$data
+  master_meta <- gsea_capsule$geneset_info$meta_dict
+  res_df <- as.data.frame(gsea_res@result)
 
-  # 防呆：如果有的通路因为意外没有元数据（如自定义 gmt 导致不匹配）
-  desc_col <- if("Description" %in% colnames(master_geneset_meta)) master_geneset_meta$Description else master_geneset_meta$ID
-  url_col <- if("URL" %in% colnames(master_geneset_meta)) master_geneset_meta$URL else NA
-  coll_col <- if("Collection" %in% colnames(master_geneset_meta)) master_geneset_meta$Collection else "Unknown"
+  # 3. 🛡️ 血统贴回：将字典中的 Collection / Combo_Name 贴到结果表中
+  matched_idx <- match(res_df$ID, master_meta$ID)
 
+  # 防呆提取列
+  desc_col <- if("Description" %in% colnames(master_meta)) master_meta$Description else master_meta$ID
+  url_col <- if("URL" %in% colnames(master_meta)) master_meta$URL else NA
+  coll_col <- if("Collection" %in% colnames(master_meta)) master_meta$Collection else "Unknown"
+  combo_col <- if("Combo_Name" %in% colnames(master_meta)) master_meta$Combo_Name else coll_col
+
+  res_df$Collection <- coll_col[matched_idx]
+  res_df$Combo_Name <- combo_col[matched_idx]
+
+
+  # 🌟 4. 核心：动态切片与 FDR (p.adjust) 重算！
+
+  is_slice_mode <- length(target_collection) != 1 || toupper(target_collection[1]) != "ALL"
+
+  if (is_slice_mode) {
+    # 允许按 Collection (如 "H") 或 Combo_Name (如 "C2:CP:KEGG_LEGACY") 切片
+    slice_idx <- res_df$Collection %in% target_collection | res_df$Combo_Name %in% target_collection
+    res_df <- res_df[slice_idx, , drop = FALSE]
+
+    if (nrow(res_df) == 0) {
+      stop(sprintf("❌ 切片失败！组别 [%s] 中没有发现属于 '%s' 的通路。",
+                   task_name, paste(target_collection, collapse = ", ")))
+    }
+
+    # 💥 消除全库背景的惩罚，针对小子集重新校正多重假设检验 💥
+    res_df$p.adjust <- p.adjust(res_df$pvalue, method = "BH")
+    # 如果底层引擎生成了 qvalue，为了严谨性同步校正为 p.adjust (或设为 NA 避免误导)
+    if ("qvalue" %in% colnames(res_df)) res_df$qvalue <- res_df$p.adjust
+
+    message(sprintf("✂️ [智能切片] 成功抽出 %d 条 '%s' 通路 | 🌟 已重新校正 FDR (p.adjust)！",
+                    nrow(res_df), paste(target_collection, collapse = ", ")))
+  } else {
+    message(sprintf("📦 [全库提取] 提取出 %d 条通路 (未进行切片与 FDR 重算)", nrow(res_df)))
+  }
+
+  # 把修改完的 dataframe 塞回 S4 对象中
+  gsea_res@result <- res_df
+
+  # 5. 重构轻量级字典用于前端交互
   meta_dict_for_res_obj <- data.frame(
-    ID = current_gsea_ids,
-    long_description_for_html = desc_col[matched_indices],
-    URL = url_col[matched_indices],
-    Collection = coll_col[matched_indices],
+    ID = res_df$ID,
+    long_description_for_html = desc_col[match(res_df$ID, master_meta$ID)],
+    URL = url_col[match(res_df$ID, master_meta$ID)],
+    Collection = res_df$Collection,
+    Combo_Name = res_df$Combo_Name,
     stringsAsFactors = FALSE
   )
 
+  # 6. 打包标准输出对象
   res_obj <- list(
-    gsea_res = task$data,
+    gsea_res = gsea_res,
     meta = list(
       left_group = left_grp,
       right_group = right_grp,
-      geneset_name = gsea_capsule$geneset_info$name,
+      geneset_name = ifelse(is_slice_mode,
+                            paste(target_collection, collapse = "_"),
+                            gsea_capsule$geneset_info$name),
       meta_dict = meta_dict_for_res_obj
     )
   )

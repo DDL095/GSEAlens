@@ -2,17 +2,20 @@
 % Please edit documentation in R/1_gsea_environment.R
 \name{setup_gsea_env_pro}
 \alias{setup_gsea_env_pro}
-\title{组装计算胶囊 (Pro 引擎)}
+\title{组装计算胶囊 (Pro 引擎 - 终极版)}
 \usage{
 setup_gsea_env_pro(fit, pathway_obj, expr_data = NULL)
 }
 \arguments{
-\item{fit}{limma 分析得到的 MArrayLM 对象}
+\item{fit}{limma 分析得到的 MArrayLM 对象 (必须包含 contrast)}
 
-\item{pathway_obj}{build_gsea_pathways_pro() 返回的基因集对象}
+\item{pathway_obj}{必须是 build_gsea_pathways_pro() 返回的完整列表对象}
 
-\item{expr_data}{你的 DGEList 或者标准化后的表达矩阵 (用于画热图，可为 NULL)}
+\item{expr_data}{你的 DGEList 或者标准化后的表达矩阵 (用于后续动态热图和火山图，可为 NULL)}
+}
+\value{
+返回一个类为 "GseaEnvPro" 的复合计算胶囊
 }
 \description{
-将差异结果(fit)、基因集与表达矩阵完美焊死在一起，实现一次打包，终身复现。
+将差异结果(fit)、基因集字典(带亚组血统)与表达矩阵完美焊死在一起，实现一次打包，终身复现。
 }

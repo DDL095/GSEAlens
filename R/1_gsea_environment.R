@@ -211,9 +211,3 @@ setup_gsea_env_pro <- function(fit, pathway_obj, expr_data = NULL) {
   return(env_obj)
 }
 
-#' @title 检查计算胶囊 (Pro 引擎)
-#' @param env_pro setup_gsea_env_pro 创建的对象
-#' @export
-inspect_gsea_env_pro <- function(env_pro) {
-  # (直接复制 txt 中的 inspect_gsea_env_pro)
-}
