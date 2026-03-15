@@ -2,11 +2,11 @@
 % Please edit documentation in R/3_gsea_visualization.R
 \name{generate_gsea_html_report}
 \alias{generate_gsea_html_report}
-\title{Generate GSEA HTML Report Bundle (Pro 融合修复版)}
+\title{Generate GSEA HTML Report Bundle (终极智能寻路版)}
 \usage{
 generate_gsea_html_report(
   res_obj,
-  output_base_dir = "GSEA_Results",
+  output_base_dir = NULL,
   p_adjust_cutoff = 1,
   top_plots = c(15, 15),
   save_pdf = FALSE,
@@ -14,6 +14,21 @@ generate_gsea_html_report(
   dpi = 200
 )
 }
+\arguments{
+\item{res_obj}{extract_gsea_task_pro 返回的 DirectionalGSEA 对象}
+
+\item{output_base_dir}{输出文件夹路径。若留空(NULL)，将自动跟随计算胶囊的项目原址建立专属 HTML 文件夹！}
+
+\item{p_adjust_cutoff}{FDR 过滤阈值，默认 1}
+
+\item{top_plots}{绘制详细子网页的通路数量，格式为 c(正向数量, 负向数量)}
+
+\item{save_pdf}{预留参数}
+
+\item{dge_list}{edgeR DGEList 对象。若为空，将全网自动在 res_obj$meta 内雷达搜寻表达矩阵！}
+
+\item{dpi}{GSEA 富集图的分辨率，默认 200}
+}
 \description{
-恢复原有的热图逻辑、HTML子网页、高亮红蓝表格，并严格采用 200 DPI PNG。
+自动规避列名污染，智能抓取对象内的表达矩阵，输出带双P值展示的舒适网页报表与热图。支持根据计算胶囊原地址自动归位报表。
 }

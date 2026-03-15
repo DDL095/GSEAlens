@@ -2,7 +2,7 @@
 % Please edit documentation in R/2_gsea_calculation.R
 \name{batch_calc_gsea_pro}
 \alias{batch_calc_gsea_pro}
-\title{并行计算 GSEA 核心引擎 (Pro 智能缓存版)}
+\title{并行计算 GSEA 核心引擎 (Pro 智能缓存版 - 带血统记忆)}
 \usage{
 batch_calc_gsea_pro(
   gsea_env,
@@ -17,13 +17,13 @@ batch_calc_gsea_pro(
 )
 }
 \arguments{
-\item{gsea_env}{由 setup_gsea_env_pro() 或 setup_gsea_env() 创建的计算胶囊}
+\item{gsea_env}{标准 GseaEnv 或 GseaEnvPro 胶囊对象}
 
-\item{custom_series_name}{自定义分析系列名称，用于创建专属文件夹和缓存名}
+\item{custom_series_name}{字符串。分析的系列名称（将作为文件夹名称和血统名称）}
 
-\item{output_dir}{输出的总文件夹路径}
+\item{output_dir}{字符串。输出的基础路径，默认 "./GSEA_Output"}
 
-\item{force}{逻辑值。是否强制无视已存在的缓存 RDS 文件，重新计算？默认 FALSE。}
+\item{force}{逻辑值。是否强制重新计算而不使用缓存，默认 FALSE}
 
 \item{bidirectional}{逻辑值。是否进行双向对比（自动生成正反双向），默认 TRUE}
 
@@ -39,5 +39,5 @@ batch_calc_gsea_pro(
 返回 GseaResPro 对象
 }
 \description{
-自动感知硬件多核算力，对封装在胶囊中的所有对比组提取 topTable 进行去重并真实双向计算。
+自动化执行 limma 结果清洗、去重，并下发多核 GSEA 计算，最终生成带有项目路径记忆的胶囊。
 }

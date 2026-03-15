@@ -211,3 +211,70 @@ setup_gsea_env_pro <- function(fit, pathway_obj, expr_data = NULL) {
   return(env_obj)
 }
 
+
+
+
+#' @title 载入并智能归位 GSEA 计算胶囊 (档案管理员)
+#' @description 安全载入计算胶囊。若文件脱离原始项目路径（比如被拷贝到了桌面），引擎将自动在当前工作目录复原标准文件夹，并将胶囊护送归位。
+#' @param file_path 字符型。胶囊 rds 文件的绝对或相对路径。
+#' @param auto_relocate 逻辑值。是否自动根据内置血统在当前目录下修复文件夹并归位？默认 TRUE。
+#' @return 返回解析后的 GseaResPro 或 GseaEnv 胶囊对象。
+#' @export
+import_gsea_capsule <- function(file_path, auto_relocate = TRUE) {
+  if (!file.exists(file_path)) stop(sprintf("❌ 文件不存在: %s", file_path))
+
+  message("📦 正在唤醒计算胶囊...")
+  capsule <- readRDS(file_path)
+
+  if (inherits(capsule, c("GseaEnvPro", "GseaEnv"))) {
+    message("✅ 成功载入 [GseaEnv] 环境封装胶囊 (尚未进行并行计算)。")
+    return(invisible(capsule))
+  }
+
+  if (!inherits(capsule, "GseaResPro")) {
+    warning("⚠️ 该文件似乎不是标准的 GSEAlens 胶囊！")
+    return(invisible(capsule))
+  }
+
+  info <- capsule$metadata$project_info
+  if (is.null(info)) {
+    message("⚠️ 该胶囊为旧版本生成，缺乏项目血统记忆。直接载入。")
+  } else {
+    current_abs <- normalizePath(file_path, winslash = "/", mustWork = FALSE)
+    expected_abs <- normalizePath(info$rds_path, winslash = "/", mustWork = FALSE)
+
+    # 路径不一致，且开启了自动归位
+    if (current_abs != expected_abs && auto_relocate) {
+      message(sprintf("🚨 [血统警报] 胶囊当前处于非标准路径: %s", current_abs))
+      message(sprintf("   原籍隶属于项目 : [%s]", info$custom_series_name))
+
+      # 根据当前工作目录(WD)重建标准档案库
+      local_series_dir <- file.path(getwd(), "GSEA_Output", info$custom_series_name)
+      if (!dir.exists(local_series_dir)) {
+        dir.create(local_series_dir, recursive = TRUE)
+      }
+
+      target_file <- file.path(local_series_dir, basename(file_path))
+      if (!file.exists(target_file) || target_file == current_abs) {
+        file.copy(from = file_path, to = target_file, overwrite = TRUE)
+        message(sprintf("   🚑 已自动将胶囊遣返归位至标准档案库: %s", local_series_dir))
+
+        # 覆写胶囊里的地址，防止下次原位读取时再次报警告
+        capsule$metadata$project_info$output_dir <- file.path(getwd(), "GSEA_Output")
+        capsule$metadata$project_info$series_dir <- local_series_dir
+        capsule$metadata$project_info$rds_path <- target_file
+      } else {
+        message("   ✅ 标准档案库中已有该文件备份。")
+      }
+    }
+  }
+
+  # 调用探针函数打印概况 (如果环境中加载了的话)
+  if (exists("inspect_gsea_res_pro", mode = "function")) {
+    inspect_gsea_res_pro(capsule)
+  } else {
+    message("✅ 成功载入 [GseaResPro] 计算完成结果胶囊！")
+  }
+
+  return(invisible(capsule))
+}

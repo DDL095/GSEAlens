@@ -14,7 +14,7 @@ extract_gsea_task_pro(gsea_capsule, task_name, target_collection = "ALL")
 \item{target_collection}{想要切片的亚组名(如 "H" 或 "C2:CP:KEGG_LEGACY")。默认为 "ALL" (不切片)。}
 }
 \value{
-DirectionalGSEA 对象，完美兼容底层画图。
+DirectionalGSEA 对象，完美兼容底层画图，并将矩阵等所有附加信息收拢于 meta。
 }
 \description{
 提取对比组计算结果。如果使用 ALL 库进行计算，支持传入 target_collection 进行动态切片并自动重算 FDR。

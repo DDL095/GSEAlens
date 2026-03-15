@@ -1,14 +1,9 @@
-
-# 模块：GSEA Calculation Engine (核心计算与并行引擎)
-# 职责：承接环境胶囊，执行高速并行计算、智能缓存拦截、以及独立结果提取
-
-
-#' @title 并行计算 GSEA 核心引擎 (Pro 智能缓存版)
-#' @description 自动感知硬件多核算力，对封装在胶囊中的所有对比组提取 topTable 进行去重并真实双向计算。
-#' @param gsea_env 由 setup_gsea_env_pro() 或 setup_gsea_env() 创建的计算胶囊
-#' @param custom_series_name 自定义分析系列名称，用于创建专属文件夹和缓存名
-#' @param output_dir 输出的总文件夹路径
-#' @param force 逻辑值。是否强制无视已存在的缓存 RDS 文件，重新计算？默认 FALSE。
+#' @title 并行计算 GSEA 核心引擎 (Pro 智能缓存版 - 带血统记忆)
+#' @description 自动化执行 limma 结果清洗、去重，并下发多核 GSEA 计算，最终生成带有项目路径记忆的胶囊。
+#' @param gsea_env 标准 GseaEnv 或 GseaEnvPro 胶囊对象
+#' @param custom_series_name 字符串。分析的系列名称（将作为文件夹名称和血统名称）
+#' @param output_dir 字符串。输出的基础路径，默认 "./GSEA_Output"
+#' @param force 逻辑值。是否强制重新计算而不使用缓存，默认 FALSE
 #' @param bidirectional 逻辑值。是否进行双向对比（自动生成正反双向），默认 TRUE
 #' @param workers 并行核心数。若为 NULL，自动保留 4 核，其余全用。
 #' @param minGSSize 基因集最小包含基因数，默认 10
@@ -97,11 +92,18 @@ batch_calc_gsea_pro <- function(gsea_env, custom_series_name = "Auto_Analysis", 
   names(res_list) <- names(tasks)
   future::plan(future::sequential)
 
+  # 🌟 终极打包：注入 Project Info 血统记忆
   final_obj <- list(
     metadata = list(
       run_time = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
       workers_used = use_cores,
-      parameters = list(bidirectional = bidirectional, minGSSize = minGSSize)
+      parameters = list(bidirectional = bidirectional, minGSSize = minGSSize),
+      project_info = list(                      # <--- 新增记忆中枢
+        custom_series_name = custom_series_name,
+        output_dir = normalizePath(output_dir, mustWork = FALSE),
+        series_dir = normalizePath(series_dir, mustWork = FALSE),
+        rds_path = normalizePath(rds_path, mustWork = FALSE)
+      )
     ),
     geneset_info = gsea_env$geneset,
     results = res_list,
@@ -118,14 +120,15 @@ batch_calc_gsea_pro <- function(gsea_env, custom_series_name = "Auto_Analysis", 
   cat(sprintf("📂 文件路径: %s\n\n", rds_path))
   cat(sprintf("💡 未来如需写文章画单图，请复制以下 R 代码直接调取：\n"))
   cat(sprintf("-------------------------------------------------------------\n"))
-  cat(sprintf("my_capsule <- readRDS(\"%s\")\n", rds_path))
-  # 修复了这里的包名前缀
+  cat(sprintf("my_capsule <- GSEAlens::import_gsea_capsule(\"%s\")\n", rds_path)) # 推荐使用新版智能载入
   cat(sprintf("my_task <- GSEAlens::extract_gsea_task_pro(my_capsule, \"%s\")\n", example_task))
   cat(sprintf("GSEAlens::plot_directional_gsea(my_task, target_pathways = c(\"ID_1\"))\n"))
   cat(sprintf("=============================================================\n\n"))
 
   return(final_obj)
 }
+
+
 
 
 
@@ -244,7 +247,7 @@ inspect_gsea_res_pro <- function(res_capsule) {
 #' @param gsea_capsule GseaResPro 计算胶囊
 #' @param task_name 想提取的组别名 (如 "Treat_vs_Control")
 #' @param target_collection 想要切片的亚组名(如 "H" 或 "C2:CP:KEGG_LEGACY")。默认为 "ALL" (不切片)。
-#' @return DirectionalGSEA 对象，完美兼容底层画图。
+#' @return DirectionalGSEA 对象，完美兼容底层画图，并将矩阵等所有附加信息收拢于 meta。
 #' @export
 extract_gsea_task_pro <- function(gsea_capsule, task_name, target_collection = "ALL") {
 
@@ -315,7 +318,7 @@ extract_gsea_task_pro <- function(gsea_capsule, task_name, target_collection = "
     stringsAsFactors = FALSE
   )
 
-  # 6. 打包标准输出对象
+  # 🌟 6. 极简打包原则：万物皆入 meta！
   res_obj <- list(
     gsea_res = gsea_res,
     meta = list(
@@ -324,7 +327,9 @@ extract_gsea_task_pro <- function(gsea_capsule, task_name, target_collection = "
       geneset_name = ifelse(is_slice_mode,
                             paste(target_collection, collapse = "_"),
                             gsea_capsule$geneset_info$name),
-      meta_dict = meta_dict_for_res_obj
+      meta_dict = meta_dict_for_res_obj,
+      expr_data = gsea_capsule$expr_data,               # <--- 将表达矩阵纳入 meta
+      project_info = gsea_capsule$metadata$project_info # <--- 将项目血统纳入 meta
     )
   )
   class(res_obj) <- "DirectionalGSEA"

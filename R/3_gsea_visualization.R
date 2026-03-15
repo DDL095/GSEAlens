@@ -123,71 +123,102 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways, curveCo
 }
 
 
-
-
-
-
-
-
-#' @title Generate GSEA HTML Report Bundle (Pro 融合修复版)
-#' @description 恢复原有的热图逻辑、HTML子网页、高亮红蓝表格，并严格采用 200 DPI PNG。
+#' @title Generate GSEA HTML Report Bundle (终极智能寻路版)
+#' @description 自动规避列名污染，智能抓取对象内的表达矩阵，输出带双P值展示的舒适网页报表与热图。支持根据计算胶囊原地址自动归位报表。
+#' @param res_obj extract_gsea_task_pro 返回的 DirectionalGSEA 对象
+#' @param output_base_dir 输出文件夹路径。若留空(NULL)，将自动跟随计算胶囊的项目原址建立专属 HTML 文件夹！
+#' @param p_adjust_cutoff FDR 过滤阈值，默认 1
+#' @param top_plots 绘制详细子网页的通路数量，格式为 c(正向数量, 负向数量)
+#' @param save_pdf 预留参数
+#' @param dge_list edgeR DGEList 对象。若为空，将全网自动在 res_obj$meta 内雷达搜寻表达矩阵！
+#' @param dpi GSEA 富集图的分辨率，默认 200
 #' @export
-generate_gsea_html_report <- function(res_obj, output_base_dir = "GSEA_Results",
+generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
                                       p_adjust_cutoff = 1, top_plots = c(15, 15),
                                       save_pdf = FALSE, dge_list = NULL, dpi = 200) {
   require(dplyr)
-  if (!inherits(res_obj, "DirectionalGSEA")) stop("[Error] Invalid result object.")
+  if (!inherits(res_obj, "DirectionalGSEA")) stop("❌ [Error] 传入的对象不是标准的 DirectionalGSEA。")
+
   meta <- res_obj$meta
   res <- res_obj$gsea_res
   df <- as.data.frame(res)
 
-  # 扁平化架构：不再套娃，直接使用母舰传进来的当前组别专属文件夹
+  # 🌟 1. 自动寻路逻辑：追溯原发地
+  if (is.null(output_base_dir)) {
+    if (!is.null(meta$project_info) && !is.null(meta$project_info$series_dir)) {
+      output_base_dir <- file.path(meta$project_info$series_dir, sprintf("HTML_Report_%s_vs_%s", meta$left_group, meta$right_group))
+    } else {
+      output_base_dir <- "GSEA_Results" # 备用回退文件夹
+    }
+  }
+
   bundle_dir <- output_base_dir
   if (!dir.exists(bundle_dir)) dir.create(bundle_dir, recursive = TRUE)
 
   details_dir <- file.path(bundle_dir, "Details")
   if (!dir.exists(details_dir)) dir.create(details_dir, recursive = TRUE)
 
-  # HTML 名与当前对比组文件夹同名
   main_html_path <- file.path(bundle_dir, paste0(basename(bundle_dir), ".html"))
 
 
-  # 🌟 核心修改：构建 df_clean，确保 Pathway_Link 和 Description 各司其职
+  # 🛡️ 2. 核心清洗区：智能 left_join 避免列名污染
+  dict_cols <- colnames(meta$meta_dict)
+  df_cols <- colnames(df)
+  cols_to_add <- setdiff(dict_cols, df_cols) # 取差集
+  safe_dict <- meta$meta_dict %>% dplyr::select(ID, dplyr::any_of(cols_to_add))
+
   df_clean <- df %>%
     dplyr::filter(p.adjust <= p_adjust_cutoff) %>%
-    # 左连接 meta_dict，引入 long_description_for_html 和 URL
-    dplyr::left_join(res_obj$meta$meta_dict, by = "ID") %>%
+    dplyr::left_join(safe_dict, by = "ID") %>%
     dplyr::mutate(
       Enriched_In = factor(ifelse(NES > 0, meta$left_group, meta$right_group), levels = c(meta$left_group, meta$right_group)),
-      Collection = as.factor(ifelse(is.na(Collection), "Unknown", Collection)),
-
-      # 🌟 Pathway_Link 应该展示【短 ID】，并链接到 URL！
-      Pathway_Link = ifelse(is.na(URL) | URL == "", sprintf("<b>%s</b>", ID), sprintf('<a href="%s" target="_blank" style="color: #0056b3;">%s</a>', URL, ID)),
-
-      # 🌟 新增一个专门的 Description 列，用于显示【长文本】，纯文本不带链接！
-      Description = long_description_for_html # 直接从连接来的 long_description_for_html 列赋值
+      Display_Collection = if("Combo_Name" %in% names(.)) Combo_Name else if("Collection" %in% names(.)) Collection else "Unknown",
+      Display_Collection = as.factor(ifelse(is.na(Display_Collection), "Unknown", Display_Collection)),
+      Pathway_Link = if("URL" %in% names(.)) {
+        ifelse(is.na(URL) | URL == "", sprintf("<b>%s</b>", ID), sprintf('<a href="%s" target="_blank" style="color: #0056b3; text-decoration: none;">%s</a>', URL, ID))
+      } else { sprintf("<b>%s</b>", ID) },
+      Description = if("long_description_for_html" %in% names(.)) long_description_for_html else ID
     ) %>%
     dplyr::arrange(desc(abs(NES))) %>%
     dplyr::mutate(Rank = dplyr::row_number())
 
-  if (nrow(df_clean) == 0) return(invisible(NULL))
+  if (nrow(df_clean) == 0) {
+    message("⚠️ 警告：当前截断值下没有显著通路，跳过报告生成！")
+    return(invisible(NULL))
+  }
 
-  # 提取热图表达量 (完全沿用你的逻辑)
+  # 📡 3. 表达矩阵智能雷达：探测热图数据
+  message("🔍 [智能雷达] 正在探测表达矩阵用于绘制热图...")
+  if (is.null(dge_list)) {
+    if (!is.null(meta$expr_data)) {
+      dge_list <- meta$expr_data
+      message("   ✅ 成功从 res_obj$meta 提取 expr_data")
+    } else {
+      message("   ⚠️ 未找到内置的 expr_data，将跳过热图绘制。")
+    }
+  }
+
   has_expr <- FALSE; expr_mat <- NULL; cpm_mat <- NULL; sample_meta_sub <- NULL; n_left <- 0
-  if (!is.null(dge_list)) {
-    expr_mat <- edgeR::cpm(dge_list, log = TRUE)
-    cpm_mat <- edgeR::cpm(dge_list, log = FALSE)
-    sample_meta <- dge_list$samples
-    left_samples <- rownames(sample_meta)[sample_meta$group == meta$left_group]
-    right_samples <- rownames(sample_meta)[sample_meta$group == meta$right_group]
-    target_samples <- c(left_samples, right_samples)
 
-    if (length(target_samples) > 0) {
-      expr_mat <- expr_mat[, target_samples, drop = FALSE]
-      cpm_mat <- cpm_mat[, target_samples, drop = FALSE]
-      sample_meta_sub <- sample_meta[target_samples, , drop = FALSE]
-      n_left <- length(left_samples)
-      has_expr <- TRUE
+  if (!is.null(dge_list)) {
+    sample_meta <- dge_list$samples
+    if (!"group" %in% colnames(sample_meta)) {
+      message("   ❌ [错误] 表达矩阵中缺少 'group' 样本列，无法区分分组！")
+    } else {
+      left_samples <- rownames(sample_meta)[sample_meta$group == meta$left_group]
+      right_samples <- rownames(sample_meta)[sample_meta$group == meta$right_group]
+      target_samples <- c(left_samples, right_samples)
+
+      if (length(target_samples) == 0) {
+        message(sprintf("   ❌ [错误] 无法在矩阵中找到对比组 '%s' 或 '%s'！", meta$left_group, meta$right_group))
+      } else {
+        message(sprintf("   ✅ [热图就绪] 匹配到样本: 左组(%s) %d个 | 右组(%s) %d个", meta$left_group, length(left_samples), meta$right_group, length(right_samples)))
+        expr_mat <- edgeR::cpm(dge_list, log = TRUE)[, target_samples, drop = FALSE]
+        cpm_mat <- edgeR::cpm(dge_list, log = FALSE)[, target_samples, drop = FALSE]
+        sample_meta_sub <- sample_meta[target_samples, , drop = FALSE]
+        n_left <- length(left_samples)
+        has_expr <- TRUE
+      }
     }
   }
 
@@ -196,8 +227,8 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = "GSEA_Results",
   neg_plot_ids <- df_clean %>% dplyr::filter(NES < 0) %>% dplyr::arrange(NES) %>% head(top_plots[2]) %>% dplyr::pull(ID)
   target_plot_ids <- c(pos_plot_ids, neg_plot_ids)
 
-  # 遍历生成子图与详情页
-  for (i in 1:nrow(df_clean)) {
+  # 🖼️ 4. 遍历生成子图与详情页
+  for (i in seq_len(nrow(df_clean))) {
     pw_id <- df_clean$ID[i]
     if (!(pw_id %in% target_plot_ids)) {
       detail_links[i] <- '<button class="btn btn-sm btn-outline-secondary" disabled style="padding: 2px 10px;">Skipped</button>'
@@ -209,27 +240,30 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = "GSEA_Results",
     gsea_png_name <- sprintf("GSEA_Rank%03d_%s.png", i, safe_pw_name)
     heat_png_name <- sprintf("Heatmap_Rank%03d_%s.png", i, safe_pw_name)
 
-    # 1. 存 GSEA 图 (严格执行 200 DPI)
-    p_gsea <- plot_directional_gsea(res_obj, pw_id, main_title = pw_id)
+    known_prefixes <- c("KEGG_", "REACTOME_", "WP_", "BIOCARTA_", "GO_", "HP_", "HALLMARK_")
+    clean_title <- pw_id
+    for (pref in known_prefixes) { if (startsWith(pw_id, pref)) { clean_title <- sub(pref, "", pw_id); break } }
+    clean_title <- stringr::str_to_title(gsub("_", " ", clean_title))
+
+    # 4.1 绘制 GSEA 主图
+    p_gsea <- plot_directional_gsea(res_obj, target_pathways = pw_id, main_title = clean_title, subPlot = 3, add_pval = FALSE)
     ggplot2::ggsave(file.path(details_dir, gsea_png_name), plot = p_gsea, width = 8, height = 6, dpi = dpi, bg = "white")
 
-    # 2. 基因统计表
+    # 4.2 基因统计表
     all_genes <- res@geneSets[[pw_id]]
     match_list_idx <- which(toupper(names(res@geneList)) %in% toupper(all_genes))
     valid_genes_list <- names(res@geneList)[match_list_idx]
     core_genes <- unlist(strsplit(as.character(df_clean$core_enrichment[i]), "/"))
     gene_table <- data.frame(
-      Gene = valid_genes_list,
-      Rank_Metric = unname(res@geneList[valid_genes_list]),
-      Is_Core = ifelse(toupper(valid_genes_list) %in% toupper(core_genes), "✅ YES", "-"),
-      stringsAsFactors = FALSE
+      Gene = valid_genes_list, Rank_Metric = unname(res@geneList[valid_genes_list]),
+      Is_Core = ifelse(toupper(valid_genes_list) %in% toupper(core_genes), "✅ YES", "-"), stringsAsFactors = FALSE
     )
     gene_table <- gene_table[order(gene_table$Rank_Metric, decreasing = TRUE), ]
     colnames(gene_table) <- c("Gene_Name", "Rank_Metric", "Is_Core_Enrichment")
     html_table <- knitr::kable(gene_table, format = "html", row.names = FALSE, digits = 3, table.attr = 'class="table table-striped table-sm"')
 
-    # 3. 绘制热图 (保留你神级的强制 -1 到 1 截断截断色彩)
-    heat_html_tag <- "<p class='text-muted'>No expression data provided.</p>"
+    # 4.3 绘制热图
+    heat_html_tag <- "<p class='text-muted' style='margin-top:20px;'>No expression data matched for heatmap.</p>"
     if (has_expr) {
       expr_genes <- rownames(expr_mat)
       plot_genes <- expr_genes[which(toupper(expr_genes) %in% toupper(all_genes))]
@@ -245,14 +279,11 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = "GSEA_Results",
         if (nrow(plot_mat) >= 2) {
           plot_cpm_numbers <- round(cpm_mat[rownames(plot_mat), , drop = FALSE])
           z_mat <- t(scale(t(plot_mat)))
-          z_mat[is.na(z_mat)] <- 0
-          z_mat[z_mat > 1] <- 1
-          z_mat[z_mat < -1] <- -1
+          z_mat[is.na(z_mat)] <- 0; z_mat[z_mat > 1] <- 1; z_mat[z_mat < -1] <- -1
 
           ann_col <- data.frame(Group = sample_meta_sub$group, row.names = rownames(sample_meta_sub))
-          grp_col <- c("#E41A1C", "#377EB8")
-          names(grp_col) <- c(meta$left_group, meta$right_group)
-          color_palette <- colorRampPalette(c("#67a9cf", "#f7f7f7", "#ef8a62"))(100)
+          grp_col <- c("#E41A1C", "#377EB8"); names(grp_col) <- c(meta$left_group, meta$right_group)
+          color_palette <- grDevices::colorRampPalette(c("#67a9cf", "#f7f7f7", "#ef8a62"))(100)
 
           pheatmap::pheatmap(
             z_mat, scale = "none", cluster_cols = FALSE, cluster_rows = FALSE, gaps_col = n_left,
@@ -262,32 +293,33 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = "GSEA_Results",
             cellwidth = 35, cellheight = 16, filename = file.path(details_dir, heat_png_name),
             main = sprintf("Row-Scaled Z-Score [-1, 1]\nEnriched in: %s", as.character(df_clean$Enriched_In[i]))
           )
-          heat_html_tag <- sprintf("<img src='%s' class='img-fluid'>", heat_png_name)
+          heat_html_tag <- sprintf("<img src='%s' class='img-fluid shadow-sm border'>", heat_png_name)
         }
       }
     }
 
-    # 4. 生成子网页
+    # 🌟 4.4 拼接 Dashboard HTML (引入 P-value 和 P-adj 双展示)
     html_content <- sprintf('
       <!DOCTYPE html><html><head><meta charset="utf-8"><title>Detail: %s</title>
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"></head>
       <body class="container mt-4 mb-5"><h2 class="text-primary">%s</h2>
-      <p class="lead"><strong>Rank:</strong> %d | <strong>NES:</strong> %.3f | <strong>P-adj:</strong> %.4e</p><hr>
+      <h6 class="text-muted mb-4">Original ID: %s</h6>
+      <p class="lead"><strong>Rank:</strong> %d | <strong>NES:</strong> %.3f | <strong>P-value:</strong> %.4e | <strong>FDR (P-adj):</strong> <span class="badge bg-danger">%.4e</span></p><hr>
       <div class="row mb-5"><div class="col-md-5"><h4 class="mb-3">Enrichment Plot</h4><img src="%s" class="img-fluid border shadow-sm"></div>
       <div class="col-md-7"><h4 class="mb-3">Expression Heatmap</h4><div style="overflow:auto; max-height:800px;">%s</div></div></div>
       <div class="row"><div class="col-md-12"><h4 class="mb-3">Gene Statistics</h4><div style="max-height: 400px; overflow-y: auto;">%s</div></div></div>
       </body></html>
-    ', pw_id, pw_id, i, df_clean$NES[i], df_clean$p.adjust[i], gsea_png_name, heat_html_tag, html_table)
+    ', clean_title, clean_title, pw_id, i, df_clean$NES[i], df_clean$pvalue[i], df_clean$p.adjust[i], gsea_png_name, heat_html_tag, html_table)
 
     writeLines(html_content, con = file.path(details_dir, detail_filename))
-    detail_links[i] <- sprintf('<a href="./Details/%s" target="_blank" class="btn btn-sm btn-success" style="padding: 2px 10px;">📊 Dashboard</a>', detail_filename)
+    detail_links[i] <- sprintf('<a href="./Details/%s" target="_blank" class="btn btn-sm btn-success" style="padding: 2px 10px; text-decoration: none;">📊 Dashboard</a>', detail_filename)
   }
 
   df_clean$Detail_Page <- detail_links
 
-  # 5. 生成主报表 (加入 pvalue，强制 Description 在最后一列)
+  # 🌐 5. 生成主交互式数据表 (加上 Pvalue 和 P.adjust)
   display_df <- df_clean %>%
-    dplyr::select(Rank, Detail_Page, Pathway = Pathway_Link, Collection, Enriched_In, Size = setSize, NES, dplyr::any_of(c("pvalue", "p.adjust")), Description) # 🎯 这里的 Pathway 和 Description 列都是咱们精心构建的了！
+    dplyr::select(Rank, Detail_Page, Pathway = Pathway_Link, Collection = Display_Collection, Enriched_In, Size = setSize, NES, pvalue, p.adjust, Description)
 
   dt_table <- DT::datatable(
     display_df, rownames = FALSE, escape = FALSE, filter = "top",
@@ -296,25 +328,16 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = "GSEA_Results",
     options = list(dom = 'Bfrtip', deferRender = TRUE, scrollY = 600, scroller = TRUE, pageLength = -1, buttons = c('copy', 'csv', 'excel'), autoWidth = TRUE)
   ) %>%
     DT::formatRound(columns = c('NES'), digits = 3) %>%
-    DT::formatSignif(columns = intersect(colnames(display_df), c('pvalue', 'p.adjust')), digits = 4) %>%
+    DT::formatSignif(columns = c('pvalue', 'p.adjust'), digits = 4) %>%
     DT::formatStyle('Enriched_In', backgroundColor = DT::styleEqual(c(meta$left_group, meta$right_group), c('#fee0d2', '#deebf7'))) %>%
     DT::formatStyle('NES', color = DT::styleInterval(0, c('blue', 'red')), fontWeight = 'bold')
 
-  # 保存时分离 lib，防止卡顿
   old_wd <- getwd()
   setwd(bundle_dir)
   tryCatch({
-    htmlwidgets::saveWidget(dt_table, file = basename(main_html_path), selfcontained = FALSE, libdir = "lib", title = sprintf("GSEA Report: %s vs %s [%s]", meta$left_group, meta$right_group, meta$geneset_name)#sprintf("🧬 %s vs %s", meta$left_group, meta$right_group)
-
-
-
-    )
+    htmlwidgets::saveWidget(dt_table, file = basename(main_html_path), selfcontained = FALSE, libdir = "lib", title = sprintf("GSEA Report: %s vs %s [%s]", meta$left_group, meta$right_group, meta$geneset_name))
   }, finally = { setwd(old_wd) })
 
+  message(sprintf("✅ 完美！HTML 报告已自动寻址并生成至: %s", bundle_dir))
   return(invisible(bundle_dir))
 }
-
-
-
-
-
