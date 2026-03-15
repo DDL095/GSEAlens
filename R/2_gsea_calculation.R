@@ -85,7 +85,8 @@ batch_calc_gsea_pro <- function(gsea_env, custom_series_name = "Auto_Analysis", 
     gsea_res <- tryCatch({
       clusterProfiler::GSEA(
         geneList = genelist, TERM2GENE = term2gene, minGSSize = minGSSize,
-        maxGSSize = maxGSSize, pvalueCutoff = pvalueCutoff, pAdjustMethod = "BH", verbose = FALSE, seed = 123
+        maxGSSize = maxGSSize, pvalueCutoff = pvalueCutoff, pAdjustMethod = "BH", verbose = FALSE, seed = 123,
+        eps = 0 #为了屏蔽报错
       )
     }, error = function(e) NULL)
 
