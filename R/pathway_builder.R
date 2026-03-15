@@ -15,7 +15,7 @@ build_custom_msigdb <- function(collection_list = list(c("C2", "CP:KEGG_LEGACY")
 
     # 🌟 修复：参数更新为 collection 和 subcollection
     tmp <- msigdbr::msigdbr(species = species, collection = cat, subcollection = subcat)
-    tmp %>% dplyr::select(gs_name, gene_symbol, gs_description, gs_url, gs_collection = gs_cat, gs_subcollection = gs_subcat)
+    tmp %>% dplyr::select(gs_name, gene_symbol, gs_description, gs_url, gs_collection = gs_collection, gs_subcollection = gs_subcat)
   })
 
   final_df <- do.call(rbind, df_list)
@@ -74,7 +74,7 @@ setup_gsea_env <- function(fit, custom_df = NULL, gmt_file = NULL, custom_set_na
     # 🌟 修复：底层使用 collection 替代 category
     df <- msigdbr::msigdbr(species = species, collection = category, subcollection = subcategory)
     term2gene <- df %>% dplyr::select(gs_name, gene_symbol)
-    meta_dict <- df %>% dplyr::select(ID = gs_name, Description = gs_description, URL = gs_url, Collection = gs_cat) %>% dplyr::distinct(ID, .keep_all = TRUE)
+    meta_dict <- df %>% dplyr::select(ID = gs_name, Description = gs_description, URL = gs_url, Collection = gs_collection) %>% dplyr::distinct(ID, .keep_all = TRUE)
   }
 
   env_obj <- list(fit = fit, contrasts = contrasts_df, geneset = list(name = set_identifier, term2gene = term2gene, meta_dict = meta_dict), expr_data = expr_data)

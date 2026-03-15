@@ -100,7 +100,7 @@ build_gsea_pathways_pro <- function(species = "Homo sapiens", auto_select = NULL
 
   all_pathways <- dplyr::bind_rows(pathway_list)
   TERM2GENE <- all_pathways %>% dplyr::select(gs_name, gene_symbol)
-  TERM2NAME <- all_pathways %>% dplyr::select(ID = gs_name, Description = gs_description, URL = gs_url, Collection = gs_cat) %>% dplyr::distinct(ID, .keep_all = TRUE)
+  TERM2NAME <- all_pathways %>% dplyr::select(ID = gs_name, Description = gs_description, URL = gs_url, Collection = gs_collection) %>% dplyr::distinct(ID, .keep_all = TRUE)
 
   return(list(TERM2GENE = TERM2GENE, meta_dict = TERM2NAME, SuperTag = super_tag, collections_used = selected_rows))
 }
