@@ -611,25 +611,7 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = "GSEA_Results",
 
 
 
-gsea_genelist <- function(){
 
-
-
-
-}
-
-
-
-#' 打印并返回 msigdb_relation 数据
-#'
-#' @return 返回 msigdb_relation 数据框
-#' @export
-print_msigdb_relation <- function() {
-  # 在 R 包内部，直接使用包内同名数据即可
-  df_relation |>
-    print() |>
-    invisible() # 隐式返回，允许赋值但不在控制台刷屏两遍
-}
 
 
 #' @title Plot Directional GSEA (Ribbon Version)
@@ -856,7 +838,7 @@ build_gsea_pathways_pro <- function(species = "Homo sapiens", auto_select = NULL
   # 交互界面
   if (is.null(auto_select)) {
     message("\n", rep("=", 60))
-    message(sprintf("🌟 欢迎使用 DudaliRnaseq PRO 基因集向导 (%s)", species))
+    message(sprintf("🌟 欢迎使用 GSEAlens 基因集向导 (%s)", species))
     message(rep("=", 60))
     for (i in 1:nrow(menu_df)) {
       cat(sprintf("[%2d] %-6s | %-16s | %s\n",
@@ -1127,8 +1109,8 @@ batch_calc_gsea_pro <- function(gsea_env, custom_series_name = "Auto_Analysis", 
   cat(sprintf("💡 未来如需写文章画单图，请复制以下 R 代码直接调取：\n"))
   cat(sprintf("-------------------------------------------------------------\n"))
   cat(sprintf("my_capsule <- readRDS(\"%s\")\n", rds_path))
-  cat(sprintf("my_task <- DudaliRnaseq::extract_gsea_task_pro(my_capsule, \"%s\")\n", example_task))
-  cat(sprintf("DudaliRnaseq::plot_directional_gsea(my_task, target_pathways = c(\"ID_1\", \"ID_2\"))\n"))
+  cat(sprintf("my_task <- GSEAlens::extract_gsea_task_pro(my_capsule, \"%s\")\n", example_task))
+  cat(sprintf("GSEAlens::plot_directional_gsea(my_task, target_pathways = c(\"ID_1\", \"ID_2\"))\n"))
   cat(sprintf("=============================================================\n\n"))
 
   return(final_obj)
@@ -1414,7 +1396,7 @@ batch_parallel_gsea_pro <- function(
 ) {
 
   # 步骤 1：呼叫智能计算引擎 (它会自己决定是瞬间载入 RDS 还是老实计算)
-  calc_res <- DudaliRnaseq::batch_calc_gsea_pro(
+  calc_res <- GSEAlens::batch_calc_gsea_pro(
     gsea_env = gsea_env,
     custom_series_name = custom_series_name,
     output_dir = output_dir,
@@ -1427,7 +1409,7 @@ batch_parallel_gsea_pro <- function(
   )
 
   # 步骤 2：呼叫渲染引擎 (传入计算所得的胶囊对象)
-  DudaliRnaseq::batch_plot_gsea_pro(
+  GSEAlens::batch_plot_gsea_pro(
     calc_batch_obj = calc_res,
     custom_series_name = custom_series_name,
     output_dir = output_dir,
@@ -1485,7 +1467,7 @@ batch_calc_gsea <- function(gsea_env, bidirectional = TRUE, workers = 25, series
       require(dplyr, quietly = TRUE)
       require(magrittr, quietly = TRUE)
       require(clusterProfiler, quietly = TRUE)
-      require(DudaliRnaseq, quietly = TRUE)
+      require(GSEAlens, quietly = TRUE)
     })
 
     tryCatch({
@@ -1494,7 +1476,7 @@ batch_calc_gsea <- function(gsea_env, bidirectional = TRUE, workers = 25, series
     }, error = function(e) {
       return(list(name = task$name, status = "Failed", error = e$message, data = NULL))
     })
-  }, future.seed = TRUE, future.packages = c("dplyr", "magrittr", "clusterProfiler", "DudaliRnaseq"))
+  }, future.seed = TRUE, future.packages = c("dplyr", "magrittr", "clusterProfiler", "GSEAlens"))
 
   future::plan(future::sequential)
   message("✅ GSEA 计算阶段完成！")
@@ -1525,7 +1507,7 @@ batch_plot_gsea <- function(calc_results,
     suppressPackageStartupMessages({
       require(dplyr, quietly = TRUE)
       require(magrittr, quietly = TRUE)
-      require(DudaliRnaseq, quietly = TRUE)
+      require(GSEAlens, quietly = TRUE)
     })
 
     tryCatch({
@@ -1557,7 +1539,7 @@ batch_plot_gsea <- function(calc_results,
     }, error = function(e) {
       return(list(name = task$name, status = sprintf("❌ 出图失败: %s", e$message)))
     })
-  }, future.seed = TRUE, future.packages = c("dplyr", "magrittr", "DudaliRnaseq"))
+  }, future.seed = TRUE, future.packages = c("dplyr", "magrittr", "GSEAlens"))
 
   future::plan(future::sequential)
 
