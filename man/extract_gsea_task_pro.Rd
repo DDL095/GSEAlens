@@ -2,18 +2,20 @@
 % Please edit documentation in R/2_gsea_calculation.R
 \name{extract_gsea_task_pro}
 \alias{extract_gsea_task_pro}
-\title{Pro 数据提取器 (文章精细绘图专用)}
+\title{Pro 数据提取器 (文章精细绘图与按需切片专用)}
 \usage{
-extract_gsea_task_pro(gsea_capsule, task_name)
+extract_gsea_task_pro(gsea_capsule, task_name, target_collection = "ALL")
 }
 \arguments{
 \item{gsea_capsule}{GseaResPro 计算胶囊}
 
-\item{task_name}{想提取的组别名 (如 "LTA_vs_POSTA")}
+\item{task_name}{想提取的组别名 (如 "Treat_vs_Control")}
+
+\item{target_collection}{想要切片的亚组名(如 "H" 或 "C2:CP:KEGG_LEGACY")。默认为 "ALL" (不切片)。}
 }
 \value{
-DirectionalGSEA 对象。
+DirectionalGSEA 对象，完美兼容底层画图。
 }
 \description{
-直接输入对比组名称，提取并包装成原生 DirectionalGSEA 对象，完美兼容底层画图。
+提取对比组计算结果。如果使用 ALL 库进行计算，支持传入 target_collection 进行动态切片并自动重算 FDR。
 }

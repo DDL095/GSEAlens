@@ -2,13 +2,13 @@
 % Please edit documentation in R/2_gsea_calculation.R
 \name{inspect_gsea_res_pro}
 \alias{inspect_gsea_res_pro}
-\title{查看 GSEA 计算胶囊结果}
+\title{检查并概览 GSEA 计算胶囊 (Pro 引擎)}
 \usage{
-inspect_gsea_res_pro(res_pro)
+inspect_gsea_res_pro(res_capsule)
 }
 \arguments{
-\item{res_pro}{batch_calc_gsea_pro() 生成的对象}
+\item{res_capsule}{batch_calc_gsea_pro 返回的计算胶囊}
 }
 \description{
-格式化打印 GseaResPro 对象的元数据和各个对比组的富集状态，避免直接 View 导致卡顿。
+快速查看胶囊内的计算状态，并智能列出可用于下游提取的 \code{target_combo} (子集标签)。
 }

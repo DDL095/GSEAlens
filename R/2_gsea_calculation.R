@@ -128,8 +128,50 @@ batch_calc_gsea_pro <- function(gsea_env, custom_series_name = "Auto_Analysis", 
 }
 
 
-#' @title 检查并概览 GSEA 计算胶囊 (Pro 引擎)
-#' @description 快速查看胶囊内的计算状态，并智能列出可用于下游提取的 `target_combo` (子集标签)。
+
+#' @title 展示 GSEA 胶囊中包含的所有子集 (科学排序)
+#' @description 提取并按 H -> C1 -> C2...-> C8 的生物学逻辑严格排序，全量展示子集及其通路数量。
+#' @param meta_dict 胶囊中的 meta_dict 数据框
+#' @return 隐式返回排序后的统计数据框
+#' @export
+show_gsea_subsets <- function(meta_dict) {
+  if(is.null(meta_dict) || !("Combo_Name" %in% colnames(meta_dict))) {
+    stop("❌ 字典格式错误或缺失 Combo_Name 列！")
+  }
+
+  # 1. 统计数量
+  combo_counts <- table(meta_dict$Combo_Name)
+  combo_df <- as.data.frame(combo_counts, stringsAsFactors = FALSE)
+  colnames(combo_df) <- c("Combo_Name", "Count")
+
+  # 2. 提取主集前缀 (如 "C2:CP:KEGG" 提取出 "C2")
+  combo_df$Base <- sapply(strsplit(combo_df$Combo_Name, ":"), `[`, 1)
+
+  # 3. 设定科学排序因子 (H 第一，C1-C8 随后，其他垫底)
+  base_levels <- c("H", paste0("C", 1:8))
+  other_bases <- setdiff(unique(combo_df$Base), base_levels)
+  combo_df$Base_Factor <- factor(combo_df$Base, levels = c(base_levels, sort(other_bases)))
+
+  # 4. 终极排序：先按主集，再按子集字母表排序
+  combo_df <- combo_df[order(combo_df$Base_Factor, combo_df$Combo_Name), ]
+
+  # 5. 全量优雅打印
+  message(sprintf("📦 本胶囊包含 %d 个可用子集 (共 %d 条通路，已按主集 H->C8 科学排序):",
+                  nrow(combo_df), sum(combo_df$Count)))
+
+  for (i in seq_len(nrow(combo_df))) {
+    # 使用 %-25s 保证冒号对齐，极其舒适
+    message(sprintf("   - %-25s : %5d 条", combo_df$Combo_Name[i], combo_df$Count[i]))
+  }
+
+  invisible(combo_df)
+}
+
+
+
+
+#' @title 检查并概览 GSEA 计算胶囊 (Pro 引擎 - 终极版)
+#' @description 快速查看胶囊计算状态，调用探针展示全量排序子集，并提供主/子集混合提取的保姆级代码。
 #' @param res_capsule batch_calc_gsea_pro 返回的计算胶囊
 #' @export
 inspect_gsea_res_pro <- function(res_capsule) {
@@ -137,22 +179,19 @@ inspect_gsea_res_pro <- function(res_capsule) {
     stop("❌ 无效的计算胶囊！请确保传入的是 batch_calc_gsea_pro() 的结果。")
   }
 
-  message("\n", rep("=", 65))
+  message("\n", rep("=", 70))
   message("🌟 GSEA 计算胶囊概览 (GSEAlens PRO)")
-  message(rep("=", 65))
+  message(rep("=", 70))
 
-  # 1. 基础信息提取
   meta_dict <- res_capsule$geneset_info$meta_dict
   tag <- res_capsule$geneset_info$name
   message(sprintf("🏷️  全局 Tag: [%s]", tag))
   message(sprintf("🧬  总通路数: %d 条", nrow(meta_dict)))
 
-  # 2. 对比组计算状态
   message("\n📊 对比组计算状态:")
   for (c_name in names(res_capsule$results)) {
     status <- res_capsule$results[[c_name]]$status
     if (status == "Success") {
-      # 粗略统计全局（未切片）显著的数量
       n_sig <- sum(res_capsule$results[[c_name]]$data@result$p.adjust < 0.05, na.rm = TRUE)
       message(sprintf("   ✅ [%s] -> 成功 (未切片全局 FDR < 0.05: %d 条)", c_name, n_sig))
     } else {
@@ -160,41 +199,45 @@ inspect_gsea_res_pro <- function(res_capsule) {
     }
   }
 
-  # 3. 🌟 核心升级：提取可用的 Combo_Name 列表与统计
-  message("\n" , rep("-", 65))
-  message("💡 下游切片提取指南 (extract_gsea_result_pro):")
-  message("您可以基于以下 [子集标签] 进行精准提取并动态重算 FDR (p.adjust)。")
+  message("\n" , rep("-", 70))
+  message("💡 下游切片提取指南 (extract_gsea_task_pro):")
+  message("您可以基于以下 [子集标签] 进行精准提取，引擎将自动重算并拯救真实的 FDR (p.adjust)。\n")
 
-  # 统计字典中每种子集的通路数量
-  combo_counts <- table(meta_dict$Combo_Name)
-  combo_df <- as.data.frame(combo_counts, stringsAsFactors = FALSE)
-  colnames(combo_df) <- c("Combo_Name", "Count")
-  combo_df <- combo_df[order(-combo_df$Count), ] # 按通路数量降序排列
+  # 🌟 直接调用刚才写的探针函数，全量、科学排序展示！
+  show_gsea_subsets(meta_dict)
 
-  message(sprintf("\n📦 本胶囊包含 %d 个可用子集 (前 15 个展示):", nrow(combo_df)))
-  show_n <- min(15, nrow(combo_df))
-  for (i in seq_len(show_n)) {
-    message(sprintf("   - %-25s : %5d 条", combo_df$Combo_Name[i], combo_df$Count[i]))
-  }
-  if (nrow(combo_df) > 15) {
-    message("   ... (剩余子集已省略，完整列表请查看 res_capsule$geneset_info$meta_dict)")
-  }
-
-  # 4. 动态生成保姆级代码示例
-  message("\n👨‍💻 提取代码示例 (支持单选、多选、或全部):")
+  message("\n👨‍💻 多重组合提取代码示例 (支持主集、子集、或任意自由组合):")
   example_contrast <- names(res_capsule$results)[1]
-  example_combo1 <- as.character(combo_df$Combo_Name[1])
-  example_combo2 <- if(nrow(combo_df) > 1) as.character(combo_df$Combo_Name[2]) else "H"
 
-  message(sprintf('  df <- extract_gsea_result_pro('))
-  message(sprintf('    res_capsule = my_res_capsule,'))
-  message(sprintf('    contrast_id = "%s",', example_contrast))
-  message(sprintf('    target_combo  = c("%s", "%s") # <--- 直接填入上面的标签！', example_combo1, example_combo2))
+  message("\n  # 🎯 场景1：单独提取某个特定的子集 (例如只看 KEGG)")
+  message(sprintf('  res_kegg <- extract_gsea_task_pro('))
+  message(sprintf('    gsea_capsule = my_res_capsule, task_name = "%s",', example_contrast))
+  message(sprintf('    target_collection = "C2:CP:KEGG_LEGACY"'))
   message(sprintf('  )'))
-  message(rep("=", 65), "\n")
 
+  message("\n  # 🎯 场景2：提取多个主集的全部内容 (例如 C2 和 C5 全要)")
+  message(sprintf('  res_c2_c5 <- extract_gsea_task_pro('))
+  message(sprintf('    gsea_capsule = my_res_capsule, task_name = "%s",', example_contrast))
+  message(sprintf('    target_collection = c("C2", "C5") # <--- 直接传主集名即可！'))
+  message(sprintf('  )'))
+
+  message("\n  # 🎯 场景3：主集 + 子集 混合点杀 (例如 Hallmark 全要 + GOBP)")
+  message(sprintf('  res_mix <- extract_gsea_task_pro('))
+  message(sprintf('    gsea_capsule = my_res_capsule, task_name = "%s",', example_contrast))
+  message(sprintf('    target_collection = c("H", "C5:GO:BP") # <--- 底层将合并并重新校正 FDR！'))
+  message(sprintf('  )'))
+
+  message(rep("=", 70), "\n")
   invisible(res_capsule)
 }
+
+
+
+
+
+
+
+
 
 #' @title Pro 数据提取器 (文章精细绘图与按需切片专用)
 #' @description 提取对比组计算结果。如果使用 ALL 库进行计算，支持传入 target_collection 进行动态切片并自动重算 FDR。
