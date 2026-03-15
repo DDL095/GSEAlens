@@ -59,6 +59,7 @@ build_gsea_pathways_pro <- function(species = "Homo sapiens", auto_select = NULL
                                ifelse(menu_df$gs_subcollection_clean == "", "", paste0(":", menu_df$gs_subcollection_clean)))
 
   # 交互界面
+
   if (is.null(auto_select)) {
     message("\n", rep("=", 60))
     message(sprintf("🌟 欢迎使用 GSEAlens PRO 基因集向导 (%s)", species))
@@ -72,18 +73,29 @@ build_gsea_pathways_pro <- function(species = "Homo sapiens", auto_select = NULL
     selected_idx <- selected_idx[!is.na(selected_idx) & selected_idx >= 1 & selected_idx <= nrow(menu_df)]
     if (length(selected_idx) == 0) stop("❌ 无效的输入！")
   } else {
-    if (is.character(auto_select)) {
+    if (length(auto_select) == 1 && toupper(auto_select) == "ALL") {
+      # 💥 触发全库获取模式！
+      message("🚨 检测到 [ALL] 指令：正在载入 MSigDB 全库 (可能包含上万条通路)...")
+      selected_idx <- 1:nrow(menu_df)
+    } else if (is.character(auto_select)) {
       selected_idx <- match(auto_select, menu_df$combo_name)
-      if (any(is.na(selected_idx))) stop(sprintf("❌ 找不到集合名: %s", paste(auto_select[is.na(selected_idx)], collapse = ", ")))
+      if (any(is.na(selected_idx))) stop("❌ 找不到对应的集合名称，请检查拼写。")
     } else {
       selected_idx <- auto_select
     }
   }
 
   selected_rows <- menu_df[selected_idx, ]
-  super_tag <- ifelse(nrow(selected_rows) <= 4,
-                      paste(selected_rows$short_tag, collapse = "_"),
-                      sprintf("Mix%d_%s", nrow(selected_rows), selected_rows$short_tag[1]))
+
+  # 智能命名
+  if (length(auto_select) == 1 && toupper(auto_select) == "ALL") {
+    super_tag <- "ALL_MSigDB_Global"
+  } else {
+    super_tag <- ifelse(nrow(selected_rows) <= 4,
+                        paste(selected_rows$short_tag, collapse = "_"),
+                        sprintf("Mix%d_%s", nrow(selected_rows), selected_rows$short_tag[1]))
+  }
+
 
   message(sprintf("\n✅ 已选定 %d 个集合。智能批次 Tag: [%s]", nrow(selected_rows), super_tag))
 
@@ -99,8 +111,26 @@ build_gsea_pathways_pro <- function(species = "Homo sapiens", auto_select = NULL
   })
 
   all_pathways <- dplyr::bind_rows(pathway_list)
+
+  # 🌟 核心防呆修复：动态检测列名，彻底解决 gs_cat/gs_subcat 消失的报错
+  cat_col_name <- if("gs_cat" %in% colnames(all_pathways)) "gs_cat" else "gs_collection"
+  subcat_col_name <- if("gs_subcat" %in% colnames(all_pathways)) "gs_subcat" else "gs_subcollection"
+
   TERM2GENE <- all_pathways %>% dplyr::select(gs_name, gene_symbol)
-  TERM2NAME <- all_pathways %>% dplyr::select(ID = gs_name, Description = gs_description, URL = gs_url, Collection = gs_collection) %>% dplyr::distinct(ID, .keep_all = TRUE)
+
+  TERM2NAME <- all_pathways %>%
+    dplyr::select(ID = gs_name,
+                  Description = gs_description,
+                  URL = gs_url,
+                  Collection = dplyr::all_of(cat_col_name),
+                  Subcollection = dplyr::all_of(subcat_col_name)) %>%  # <--- 加入了子集！
+    dplyr::distinct(ID, .keep_all = TRUE) %>%
+    dplyr::mutate(
+      # 🌟 新增：拼接成 C2:CP:KEGG_LEGACY 的标准格式，方便后续精准切片！
+      Combo_Name = ifelse(Subcollection == "",
+                          Collection,
+                          paste0(Collection, ":", Subcollection))
+    )
 
   return(list(TERM2GENE = TERM2GENE, meta_dict = TERM2NAME, SuperTag = super_tag, collections_used = selected_rows))
 }
@@ -109,37 +139,75 @@ build_gsea_pathways_pro <- function(species = "Homo sapiens", auto_select = NULL
 
 
 
-#' @title 组装计算胶囊 (Pro 引擎)
-#' @description 将差异结果(fit)、基因集与表达矩阵完美焊死在一起，实现一次打包，终身复现。
-#' @param fit limma 分析得到的 MArrayLM 对象
-#' @param pathway_obj build_gsea_pathways_pro() 返回的基因集对象
-#' @param expr_data 你的 DGEList 或者标准化后的表达矩阵 (用于画热图，可为 NULL)
+#' @title 组装计算胶囊 (Pro 引擎 - 终极版)
+#' @description 将差异结果(fit)、基因集字典(带亚组血统)与表达矩阵完美焊死在一起，实现一次打包，终身复现。
+#' @param fit limma 分析得到的 MArrayLM 对象 (必须包含 contrast)
+#' @param pathway_obj 必须是 build_gsea_pathways_pro() 返回的完整列表对象
+#' @param expr_data 你的 DGEList 或者标准化后的表达矩阵 (用于后续动态热图和火山图，可为 NULL)
+#' @return 返回一个类为 "GseaEnvPro" 的复合计算胶囊
 #' @export
 setup_gsea_env_pro <- function(fit, pathway_obj, expr_data = NULL) {
-  if (!inherits(fit, "MArrayLM")) stop("❌ fit 必须是 limma 的对象！")
 
+  # 1. 严格拦截与防呆检查
+  if (!inherits(fit, "MArrayLM")) {
+    stop("❌ 严重错误: fit 必须是 limma 流程中生成的 MArrayLM 对象！")
+  }
+  if (is.null(pathway_obj$TERM2GENE) || is.null(pathway_obj$meta_dict)) {
+    stop("❌ 严重错误: pathway_obj 结构缺失！请确保使用的是 build_gsea_pathways_pro() 生成的对象。")
+  }
+
+  # 2. 智能解析对比组 (Contrasts)
   c_names <- colnames(fit)
+  if (is.null(c_names)) stop("❌ fit 对象中找不到 colnames(对比组名)，请检查您的 limma 设计矩阵。")
+
   parsed <- lapply(c_names, function(x) {
+    # 兼容 "Treat - Control" 或 "Treat-Control"
     p <- strsplit(x, "\\s*-\\s*")[[1]]
-    if(length(p) == 2) c(p[1], p[2]) else c(x, "Unknown")
+    if (length(p) == 2) {
+      return(c(p[1], p[2]))
+    } else {
+      return(c(x, "Background")) # 如果解析失败，提供安全兜底
+    }
   })
   parsed_df <- do.call(rbind, parsed)
-  contrasts_df <- tibble::tibble(ID = seq_along(c_names), Contrast_Name = c_names, Num = parsed_df[,1], Den = parsed_df[,2])
 
+  contrasts_df <- tibble::tibble(
+    ID = seq_along(c_names),
+    Contrast_Name = c_names,
+    Num = parsed_df[, 1],
+    Den = parsed_df[, 2]
+  )
+
+  # 3. 组装终极胶囊 (完美保留亚组血统 meta_dict)
   env_obj <- list(
     fit = fit,
     contrasts = contrasts_df,
     geneset = list(
       name = pathway_obj$SuperTag,
       term2gene = pathway_obj$TERM2GENE,
-      meta_dict = pathway_obj$meta_dict,
+      meta_dict = pathway_obj$meta_dict,           # 核心：保留了 Collection 供后续按需切片！
       used_collections = pathway_obj$collections_used
     ),
     expr_data = expr_data
   )
 
   class(env_obj) <- "GseaEnvPro"
-  message(sprintf("✅ 胶囊封装完毕！对比组数: %d | Tag: [%s]", nrow(contrasts_df), pathway_obj$SuperTag))
+
+  # 4. 动态反馈与预警机制
+  message("\n", rep("-", 60))
+  message("✅ 胶囊 [GseaEnvPro] 封装完毕！")
+  message(sprintf("   🏷️  基因集 Tag : [%s]", pathway_obj$SuperTag))
+  message(sprintf("   🧬  通路总数量 : %d 条", nrow(pathway_obj$meta_dict)))
+  message(sprintf("   ⚖️  发现对比组 : %d 个", nrow(contrasts_df)))
+
+  # ALL 模式专属提醒
+  if (pathway_obj$SuperTag == "ALL_MSigDB_Global") {
+    message("\n🚨 [高能预警] 您已装载 MSigDB 全库！")
+    message("   下一步扔进 batch_calc_gsea_pro() 时，请务必设置 pvalueCutoff = 1")
+    message("   这需要 1~5 分钟的计算时间，请保持耐心，让子弹飞一会儿~")
+  }
+  message(rep("-", 60), "\n")
+
   return(env_obj)
 }
 
