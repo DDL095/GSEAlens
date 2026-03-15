@@ -1,21 +1,21 @@
 #' @title Plot Directional GSEA (Bulletproof & Restores Classic Red/Blue Gradient)
-#' @description 稳健的 GSEA 绘图函数，完美处理多通路合图、自动生成优雅的图例名称、
-#'              并自带经典红蓝底部分布图。此版本通过 `subPlot` 参数控制是否显示 Rank List。
-#' @param directional_gsea_obj 封装好的 DirectionalGSEA 对象 (需包含 gsea_res 和 meta)
-#' @param target_pathways 需要绘制的通路 ID 向量 (如 c("HALLMARK_...", ...))
-#' @param curveCol 自定义曲线颜色向量 (可选)
+#' @description 极客级 GSEA 绘图引擎，完美兼容单通路/多通路合图。
+#'              自动生成优雅图例、拦截并重绘经典红蓝基因分布带。统计学标注默认关闭。
+#' @param directional_gsea_obj 封装好的 DirectionalGSEA 对象 (提取器直接返回的结果)
+#' @param target_pathways 需要绘制的通路 ID 向量 (支持单个或多个，如 c("ID_1", "ID_2"))
+#' @param curveCol 自定义曲线颜色向量 (可选，如果不传会自动分配高级调色盘)
 #' @param main_title 主标题名称
-#' @param subPlot 控制 GseaVis::gseaNb 生成的子图数量。
-#'                1: 仅GSEA富集图; 2: GSEA富集图 + 基因表达热图; 3: GSEA富集图 + 热图 + Rank List。
-#' @param ... 传递给 GseaVis::gseaNb 的额外参数。
-#' @return 一个 ggplot2 对象，表示 GSEA 结果图。
-#' @importFrom ggplot2 ggplot aes geom_col scale_fill_gradient2 geom_hline scale_x_continuous theme_bw theme element_blank element_text margin coord_cartesian labs geom_vline annotate
+#' @param subPlot 控制 GseaVis::gseaNb 生成的子图数量 (1: 仅富集图; 2: 富集+热图; 3: 完整带Rank)
+#' @param add_pval 是否在图上添加统计学标注 (P-value/FDR)。默认 FALSE (保持画面纯净)。
+#' @param ... 传递给 GseaVis::gseaNb 的额外参数 (例如 pvalX, pvalY 控制文本位置)
+#' @return ggplot2 复合对象
+#' @importFrom ggplot2 ggplot aes geom_col scale_fill_gradient2 geom_hline scale_x_continuous theme_bw theme element_blank element_text margin coord_cartesian labs geom_vline annotate scale_color_manual
 #' @importFrom grDevices colorRampPalette
 #' @importFrom patchwork plot_annotation
 #' @importFrom stringr str_to_title str_wrap
-#' @importFrom GseaVis gseaNb
 #' @export
-plot_directional_gsea <- function(directional_gsea_obj, target_pathways, curveCol = NULL, main_title = "GSEA Plot", subPlot = 3, ...) {
+plot_directional_gsea <- function(directional_gsea_obj, target_pathways, curveCol = NULL,
+                                  main_title = "GSEA Plot", subPlot = 3, add_pval = FALSE, ...) {
 
   # 1. 解析对象与提取基础数据
   res <- directional_gsea_obj$gsea_res
@@ -24,9 +24,9 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways, curveCo
   n_lines <- length(target_pathways)
   gList <- res@geneList
 
-  # 2. 颜色池分配逻辑
+  # 2. 高级颜色池分配逻辑 (单线纯色，多线渐变或高对比)
   if (is.null(curveCol) || length(curveCol) < n_lines) {
-    base_colors <- c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", "#A65628", "#F781BF", "#1B9E77", "#D95F02", "#7570B3", "#E7298A", "#66A61E", "#E6AB02", "#A6761D")
+    base_colors <- c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", "#A65628", "#F781BF", "#1B9E77", "#D95F02", "#7570B3", "#E7298A")
     curveCol <- if(n_lines <= length(base_colors)) base_colors[1:n_lines] else grDevices::colorRampPalette(base_colors)(n_lines)
   }
 
@@ -34,27 +34,23 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways, curveCo
   curveCol_gsea <- curveCol_use
   if (n_lines == 1) curveCol_gsea <- c(curveCol_use[1], curveCol_use[1])
 
-  # 3. 基础绘图 (调用 GseaVis::gseaNb) - 传入 subPlot 参数
+  # 3. 基础绘图 (原生调用 gseaNb) - 动态传入 add_pval
   p_base <- GseaVis::gseaNb(
     object = res,
     geneSetID = target_pathways,
-    subPlot = subPlot, # 💥 这里使用传入的 subPlot 参数
-    addPval = FALSE,
+    subPlot = subPlot,
+    addPval = add_pval, # 💡 开放接口，默认 FALSE
     curveCol = curveCol_gsea,
     ...
   )
 
-
-  # 4. 终极图例拦截与覆写逻辑
+  # 4. 终极图例拦截与覆写逻辑 (专治多通路名字难看)
   if (n_lines > 1) {
-    # a. 精准提取当前靶向通路的子集
     df_sub <- df[match(target_pathways, df$ID), ]
+    raw_desc <- df_sub$Description  # 底层硬编码的描述
+    name_id  <- df_sub$ID           # 我们的原生 ID
 
-    # b. 锚定器与弹药库分离 (Separation of Concerns)
-    raw_desc <- df_sub$Description  # 锚定器：底层 gseaNb 硬编码写在图上的名称
-    name_id  <- df_sub$ID           # 弹药库：规整的标准 ID (永远有下划线)
-
-    # c. 生成优雅短名称 (切除前缀 + 首字母大写 + 防爆换行)
+    # 智能截断与标题化 (您的这段逻辑非常完美，保留！)
     nice_labels <- sapply(name_id, function(x) {
       tit <- unlist(strsplit(x, split = "_"))
       if (length(tit) > 1) {
@@ -62,29 +58,24 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways, curveCo
       } else {
         formatted_text <- paste(stringr::str_to_title(tit), collapse = " ")
       }
-      # 终极防线：自动在 45 个字符左右换行，防止 C5 通路图例挤爆画布
-      stringr::str_wrap(formatted_text, width = 45)
+      stringr::str_wrap(formatted_text, width = 45) # 防爆换行
     })
 
-    # d. 执行 ggplot2 图层级强制覆写
-    names(curveCol_use) <- raw_desc  # 必须使用 raw_desc 命名，确保映射准确
-
+    names(curveCol_use) <- raw_desc
     override_scale <- ggplot2::scale_color_manual(
       name = "Term Name",
       values = curveCol_use,
-      breaks = raw_desc,      # 锁定原始丑陋文本
-      labels = nice_labels    # 替换为我们加工好的优雅文本
+      breaks = raw_desc,
+      labels = nice_labels
     )
 
-    # 将新的 scale 注入到图形结构中 (应对 aplot 复合对象)
-    # GseaVis::gseaNb 返回的是 an 'aplot' object, 其 ggplot2 对象存储在 plotlist 中
+    # 兼容 aplot 与 ggplot 列表结构强制注入 scale
     if (inherits(p_base, "aplot")) {
       p_base$plotlist[[1]] <- p_base$plotlist[[1]] + override_scale
-      # 只有当 subPlot 包含第二个子图时，才尝试修改其 scale
       if (subPlot >= 2 && !is.null(p_base$plotlist[[2]])) {
         p_base$plotlist[[2]] <- p_base$plotlist[[2]] + override_scale
       }
-    } else { # 兼容 GseaVis 返回 ggplot 对象列表的情况
+    } else {
       p_base[[1]] <- p_base[[1]] + override_scale
       if (subPlot >= 2 && !is.null(p_base[[2]])) {
         p_base[[2]] <- p_base[[2]] + override_scale
@@ -92,17 +83,17 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways, curveCo
     }
   }
 
-
-  # 5. 原生的经典红蓝底部分布图 (仅当 subPlot = 3 时生成和替换)
-  if (subPlot == 3) { # 💥 条件判断：只有 subPlot = 3 时才生成 Rank List
+  # 5. 原生经典红蓝底部分布图 (强力替换底层自带的刻板条码)
+  if (subPlot == 3) {
     df_rank <- data.frame(x = 1:length(gList), y = as.numeric(gList))
     prank_classic <- ggplot2::ggplot(df_rank, ggplot2::aes(x = x, y = y)) +
       ggplot2::geom_col(ggplot2::aes(fill = y), width = 1, color = NA, show.legend = FALSE) +
       ggplot2::scale_fill_gradient2(low = "#08519C", mid = "white", high = "#A50F15", midpoint = 0) +
-      ggplot2::geom_hline(yintercept = 0, size = 0.5, color = "black", linetype = "dashed") +
+      ggplot2::geom_hline(yintercept = 0, linewidth = 0.5, color = "black", linetype = "dashed") + # 修复了 size 警告
       ggplot2::scale_x_continuous(breaks = seq(0, length(gList), 5000)) +
       ggplot2::theme_bw(base_size = 14) +
-      ggplot2::theme(panel.grid = ggplot2::element_blank(), axis.text = ggplot2::element_text(colour = "black"), plot.margin = ggplot2::margin(t = -0.1, r = 0.2, b = 0.2, l = 0.2, unit = "cm")) +
+      ggplot2::theme(panel.grid = ggplot2::element_blank(), axis.text = ggplot2::element_text(colour = "black"),
+                     plot.margin = ggplot2::margin(t = -0.1, r = 0.2, b = 0.2, l = 0.2, unit = "cm")) +
       ggplot2::coord_cartesian(expand = 0) +
       ggplot2::labs(x = "Rank in Ordered Dataset", y = "Ranked List")
 
@@ -114,18 +105,26 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways, curveCo
       ggplot2::annotate("text", x = m_rank * 0.99, y = min(gList) * 0.85, label = sprintf("'%s' (neg)", meta$right_group), color = "#08519C", hjust = 1, size = 4, fontface = "italic")
     )
 
-    # 替换底部图层 (仅当 subPlot = 3 时)
-    if (inherits(p_base, "aplot")) p_base$plotlist[[3]] <- prank_classic + anno_layers else p_base[[3]] <- prank_classic + anno_layers
+    if (inherits(p_base, "aplot")) {
+      p_base$plotlist[[3]] <- prank_classic + anno_layers
+    } else {
+      p_base[[3]] <- prank_classic + anno_layers
+    }
   }
 
-  # 6. 添加大标题与副标题
+  # 6. 添加结构化大标题
   p_final <- p_base + patchwork::plot_annotation(
     title = main_title, subtitle = sprintf("← %s | %s →", meta$left_group, meta$right_group),
-    theme = ggplot2::theme(plot.title = ggplot2::element_text(size = 14, face = "bold", hjust = 0.5), plot.subtitle = ggplot2::element_text(size = 12, hjust = 0.5, color = "grey40"))
+    theme = ggplot2::theme(plot.title = ggplot2::element_text(size = 14, face = "bold", hjust = 0.5),
+                           plot.subtitle = ggplot2::element_text(size = 12, hjust = 0.5, color = "grey40"))
   )
 
   return(p_final)
 }
+
+
+
+
 
 
 

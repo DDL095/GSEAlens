@@ -10,27 +10,29 @@ plot_directional_gsea(
   curveCol = NULL,
   main_title = "GSEA Plot",
   subPlot = 3,
+  add_pval = FALSE,
   ...
 )
 }
 \arguments{
-\item{directional_gsea_obj}{封装好的 DirectionalGSEA 对象 (需包含 gsea_res 和 meta)}
+\item{directional_gsea_obj}{封装好的 DirectionalGSEA 对象 (提取器直接返回的结果)}
 
-\item{target_pathways}{需要绘制的通路 ID 向量 (如 c("HALLMARK_...", ...))}
+\item{target_pathways}{需要绘制的通路 ID 向量 (支持单个或多个，如 c("ID_1", "ID_2"))}
 
-\item{curveCol}{自定义曲线颜色向量 (可选)}
+\item{curveCol}{自定义曲线颜色向量 (可选，如果不传会自动分配高级调色盘)}
 
 \item{main_title}{主标题名称}
 
-\item{subPlot}{控制 GseaVis::gseaNb 生成的子图数量。
-1: 仅GSEA富集图; 2: GSEA富集图 + 基因表达热图; 3: GSEA富集图 + 热图 + Rank List。}
+\item{subPlot}{控制 GseaVis::gseaNb 生成的子图数量 (1: 仅富集图; 2: 富集+热图; 3: 完整带Rank)}
 
-\item{...}{传递给 GseaVis::gseaNb 的额外参数。}
+\item{add_pval}{是否在图上添加统计学标注 (P-value/FDR)。默认 FALSE (保持画面纯净)。}
+
+\item{...}{传递给 GseaVis::gseaNb 的额外参数 (例如 pvalX, pvalY 控制文本位置)}
 }
 \value{
-一个 ggplot2 对象，表示 GSEA 结果图。
+ggplot2 复合对象
 }
 \description{
-稳健的 GSEA 绘图函数，完美处理多通路合图、自动生成优雅的图例名称、
-并自带经典红蓝底部分布图。此版本通过 \code{subPlot} 参数控制是否显示 Rank List。
+极客级 GSEA 绘图引擎，完美兼容单通路/多通路合图。
+自动生成优雅图例、拦截并重绘经典红蓝基因分布带。统计学标注默认关闭。
 }

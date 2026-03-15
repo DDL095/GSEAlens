@@ -2,7 +2,7 @@
 % Please edit documentation in R/2_gsea_calculation.R
 \name{inspect_gsea_res_pro}
 \alias{inspect_gsea_res_pro}
-\title{检查并概览 GSEA 计算胶囊 (Pro 引擎)}
+\title{检查并概览 GSEA 计算胶囊 (Pro 引擎 - 终极版)}
 \usage{
 inspect_gsea_res_pro(res_capsule)
 }
@@ -10,5 +10,5 @@ inspect_gsea_res_pro(res_capsule)
 \item{res_capsule}{batch_calc_gsea_pro 返回的计算胶囊}
 }
 \description{
-快速查看胶囊内的计算状态，并智能列出可用于下游提取的 \code{target_combo} (子集标签)。
+快速查看胶囊计算状态，调用探针展示全量排序子集，并提供主/子集混合提取的保姆级代码。
 }
