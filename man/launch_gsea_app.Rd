@@ -7,8 +7,8 @@
 launch_gsea_app(res_capsule)
 }
 \arguments{
-\item{res_capsule}{环境中的 GseaResPro 对象}
+\item{res_capsule}{您环境中的 GseaResPro 对象}
 }
 \description{
-强制洗血换骨，动态切片并合并子集合，重算 FDR。无缝四重联动，散点图全局组别展示。
+彻底终结 \link{object Object} 报错、修复 ALL 选项、加入 Leading Edge 追踪及宽屏 Dashboard。
 }
