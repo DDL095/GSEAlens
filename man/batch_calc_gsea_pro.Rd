@@ -17,27 +17,27 @@ batch_calc_gsea_pro(
 )
 }
 \arguments{
-\item{gsea_env}{标准 GseaEnv 或 GseaEnvPro 胶囊对象}
+\item{gsea_env}{标准 GseaEnv 或 GseaEnvPro 胶囊对象，包含 expression data, fit, contrasts 和 geneset。}
 
-\item{custom_series_name}{字符串。分析的系列名称（将作为文件夹名称和血统名称）}
+\item{custom_series_name}{字符串。分析的系列名称（将作为文件夹名称和血统名称），默认 "Auto_Analysis"。}
 
-\item{output_dir}{字符串。输出的基础路径，默认 "./GSEA_Output"}
+\item{output_dir}{字符串。输出的基础路径，默认 "./GSEA_Output"。}
 
-\item{force}{逻辑值。是否强制重新计算而不使用缓存，默认 FALSE}
+\item{force}{逻辑值。是否强制重新计算而不使用缓存，默认 FALSE。}
 
-\item{bidirectional}{逻辑值。是否进行双向对比（自动生成正反双向），默认 TRUE}
+\item{bidirectional}{逻辑值。是否进行双向对比（自动生成正反双向），默认 TRUE。}
 
-\item{workers}{并行核心数。若为 NULL，自动保留 4 核，其余全用。}
+\item{workers}{并行核心数。若为 NULL，自动保留 4 核，其余全用。默认 20。}
 
-\item{minGSSize}{基因集最小包含基因数，默认 10}
+\item{minGSSize}{基因集最小包含基因数，默认 10。}
 
-\item{maxGSSize}{基因集最大包含基因数，默认 500}
+\item{maxGSSize}{基因集最大包含基因数，默认 500。}
 
-\item{pvalueCutoff}{GSEA 的 P 值阈值（强制默认 1，保留全貌用于后续精细过滤）}
+\item{pvalueCutoff}{GSEA 的 P 值阈值（强制默认 1，保留全貌用于后续精细过滤）。}
 }
 \value{
-返回 GseaResPro 对象
+返回 \code{GseaResPro} 对象。内部 \code{results} 层级为严格的 \code{list(name, status, data, genelist)}。
 }
 \description{
-自动化执行 limma 结果清洗、去重，并下发多核 GSEA 计算，最终生成带有项目路径记忆的胶囊。
+自动化执行 limma 结果清洗、去重，并下发多核 GSEA 计算。最终不仅生成带有项目路径记忆的胶囊，同时为下游 Shiny App 与 HTML 报告内嵌了完善的描述文本与超链接。
 }

@@ -1,15 +1,16 @@
 #' @title 并行计算 GSEA 核心引擎 (Pro 智能缓存版 - 带血统记忆)
-#' @description 自动化执行 limma 结果清洗、去重，并下发多核 GSEA 计算，最终生成带有项目路径记忆的胶囊。
-#' @param gsea_env 标准 GseaEnv 或 GseaEnvPro 胶囊对象
-#' @param custom_series_name 字符串。分析的系列名称（将作为文件夹名称和血统名称）
-#' @param output_dir 字符串。输出的基础路径，默认 "./GSEA_Output"
-#' @param force 逻辑值。是否强制重新计算而不使用缓存，默认 FALSE
-#' @param bidirectional 逻辑值。是否进行双向对比（自动生成正反双向），默认 TRUE
-#' @param workers 并行核心数。若为 NULL，自动保留 4 核，其余全用。
-#' @param minGSSize 基因集最小包含基因数，默认 10
-#' @param maxGSSize 基因集最大包含基因数，默认 500
-#' @param pvalueCutoff GSEA 的 P 值阈值（强制默认 1，保留全貌用于后续精细过滤）
-#' @return 返回 GseaResPro 对象
+#' @description 自动化执行 limma 结果清洗、去重，并下发多核 GSEA 计算。最终不仅生成带有项目路径记忆的胶囊，同时为下游 Shiny App 与 HTML 报告内嵌了完善的描述文本与超链接。
+#' @param gsea_env 标准 GseaEnv 或 GseaEnvPro 胶囊对象，包含 expression data, fit, contrasts 和 geneset。
+#' @param custom_series_name 字符串。分析的系列名称（将作为文件夹名称和血统名称），默认 "Auto_Analysis"。
+#' @param output_dir 字符串。输出的基础路径，默认 "./GSEA_Output"。
+#' @param force 逻辑值。是否强制重新计算而不使用缓存，默认 FALSE。
+#' @param bidirectional 逻辑值。是否进行双向对比（自动生成正反双向），默认 TRUE。
+#' @param workers 并行核心数。若为 NULL，自动保留 4 核，其余全用。默认 20。
+#' @param minGSSize 基因集最小包含基因数，默认 10。
+#' @param maxGSSize 基因集最大包含基因数，默认 500。
+#' @param pvalueCutoff GSEA 的 P 值阈值（强制默认 1，保留全貌用于后续精细过滤）。
+#' @return 返回 \code{GseaResPro} 对象。内部 \code{results} 层级为严格的 \code{list(name, status, data, genelist)}。
+#' @importFrom magrittr %>%
 #' @export
 batch_calc_gsea_pro <- function(gsea_env, custom_series_name = "Auto_Analysis", output_dir = "./GSEA_Output",
                                 force = FALSE, bidirectional = TRUE, workers = 20,
@@ -21,6 +22,7 @@ batch_calc_gsea_pro <- function(gsea_env, custom_series_name = "Auto_Analysis", 
   }
 
   super_tag <- gsea_env$geneset$name
+  if (is.null(super_tag)) super_tag <- "Combined_Genesets"
 
   # 🔴 1. 智能缓存拦截系统
   series_dir <- file.path(output_dir, custom_series_name)
@@ -40,7 +42,7 @@ batch_calc_gsea_pro <- function(gsea_env, custom_series_name = "Auto_Analysis", 
   use_cores <- if (is.null(workers)) max(1, total_cores - 4) else min(total_cores, max(1, workers))
   message(sprintf("🖥️ 硬件侦测: 发现 %d 个逻辑核心。调度 %d 核执行并行计算！", total_cores, use_cores))
 
-  # 修复了原始代码中遗漏的 future 显存控制，防止大数据崩溃
+  # 显存控制，防止大数据崩溃
   options(future.globals.maxSize = 32000 * 1024^2)
   future::plan(future::multisession, workers = use_cores)
 
@@ -51,12 +53,13 @@ batch_calc_gsea_pro <- function(gsea_env, custom_series_name = "Auto_Analysis", 
   message("🔍 正在提取 topTable 并进行去重与大小写清洗...")
   for (i in 1:nrow(contrasts)) {
     c_name <- contrasts$Contrast_Name[i]
-    num <- contrasts$Num[i]; den <- contrasts$Den[i]
+    num <- contrasts$Num[i]
+    den <- contrasts$Den[i]
 
     tt <- limma::topTable(fit, coef = c_name, number = Inf) %>% as.data.frame()
     if (!"SYMBOL" %in% colnames(tt)) tt$SYMBOL <- rownames(tt)
 
-    # 完美的内置清洗逻辑保留
+    # 完美的内置清洗逻辑保留 (完全遵守 %>% 管道符标准)
     genelist_base <- tt %>%
       dplyr::filter(!is.na(SYMBOL) & SYMBOL != "") %>%
       dplyr::mutate(SYMBOL = toupper(SYMBOL)) %>%
@@ -73,7 +76,9 @@ batch_calc_gsea_pro <- function(gsea_env, custom_series_name = "Auto_Analysis", 
 
   message(sprintf("🚀 洗练完毕，生成 %d 个独立对比 genelist。发射多核置换计算...", length(tasks)))
 
-  term2gene <- gsea_env$geneset$term2gene
+  term2gene <- as.data.frame(gsea_env$geneset$term2gene)
+  meta_dict <- gsea_env$geneset$meta_dict # 提取字典供多核内部映射
+
   res_list <- future.apply::future_lapply(names(tasks), function(task_name) {
     genelist <- tasks[[task_name]]
     set.seed(123)
@@ -81,18 +86,54 @@ batch_calc_gsea_pro <- function(gsea_env, custom_series_name = "Auto_Analysis", 
       clusterProfiler::GSEA(
         geneList = genelist, TERM2GENE = term2gene, minGSSize = minGSSize,
         maxGSSize = maxGSSize, pvalueCutoff = pvalueCutoff, pAdjustMethod = "BH", verbose = FALSE, seed = 123,
-        eps = 0 #为了屏蔽报错
+        eps = 0 # 为了屏蔽报错
       )
     }, error = function(e) NULL)
 
     status <- if (!is.null(gsea_res) && nrow(gsea_res@result) > 0) "Success" else "Failed/NoEnrich"
+
+
+    # 🟢 增量核心逻辑：在此处将元数据直接注入 clusterProfiler 对象的 @result 中，
+    # 彻底解决下游由于结构破坏导致的 "找不到 long_description_for_html" 报错问题
+
+    if (status == "Success" && !is.null(meta_dict)) {
+      res_df <- as.data.frame(gsea_res@result)
+
+      # 避免 left_join 产生冗余的 Description.x / Description.y
+      if ("Description" %in% colnames(res_df)) {
+        res_df <- res_df %>% dplyr::select(-Description)
+      }
+
+      res_df <- res_df %>%
+        dplyr::left_join(as.data.frame(meta_dict), by = "ID") %>%
+        dplyr::mutate(
+          Display_Collection = if("Combo_Name" %in% names(.)) Combo_Name else if("Collection" %in% names(.)) Collection else "Unknown",
+          Display_Collection = as.factor(ifelse(is.na(Display_Collection), "Unknown", Display_Collection)),
+
+          # 🌟 Pathway_Link 应该展示【短 ID】，并链接到 URL！
+          Pathway_Link = if("URL" %in% names(.)) {
+            ifelse(is.na(URL) | URL == "",
+                   sprintf("<b>%s</b>", ID),
+                   sprintf('<a href="%s" target="_blank" style="color: #0056b3; text-decoration: none;">%s</a>', URL, ID))
+          } else { sprintf("<b>%s</b>", ID) },
+
+          # 🌟 新增一个专门的 Description 列，用于显示【长文本】，纯文本不带链接！
+          Description = if("long_description_for_html" %in% names(.)) long_description_for_html else ID
+        )
+
+      # 必须恢复行名以符合 gseaResult 底层数据规范
+      rownames(res_df) <- res_df$ID
+      gsea_res@result <- res_df
+    }
+
+
     return(list(name = task_name, status = status, data = gsea_res, genelist = genelist))
   }, future.seed = TRUE)
 
   names(res_list) <- names(tasks)
   future::plan(future::sequential)
 
-  # 🌟 终极打包：注入 Project Info 血统记忆
+  # 🌟 终极打包：注入 Project Info 血统记忆，完整囊括所有必须的上下游变量
   final_obj <- list(
     metadata = list(
       run_time = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
@@ -107,7 +148,10 @@ batch_calc_gsea_pro <- function(gsea_env, custom_series_name = "Auto_Analysis", 
     ),
     geneset_info = gsea_env$geneset,
     results = res_list,
-    expr_data = gsea_env$expr_data
+    expr_data = gsea_env$expr_data,
+    limma_fit = gsea_env$fit,
+    # 保留对比矩阵，以便在网页中精准提取对应组别的 logFC 和 P-value
+    contrast_matrix = gsea_env$contrasts
   )
   class(final_obj) <- "GseaResPro"
 
@@ -120,14 +164,12 @@ batch_calc_gsea_pro <- function(gsea_env, custom_series_name = "Auto_Analysis", 
   cat(sprintf("📂 文件路径: %s\n\n", rds_path))
   cat(sprintf("💡 未来如需写文章画单图，请复制以下 R 代码直接调取：\n"))
   cat(sprintf("-------------------------------------------------------------\n"))
-  cat(sprintf("my_capsule <- GSEAlens::import_gsea_capsule(\"%s\")\n", rds_path)) # 推荐使用新版智能载入
-  cat(sprintf("my_task <- GSEAlens::extract_gsea_task_pro(my_capsule, \"%s\")\n", example_task))
-  cat(sprintf("GSEAlens::plot_directional_gsea(my_task, target_pathways = c(\"ID_1\"))\n"))
+  cat(sprintf("my_capsule <- readRDS(\"%s\")\n", rds_path))
+  cat(sprintf("my_task <- my_capsule$results[[\"%s\"]]$data\n", example_task))
   cat(sprintf("=============================================================\n\n"))
 
   return(final_obj)
 }
-
 
 
 

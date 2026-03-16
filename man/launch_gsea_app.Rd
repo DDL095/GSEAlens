@@ -2,13 +2,13 @@
 % Please edit documentation in R/run_app.R
 \name{launch_gsea_app}
 \alias{launch_gsea_app}
-\title{启动 GSEAlens PRO 交互式探索空间}
+\title{启动 GSEAlens PRO 2.0 终极全息探索空间}
 \usage{
 launch_gsea_app(res_capsule)
 }
 \arguments{
-\item{res_capsule}{必须是使用 \code{setup_gsea_env_pro} 等流程生成的 \code{GseaResPro} 对象。}
+\item{res_capsule}{环境中的 GseaResPro 对象}
 }
 \description{
-接收一个 GseaResPro 计算胶囊对象，启动本地 Shiny 交互式数据分析网页。
+强制洗血换骨，动态切片并合并子集合，重算 FDR。无缝四重联动，散点图全局组别展示。
 }
