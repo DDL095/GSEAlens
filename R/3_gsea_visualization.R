@@ -341,3 +341,7 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
   message(sprintf("✅ 完美！HTML 报告已自动寻址并生成至: %s", bundle_dir))
   return(invisible(bundle_dir))
 }
+
+
+
+
