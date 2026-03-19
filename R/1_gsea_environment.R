@@ -1,67 +1,51 @@
-#' @title 构建 GSEA 基因集与超级标签
-#' @description 基于 msigdbr 提供交互式菜单，选择基因集并生成智能语义化标签。
-#'   支持未知未来子集的动态截断，完全兼容 MSigDB V10+ 及 C9 集合。
-#' @param species 字符型，物种名称，默认 "Homo sapiens"
-#' @param auto_select 可选参数。可传入：
-#'   - 序号向量如 c(17, 26)
-#'   - 名称向量如 c("C5:GO:BP", "H")
-#'   - 字符串 "ALL" 获取全库
-#' @return 返回包含以下字段的列表：
-#'   \item{TERM2GENE}{两列数据框：gs_name, gene_symbol}
-#'   \item{meta_dict}{通路元数据：ID, Description, URL, Collection, Subcollection, Combo_Name}
-#'   \item{SuperTag}{智能生成的批次标签}
-#'   \item{collections_used}{选用的原始集合信息}
+#' @title 交互式构建 GSEA 基因集与超级标签 (Pro 引擎 - 兼容 V10 与 C9 修复版)
+#' @description 基于 msigdbr 提供交互式菜单，选择基因集并生成智能语义化标签。支持未知未来子集的动态截断。
+#' @param species 物种，默认 "Homo sapiens"
+#' @param auto_select 可选。可传入序号向量 c(17, 26)；或者更安全的名称向量 c("C5:GO:BP", "H")
+#' @return 返回包含 TERM2GENE、TERM2NAME、SuperTag 的列表对象
 #' @export
-#' @importFrom msigdbr msigdbr msigdbr_collections
-#' @importFrom dplyr arrange left_join bind_rows select distinct mutate filter
-build_gsea_pathways <- function(species = "Homo sapiens", auto_select = NULL) {
+build_gsea_pathways_pro <- function(species = "Homo sapiens", auto_select = NULL) {
 
-  suppressPackageStartupMessages(requireNamespace("msigdbr"))
-  suppressPackageStartupMessages(requireNamespace("dplyr"))
+  suppressPackageStartupMessages(require(msigdbr))
+  suppressPackageStartupMessages(require(dplyr))
 
-  # 动态拉取可用集合
+  # 动态拉取库
   avail_colls <- msigdbr::msigdbr_collections() %>%
     dplyr::arrange(gs_collection, gs_subcollection)
 
-  # 白名单字典（含 C9 集合）
+  # 🌟 白名单字典 (已正式收编 C9 集合！)
   dict <- data.frame(
     gs_collection = c(
       "C1", "C2", "C2", "C2", "C2", "C2", "C2", "C2", "C2",
       "C3", "C3", "C3", "C3", "C4", "C4", "C4",
-      "C5", "C5", "C5", "C5", "C6", "C7", "C7", "C8", "C9", "H"
+      "C5", "C5", "C5", "C5", "C6", "C7", "C7", "C8", "C9", "H" # 加入了 C9
     ),
     gs_subcollection = c(
       "", "CGP", "CP", "CP:BIOCARTA", "CP:KEGG_LEGACY", "CP:KEGG_MEDICUS",
       "CP:PID", "CP:REACTOME", "CP:WIKIPATHWAYS", "MIR:MIRDB", "MIR:MIR_LEGACY",
       "TFT:GTRD", "TFT:TFT_LEGACY", "3CA", "CGN", "CM",
-      "GO:BP", "GO:CC", "GO:MF", "HPO", "", "IMMUNESIGDB", "VAX", "", "", ""
+      "GO:BP", "GO:CC", "GO:MF", "HPO", "", "IMMUNESIGDB", "VAX", "", "", "" # C9 无子库，留空
     ),
     short_tag = c(
       "C1Pos", "CGP", "CP", "BioC", "KeggL", "KeggM",
       "PID", "Reac", "Wiki", "MirDB", "MirL",
       "TFTG", "TFTL", "3CA", "CGN", "CM",
-      "GoBP", "GoCC", "GoMF", "HPO", "C6Onc", "ImmS", "VAX", "C8Cell", "C9Pert", "Hal"
+      "GoBP", "GoCC", "GoMF", "HPO", "C6Onc", "ImmS", "VAX", "C8Cell", "C9Pert", "Hal" # C9 的短标签
     ),
     description = c(
-      "C1 位置基因集", "C2 化学和遗传微扰", "C2 经典通路(总)", "C2 BioCarta",
-      "C2 KEGG(旧)", "C2 KEGG(医学)", "C2 PID 通路", "C2 Reactome", "C2 WikiPathways",
-      "C3 miRNA 靶标", "C3 miRNA(旧)", "C3 TF 靶标(GTRD)", "C3 TF(旧)",
-      "C4 3CA 癌症", "C4 癌症邻居", "C4 癌症模块",
-      "C5 GO 生物过程(BP)", "C5 GO 细胞组分(CC)", "C5 GO 分子功能(MF)", "C5 人类表型(HPO)",
-      "C6 肿瘤特征", "C7 免疫特征", "C7 疫苗特征", "C8 细胞类型",
-      "C9 计算扰动特征(Perturbation)", "H 癌症标志(Hallmark)"
+      "C1 位置基因集", "C2 化学和遗传微扰", "C2 经典通路(总)", "C2 BioCarta", "C2 KEGG(旧)", "C2 KEGG(医学)",
+      "C2 PID 通路", "C2 Reactome", "C2 WikiPathways", "C3 miRNA 靶标", "C3 miRNA(旧)",
+      "C3 TF 靶标(GTRD)", "C3 TF(旧)", "C4 3CA 癌症", "C4 癌症邻居", "C4 癌症模块",
+      "C5 GO 生物过程(BP)", "C5 GO 细胞组分(CC)", "C5 GO 分子功能(MF)", "C5 人类表型(HPO)", "C6 肿瘤特征", "C7 免疫特征", "C7 疫苗特征", "C8 细胞类型", "C9 计算扰动特征(Perturbation)", "H 癌症标志(Hallmark)"
     ),
     stringsAsFactors = FALSE
   )
 
-  # 处理子集名称匹配（去除 NO_SUB 后缀）
   avail_colls$gs_subcollection_clean <- gsub(".*:NO_SUB", "", avail_colls$gs_subcollection)
-  menu_df <- dplyr::left_join(
-    avail_colls, dict,
-    by = c("gs_collection", "gs_subcollection_clean" = "gs_subcollection")
-  )
+  menu_df <- dplyr::left_join(avail_colls, dict,
+                              by = c("gs_collection", "gs_subcollection_clean" = "gs_subcollection"))
 
-  # 动态截断机制：为未知未来集合生成临时标签
+  # 🔮 动态截断机制 (应对未来更多未知集合)
   missing_idx <- is.na(menu_df$short_tag)
   if (any(missing_idx)) {
     menu_df$short_tag[missing_idx] <- paste0(
@@ -71,56 +55,52 @@ build_gsea_pathways <- function(species = "Homo sapiens", auto_select = NULL) {
     menu_df$description[missing_idx] <- paste0("新集合: ", menu_df$gs_subcollection[missing_idx])
   }
 
-  menu_df$combo_name <- paste0(
-    menu_df$gs_collection,
-    ifelse(menu_df$gs_subcollection_clean == "", "",
-           paste0(":", menu_df$gs_subcollection_clean))
-  )
+  menu_df$combo_name <- paste0(menu_df$gs_collection,
+                               ifelse(menu_df$gs_subcollection_clean == "", "", paste0(":", menu_df$gs_subcollection_clean)))
 
-  # 交互式选择逻辑
+  # 交互界面
+
   if (is.null(auto_select)) {
     message("\n", rep("=", 60))
-    message(sprintf("欢迎使用 GSEAlens 基因集向导 (%s)", species))
+    message(sprintf("🌟 欢迎使用 GSEAlens PRO 基因集向导 (%s)", species))
     message(rep("=", 60))
-    for (i in seq_len(nrow(menu_df))) {
+    for (i in 1:nrow(menu_df)) {
       cat(sprintf("[%2d] %-6s | %-16s | %s\n",
                   i, menu_df$short_tag[i], menu_df$combo_name[i], menu_df$description[i]))
     }
-    user_input <- readline(prompt = "\n请输入编号 (用逗号分隔, 如 17,26): ")
+    user_input <- readline(prompt = "\n👉 请输入编号 (用逗号分隔, 如 17,26): ")
     selected_idx <- as.integer(unlist(strsplit(user_input, "[, ]+")))
-    selected_idx <- selected_idx[!is.na(selected_idx) & selected_idx >= 1 &
-                                   selected_idx <= nrow(menu_df)]
-    if (length(selected_idx) == 0) stop("无效的输入！")
+    selected_idx <- selected_idx[!is.na(selected_idx) & selected_idx >= 1 & selected_idx <= nrow(menu_df)]
+    if (length(selected_idx) == 0) stop("❌ 无效的输入！")
   } else {
     if (length(auto_select) == 1 && toupper(auto_select) == "ALL") {
-      message("检测到 [ALL] 指令：正在载入 MSigDB 全库...")
-      selected_idx <- seq_len(nrow(menu_df))
+      # 💥 触发全库获取模式！
+      message("🚨 检测到 [ALL] 指令：正在载入 MSigDB 全库 (可能包含上万条通路)...")
+      selected_idx <- 1:nrow(menu_df)
     } else if (is.character(auto_select)) {
       selected_idx <- match(auto_select, menu_df$combo_name)
-      if (any(is.na(selected_idx))) stop("找不到对应的集合名称，请检查拼写。")
+      if (any(is.na(selected_idx))) stop("❌ 找不到对应的集合名称，请检查拼写。")
     } else {
       selected_idx <- auto_select
     }
   }
 
-  selected_rows <- menu_df[selected_idx, , drop = FALSE]
+  selected_rows <- menu_df[selected_idx, ]
 
-  # 智能命名策略
+  # 智能命名
   if (length(auto_select) == 1 && toupper(auto_select) == "ALL") {
     super_tag <- "ALL_MSigDB_Global"
   } else {
-    super_tag <- ifelse(
-      nrow(selected_rows) <= 4,
-      paste(selected_rows$short_tag, collapse = "_"),
-      sprintf("Mix%d_%s", nrow(selected_rows), selected_rows$short_tag[1])
-    )
+    super_tag <- ifelse(nrow(selected_rows) <= 4,
+                        paste(selected_rows$short_tag, collapse = "_"),
+                        sprintf("Mix%d_%s", nrow(selected_rows), selected_rows$short_tag[1]))
   }
 
-  message(sprintf("\n已选定 %d 个集合。智能批次 Tag: [%s]",
-                  nrow(selected_rows), super_tag))
 
-  # 核心：使用 collection 参数（兼容 V10）
-  pathway_list <- lapply(seq_len(nrow(selected_rows)), function(i) {
+  message(sprintf("\n✅ 已选定 %d 个集合。智能批次 Tag: [%s]", nrow(selected_rows), super_tag))
+
+  # 🌟 核心修复：彻底废弃 category，使用 collection
+  pathway_list <- lapply(1:nrow(selected_rows), function(i) {
     c_coll <- selected_rows$gs_collection[i]
     c_sub <- selected_rows$gs_subcollection[i]
     if (grepl("NO_SUB", c_sub) || c_sub == "") {
@@ -132,162 +112,169 @@ build_gsea_pathways <- function(species = "Homo sapiens", auto_select = NULL) {
 
   all_pathways <- dplyr::bind_rows(pathway_list)
 
-  # 动态列名检测（兼容不同 msigdbr 版本）
-  cat_col_name <- if ("gs_cat" %in% colnames(all_pathways)) "gs_cat" else "gs_collection"
-  subcat_col_name <- if ("gs_subcat" %in% colnames(all_pathways)) "gs_subcat" else "gs_subcollection"
+  # 🌟 核心防呆修复：动态检测列名，彻底解决 gs_cat/gs_subcat 消失的报错
+  cat_col_name <- if("gs_cat" %in% colnames(all_pathways)) "gs_cat" else "gs_collection"
+  subcat_col_name <- if("gs_subcat" %in% colnames(all_pathways)) "gs_subcat" else "gs_subcollection"
 
-  TERM2GENE <- all_pathways %>%
-    dplyr::select(gs_name, gene_symbol)
+  TERM2GENE <- all_pathways %>% dplyr::select(gs_name, gene_symbol)
 
   TERM2NAME <- all_pathways %>%
-    dplyr::select(
-      ID = gs_name,
-      Description = gs_description,
-      URL = gs_url,
-      Collection = dplyr::all_of(cat_col_name),
-      Subcollection = dplyr::all_of(subcat_col_name)
-    ) %>%
+    dplyr::select(ID = gs_name,
+                  Description = gs_description,
+                  URL = gs_url,
+                  Collection = dplyr::all_of(cat_col_name),
+                  Subcollection = dplyr::all_of(subcat_col_name)) %>%  # <--- 加入了子集！
     dplyr::distinct(ID, .keep_all = TRUE) %>%
     dplyr::mutate(
-      Combo_Name = ifelse(Subcollection == "", Collection,
+      # 🌟 新增：拼接成 C2:CP:KEGG_LEGACY 的标准格式，方便后续精准切片！
+      Combo_Name = ifelse(Subcollection == "",
+                          Collection,
                           paste0(Collection, ":", Subcollection))
     )
 
-  list(
-    TERM2GENE = TERM2GENE,
-    meta_dict = TERM2NAME,
-    SuperTag = super_tag,
-    collections_used = selected_rows
-  )
+  return(list(TERM2GENE = TERM2GENE, meta_dict = TERM2NAME, SuperTag = super_tag, collections_used = selected_rows))
 }
 
 
-#' @title 组装 GSEA 计算环境（多态入口）
-#' @description 统一入口函数，自动识别输入对象类型（MArrayLM 或 DESeqDataSet），
-#'   抽提标准化信息后封装为统一的 GseaEnv 对象。这是重构后架构的唯一入口。
-#' @param x 输入对象，必须是 MArrayLM（limma-voom）或 DESeqDataSet（DESeq2）
-#' @param pathway_obj 基因集对象，由 build_gsea_pathways() 生成
-#' @param expr_data 可选的表达数据对象。若为 NULL，尝试从 x 中提取（DGEList 或 DESeqDataSet）
-#' @param target_factor 字符型，目标比较因子名称。DESeq2 多因素设计时必须提供；
-#'   limma 中可选，用于元数据记录。默认为 NULL
-#' @param ... 额外参数传递给具体 backend 的提取函数
-#' @return 返回标准化的 GseaEnv 对象（S3 类），包含：
-#'   \item{backend_info}{backend 类型、设计公式等元数据}
-#'   \item{contrast_registry}{统一对比注册表}
-#'   \item{de_store}{标准化差异表达结果列表}
-#'   \item{expr_bundle}{标准化表达数据包}
-#'   \item{geneset}{基因集信息}
-#'   \item{raw_backend_obj}{原始对象存档（用于 debug）}
+
+
+
+#' @title 组装计算胶囊 (Pro 引擎 - 终极版)
+#' @description 将差异结果(fit)、基因集字典(带亚组血统)与表达矩阵完美焊死在一起，实现一次打包，终身复现。
+#' @param fit limma 分析得到的 MArrayLM 对象 (必须包含 contrast)
+#' @param pathway_obj 必须是 build_gsea_pathways_pro() 返回的完整列表对象
+#' @param expr_data 你的 DGEList 或者标准化后的表达矩阵 (用于后续动态热图和火山图，可为 NULL)
+#' @return 返回一个类为 "GseaEnvPro" 的复合计算胶囊
 #' @export
-#' @seealso build_gsea_pathways, validate_gsea_env
-setup_gsea_env <- function(x, pathway_obj, expr_data = NULL, target_factor = NULL, ...) {
+setup_gsea_env_pro <- function(fit, pathway_obj, expr_data = NULL) {
 
-  # 严格类型检查
-  if (!inherits(x, c("MArrayLM", "DESeqDataSet"))) {
-    stop("x 必须是 MArrayLM（limma）或 DESeqDataSet（DESeq2）对象")
+  # 1. 严格拦截与防呆检查
+  if (!inherits(fit, "MArrayLM")) {
+    stop("❌ 严重错误: fit 必须是 limma 流程中生成的 MArrayLM 对象！")
   }
-
-  # 基因集对象验证
   if (is.null(pathway_obj$TERM2GENE) || is.null(pathway_obj$meta_dict)) {
-    stop("pathway_obj 结构缺失！请确保使用 build_gsea_pathways() 生成")
+    stop("❌ 严重错误: pathway_obj 结构缺失！请确保使用的是 build_gsea_pathways_pro() 生成的对象。")
   }
 
-  # S3 方法分派
-  UseMethod("setup_gsea_env", x)
-}
+  # 2. 智能解析对比组 (Contrasts)
+  c_names <- colnames(fit)
+  if (is.null(c_names)) stop("❌ fit 对象中找不到 colnames(对比组名)，请检查您的 limma 设计矩阵。")
 
+  parsed <- lapply(c_names, function(x) {
+    # 兼容 "Treat - Control" 或 "Treat-Control"
+    p <- strsplit(x, "\\s*-\\s*")[[1]]
+    if (length(p) == 2) {
+      return(c(p[1], p[2]))
+    } else {
+      return(c(x, "Background")) # 如果解析失败，提供安全兜底
+    }
+  })
+  parsed_df <- do.call(rbind, parsed)
 
-#' @title 组装 GSEA 计算环境（limma-voom 专用方法）
-#' @description MArrayLM 对象的专用提取逻辑，生成标准化 GseaEnv。
-#'   自动从 fit$coefficients 提取对比矩阵，构建 contrast_registry。
-#' @param x MArrayLM 对象，必须包含 contrast（colnames 存在）
-#' @param pathway_obj 基因集对象
-#' @param expr_data 可选的 DGEList 对象。若为 NULL，尝试从 x$genes 等位置推断
-#' @param target_factor 可选的目标因子名称（仅作记录）
-#' @param ... 忽略
-#' @return GseaEnv 对象
-#' @keywords internal
-#' @export
-setup_gsea_env.MArrayLM <- function(x, pathway_obj, expr_data = NULL,
-                                    target_factor = NULL, ...) {
-
-  message("检测到 limma-voom backend，开始标准化提取...")
-
-  fit_object <- x
-
-  # 验证 contrast 存在
-  coef_names <- colnames(fit_object)
-  if (is.null(coef_names)) {
-    stop("MArrayLM 对象缺少 colnames（对比组名），请检查 limma 设计矩阵")
-  }
-
-  # 推断 target_factor（若未提供）
-  inferred_target_factor <- target_factor
-  if (is.null(inferred_target_factor)) {
-    # 尝试从 design 矩阵列名推断（简单启发式：找包含对比组名的因子）
-    # limma 中通常无法自动推断，保持 NULL
-    inferred_target_factor <- NULL
-  }
-
-  # 构建 contrast_registry
-  contrast_reg <- create_contrast_registry_limma(
-    coef_names = coef_names,
-    target_factor = inferred_target_factor
+  contrasts_df <- tibble::tibble(
+    ID = seq_along(c_names),
+    Contrast_Name = c_names,
+    Num = parsed_df[, 1],
+    Den = parsed_df[, 2]
   )
 
-  # 构建 de_store（预先提取所有 contrast 的 topTable）
-  de_store <- create_de_store_limma(
-    fit = fit_object,
-    contrast_registry = contrast_reg
-  )
-
-  # 构建 expr_bundle
-  expr_bundle <- create_expr_bundle(
-    expr_data = expr_data,
-    backend = "limma_voom",
-    target_factor = inferred_target_factor
-  )
-
-  # backend 元信息
-  backend_info <- list(
-    backend = "limma_voom",
-    input_class = "MArrayLM",
-    design_formula = NA_character_,  # limma 对象中难以反向解析公式
-    target_factor = inferred_target_factor,
-    supported_mode = "pairwise_factor",
-    n_contrasts = nrow(contrast_reg),
-    n_genes = nrow(fit_object$coefficients)
-  )
-
-  # 组装终极胶囊
+  # 3. 组装终极胶囊 (完美保留亚组血统 meta_dict)
   env_obj <- list(
-    backend_info = backend_info,
-    contrast_registry = contrast_reg,
-    de_store = de_store,
-    expr_bundle = expr_bundle,
+    fit = fit,
+    contrasts = contrasts_df,
     geneset = list(
       name = pathway_obj$SuperTag,
       term2gene = pathway_obj$TERM2GENE,
-      meta_dict = pathway_obj$meta_dict,
+      meta_dict = pathway_obj$meta_dict,           # 核心：保留了 Collection 供后续按需切片！
       used_collections = pathway_obj$collections_used
     ),
-    raw_backend_obj = list(fit = fit_object)  # 仅存档，下游不应直接访问
+    expr_data = expr_data
   )
 
-  class(env_obj) <- c("GseaEnv", "list")
+  class(env_obj) <- "GseaEnvPro"
 
-  # 验证与反馈
-  validate_gsea_env(env_obj)
-
+  # 4. 动态反馈与预警机制
   message("\n", rep("-", 60))
-  message("胶囊 [GseaEnv] 封装完毕（limma-voom backend）")
-  message(sprintf("   基因集 Tag : [%s]", pathway_obj$SuperTag))
-  message(sprintf("   通路总数量 : %d 条", nrow(pathway_obj$meta_dict)))
-  message(sprintf("   对比组数量 : %d 个", nrow(contrast_reg)))
+  message("✅ 胶囊 [GseaEnvPro] 封装完毕！")
+  message(sprintf("   🏷️  基因集 Tag : [%s]", pathway_obj$SuperTag))
+  message(sprintf("   🧬  通路总数量 : %d 条", nrow(pathway_obj$meta_dict)))
+  message(sprintf("   ⚖️  发现对比组 : %d 个", nrow(contrasts_df)))
+
+  # ALL 模式专属提醒
   if (pathway_obj$SuperTag == "ALL_MSigDB_Global") {
-    message("\n[注意] 已装载 MSigDB 全库，后续计算建议设置 pvalueCutoff = 1")
+    message("\n🚨 [高能预警] 您已装载 MSigDB 全库！")
+    message("   下一步扔进 batch_calc_gsea_pro() 时，请务必设置 pvalueCutoff = 1")
+    message("   这需要 1~5 分钟的计算时间，请保持耐心，让子弹飞一会儿~")
   }
   message(rep("-", 60), "\n")
 
   return(env_obj)
+}
+
+
+
+
+#' @title 载入并智能归位 GSEA 计算胶囊 (档案管理员)
+#' @description 安全载入计算胶囊。若文件脱离原始项目路径（比如被拷贝到了桌面），引擎将自动在当前工作目录复原标准文件夹，并将胶囊护送归位。
+#' @param file_path 字符型。胶囊 rds 文件的绝对或相对路径。
+#' @param auto_relocate 逻辑值。是否自动根据内置血统在当前目录下修复文件夹并归位？默认 TRUE。
+#' @return 返回解析后的 GseaResPro 或 GseaEnv 胶囊对象。
+#' @export
+import_gsea_capsule <- function(file_path, auto_relocate = TRUE) {
+  if (!file.exists(file_path)) stop(sprintf("❌ 文件不存在: %s", file_path))
+
+  message("📦 正在唤醒计算胶囊...")
+  capsule <- readRDS(file_path)
+
+  if (inherits(capsule, c("GseaEnvPro", "GseaEnv"))) {
+    message("✅ 成功载入 [GseaEnv] 环境封装胶囊 (尚未进行并行计算)。")
+    return(invisible(capsule))
+  }
+
+  if (!inherits(capsule, "GseaResPro")) {
+    warning("⚠️ 该文件似乎不是标准的 GSEAlens 胶囊！")
+    return(invisible(capsule))
+  }
+
+  info <- capsule$metadata$project_info
+  if (is.null(info)) {
+    message("⚠️ 该胶囊为旧版本生成，缺乏项目血统记忆。直接载入。")
+  } else {
+    current_abs <- normalizePath(file_path, winslash = "/", mustWork = FALSE)
+    expected_abs <- normalizePath(info$rds_path, winslash = "/", mustWork = FALSE)
+
+    # 路径不一致，且开启了自动归位
+    if (current_abs != expected_abs && auto_relocate) {
+      message(sprintf("🚨 [血统警报] 胶囊当前处于非标准路径: %s", current_abs))
+      message(sprintf("   原籍隶属于项目 : [%s]", info$custom_series_name))
+
+      # 根据当前工作目录(WD)重建标准档案库
+      local_series_dir <- file.path(getwd(), "GSEA_Output", info$custom_series_name)
+      if (!dir.exists(local_series_dir)) {
+        dir.create(local_series_dir, recursive = TRUE)
+      }
+
+      target_file <- file.path(local_series_dir, basename(file_path))
+      if (!file.exists(target_file) || target_file == current_abs) {
+        file.copy(from = file_path, to = target_file, overwrite = TRUE)
+        message(sprintf("   🚑 已自动将胶囊遣返归位至标准档案库: %s", local_series_dir))
+
+        # 覆写胶囊里的地址，防止下次原位读取时再次报警告
+        capsule$metadata$project_info$output_dir <- file.path(getwd(), "GSEA_Output")
+        capsule$metadata$project_info$series_dir <- local_series_dir
+        capsule$metadata$project_info$rds_path <- target_file
+      } else {
+        message("   ✅ 标准档案库中已有该文件备份。")
+      }
+    }
+  }
+
+  # 调用探针函数打印概况 (如果环境中加载了的话)
+  if (exists("inspect_gsea_res_pro", mode = "function")) {
+    inspect_gsea_res_pro(capsule)
+  } else {
+    message("✅ 成功载入 [GseaResPro] 计算完成结果胶囊！")
+  }
+
+  return(invisible(capsule))
 }
