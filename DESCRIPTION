@@ -1,36 +1,54 @@
 Package: GSEAlens
-Title: What the Package Does (One Line, Title Case)
-Version: 0.0.0.9000
-Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+Type: Package
+Title: Gene Set Enrichment Analysis Interactive Explorer
+Version: 0.0.2
+Author: Dudali
+Maintainer: Dudali <your.email@example.com>
+Description: Interactive GSEA exploration and visualization platform supporting both Limma-Voom and DESeq2 backends.
+License: MIT + file LICENSE
 Encoding: UTF-8
-Roxygen: list(markdown = TRUE)
+LazyData: false
 RoxygenNote: 7.3.3
-URL: https://github.com/DDL095/GSEAlens
-BugReports: https://github.com/DDL095/GSEAlens/issues
 Imports: 
-    BiocParallel,
-    clusterProfiler,
-    colorRamp2,
-    dplyr,
+    stats,
+    utils,
+    enrichplot,
+    grDevices,
+    magrittr,
+    graphics,
+    methods,
+    shiny,
+    shinycssloaders,
     DT,
-    edgeR,
+    plotly,
     ggplot2,
+    dplyr,
+    tidyr,
+    tibble,
+    stringr,
+    patchwork,
+    ComplexHeatmap,
+    circlize,
+    grid,
+    clusterProfiler,
     GseaVis,
+    limma,
+    edgeR,
+    DESeq2,
+    SummarizedExperiment,
+    S4Vectors,
+    msigdbr,
+    future,
+    future.apply,
     htmltools,
     htmlwidgets,
-    limma,
-    magrittr,
-    msigdbr,
-    patchwork,
-    pheatmap,
-    plotly,
-    shiny,
-    stringr,
-    tibble
-Suggests: 
-    testthat (>= 3.0.0)
-Config/testthat/edition: 3
+    jsonlite,
+    clipr,
+    BiocParallel
+Suggests:
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown,
+    shinytest2
+Depends: 
+    R (>= 4.2.0)

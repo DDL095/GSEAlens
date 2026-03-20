@@ -1,0 +1,4 @@
+"ID","Brief_Description_CN","Brief_Description_EN","Abstract","Custom_Note"
+"HALLMARK_HYPOXIA","缺氧反应核心通路","Hypoxia Response Core Pathway","该通路主要涉及细胞在低氧环境下的代谢适应...","这是我的备注，可以写任何内容"
+"REACTOME_EXAMPLE","示例通路中文描述","Example Pathway Description","这是一个用于演示的摘要...","支持 Markdown 格式吗？"
+"HALLMARK_OXIDATIVE_PHOSPHORYLATION","编码参与氧化磷酸化的蛋白质的基因。","Genes encoding proteins involved in oxidative phosphorylation.",
