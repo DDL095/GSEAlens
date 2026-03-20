@@ -16,6 +16,6 @@ mod_pathway_modal_server(id, data_prep, trigger_event, gsea_res)
 \item{gsea_res}{GseaRes 对象 (用于获取表达矩阵)}
 }
 \description{
-ComplexHeatmap重构，完全复刻pheatmap美学：Leading Edge排序、Z-score截断、细胞数值、行名样式
+ComplexHeatmap重构：Leading Edge间隙、动态排序、无高度限制、基因名颜色区分
 }
 \keyword{internal}

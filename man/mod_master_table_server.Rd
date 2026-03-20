@@ -2,7 +2,7 @@
 % Please edit documentation in R/09_shiny_mod_table.R
 \name{mod_master_table_server}
 \alias{mod_master_table_server}
-\title{主工作台表格 Server}
+\title{主工作台表格 Server（Phase 11完整版：CSV集成 + 所有修复）}
 \usage{
 mod_master_table_server(id, data_prep)
 }
@@ -12,9 +12,9 @@ mod_master_table_server(id, data_prep)
 \item{data_prep}{来自数据预处理模块的响应式数据}
 }
 \value{
-列表，包含 selected_pathways (reactive) 和 show_modal (reactive)
+列表，包含 selected_pathways 和 show_modal
 }
 \description{
-主工作台表格 Server
+功能：数据展示、CSV注释合并、BLANK列预留、列显示控制
 }
 \keyword{internal}

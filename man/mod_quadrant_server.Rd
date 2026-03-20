@@ -2,11 +2,11 @@
 % Please edit documentation in R/10_shiny_mod_quadrant.R
 \name{mod_quadrant_server}
 \alias{mod_quadrant_server}
-\title{四重联动 Server（修复版）}
+\title{四重联动 Server（连续点击多选 + 排序根治版）}
 \usage{
-mod_quadrant_server(id, data_prep, gsea_res)
+mod_quadrant_server(id, data_prep_list, gsea_res)
 }
 \description{
-修复：DESeq2列名适配 + 宏观微观联动高亮
+支持连续点击标记多个通路，Boxplot排序强制锁定
 }
 \keyword{internal}

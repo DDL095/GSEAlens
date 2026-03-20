@@ -2,11 +2,11 @@
 % Please edit documentation in R/09_shiny_mod_table.R
 \name{mod_master_table_ui}
 \alias{mod_master_table_ui}
-\title{主工作台表格 UI}
+\title{主工作台表格 UI（Phase 11完整版）}
 \usage{
 mod_master_table_ui(id)
 }
 \description{
-主工作台表格 UI
+主工作台表格 UI（Phase 11完整版）
 }
 \keyword{internal}

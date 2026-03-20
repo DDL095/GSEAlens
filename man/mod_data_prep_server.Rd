@@ -2,19 +2,11 @@
 % Please edit documentation in R/08_shiny_mod_data_prep.R
 \name{mod_data_prep_server}
 \alias{mod_data_prep_server}
-\title{数据预处理模块 Server}
+\title{数据预处理模块 Server（动态表达类型 + 根治排序）}
 \usage{
 mod_data_prep_server(id, gsea_res)
 }
-\arguments{
-\item{id}{模块 ID}
-
-\item{gsea_res}{GseaRes 对象}
-}
-\value{
-响应式列表，包含处理后的数据
-}
 \description{
-处理对比组选择、数据切片、标准化数据流
+数据预处理模块 Server（动态表达类型 + 根治排序）
 }
 \keyword{internal}

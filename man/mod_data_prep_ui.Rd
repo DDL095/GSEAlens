@@ -2,11 +2,11 @@
 % Please edit documentation in R/08_shiny_mod_data_prep.R
 \name{mod_data_prep_ui}
 \alias{mod_data_prep_ui}
-\title{数据预处理模块 UI}
+\title{数据预处理模块 UI（动态表达类型版）}
 \usage{
 mod_data_prep_ui(id)
 }
 \description{
-数据预处理模块 UI
+数据预处理模块 UI（动态表达类型版）
 }
 \keyword{internal}

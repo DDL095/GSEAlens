@@ -67,22 +67,24 @@ launch_gsea_app <- function(gsea_res, lang = "zh") {
   )
 
   # Server 逻辑
+  # Server 逻辑
+  # Server 逻辑
   server <- function(input, output, session) {
 
-    # 1. 数据预处理模块 (核心数据流)
-    data_prep <- mod_data_prep_server("data_prep", gsea_res)
+    # 1. 数据预处理模块（返回列表）
+    data_prep_list <- mod_data_prep_server("data_prep", gsea_res)
 
-    # 2. 主表格模块
-    table_result <- mod_master_table_server("master_table", data_prep)
+    # 2. 主表格模块（传入 data reactive）
+    table_result <- mod_master_table_server("master_table", data_prep_list$data)
 
-    # 3. 联合绘图模块
-    mod_multi_plot_server("multi_plot", data_prep, table_result)
+    # 3. 联合绘图模块（传入 data reactive）
+    mod_multi_plot_server("multi_plot", data_prep_list$data, table_result)
 
-    # 4. 四重联动模块
-    mod_quadrant_server("quadrant", data_prep, gsea_res)
+    # 4. 四重联动模块（传入完整列表）
+    mod_quadrant_server("quadrant", data_prep_list, gsea_res)
 
-    # 5. 详情弹窗模块
-    mod_pathway_modal_server("pathway_modal", data_prep, table_result$show_modal, gsea_res)
+    # 5. 详情弹窗模块（传入 data reactive）
+    mod_pathway_modal_server("pathway_modal", data_prep_list$data, table_result$show_modal, gsea_res)
   }
 
   message("🚀 GSEAlens PRO 4.0 已启动")

@@ -32,9 +32,10 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
 #' @title 内部表达矩阵提取逻辑
 #' @description 修复DESeq2后端表达矩阵与样本元数据匹配问题
 #' @keywords internal
+
 .get_expr_internal <- function(expr_bundle, backend_info, type = "default", ...) {
 
-  # 1. 标准化类型名称（处理别名）
+  # 1. 标准化类型名称
   type_normalized <- tolower(type)
   type_aliases <- c(
     "log2cpm" = "logcpm",
@@ -44,6 +45,7 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
     "vst" = "vst",
     "log2fpkm" = "logfpkm",
     "fpkm" = "fpkm",
+    "lognorm" = "lognorm",
     "default" = "default",
     "raw" = "raw"
   )
@@ -52,12 +54,12 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
     type_normalized <- type_aliases[[type_normalized]]
   }
 
-  # 2. 如果请求默认展示矩阵，且已存在，直接返回
+  backend <- backend_info$backend
+
+  # 2. 如果请求默认展示矩阵
   if (type_normalized == "default" && !is.null(expr_bundle$display_expr)) {
-    # 确保列名与sample_meta行名匹配（关键修复）
     expr_mat <- expr_bundle$display_expr
     if (!is.null(expr_bundle$sample_meta)) {
-      # 如果sample_meta有行名，确保表达矩阵列名与之匹配
       if (!is.null(rownames(expr_bundle$sample_meta))) {
         common_samples <- intersect(colnames(expr_mat), rownames(expr_bundle$sample_meta))
         if (length(common_samples) > 0) {
@@ -68,32 +70,28 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
     return(expr_mat)
   }
 
-  # 3. 否则根据类型动态计算
+  # 3. 获取原始数据
   raw_counts <- expr_bundle$raw_counts
   sample_meta <- expr_bundle$sample_meta
+  gene_lengths <- expr_bundle$gene_meta$length  # 假设有基因长度信息
 
-  # 如果 raw_counts 为空
   if (is.null(raw_counts)) {
     warning("对象中未包含原始计数矩阵，无法动态计算表达量。")
     return(NULL)
   }
 
-  # 4. 根据后端类型分发计算逻辑
-  backend <- backend_info$backend
-
+  # 4. 严格根据后端类型分发
   res <- switch(type_normalized,
                 "raw" = raw_counts,
 
-                # CPM 相关
+                # CPM 相关（通用）
                 "cpm" = {
                   if (backend == "limma_voom" && !is.null(expr_bundle$dge_list)) {
                     edgeR::cpm(expr_bundle$dge_list, log = FALSE)
                   } else if (backend == "deseq2" && !is.null(expr_bundle$dds_obj)) {
-                    # DESeq2: 手动计算CPM
                     counts <- DESeq2::counts(expr_bundle$dds_obj, normalized = FALSE)
                     t(t(counts) / colSums(counts)) * 1e6
                   } else {
-                    # 通用计算
                     t(t(raw_counts) / colSums(raw_counts)) * 1e6
                   }
                 },
@@ -102,7 +100,6 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
                   if (backend == "limma_voom" && !is.null(expr_bundle$dge_list)) {
                     edgeR::cpm(expr_bundle$dge_list, log = TRUE)
                   } else if (backend == "deseq2" && !is.null(expr_bundle$dds_obj)) {
-                    # DESeq2: log2(CPM+1)
                     counts <- DESeq2::counts(expr_bundle$dds_obj, normalized = FALSE)
                     log2(t(t(counts) / colSums(counts)) * 1e6 + 1)
                   } else {
@@ -110,36 +107,76 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
                   }
                 },
 
-                # VST (DESeq2 专属)
-                "vst" = {
-                  if (backend != "deseq2") {
-                    warning("VST 仅支持 DESeq2 后端，回退到 logCPM。")
-                    log2(t(t(raw_counts) / colSums(raw_counts)) * 1e6 + 1)
-                  } else if (!is.null(expr_bundle$vst_matrix)) {
-                    expr_bundle$vst_matrix
-                  } else if (!is.null(expr_bundle$dds_obj)) {
-                    # 尝试从 dds_obj 计算 VST
-                    tryCatch({
-                      SummarizedExperiment::assay(DESeq2::vst(expr_bundle$dds_obj, blind = FALSE))
-                    }, error = function(e) {
-                      warning("VST 计算失败，回退到 logCPM: ", e$message)
-                      log2(t(t(raw_counts) / colSums(raw_counts)) * 1e6 + 1)
-                    })
+                # 🔧 FPKM计算（需要基因长度）
+                "fpkm" = {
+                  if (is.null(gene_lengths)) {
+                    warning("FPKM计算需要基因长度信息(gene_meta$length)，回退到CPM。")
+                    t(t(raw_counts) / colSums(raw_counts)) * 1e6
                   } else {
-                    stop("VST 矩阵未预计算且无法从 dds_obj 计算。")
+                    # FPKM = (counts / gene_length_kb) / (total_counts / 1e6)
+                    gene_lengths_kb <- gene_lengths / 1000
+                    rpm <- t(t(raw_counts) / colSums(raw_counts)) * 1e6
+                    rpm / gene_lengths_kb
                   }
                 },
 
-                # TPM/FPKM (需要基因长度)
-                "tpm" = , "logtpm" = , "fpkm" = , "logfpkm" = {
-                  stop(sprintf("%s 计算需要基因长度信息，当前未实现。", type))
+                "logfpkm" = {
+                  if (is.null(gene_lengths)) {
+                    warning("logFPKM计算需要基因长度信息，回退到logCPM。")
+                    log2(t(t(raw_counts) / colSums(raw_counts)) * 1e6 + 1)
+                  } else {
+                    gene_lengths_kb <- gene_lengths / 1000
+                    rpm <- t(t(raw_counts) / colSums(raw_counts)) * 1e6
+                    fpkm <- rpm / gene_lengths_kb
+                    log2(fpkm + 1)
+                  }
+                },
+
+                # VST (DESeq2 专属，严格检查)
+                "vst" = {
+                  if (backend != "deseq2") {
+                    # 🔧 关键修复：Limma流程中如果请求VST，给出明确警告并回退
+                    warning(sprintf("VST(方差稳定变换)是DESeq2专属方法，当前后端为'%s'，自动回退到logCPM。", backend))
+                    if (backend == "limma_voom" && !is.null(expr_bundle$dge_list)) {
+                      edgeR::cpm(expr_bundle$dge_list, log = TRUE)
+                    } else {
+                      log2(t(t(raw_counts) / colSums(raw_counts)) * 1e6 + 1)
+                    }
+                  } else if (!is.null(expr_bundle$vst_matrix)) {
+                    expr_bundle$vst_matrix
+                  } else if (!is.null(expr_bundle$dds_obj)) {
+                    tryCatch({
+                      SummarizedExperiment::assay(DESeq2::vst(expr_bundle$dds_obj, blind = FALSE))
+                    }, error = function(e) {
+                      warning("VST计算失败，回退到logCPM: ", e$message)
+                      counts <- DESeq2::counts(expr_bundle$dds_obj, normalized = FALSE)
+                      log2(t(t(counts) / colSums(counts)) * 1e6 + 1)
+                    })
+                  } else {
+                    stop("VST矩阵未预计算且无法从dds_obj计算。")
+                  }
+                },
+
+                # log2 Normalized counts (DESeq2)
+                "lognorm" = {
+                  if (backend == "deseq2" && !is.null(expr_bundle$dds_obj)) {
+                    norm_counts <- DESeq2::counts(expr_bundle$dds_obj, normalized = TRUE)
+                    log2(norm_counts + 1)
+                  } else {
+                    # Limma中也支持：使用logCPM作为替代
+                    if (backend == "limma_voom" && !is.null(expr_bundle$dge_list)) {
+                      edgeR::cpm(expr_bundle$dge_list, log = TRUE)
+                    } else {
+                      log2(t(t(raw_counts) / colSums(raw_counts)) * 1e6 + 1)
+                    }
+                  }
                 },
 
                 # 未知类型
                 stop(sprintf("不支持的表达量类型: %s", type))
   )
 
-  # 关键修复：确保表达矩阵列名与sample_meta行名匹配（取交集）
+  # 确保表达矩阵列名与sample_meta行名匹配
   if (!is.null(sample_meta) && !is.null(rownames(sample_meta))) {
     common_samples <- intersect(colnames(res), rownames(sample_meta))
     if (length(common_samples) == 0) {
