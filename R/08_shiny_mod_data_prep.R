@@ -37,6 +37,16 @@ mod_data_prep_ui <- function(id) {
         "选择基因后点击确认，避免实时刷新"
       )
     ),
+
+    shiny::div(
+      style = "background-color: #d4edda; padding: 10px; border-radius: 5px; margin-top: 10px;",
+      shiny::HTML(
+        "<strong style='color: #155724;'>💾 已确认基因标记：</strong><br>
+    <small style='color: #666;'>切换对比组后仍然保留</small>"
+      ),
+      shiny::uiOutput(ns("confirmed_genes_display"))
+    )
+    ,
     shiny::uiOutput(ns("applied_genes_display")),
     shiny::hr(),
 
@@ -196,7 +206,7 @@ mod_data_prep_server <- function(id, gsea_res) {
       )
     })
 
-    # 基因列表更新（仅随contrast变化）
+    # 基因列表更新（根治版：已确认基因独立维护）
     shiny::observeEvent(input$selected_contrast, {
       contrast_id <- input$selected_contrast
       shiny::req(contrast_id)
@@ -215,16 +225,35 @@ mod_data_prep_server <- function(id, gsea_res) {
           gene_choices <- gene_choices[!is.na(gene_choices)]
           gene_choices <- sort(unique(gene_choices))
 
+          # ✅ 关键：切换对比组时不清空 UI 勾选；把“已确认基因”回填到 pending_genes
+          current_applied <- applied_genes()  # 已确认基因（永不清空）
+
+          # 由于当前对比组的 gene_choices 可能不包含全部 applied 基因，所以取交集（大小写不敏感）
+          applied_upper <- toupper(current_applied)
+          choices_upper <- toupper(gene_choices)
+
+          selected_upper <- applied_upper[applied_upper %in% choices_upper]
+          pending_selected <- gene_choices[choices_upper %in% selected_upper]
+
+          pending_selected <- unique(pending_selected)
+
           shiny::updateSelectizeInput(
             session,
             "pending_genes",
             choices = gene_choices,
-            selected = character(0),
+            selected = pending_selected,     # <- 不清空：允许用户在框里删改
             server = length(gene_choices) > 1000
           )
 
-          applied_genes(character(0))
-          pending_genes_internal(character(0))
+          # pending 先跟 applied 同步，让用户删改后点确认才会真正刷新 applied
+          pending_genes_internal(pending_selected)
+
+          message(sprintf(
+            "✅ [对比切换] pending 已回填 applied（当前 choices 内 %d 个；applied 总数 %d 个）",
+            length(pending_selected), length(current_applied)
+          ))
+
+          message(sprintf("✅ 已确认的基因标记保持不变（%d个）", length(current_applied)))
         }
       }, error = function(e) {
         message("更新基因列表失败: ", e$message)
@@ -343,6 +372,17 @@ mod_data_prep_server <- function(id, gsea_res) {
         duration = 2
       )
     }, ignoreInit = TRUE)  # 👈 关键：添加 ignoreInit = TRUE
+    # 在 mod_data_prep_server 的关键处添加：
+#shiny::observe({
+#  applied <- applied_genes()
+#  pending <- pending_genes_internal()
+#  contrast <- current_contrast_cache()
+#
+#  message(sprintf(
+#    "📊 [基因管理状态] 对比组=%s | 已确认=%d个 | 待选=%d个",
+#    contrast, length(applied), length(pending)
+#  ))
+#})
 
     # 显示实时排序状态
     output$order_status_display <- shiny::renderUI({
@@ -367,21 +407,21 @@ mod_data_prep_server <- function(id, gsea_res) {
       )
     })
 
-    # 显示已应用的基因
-    output$applied_genes_display <- shiny::renderUI({
+    output$confirmed_genes_display <- shiny::renderUI({
       genes <- applied_genes()
       if (length(genes) == 0) {
-        return(shiny::div(
-          style = "margin-top: 10px; padding: 8px; background-color: #f8f9fa; border-radius: 4px; color: #6c757d;",
-          "当前无标记基因"
-        ))
+        shiny::span("（无）", style = "color: #999;")
+      } else {
+        shiny::div(
+          style = "margin-top: 5px; padding: 8px; background: #f1f8f4; border-radius: 3px;",
+          shiny::strong(length(genes), "个基因：", style = "color: #28a745;"),
+          shiny::br(),
+          shiny::span(paste(genes, collapse = ", "), style = "font-size: 12px; color: #555;")
+        )
       }
-      shiny::div(
-        style = "margin-top: 10px; padding: 8px; background-color: #d4edda; border-radius: 4px;",
-        shiny::tags$strong("已标记基因:", style = "color: #155724;"),
-        shiny::tags$div(style = "margin-top: 5px; font-size: 12px; color: #155724;", paste(genes, collapse = ", "))
-      )
     })
+
+
 
     # 核心数据处理
     process_data_core <- function(contrast_id, collections, sort_by, expr_type, plot_subtype, colors, is_auto = FALSE) {

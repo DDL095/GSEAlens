@@ -1,5 +1,5 @@
-GSEAlens 全量 R  代码汇总
-生成时间: 2026-03-20 18:21:06
+GSEAlens 全量 R 代码汇总
+生成时间: 2026-03-21 15:23:19
 扫描目录: G:\2025_11_13_sto_双参考基因组的转录分析\2026_02_01_新十三线参考组\GSEAlens
 R 文件数量: 20
 ====================================================================================================
@@ -961,6 +961,98 @@ batch_calc_gsea <- function(gsea_env,
 ====================================================================================================
 [文件 6/20] R\05_extraction.R
 ====================================================================================================
+#' @title 加载并智能归位 GSEA 计算胶囊
+#' @description 安全载入计算胶囊。若文件脱离原始项目路径（比如被拷贝到了桌面），
+#' 引擎将自动在当前工作目录复原标准文件夹，并将胶囊护送归位。
+#' 完全兼容 GseaEnv 和 GseaRes 对象。
+#' @param file_path 字符型。胶囊 rds 文件的绝对或相对路径。
+#' @param auto_relocate 逻辑值。是否自动根据内置血统在当前目录下修复文件夹并归位？默认 TRUE。
+#' @param inspect 逻辑值。加载后是否自动打印胶囊概览？默认 TRUE。
+#' @return 返回解析后的 GseaRes 或 GseaEnv 胶囊对象。
+#' @export
+import_gsea_capsule <- function(file_path, auto_relocate = TRUE, inspect = TRUE) {
+
+  # 1. 文件存在性检查
+  if (!file.exists(file_path)) {
+    stop(sprintf("❌ 文件不存在: %s", file_path))
+  }
+
+  message("🎁 正在唤醒计算胶囊...")
+  capsule <- readRDS(file_path)
+
+  # 2. 识别胶囊类型
+  if (inherits(capsule, c("GseaEnv", "GseaEnvPro"))) {
+    message("✅ 成功载入 [GseaEnv] 环境封装胶囊 (尚未进行并行计算)。")
+
+    if (inspect && exists("inspect_gsea_env", mode = "function")) {
+      inspect_gsea_env(capsule)
+    }
+
+    return(invisible(capsule))
+  }
+
+  # 3. 对于计算结果胶囊，执行智能归位逻辑
+  if (!inherits(capsule, "GseaRes")) {
+    warning("⚠️ 该文件似乎不是标准的 GSEAlens 胶囊！")
+    return(invisible(capsule))
+  }
+
+  # 4. 检查是否有血统记忆（project_info）
+  project_info <- capsule$metadata$project_info
+
+  if (is.null(project_info)) {
+    message("⚠️ 该胶囊为旧版本生成，缺乏项目血统记忆。直接载入（无法自动归位）。")
+  } else {
+    # 5. 获取当前路径与预期路径
+    current_abs <- normalizePath(file_path, winslash = "/", mustWork = FALSE)
+    expected_abs <- normalizePath(project_info$rds_path, winslash = "/", mustWork = FALSE)
+
+    # 6. 路径不一致，且开启了自动归位
+    if (current_abs != expected_abs && auto_relocate) {
+      message(sprintf("🚨 [血统警报] 胶囊当前处于非标准路径"))
+      message(sprintf("   📍 当前位置: %s", current_abs))
+      message(sprintf("   🏠 原籍项目: [%s]", project_info$custom_series_name))
+
+      # 7. 根据当前工作目录重建标准档案库
+      local_series_dir <- file.path(getwd(), "GSEA_Output", project_info$custom_series_name)
+      if (!dir.exists(local_series_dir)) {
+        dir.create(local_series_dir, recursive = TRUE, showWarnings = FALSE)
+        message(sprintf("   ✨ 已创建标准档案库目录: %s", local_series_dir))
+      }
+
+      # 8. 执行文件归位
+      target_file <- file.path(local_series_dir, basename(file_path))
+
+      if (!file.exists(target_file) || target_file == current_abs) {
+        file.copy(from = file_path, to = target_file, overwrite = TRUE)
+        message(sprintf("   🚀 已自动将胶囊遣返归位至标准档案库"))
+        message(sprintf("   📦 新位置: %s", target_file))
+
+        # 9. 更新胶囊内部的路径信息，防止下次加载时重复警告
+        capsule$metadata$project_info$output_dir <- file.path(getwd(), "GSEA_Output")
+        capsule$metadata$project_info$series_dir <- local_series_dir
+        capsule$metadata$project_info$rds_path <- target_file
+
+      } else {
+        message("   ✅ 标准档案库中已有该文件备份（无需重复复制）。")
+      }
+    }
+  }
+
+  # 10. 自动调用探针函数打印概况
+  if (inspect) {
+    if (exists("inspect_gsea_res", mode = "function")) {
+      inspect_gsea_res(capsule)
+    } else {
+      message("✅ 成功载入 [GseaRes] 计算完成结果胶囊！")
+    }
+  }
+
+  return(invisible(capsule))
+}
+
+
+
 #' @title 提取特定对比组的 GSEA 结果
 #' @description 从 GseaRes 胶囊中提取指定对比组的结果。
 #' 支持按基因集子集 进行切片，并自动重新计算 FDR。
@@ -1614,22 +1706,24 @@ launch_gsea_app <- function(gsea_res, lang = "zh") {
   )
 
   # Server 逻辑
+  # Server 逻辑
+  # Server 逻辑
   server <- function(input, output, session) {
 
-    # 1. 数据预处理模块 (核心数据流)
-    data_prep <- mod_data_prep_server("data_prep", gsea_res)
+    # 1. 数据预处理模块（返回列表）
+    data_prep_list <- mod_data_prep_server("data_prep", gsea_res)
 
-    # 2. 主表格模块
-    table_result <- mod_master_table_server("master_table", data_prep)
+    # 2. 主表格模块（传入 data reactive）
+    table_result <- mod_master_table_server("master_table", data_prep_list$data)
 
-    # 3. 联合绘图模块
-    mod_multi_plot_server("multi_plot", data_prep, table_result)
+    # 3. 联合绘图模块（传入 data reactive）
+    mod_multi_plot_server("multi_plot", data_prep_list$data, table_result)
 
-    # 4. 四重联动模块
-    mod_quadrant_server("quadrant", data_prep, gsea_res)
+    # 4. 四重联动模块（传入完整列表）
+    mod_quadrant_server("quadrant", data_prep_list, gsea_res)
 
-    # 5. 详情弹窗模块
-    mod_pathway_modal_server("pathway_modal", data_prep, table_result$show_modal, gsea_res)
+    # 5. 详情弹窗模块（传入 data reactive）
+    mod_pathway_modal_server("pathway_modal", data_prep_list$data, table_result$show_modal, gsea_res)
   }
 
   message("🚀 GSEAlens PRO 4.0 已启动")
@@ -1643,79 +1737,141 @@ launch_gsea_app <- function(gsea_res, lang = "zh") {
 ====================================================================================================
 [文件 9/20] R\08_shiny_mod_data_prep.R
 ====================================================================================================
-#' @title 数据预处理模块 UI
+#' @title 数据预处理模块 UI（动态表达类型版）
 #' @keywords internal
 mod_data_prep_ui <- function(id) {
   ns <- shiny::NS(id)
   shiny::tagList(
     shiny::selectInput(
       ns("selected_contrast"),
-      label = .tr("ui.select_contrast"),
+      label = "选择对比组 (Contrast)",
       choices = NULL
     ),
     shiny::hr(),
-    shiny::h4(.tr("ui.plot_control")),
+
+    shiny::h4("🎯 差异表达基因标记"),
+    shiny::div(
+      style = "background-color: #e8f4f8; padding: 10px; border-radius: 5px; border-left: 4px solid #17a2b8;",
+      shiny::selectizeInput(
+        ns("pending_genes"),
+        label = "选择感兴趣基因（支持多选）:",
+        choices = NULL,
+        multiple = TRUE,
+        options = list(
+          plugins = list('remove_button'),
+          placeholder = '输入基因名（如 TP53）',
+          maxItems = 50,
+          closeAfterSelect = FALSE,
+          selectOnTab = TRUE
+        )
+      ),
+      shiny::actionButton(
+        ns("apply_genes_btn"),
+        label = "🎯 确认应用基因标记",
+        class = "btn-info",
+        style = "width: 100%; margin-top: 10px; font-weight: bold;"
+      ),
+      shiny::helpText(
+        style = "margin-top: 8px; color: #666;",
+        "选择基因后点击确认，避免实时刷新"
+      )
+    ),
+
+    shiny::div(
+      style = "background-color: #d4edda; padding: 10px; border-radius: 5px; margin-top: 10px;",
+      shiny::HTML(
+        "<strong style='color: #155724;'>💾 已确认基因标记：</strong><br>
+    <small style='color: #666;'>切换对比组后仍然保留</small>"
+      ),
+      shiny::uiOutput(ns("confirmed_genes_display"))
+    )
+    ,
+    shiny::uiOutput(ns("applied_genes_display")),
+    shiny::hr(),
+
+    shiny::h4("🔄 选择组别显示顺序"),
+    shiny::div(
+      style = "background-color: #fff3cd; padding: 10px; border-radius: 5px; border-left: 4px solid #ffc107;",
+      shiny::selectInput(
+        ns("boxplot_order_pending"),
+        label = "组别排序选项:",
+        choices = c("默认顺序" = "default"),
+        selected = "default"
+      ),
+      shiny::actionButton(
+        ns("apply_order_btn"),
+        label = "✓ 确认排序（刷新箱线图）",
+        class = "btn-warning",
+        style = "width: 100%; margin-top: 10px; font-weight: bold;"
+      ),
+      # ✅ 新增：实时排序状态显示
+      shiny::uiOutput(ns("order_status_display")),
+      shiny::helpText(
+        style = "margin-top: 8px; color: #666;",
+        "选择顺序后点击确认，箱线图将自动排序"
+      )
+    ),
+    shiny::hr(),
+
+    shiny::h4("🎨 联合绘图控制"),
     shiny::selectInput(
       ns("plot_subtype"),
-      label = .tr("ui.gseavis_style"),
+      label = "GSEAvis 样式:",
       choices = c("1: 仅经典富集" = "1", "2: 富集+热图带" = "2", "3: 完整带Rank" = "3"),
       selected = "3"
     ),
     shiny::textInput(
       ns("custom_colors"),
-      label = .tr("ui.custom_colors"),
+      label = "多通路自定义颜色:",
       value = "#E41A1C, #377EB8, #4DAF4A, #984EA3",
-      placeholder = "例如: #FF0000, #00FF00, #0000FF"
+      placeholder = "例如: #FF0000, #00FF00"
     ),
     shiny::hr(),
-    shiny::h4(.tr("ui.expression_metric")),
+
+    # 🔧 修复：动态表达数据类型（根据后端更新）
+    shiny::h4("📊 表达量度量"),
     shiny::selectInput(
       ns("expression_type"),
-      label = .tr("ui.expr_type"),
-      choices = c(
-        "log2(CPM)" = "logcpm",
-        "CPM (原始)" = "cpm",
-        "VST (DESeq2)" = "vst",
-        "log2(FPKM)" = "logfpkm",
-        "FPKM (原始)" = "fpkm"
-      ),
-      selected = "logcpm"
+      label = "选择表达数据类型:",
+      choices = NULL,  # 动态填充
+      selected = NULL
     ),
     shiny::hr(),
-    shiny::h4(.tr("ui.data_slice")),
+
+    shiny::h4("🎯 数据切片"),
     shiny::selectizeInput(
       ns("selected_collections"),
-      label = .tr("ui.select_collections"),
+      label = "选择基因集亚组:",
       choices = NULL,
       multiple = TRUE,
       options = list(plugins = list("remove_button"), placeholder = "选择亚组或保留ALL")
     ),
     shiny::selectInput(
       ns("sort_by"),
-      label = .tr("ui.sort_strategy"),
+      label = "全局排序策略:",
       choices = c(
-        "按 NES (降序)" = "nes_desc",
-        "按 NES (升序)" = "nes_asc",
         "按 NES 绝对值 (降序)" = "abs_nes_desc",
-        "按 P-value (升序)" = "pval_asc",
-        "按 FDR (升序)" = "fdr_asc"
+        "按 NES (降序)" = "nes_desc",
+        "按 P-value (升序)" = "pval_asc"
       ),
       selected = "abs_nes_desc"
     ),
+
     shiny::actionButton(
       ns("run_btn"),
-      label = .tr("ui.btn_confirm"),
+      label = "🚀 确认配置 / 更新工作台",
       class = "btn-success",
-      style = "width: 100%; font-weight: bold; margin-top: 15px;"
+      style = "width: 100%; font-weight: bold; margin-top: 15px; font-size: 16px;"
+    ),
+
+    shiny::helpText(
+      style = "margin-top: 10px; text-align: center; color: #28a745;",
+      "💡 修改设置后必须点击此按钮"
     )
   )
 }
 
-#' @title 数据预处理模块 Server
-#' @description 处理对比组选择、数据切片、标准化数据流
-#' @param id 模块 ID
-#' @param gsea_res GseaRes 对象
-#' @return 响应式列表，包含处理后的数据
+#' @title 数据预处理模块 Server（动态表达类型 + 根治排序）
 #' @keywords internal
 mod_data_prep_server <- function(id, gsea_res) {
   shiny::moduleServer(id, function(input, output, session) {
@@ -1724,26 +1880,292 @@ mod_data_prep_server <- function(id, gsea_res) {
     result_data <- shiny::reactiveVal(NULL)
     has_initialized <- shiny::reactiveVal(FALSE)
 
-    # 动态填充对比组
-    shiny::observe({
-      registry <- gsea_res$contrast_registry
-      choices <- setNames(registry$contrast_id,
-                          sprintf("%s (%s vs %s)",
-                                  registry$contrast_id,
-                                  registry$left_group,
-                                  registry$right_group))
+    applied_genes <- shiny::reactiveVal(character(0))
+    applied_boxplot_order <- shiny::reactiveVal("default")
 
-      shiny::updateSelectInput(session, "selected_contrast",
-                               choices = choices,
-                               selected = registry$contrast_id[1])
+    current_contrast_cache <- shiny::reactiveVal(NULL)
+    pending_genes_internal <- shiny::reactiveVal(character(0))
+
+    # 🔧 修复：根据后端类型动态设置表达数据类型选项
+    shiny::observe({
+      backend <- gsea_res$backend_info$backend
+
+      if (backend == "limma_voom") {
+        # Limma-voom流程：支持CPM、log2CPM，不支持VST
+        choices <- c(
+          "log2(CPM)" = "logcpm",
+          "CPM (原始)" = "cpm",
+          "log2(FPKM)" = "logfpkm",
+          "FPKM (原始)" = "fpkm"
+        )
+        selected <- "logcpm"
+        message("📊 检测到Limma-voom后端，加载对应表达类型")
+      } else if (backend == "deseq2") {
+        # DESeq2流程：支持VST、CPM等
+        choices <- c(
+          "log2(CPM)" = "logcpm",
+          "CPM (原始)" = "cpm",
+          "VST (方差稳定变换)" = "vst",
+          "log2(Normalized Counts + 1)" = "lognorm"
+        )
+        selected <- "logcpm"
+        message("📊 检测到DESeq2后端，加载对应表达类型")
+      } else {
+        choices <- c("log2(CPM)" = "logcpm", "CPM (原始)" = "cpm")
+        selected <- "logcpm"
+      }
+
+      shiny::updateSelectInput(
+        session,
+        "expression_type",
+        choices = choices,
+        selected = selected
+      )
     })
 
-    # 核心数据处理函数 (适配新版架构)
-    process_data_core <- function(contrast_id, collections, sort_by, expr_type, plot_subtype, colors, is_auto = FALSE) {
+    # 初始化对比组
+    shiny::observe({
+      registry <- gsea_res$contrast_registry
+      all_contrasts <- list()
+      for (i in 1:nrow(registry)) {
+        row <- registry[i, ]
+        all_contrasts[[row$contrast_id]] <- paste(row$left_group, "vs", row$right_group)
+        rev_id <- paste(row$right_group, row$left_group, sep = "_vs_")
+        rev_display <- paste(row$right_group, "vs", row$left_group)
+        all_contrasts[[rev_id]] <- rev_display
+      }
 
+      choices <- setNames(names(all_contrasts), unlist(all_contrasts))
+
+      shiny::updateSelectInput(
+        session,
+        "selected_contrast",
+        choices = choices,
+        selected = registry$contrast_id[1]
+      )
+    })
+
+    # 基因列表更新（根治版：已确认基因独立维护）
+    shiny::observeEvent(input$selected_contrast, {
+      contrast_id <- input$selected_contrast
+      shiny::req(contrast_id)
+
+      if (!is.null(current_contrast_cache()) && current_contrast_cache() == contrast_id) {
+        return()
+      }
+
+      message(sprintf("🔄 切换对比组: %s", contrast_id))
+      current_contrast_cache(contrast_id)
+
+      tryCatch({
+        de_df <- get_de_table(gsea_res, contrast_id)
+        if (!is.null(de_df) && "gene_symbol" %in% colnames(de_df)) {
+          gene_choices <- de_df$gene_symbol
+          gene_choices <- gene_choices[!is.na(gene_choices)]
+          gene_choices <- sort(unique(gene_choices))
+
+          # ✅ 关键：切换对比组时不清空 UI 勾选；把“已确认基因”回填到 pending_genes
+          current_applied <- applied_genes()  # 已确认基因（永不清空）
+
+          # 由于当前对比组的 gene_choices 可能不包含全部 applied 基因，所以取交集（大小写不敏感）
+          applied_upper <- toupper(current_applied)
+          choices_upper <- toupper(gene_choices)
+
+          selected_upper <- applied_upper[applied_upper %in% choices_upper]
+          pending_selected <- gene_choices[choices_upper %in% selected_upper]
+
+          pending_selected <- unique(pending_selected)
+
+          shiny::updateSelectizeInput(
+            session,
+            "pending_genes",
+            choices = gene_choices,
+            selected = pending_selected,     # <- 不清空：允许用户在框里删改
+            server = length(gene_choices) > 1000
+          )
+
+          # pending 先跟 applied 同步，让用户删改后点确认才会真正刷新 applied
+          pending_genes_internal(pending_selected)
+
+          message(sprintf(
+            "✅ [对比切换] pending 已回填 applied（当前 choices 内 %d 个；applied 总数 %d 个）",
+            length(pending_selected), length(current_applied)
+          ))
+
+          message(sprintf("✅ 已确认的基因标记保持不变（%d个）", length(current_applied)))
+        }
+      }, error = function(e) {
+        message("更新基因列表失败: ", e$message)
+      })
+    }, ignoreInit = FALSE)
+
+    # 生成排列组合
+    generate_all_permutations <- function(groups) {
+      n <- length(groups)
+      if (n <= 1) return(list(default = "默认顺序"))
+
+      perms <- list()
+      permute <- function(arr, l, r) {
+        if (l == r) {
+          perm_str <- paste(arr, collapse = ",")
+          label_str <- paste(arr, collapse = "→")
+          perms[[perm_str]] <<- label_str
+          return()
+        }
+        for (i in l:r) {
+          tmp <- arr[l]; arr[l] <- arr[i]; arr[i] <- tmp
+          permute(arr, l + 1, r)
+          tmp <- arr[l]; arr[l] <- arr[i]; arr[i] <- tmp
+        }
+      }
+      permute(groups, 1, n)
+      return(perms)
+    }
+
+    generate_limited_perms <- function(groups, max_perms = 100) {
+      perms <- list()
+      n <- length(groups)
+      count <- 0
+
+      perms[[paste(groups, collapse = ",")]] <- paste(groups, collapse = "→")
+      count <- count + 1
+
+      perms[[paste(rev(groups), collapse = ",")]] <- paste(rev(groups), collapse = "→")
+      count <- count + 1
+
+      for (i in 2:min(n, max_perms/2)) {
+        shifted <- groups[c(i:n, 1:(i-1))]
+        perms[[paste(shifted, collapse = ",")]] <- paste(shifted, collapse = "→")
+        count <- count + 1
+        if (count >= max_perms) break
+      }
+
+      if (count < max_perms) {
+        set.seed(123)
+        for (i in 1:(max_perms - count)) {
+          shuffled <- sample(groups)
+          perm_str <- paste(shuffled, collapse = ",")
+          if (!(perm_str %in% names(perms))) {
+            perms[[perm_str]] <- paste(shuffled, collapse = "→")
+          }
+        }
+      }
+
+      return(perms)
+    }
+
+    # 动态更新Boxplot排序选项
+    shiny::observe({
+      sample_meta <- tryCatch(get_sample_meta(gsea_res), error = function(e) NULL)
+      if (is.null(sample_meta) || !"group" %in% colnames(sample_meta)) return()
+
+      all_groups <- levels(sample_meta$group)
+      if (length(all_groups) <= 1) return()
+
+      total_perms <- factorial(length(all_groups))
+
+      if (total_perms > 100) {
+        perms <- generate_limited_perms(all_groups, max_perms = 100)
+        perms[["limited"]] <- "--- 仅显示前100种 ---"
+      } else {
+        perms <- generate_all_permutations(all_groups)
+      }
+
+      perms <- c(list(default = "默认顺序"), perms)
+
+      shiny::updateSelectInput(
+        session,
+        "boxplot_order_pending",
+        choices = perms,
+        selected = "default"
+      )
+    })
+
+    # 基因确认按钮
+    shiny::observeEvent(input$pending_genes, {
+      genes <- input$pending_genes
+      if (is.null(genes)) genes <- character(0)
+      pending_genes_internal(genes)
+    }, ignoreNULL = FALSE, ignoreInit = TRUE)
+
+    shiny::observeEvent(input$apply_genes_btn, {
+      genes_to_apply <- pending_genes_internal()
+      applied_genes(genes_to_apply)
+      message(sprintf("🎯 已确认基因标记: %d个", length(genes_to_apply)))
+      shiny::showNotification(sprintf("已标记 %d 个基因", length(genes_to_apply)), type = "message", duration = 3)
+    })
+
+    # 排序确认按钮（关键修改）
+    shiny::observeEvent(input$apply_order_btn, {
+      order_to_apply <- input$boxplot_order_pending
+      applied_boxplot_order(order_to_apply)  # ✅ 更新 reactiveVal
+
+      # 强制刷新四重联动模块（这是关键！）
+      message(sprintf("🔄 [排序确认] 用户选择了: %s | 四重联动模块已触发更新",
+                      if(order_to_apply == "default") "默认" else order_to_apply))
+
+      shiny::showNotification(
+        sprintf("✅ 排序已应用: %s | 箱线图已刷新",
+                if(order_to_apply == "default") "默认顺序" else gsub(",", " → ", order_to_apply)),
+        type = "message",
+        duration = 2
+      )
+    }, ignoreInit = TRUE)  # 👈 关键：添加 ignoreInit = TRUE
+    # 在 mod_data_prep_server 的关键处添加：
+#shiny::observe({
+#  applied <- applied_genes()
+#  pending <- pending_genes_internal()
+#  contrast <- current_contrast_cache()
+#
+#  message(sprintf(
+#    "📊 [基因管理状态] 对比组=%s | 已确认=%d个 | 待选=%d个",
+#    contrast, length(applied), length(pending)
+#  ))
+#})
+
+    # 显示实时排序状态
+    output$order_status_display <- shiny::renderUI({
+      pending <- input$boxplot_order_pending
+      confirmed <- applied_boxplot_order()
+
+      status_text <- if (pending == "default") {
+        "📌 默认顺序"
+      } else {
+        sprintf("📌 待应用: %s", gsub(",", " → ", pending))
+      }
+
+      confirmed_text <- if (confirmed != "default" && !is.na(confirmed) && confirmed != "") {
+        sprintf("<br>✅ 已应用: %s", gsub(",", " → ", confirmed))
+      } else {
+        ""
+      }
+
+      shiny::div(
+        style = "background: #e7f3ff; padding: 8px; border-radius: 4px; font-size: 12px; color: #004085; margin-top: 10px;",
+        shiny::HTML(paste0(status_text, confirmed_text))
+      )
+    })
+
+    output$confirmed_genes_display <- shiny::renderUI({
+      genes <- applied_genes()
+      if (length(genes) == 0) {
+        shiny::span("（无）", style = "color: #999;")
+      } else {
+        shiny::div(
+          style = "margin-top: 5px; padding: 8px; background: #f1f8f4; border-radius: 3px;",
+          shiny::strong(length(genes), "个基因：", style = "color: #28a745;"),
+          shiny::br(),
+          shiny::span(paste(genes, collapse = ", "), style = "font-size: 12px; color: #555;")
+        )
+      }
+    })
+
+
+
+    # 核心数据处理
+    process_data_core <- function(contrast_id, collections, sort_by, expr_type, plot_subtype, colors, is_auto = FALSE) {
       if (is.null(contrast_id)) return(NULL)
 
-      # 使用新版提取函数
       task_obj <- tryCatch({
         extract_gsea_task(gsea_res, contrast_id, target_collection = collections)
       }, error = function(e) {
@@ -1753,35 +2175,28 @@ mod_data_prep_server <- function(id, gsea_res) {
 
       if (is.null(task_obj)) return(NULL)
 
-      # 获取对比组信息
       meta <- task_obj$meta
       gsea_res_obj <- task_obj$gsea_res
       df <- as.data.frame(gsea_res_obj@result)
 
       if (nrow(df) == 0) return(NULL)
 
-      # 处理排序
       df$abs_NES <- abs(df$NES)
       sort_config <- switch(sort_by,
                             "nes_desc" = list(col = "NES", desc = TRUE),
-                            "nes_asc" = list(col = "NES", desc = FALSE),
                             "abs_nes_desc" = list(col = "abs_NES", desc = TRUE),
                             "pval_asc" = list(col = "pvalue", desc = FALSE),
-                            "fdr_asc" = list(col = "p.adjust", desc = FALSE),
                             list(col = "abs_NES", desc = TRUE)
       )
 
       sort_order <- order(df[[sort_config$col]], decreasing = sort_config$desc)
       df <- df[sort_order, ]
       df$Rank <- seq_len(nrow(df))
-
-      # 生成 Safe_ID (用于前端交互)
       df$Safe_ID <- gsub("'", "\\\\'", df$ID)
 
-      # 获取当前对比组在 registry 中的信息
       reg_row <- gsea_res$contrast_registry[gsea_res$contrast_registry$contrast_id == contrast_id, ]
+
       if (nrow(reg_row) == 0) {
-        # 可能是反向对比，尝试解析
         parts <- strsplit(contrast_id, "_vs_")[[1]]
         if (length(parts) == 2) {
           left <- parts[1]; right <- parts[2]
@@ -1793,7 +2208,6 @@ mod_data_prep_server <- function(id, gsea_res) {
         right <- reg_row$right_group[1]
       }
 
-      # 构建返回数据结构 (兼容新旧架构)
       list(
         df = df,
         gsea_res = gsea_res_obj,
@@ -1806,20 +2220,19 @@ mod_data_prep_server <- function(id, gsea_res) {
         plot_subtype = as.numeric(plot_subtype),
         custom_colors = colors,
         is_preview = is_auto,
-        # 新增：后端信息用于四重联动适配
         backend = gsea_res$backend_info$backend
       )
     }
 
-    # 自动初始化 (选择最小基因集)
+    # 自动初始化
     shiny::observeEvent(input$selected_contrast, {
       if (has_initialized()) return()
 
-      shiny::invalidateLater(100, session)
+      shiny::invalidateLater(200, session)
+
       shiny::isolate({
         if (is.null(input$selected_contrast)) return()
 
-        # 获取可用集合
         task_temp <- tryCatch(
           extract_gsea_task(gsea_res, input$selected_contrast, "ALL"),
           error = function(e) NULL
@@ -1832,18 +2245,24 @@ mod_data_prep_server <- function(id, gsea_res) {
 
         if (length(available) == 0) return()
 
-        # 选择最小的集合
         counts <- sapply(available, function(x) sum(startsWith(as.character(df_temp$Combo_Name), x)))
         min_col <- available[which.min(counts)[1]]
 
-        shiny::updateSelectizeInput(session, "selected_collections",
-                                    choices = c("ALL", sort(available)),
-                                    selected = min_col)
+        shiny::updateSelectizeInput(
+          session,
+          "selected_collections",
+          choices = c("ALL", sort(available)),
+          selected = min_col
+        )
 
-        # 执行初始化
         auto_data <- process_data_core(
-          input$selected_contrast, min_col, "abs_nes_desc",
-          "logcpm", "3", "#E41A1C, #377EB8, #4DAF4A, #984EA3", TRUE
+          input$selected_contrast,
+          min_col,
+          "abs_nes_desc",
+          input$expression_type %||% "logcpm",
+          "3",
+          "#E41A1C, #377EB8, #4DAF4A, #984EA3",
+          TRUE
         )
 
         if (!is.null(auto_data)) {
@@ -1852,7 +2271,7 @@ mod_data_prep_server <- function(id, gsea_res) {
           shiny::showNotification(sprintf("已自动加载: %s", min_col), type = "default", duration = 3)
         }
       })
-    }, ignoreNULL = TRUE, ignoreInit = FALSE)
+    }, ignoreNULL = TRUE, ignoreInit = TRUE)
 
     # 手动确认按钮
     shiny::observeEvent(input$run_btn, {
@@ -1862,8 +2281,13 @@ mod_data_prep_server <- function(id, gsea_res) {
       if (is.null(cols) || length(cols) == 0) cols <- "ALL"
 
       manual_data <- process_data_core(
-        input$selected_contrast, cols, input$sort_by,
-        input$expression_type, input$plot_subtype, input$custom_colors, FALSE
+        input$selected_contrast,
+        cols,
+        input$sort_by,
+        input$expression_type,
+        input$plot_subtype,
+        input$custom_colors,
+        FALSE
       )
 
       if (is.null(manual_data)) {
@@ -1872,10 +2296,14 @@ mod_data_prep_server <- function(id, gsea_res) {
       }
 
       result_data(manual_data)
-      shiny::showNotification("工作台已更新", type = "message", duration = 3)
+      shiny::showNotification("✅ 工作台已更新", type = "message", duration = 3)
     })
 
-    return(shiny::reactive({ result_data() }))
+    return(list(
+      data = shiny::reactive({ result_data() }),
+      highlight_genes = applied_genes,
+      boxplot_order = applied_boxplot_order  # reactiveVal
+    ))
   })
 }
 
@@ -1883,7 +2311,7 @@ mod_data_prep_server <- function(id, gsea_res) {
 ====================================================================================================
 [文件 10/20] R\09_shiny_mod_table.R
 ====================================================================================================
-#' @title 主工作台表格 UI
+#' @title 主工作台表格 UI（Phase 11完整版）
 #' @keywords internal
 mod_master_table_ui <- function(id) {
   ns <- shiny::NS(id)
@@ -1893,19 +2321,22 @@ mod_master_table_ui <- function(id) {
       style = "width: 100%; overflow-x: auto;",
       shiny::tags$div(
         style = "margin-bottom: 10px; color: #666; font-size: 12px;",
-        shiny::HTML("💡 <b>操作提示：</b>拖拽列标题调整顺序 | 勾选\"联合展示\"列选择通路作图 | 点击\"Dashboard\"查看详情")
+        shiny::HTML("💡 拖拽列标题调整顺序 | 勾选\"联合展示\"列选择通路作图 | 点击\"Dashboard\"查看详情")
       ),
       DT::dataTableOutput(ns("table"))
     ),
-    shiny::tags$div(style = "display: none;",
-                    shiny::textInput(ns("joint_selection_store"), label = NULL, value = ""))
+    shiny::tags$div(
+      style = "display: none;",
+      shiny::textInput(ns("joint_selection_store"), label = NULL, value = "")
+    )
   )
 }
 
-#' @title 主工作台表格 Server
+#' @title 主工作台表格 Server（Phase 11完整版：CSV集成 + 所有修复）
+#' @description 功能：数据展示、CSV注释合并、BLANK列预留、列显示控制
 #' @param id 模块 ID
 #' @param data_prep 来自数据预处理模块的响应式数据
-#' @return 列表，包含 selected_pathways (reactive) 和 show_modal (reactive)
+#' @return 列表，包含 selected_pathways 和 show_modal
 #' @keywords internal
 mod_master_table_server <- function(id, data_prep) {
   shiny::moduleServer(id, function(input, output, session) {
@@ -1914,11 +2345,57 @@ mod_master_table_server <- function(id, data_prep) {
     joint_selected <- shiny::reactiveVal(character(0))
     has_interaction <- shiny::reactiveVal(FALSE)
 
-    # Safe ID 转换工具
     to_safe <- function(x) gsub("'", "\\\\'", x, fixed = TRUE)
     to_original <- function(x) gsub("\\\\'", "'", x, fixed = TRUE)
 
-    # 监听复选框事件 (来自前端 JS)
+    # 🔧 Phase 11 新增：动态加载CSV注释文件（鲁棒版）
+    pathway_annotations <- shiny::reactive({
+      # 构建CSV路径（支持开发环境和安装后环境）
+      possible_paths <- c(
+        file.path("inst", "extdata", "pathway_annotations.csv"),
+        file.path("extdata", "pathway_annotations.csv"),
+        system.file("extdata", "pathway_annotations.csv", package = "GSEAlens")
+      )
+
+      csv_path <- NULL
+      for (path in possible_paths) {
+        if (file.exists(path)) {
+          csv_path <- path
+          break
+        }
+      }
+
+      if (is.null(csv_path)) {
+        message("📄 未找到 pathway_annotations.csv，跳过注释加载")
+        return(NULL)
+      }
+
+      # 🔧 Phase 11：鲁棒读取（UTF-8编码，自动检测列数）
+      tryCatch({
+        # 使用read.csv，支持UTF-8和中文
+        anno_df <- read.csv(csv_path, stringsAsFactors = FALSE,
+                            check.names = FALSE,  # 保持原始列名（包括中文）
+                            encoding = "UTF-8")
+
+        if (nrow(anno_df) == 0) {
+          message("📄 CSV文件为空")
+          return(NULL)
+        }
+
+        # 🔧 Phase 11：检查必须有的ID列
+        if (!"ID" %in% colnames(anno_df)) {
+          warning("CSV文件缺少ID列，无法合并")
+          return(NULL)
+        }
+
+        message(sprintf("📄 成功加载注释文件: %d行 x %d列", nrow(anno_df), ncol(anno_df)))
+        return(anno_df)
+      }, error = function(e) {
+        warning(sprintf("读取CSV注释文件失败: %s", e$message))
+        return(NULL)
+      })
+    })
+
     shiny::observeEvent(input$joint_plot_toggle, {
       has_interaction(TRUE)
       toggle <- input$joint_plot_toggle
@@ -1926,77 +2403,227 @@ mod_master_table_server <- function(id, data_prep) {
 
       current <- joint_selected()
       if (isTRUE(toggle$checked)) {
-        if (!(toggle$id %in% current)) {
-          joint_selected(c(current, toggle$id))
-        }
+        if (!(toggle$id %in% current)) joint_selected(c(current, toggle$id))
       } else {
         joint_selected(setdiff(current, toggle$id))
       }
     })
 
-    # 渲染表格
+    # 🔧 Phase 8：p值格式化函数（可调阈值）
+    format_pvalue <- function(x, threshold = 0.001) {
+      ifelse(x < threshold,
+             format(x, digits = 2, scientific = TRUE),
+             format(round(x, 3), nsmall = 3))
+    }
+
     output$table <- DT::renderDataTable({
       data_list <- data_prep()
       shiny::validate(shiny::need(data_list, "等待数据加载..."))
       shiny::validate(shiny::need(nrow(data_list$df) > 0, "当前筛选条件下无数据"))
 
       df <- data_list$df
+      left_grp <- data_list$left_group
+      right_grp <- data_list$right_group
 
-      # 动态生成交互列
+      # 计算 Enriched_In 列
+      df$Enriched_In <- ifelse(df$NES > 0, left_grp, right_grp)
+      df$Enriched_In <- factor(df$Enriched_In, levels = c(left_grp, right_grp))
+
+      # 合并 Description
+      if (!is.null(data_list$task_obj$meta$meta_dict)) {
+        meta_dict <- data_list$task_obj$meta$meta_dict
+        if ("Brief_Description" %in% colnames(meta_dict)) {
+          desc_map <- setNames(meta_dict$Brief_Description, meta_dict$ID)
+          df$Description <- desc_map[df$ID]
+        } else if ("Description" %in% colnames(meta_dict)) {
+          desc_map <- setNames(meta_dict$Description, meta_dict$ID)
+          df$Description <- desc_map[df$ID]
+        } else {
+          df$Description <- df$ID
+        }
+      } else {
+        df$Description <- df$ID
+      }
+      df$Description[is.na(df$Description)] <- df$ID[is.na(df$Description)]
+
+      # 🔧 Phase 8：格式化数值（<0.001用科学计数法，否则3位小数）
+      df$NES_display <- round(df$NES, 2)
+      df$pvalue_display <- format_pvalue(df$pvalue, threshold = 0.001)
+      df$padj_display <- format_pvalue(df$p.adjust, threshold = 0.001)
+
+      # 交互列
       df$Select_for_Plot <- sprintf(
-        '<input type="checkbox" class="joint-plot-checkbox" data-id="%s" id="%s_%s" %s onclick="Shiny.setInputValue(&#39;%s&#39;, {id: &#39;%s&#39;, checked: this.checked}, {priority: &#39;event&#39;});"/>',
-        df$Safe_ID, ns("chk"), df$Safe_ID,
+        '<input type="checkbox" class="joint-plot-checkbox" data-id="%s" %s onclick="Shiny.setInputValue(&#39;%s&#39;, {id: &#39;%s&#39;, checked: this.checked}, {priority: &#39;event&#39;});"/>',
+        df$Safe_ID,
         ifelse(df$Safe_ID %in% joint_selected(), 'checked="checked"', ''),
-        ns("joint_plot_toggle"), df$Safe_ID
+        ns("joint_plot_toggle"),
+        df$Safe_ID
       )
 
       df$Detail_Btn <- sprintf(
-        '<button class="btn btn-sm btn-success pathway-detail-btn" onClick="Shiny.setInputValue(&#39;%s&#39;, &#39;%s&#39;, {priority: &#39;event&#39;})">🔍 Dashboard</button>',
-        ns("show_modal"), df$Safe_ID
+        '<button class="btn btn-sm btn-success" onclick="Shiny.setInputValue(&#39;%s&#39;, &#39;%s&#39;, {priority: &#39;event&#39;})">🔍 %s</button>',
+        ns("show_modal"),
+        df$Safe_ID,
+        "Dashboard"
       )
 
-      # 选择显示列
-      display_cols <- c("Rank", "Select_for_Plot", "Detail_Btn", "ID", "NES", "pvalue", "p.adjust",
-                        "Collection", "Combo_Name", "Enriched_In")
-      display_cols <- intersect(display_cols, colnames(df))
+      # 🔧 Phase 11：合并CSV注释数据（如果存在）
+      anno_df <- pathway_annotations()
+      if (!is.null(anno_df)) {
+        # 只保留非空的注释列（排除全NA的列）
+        cols_to_keep <- sapply(anno_df, function(col) {
+          !all(is.na(col) | col == "" | col == "NA")
+        })
 
-      # 构建 DT
-      DT::datatable(
-        df[, display_cols],
+        # 确保ID列被保留用于合并
+        cols_to_keep["ID"] <- TRUE
+
+        if (sum(cols_to_keep) > 1) {  # 至少除了ID还有一列
+          anno_df_filtered <- anno_df[, cols_to_keep, drop = FALSE]
+
+          # 使用left_join合并（保留所有通路，注释缺失则留NA）
+          df <- dplyr::left_join(df, anno_df_filtered, by = "ID")
+          message(sprintf("🔗 已合并注释列: %s",
+                          paste(setdiff(colnames(anno_df_filtered), "ID"), collapse = ", ")))
+        }
+      }
+
+      # 🔧 Phase 8 & 11：构建显示列（动态识别CSV列和BLANK列）
+      base_cols <- c("Rank", "Select_for_Plot", "Detail_Btn", "ID", "Enriched_In",
+                     "NES_display", "pvalue_display", "padj_display", "setSize", "Description")
+
+      # 🔧 Phase 11：添加CSV中的注释列（排除ID列和全空列）
+      if (!is.null(anno_df)) {
+        csv_cols <- setdiff(colnames(anno_df), "ID")
+
+        # 检查这些列在df中是否全空（NA或空字符串）
+        csv_cols_non_empty <- sapply(csv_cols, function(col) {
+          if (!col %in% colnames(df)) return(FALSE)
+          vals <- df[[col]]
+          !all(is.na(vals) | vals == "" | vals == "NA")
+        })
+
+        csv_cols_to_show <- csv_cols[csv_cols_non_empty]
+        base_cols <- c(base_cols, csv_cols_to_show)
+      }
+
+      # 🔧 Phase 8：预留BLANK1-10列（如果存在则显示）
+      blank_cols <- paste0("BLANK", 1:10)
+      existing_blank <- blank_cols[blank_cols %in% colnames(df)]
+      if (length(existing_blank) > 0) {
+        # 检查是否全空
+        blank_non_empty <- sapply(existing_blank, function(col) {
+          !all(is.na(df[[col]]) | df[[col]] == "")
+        })
+        base_cols <- c(base_cols, existing_blank[blank_non_empty])
+      }
+
+      display_cols <- intersect(base_cols, colnames(df))
+      dt_data <- df[, display_cols]
+
+      # 🔧 Phase 8：直接修改列名（避免escape参数问题）
+      col_name_map <- c(
+        "Rank" = "Rank",
+        "Select_for_Plot" = "联合展示",
+        "Detail_Btn" = "Dashboard",
+        "ID" = "Pathway",
+        "Enriched_In" = "Enriched In",
+        "NES_display" = "NES",
+        "pvalue_display" = "P-value",
+        "padj_display" = "FDR",
+        "setSize" = "Size",
+        "Description" = "Description"
+      )
+
+      # 🔧 Phase 11：为CSV列和BLANK列保留原始名称（或映射为中文）
+      for (col in display_cols) {
+        if (!col %in% names(col_name_map)) {
+          # 对于未知列（CSV或BLANK），使用原始列名，或转换为中文标签
+          col_name_map[col] <- col  # 保持原样，或可根据需要翻译
+        }
+      }
+
+      names(dt_data) <- col_name_map[display_cols]
+
+      # 🔧 Phase 8 & 11：动态构建columnDefs（避免targets越界）
+      col_defs <- list()
+
+      if ("Select_for_Plot" %in% display_cols) {
+        idx <- which(display_cols == "Select_for_Plot") - 1
+        col_defs[[length(col_defs) + 1]] <- list(width = '60px', targets = idx, className = 'dt-center', orderable = FALSE)
+      }
+      if ("Detail_Btn" %in% display_cols) {
+        idx <- which(display_cols == "Detail_Btn") - 1
+        col_defs[[length(col_defs) + 1]] <- list(width = '90px', targets = idx, orderable = FALSE)
+      }
+      if ("Enriched_In" %in% display_cols) {
+        idx <- which(display_cols == "Enriched_In") - 1
+        col_defs[[length(col_defs) + 1]] <- list(width = '100px', targets = idx)
+      }
+      if ("Description" %in% display_cols) {
+        idx <- which(display_cols == "Description") - 1
+        col_defs[[length(col_defs) + 1]] <- list(width = '300px', targets = idx, className = 'description-cell')
+      }
+
+      # 🔧 Phase 8：构建DT（包含ColVis按钮）
+      dt <- DT::datatable(
+        dt_data,
         escape = FALSE,
         selection = "multiple",
         rownames = FALSE,
         extensions = c('Buttons', 'Scroller', 'ColReorder'),
         options = list(
-          scrollX = TRUE, scrollY = "60vh", scroller = TRUE,
-          deferRender = TRUE, pageLength = -1, dom = 'Bfrtip',
-          buttons = c('copy', 'csv', 'excel'), colReorder = TRUE,
-          columnDefs = list(
-            list(width = '80px', targets = 1, className = 'dt-center', orderable = FALSE), # 复选框
-            list(width = '100px', targets = 2, orderable = FALSE), # 详情按钮
-            list(visible = FALSE, targets = which(display_cols == "Safe_ID") - 1)
-          )
+          scrollX = TRUE,
+          scrollY = "60vh",
+          scroller = TRUE,
+          deferRender = TRUE,
+          pageLength = -1,
+          dom = 'Bfrtip',
+          buttons = c('copy', 'csv', 'excel', 'colvis'),  # 🔧 Phase 8：恢复ColVis
+          colReorder = TRUE,
+          columnDefs = col_defs,
+          order = list(list(0, 'asc'))
         )
-      ) %>%
-        DT::formatStyle("NES", color = DT::styleInterval(0, c('blue', 'red')), fontWeight = 'bold') %>%
-        DT::formatStyle("p.adjust", backgroundColor = DT::styleInterval(c(0.01, 0.05), c('#fc9272', '#fee0d2', 'transparent')))
+      )
+
+      # 样式设置（使用重命名后的列名）
+      if ("Enriched_In" %in% display_cols) {
+        dt <- dt %>% DT::formatStyle(
+          columns = "Enriched In",  # 使用显示名
+          backgroundColor = DT::styleEqual(c(left_grp, right_grp), c('#fee0d2', '#deebf7')),
+          color = DT::styleEqual(c(left_grp, right_grp), c('#cc212f', '#1052bd')),
+          fontWeight = 'bold'
+        )
+      }
+
+      if ("NES_display" %in% display_cols) {
+        dt <- dt %>% DT::formatStyle(
+          columns = "NES",
+          color = DT::styleInterval(0, c('#1052bd', '#cc212f')),
+          fontWeight = 'bold'
+        )
+      }
+
+      if ("padj_display" %in% display_cols) {
+        dt <- dt %>% DT::formatStyle(
+          columns = "FDR",
+          backgroundColor = DT::styleInterval(c(0.01, 0.05), c('#fc9272', '#fee0d2', 'transparent')),
+          fontWeight = DT::styleInterval(0.05, c('bold', 'normal'))
+        )
+      }
+
+      dt
     }, server = TRUE)
 
-    # 返回选中的通路
     selected_pathways <- shiny::reactive({
-      if (isTRUE(has_interaction())) {
-        return(to_original(joint_selected()))
-      }
-      # 回退到行选择
+      if (isTRUE(has_interaction())) return(to_original(joint_selected()))
       data_list <- data_prep()
       if (is.null(data_list) || is.null(input$table_rows_selected)) return(character(0))
       return(data_list$df$ID[input$table_rows_selected])
     })
 
-    # 弹窗触发器
     show_modal_trigger <- shiny::reactive({ input$show_modal })
 
-    # 供外部调用的清理函数
     remove_pathways <- function(ids) {
       ids <- ids[!is.na(ids)]
       if (length(ids) == 0) return()
@@ -2024,7 +2651,7 @@ mod_master_table_server <- function(id, data_prep) {
 ====================================================================================================
 [文件 11/20] R\10_shiny_mod_quadrant.R
 ====================================================================================================
-#' @title 四重联动 UI
+#' @title 四重联动 UI（修复版）
 #' @keywords internal
 mod_quadrant_ui <- function(id) {
   ns <- shiny::NS(id)
@@ -2032,7 +2659,14 @@ mod_quadrant_ui <- function(id) {
     shiny::fluidRow(
       shiny::column(6, shiny::div(class = "white-box",
                                   shiny::h4("1. 宏观: 通路火山图"),
-                                  plotly::plotlyOutput(ns("volcano_pathway"), height = "450px"))),
+                                  shiny::div(
+                                    style = "position: relative;",
+                                    plotly::plotlyOutput(ns("volcano_pathway"), height = "450px"),
+                                    shiny::div(
+                                      style = "position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.9); padding: 5px 10px; border-radius: 4px; font-size: 11px; color: #666;",
+                                      "点击通路查看详情"
+                                    )
+                                  ))),
       shiny::column(6, shiny::div(class = "white-box",
                                   shiny::h4("2. 微观: 基因 Rank 分布"),
                                   plotly::plotlyOutput(ns("volcano_gene"), height = "450px")))
@@ -2043,69 +2677,146 @@ mod_quadrant_ui <- function(id) {
                                   plotly::plotlyOutput(ns("de_volcano"), height = "450px"))),
       shiny::column(6, shiny::div(class = "white-box",
                                   shiny::h4("4. 全量表达箱线图"),
-                                  plotly::plotlyOutput(ns("gene_expr_box"), height = "450px")))
+                                  shiny::div(
+                                    style = "position: relative;",
+                                    plotly::plotlyOutput(ns("gene_expr_box"), height = "450px"),
+                                    shiny::uiOutput(ns("boxplot_order_status"))
+                                  )))
     )
   )
 }
 
-#' @title 四重联动 Server
-#' @description 适配双后端 (limma/deseq2) 的差异表达可视化
+#' @title 四重联动 Server（连续点击多选 + 排序根治版）
+#' @description 支持连续点击标记多个通路，Boxplot排序强制锁定
 #' @keywords internal
-mod_quadrant_server <- function(id, data_prep, gsea_res) {
+mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
-    selected_labels <- shiny::reactiveVal(character(0))
+    COLOR_LEFT <- "#E41A1C"
+    COLOR_RIGHT <- "#377EB8"
+    COLOR_NS <- "#C0C0C0"
+    COLOR_HIGHLIGHT <- "#FF9800"
 
-    # 1. 通路火山图
+    selected_pathway_ids <- shiny::reactiveVal(character(0))
+    selected_pathway_genes <- shiny::reactiveVal(character(0))
+
+    data_prep_data <- data_prep_list$data
+    highlight_genes_reactive <- data_prep_list$highlight_genes
+
+    # 🔧 修复：直接持有reactiveVal引用，确保实时同步
+    boxplot_order_ref <- data_prep_list$boxplot_order
+
+    shiny::observeEvent(data_prep_data(), {
+      selected_pathway_ids(character(0))
+      selected_pathway_genes(character(0))
+
+      # 🔴 关键修复：当对比组切换时，重置排序为默认
+      boxplot_order_ref("default")
+      message("🔄 [联动] 对比组已切换，排序已重置为默认")
+    })
+
+    # 1. 通路火山图（连续点击多选）
     output$volcano_pathway <- plotly::renderPlotly({
-      data_list <- data_prep()
+      data_list <- data_prep_data()
       shiny::req(data_list)
 
       df <- data_list$df
-      df$Color <- ifelse(df$NES > 0, "#cc212f", "#1052bd")
+      left_grp <- data_list$left_group
+      right_grp <- data_list$right_group
 
-      p <- plotly::plot_ly(
-        df, x = ~NES, y = ~-log10(p.adjust),
-        type = "scatter", mode = "markers",
-        marker = list(color = ~Color, size = 10, opacity = 0.8),
-        text = ~sprintf("%s<br>NES: %.3f<br>FDR: %.2e", ID, NES, p.adjust),
-        key = ~ID, source = ns("pathway_volcano")
-      ) %>% plotly::layout(
-        xaxis = list(title = "NES"),
-        yaxis = list(title = "-log10 (FDR)"),
-        dragmode = "select"
-      )
+      current_selections <- selected_pathway_ids()
 
-      # 添加标签
-      labs <- selected_labels()
-      if (length(labs) > 0) {
-        lab_df <- df[df$ID %in% labs, ]
-        p <- p %>% plotly::add_annotations(
-          x = lab_df$NES, y = -log10(lab_df$p.adjust),
-          text = lab_df$ID, showarrow = TRUE, arrowhead = 2,
-          ax = 20, ay = -30, font = list(size = 10)
-        )
+      df$color <- ifelse(df$ID %in% current_selections, COLOR_HIGHLIGHT,
+                         ifelse(df$NES > 0, COLOR_LEFT, COLOR_RIGHT))
+      df$size <- ifelse(df$ID %in% current_selections, 18, 10)
+      df$opacity <- ifelse(length(current_selections) == 0, 0.8,
+                           ifelse(df$ID %in% current_selections, 1.0, 0.35))
+      df$linewidth <- ifelse(df$ID %in% current_selections, 3, 1)
+
+      annotations_list <- list()
+      if (length(current_selections) > 0) {
+        selected_df <- df[df$ID %in% current_selections, ]
+        for (i in 1:nrow(selected_df)) {
+          row <- selected_df[i, ]
+          ay_offset <- -40 - ((i-1) %% 3) * 25
+          ax_offset <- ifelse(i %% 2 == 1, 0, 60)
+
+          annotations_list[[i]] <- list(
+            x = row$NES,
+            y = -log10(row$p.adjust),
+            text = row$ID,
+            showarrow = TRUE,
+            arrowhead = 2,
+            arrowsize = 1,
+            arrowwidth = 2,
+            arrowcolor = COLOR_HIGHLIGHT,
+            ax = ax_offset,
+            ay = ay_offset,
+            font = list(size = 11, color = COLOR_HIGHLIGHT, family = "Arial"),
+            bgcolor = "rgba(255,255,255,0.95)",
+            bordercolor = COLOR_HIGHLIGHT,
+            borderwidth = 2,
+            borderpad = 4
+          )
+        }
       }
-      p
+
+      plotly::plot_ly(
+        data = df,
+        x = ~NES,
+        y = ~-log10(p.adjust),
+        type = "scatter",
+        mode = "markers",
+        marker = list(
+          color = ~color,
+          size = ~size,
+          opacity = ~opacity,
+          line = list(color = "white", width = ~linewidth)
+        ),
+        text = ~sprintf("%s<br>NES: %.2f<br>FDR: %.2e", ID, NES, p.adjust),
+        hoverinfo = "text",
+        key = ~ID,
+        source = ns("pathway_volcano")
+      ) %>%
+        plotly::layout(
+          xaxis = list(title = "NES", zeroline = FALSE),
+          yaxis = list(title = "-log10 (FDR)", zeroline = FALSE),
+          showlegend = FALSE,
+          dragmode = "pan",
+          annotations = annotations_list
+        )
     })
 
-    # 点击选择
     shiny::observeEvent(plotly::event_data("plotly_click", source = ns("pathway_volcano")), {
       click <- plotly::event_data("plotly_click", source = ns("pathway_volcano"))
-      if (!is.null(click$key)) {
-        current <- selected_labels()
-        if (click$key %in% current) {
-          selected_labels(setdiff(current, click$key))
-        } else {
-          selected_labels(c(current, click$key))
+
+      if (is.null(click) || is.null(click$key)) return()
+
+      clicked_id <- click$key
+      current <- selected_pathway_ids()
+
+      if (clicked_id %in% current) {
+        new_selection <- setdiff(current, clicked_id)
+        selected_pathway_ids(new_selection)
+        message(sprintf("❌ 移除: %s (剩余%d个)", clicked_id, length(new_selection)))
+      } else {
+        new_selection <- c(current, clicked_id)
+        selected_pathway_ids(new_selection)
+        message(sprintf("✅ 添加: %s (共%d个)", clicked_id, length(new_selection)))
+
+        data_list <- data_prep_data()
+        if (!is.null(data_list)) {
+          pathway_genes <- data_list$gsea_res@geneSets[[clicked_id]]
+          current_genes <- selected_pathway_genes()
+          selected_pathway_genes(unique(c(current_genes, toupper(pathway_genes))))
         }
       }
     })
 
-    # 2. 基因 Rank 分布 (GSEA 排序统计量)
+    # 2. 基因 Rank 分布
     output$volcano_gene <- plotly::renderPlotly({
-      data_list <- data_prep()
+      data_list <- data_prep_data()
       shiny::req(data_list)
 
       genelist <- data_list$gsea_res@geneList
@@ -2117,79 +2828,196 @@ mod_quadrant_server <- function(id, data_prep, gsea_res) {
         stringsAsFactors = FALSE
       )
 
-      # 高亮选中的通路
-      click <- plotly::event_data("plotly_click", source = ns("pathway_volcano"))
-      rank_df$Color <- "#CFD8DC"
+      current_pws <- selected_pathway_ids()
+      rank_df$Color <- COLOR_NS
       rank_df$Size <- 4
 
-      if (!is.null(click) && !is.null(click$key)) {
-        pathway_genes <- data_list$gsea_res@geneSets[[click$key]]
-        match_idx <- which(toupper(rank_df$Gene) %in% toupper(pathway_genes))
+      if (length(current_pws) > 0) {
+        pathway_genes <- selected_pathway_genes()
+        match_idx <- which(toupper(rank_df$Gene) %in% pathway_genes)
         if (length(match_idx) > 0) {
-          rank_df$Color[match_idx] <- "#FF9800"
+          rank_df$Color[match_idx] <- COLOR_HIGHLIGHT
           rank_df$Size[match_idx] <- 12
         }
       }
 
       plotly::plot_ly(
-        rank_df, x = ~Rank, y = ~Metric,
-        type = "scattergl", mode = "markers",
-        marker = list(color = ~Color, size = ~Size),
-        text = ~Gene
+        data = rank_df, x = ~Rank, y = ~Metric,
+        type = "scattergl",
+        mode = "markers",
+        marker = list(color = ~Color, size = ~Size, opacity = 0.8, line = list(width = 0)),
+        text = ~Gene, hoverinfo = "text"
       ) %>% plotly::layout(
         xaxis = list(title = "Gene Rank"),
-        yaxis = list(title = "Ranking Metric (Stat)")
+        yaxis = list(title = "Ranking Metric (Stat)"),
+        showlegend = FALSE,
+        title = list(
+          text = ifelse(length(current_pws) > 0,
+                        sprintf("已选%d个通路 | 共%d个基因", length(current_pws), length(selected_pathway_genes())),
+                        "点击上方火山图标记通路"),
+          font = list(size = 12)
+        )
       )
     })
 
-    # 3. 差异表达火山图 (关键适配：limma vs deseq2)
+    # 3. 差异表达火山图
     output$de_volcano <- plotly::renderPlotly({
-      data_list <- data_prep()
+      data_list <- data_prep_data()
       shiny::req(data_list)
 
       contrast_id <- data_list$contrast_id
-      backend <- data_list$backend
 
-      # 使用访问器获取 DE 表 (兼容双后端)
       de_df <- tryCatch({
         get_de_table(gsea_res, contrast_id)
-      }, error = function(e) NULL)
+      }, error = function(e) {
+        message(sprintf("DE表获取失败: %s", e$message))
+        return(NULL)
+      })
 
       shiny::req(de_df)
 
-      # 适配不同后端的列名
-      if (backend == "limma_voom") {
-        # limma: 使用 t-statistic 作为 x 轴，或 logFC
-        de_df$x_axis <- de_df$logFC  # 或 de_df$stat (t值)
-        de_df$y_axis <- -log10(de_df$pvalue)
-        x_title <- "log2 Fold Change"
-      } else {
-        # deseq2
-        de_df$x_axis <- de_df$logFC  # log2FoldChange
-        de_df$y_axis <- -log10(de_df$pvalue)
-        x_title <- "log2 Fold Change"
+      col_mapping <- list(
+        logFC = c("logFC", "log2FoldChange"),
+        pvalue = c("pvalue", "p.value", "P.Value"),
+        padj = c("padj", "p.adjust", "adj.P.Val")
+      )
+
+      for (std_name in names(col_mapping)) {
+        if (!(std_name %in% colnames(de_df))) {
+          for (alt_name in col_mapping[[std_name]]) {
+            if (alt_name %in% colnames(de_df)) {
+              de_df[[std_name]] <- de_df[[alt_name]]
+              break
+            }
+          }
+        }
       }
 
-      # 标记显著性
-      de_df$Color <- "#C0C0C0"
-      sig_idx <- which(abs(de_df$logFC) > 0.5 & de_df$padj < 0.05)
-      if (length(sig_idx) > 0) de_df$Color[sig_idx] <- ifelse(de_df$logFC[sig_idx] > 0, "#cc212f", "#1052bd")
+      de_df <- de_df[!is.na(de_df$logFC) & !is.na(de_df$pvalue) & !is.na(de_df$padj), ]
+      if (nrow(de_df) == 0) return(NULL)
 
-      plotly::plot_ly(
-        de_df, x = ~x_axis, y = ~y_axis,
-        type = "scattergl", mode = "markers",
-        marker = list(color = ~Color, size = 10, opacity = 0.8),
-        text = ~sprintf("%s<br>logFC: %.2f<br>FDR: %.2e", gene_symbol, logFC, padj),
-        key = ~toupper(gene_symbol), source = ns("gene_volcano")
-      ) %>% plotly::layout(
-        xaxis = list(title = x_title, zeroline = FALSE),
-        yaxis = list(title = "-log10 P-value", zeroline = FALSE)
-      )
+      de_df$x_axis <- de_df$logFC
+      de_df$y_axis <- -log10(de_df$pvalue)
+
+      inf_y <- is.infinite(de_df$y_axis)
+      if (any(inf_y)) {
+        max_y <- max(de_df$y_axis[!inf_y], na.rm = TRUE)
+        de_df$y_axis[inf_y] <- max_y * 1.1
+      }
+
+      user_genes <- toupper(highlight_genes_reactive())
+      pathway_genes <- selected_pathway_genes()
+      de_df$gene_upper <- toupper(de_df$gene_symbol)
+
+      de_df$category <- "normal"
+      de_df$category[de_df$gene_upper %in% pathway_genes] <- "pathway"
+      de_df$category[de_df$gene_upper %in% user_genes] <- "user"
+
+      de_df$color <- COLOR_NS
+      de_df$size <- 6
+      de_df$significant <- abs(de_df$logFC) > 0.5 & de_df$padj < 0.05
+
+      user_idx <- which(de_df$category == "user")
+      if (length(user_idx) > 0) {
+        de_df$color[user_idx] <- ifelse(de_df$logFC[user_idx] > 0, COLOR_LEFT, COLOR_RIGHT)
+        de_df$size[user_idx] <- 15
+      }
+
+      pathway_idx <- which(de_df$category == "pathway" & de_df$color == COLOR_NS)
+      if (length(pathway_idx) > 0) {
+        de_df$color[pathway_idx] <- COLOR_HIGHLIGHT
+        de_df$size[pathway_idx] <- 12
+      }
+
+      sig_idx <- which(de_df$significant & de_df$color == COLOR_NS)
+      if (length(sig_idx) > 0) {
+        de_df$color[sig_idx] <- ifelse(de_df$logFC[sig_idx] > 0, COLOR_LEFT, COLOR_RIGHT)
+        de_df$size[sig_idx] <- 8
+      }
+
+      de_df$priority <- ifelse(de_df$category == "user", 4,
+                               ifelse(de_df$category == "pathway", 3,
+                                      ifelse(de_df$significant, 2, 1)))
+      de_df <- de_df[order(de_df$priority), ]
+
+      user_genes_df <- de_df[de_df$category == "user", ]
+
+      p <- plotly::plot_ly(
+        data = de_df,
+        x = ~x_axis,
+        y = ~y_axis,
+        type = "scattergl",
+        mode = "markers",
+        marker = list(
+          color = ~color,
+          size = ~size,
+          opacity = 0.9,
+          line = list(color = "white", width = 1)
+        ),
+        text = ~sprintf("%s<br>logFC: %.2f<br>FDR: %.2e%s",
+                        gene_symbol, logFC, padj,
+                        ifelse(category == "user", " ⭐ USER",
+                               ifelse(category == "pathway", " 🔥 PATHWAY", ""))),
+        hoverinfo = "text",
+        key = ~gene_upper,
+        source = ns("deg_volcano")
+      ) %>%
+        plotly::layout(
+          xaxis = list(title = "log2 Fold Change", zeroline = FALSE),
+          yaxis = list(title = "-log10 P-value", zeroline = FALSE),
+          showlegend = FALSE
+        )
+
+      if (nrow(user_genes_df) > 0) {
+        annotations <- lapply(1:nrow(user_genes_df), function(i) {
+          gene <- user_genes_df[i, ]
+          base_ay <- -40
+          stagger <- (i %% 3) * 15
+          ax <- ifelse(gene$logFC > 0, 30 + (i %% 2) * 20, -30 - (i %% 2) * 20)
+
+          list(
+            x = gene$x_axis,
+            y = gene$y_axis,
+            text = gene$gene_symbol,
+            showarrow = TRUE,
+            arrowhead = 0,
+            arrowsize = 1,
+            arrowwidth = 1,
+            arrowcolor = ifelse(gene$logFC > 0, COLOR_LEFT, COLOR_RIGHT),
+            ax = ax,
+            ay = base_ay - stagger,
+            bgcolor = "rgba(255,255,255,0.9)",
+            bordercolor = ifelse(gene$logFC > 0, COLOR_LEFT, COLOR_RIGHT),
+            borderwidth = 1,
+            font = list(size = 10, color = ifelse(gene$logFC > 0, COLOR_LEFT, COLOR_RIGHT))
+          )
+        })
+        p <- p %>% plotly::layout(annotations = annotations)
+      }
+
+      p
     })
 
-    # 4. 表达箱线图 (使用统一接口)
+    # 4. 全量表达箱线图（完全根治版）
     output$gene_expr_box <- plotly::renderPlotly({
-      gene_click <- plotly::event_data("plotly_click", source = ns("gene_volcano"))
+      # ✅ 第一步：最前端立即读取排序选择
+      current_pending_order <- input$boxplot_order_pending  # 从UI读取
+      current_confirmed_order <- boxplot_order_ref()       # 从reactiveVal读取
+
+      # 使用已确认的排序（优先级更高）
+      final_order_to_use <- if (!is.null(current_confirmed_order) &&
+                                current_confirmed_order != "default" &&
+                                current_confirmed_order != "") {
+        current_confirmed_order
+      } else {
+        "default"
+      }
+
+      message(sprintf("📋 [Boxplot Render] 读取排序: pending='%s' | confirmed='%s' | 最终使用='%s'",
+                      current_pending_order, current_confirmed_order, final_order_to_use))
+
+      # 获取点击事件
+      gene_click <- plotly::event_data("plotly_click", source = ns("deg_volcano"))
 
       if (is.null(gene_click) || is.null(gene_click$key)) {
         return(plotly::plot_ly() %>% plotly::layout(
@@ -2197,48 +3025,148 @@ mod_quadrant_server <- function(id, data_prep, gsea_res) {
         ))
       }
 
-      data_list <- data_prep()
+      data_list <- data_prep_data()
       shiny::req(data_list)
 
-      # 使用访问器获取表达矩阵 (自动处理后缀)
-      expr_mat <- get_expr_matrix(gsea_res, type = data_list$expression_type)
-      sample_meta <- get_sample_meta(gsea_res)
+      tryCatch({
+        expr_mat <- get_expr_matrix(gsea_res, type = data_list$expression_type)
+        sample_meta <- get_sample_meta(gsea_res)
 
-      if (is.null(expr_mat) || is.null(sample_meta)) {
-        return(plotly::plot_ly() %>% plotly::layout(title = "表达矩阵不可用"))
+        if (is.null(expr_mat) || is.null(sample_meta)) {
+          return(plotly::plot_ly() %>% plotly::layout(title = "表达矩阵不可用"))
+        }
+
+        target_gene_upper <- gene_click$key
+        gene_names_upper <- toupper(rownames(expr_mat))
+        match_idx <- which(gene_names_upper == target_gene_upper)
+
+        if (length(match_idx) == 0) {
+          return(plotly::plot_ly() %>% plotly::layout(
+            title = sprintf("基因 '%s' 未找到", target_gene_upper)
+          ))
+        }
+
+        actual_gene <- rownames(expr_mat)[match_idx[1]]
+        expr_values <- expr_mat[actual_gene, ]
+
+        sample_names <- names(expr_values)
+        group_info <- sample_meta$group[match(sample_names, rownames(sample_meta))]
+
+        plot_data <- data.frame(
+          Sample = sample_names,
+          Expression = as.numeric(expr_values),
+          Group = group_info,
+          stringsAsFactors = FALSE
+        )
+
+        plot_data <- plot_data[!is.na(plot_data$Group), ]
+
+        if (nrow(plot_data) == 0) {
+          return(plotly::plot_ly() %>% plotly::layout(title = "无有效分组数据"))
+        }
+
+        # ✅ 关键第二步：解析排序设置，转换为x_categories排列顺序
+        actual_groups <- unique(as.character(plot_data$Group))
+        x_categories <- NULL
+
+        if (final_order_to_use != "default" && final_order_to_use != "" && !is.na(final_order_to_use)) {
+          # 将逗号分隔的字符串转换为组名向量
+          order_parts <- strsplit(final_order_to_use, ",")[[1]]
+          order_parts <- trimws(order_parts)  # 移除空格
+
+          message(sprintf("   🔍 解析排序字符串: [%s]", paste(order_parts, collapse=" | ")))
+
+          # 验证解析结果
+          valid_parts <- order_parts[order_parts %in% actual_groups]
+          missing_parts <- setdiff(order_parts, actual_groups)
+
+          if (length(missing_parts) > 0) {
+            message(sprintf("   ⚠️ 警告：排序包含不存在的组[%s]，自动修正",
+                            paste(missing_parts, collapse=",")))
+          }
+
+          # 严格按照指定顺序排列
+          x_categories <- valid_parts
+          # 追加未指定的组
+          x_categories <- c(x_categories, setdiff(actual_groups, x_categories))
+
+          message(sprintf("   ✅ 最终排序: [%s]", paste(x_categories, collapse=" → ")))
+        } else {
+          x_categories <- actual_groups
+          message(sprintf("   ✅ 使用默认排序: [%s]", paste(x_categories, collapse=" → ")))
+        }
+
+        # ✅ 关键第三步：确保Group因子级别与x_categories完全一致
+        plot_data <- plot_data[plot_data$Group %in% x_categories, ]
+        plot_data$Group <- factor(plot_data$Group, levels = x_categories, ordered = TRUE)
+
+        # 颜色设置
+        unique_groups <- levels(plot_data$Group)
+        if (length(unique_groups) == 2) {
+          group_colors <- c(COLOR_LEFT, COLOR_RIGHT)
+          names(group_colors) <- unique_groups
+        } else {
+          group_colors <- c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3",
+                            "#FF7F00", "#A65628", "#F781BF", "#999999")[1:length(unique_groups)]
+          names(group_colors) <- unique_groups
+        }
+
+        # ✅ 关键第四步：ggplot2层面强制顺序
+        p <- ggplot2::ggplot(plot_data,
+                             ggplot2::aes(x = Group, y = Expression, fill = Group)) +
+          ggplot2::geom_boxplot(alpha = 0.7, outlier.shape = NA) +
+          ggplot2::geom_jitter(width = 0.2, size = 3, alpha = 0.6) +
+          ggplot2::scale_fill_manual(values = group_colors) +
+          # 🔴 最关键：使用 limits 参数固定顺序
+          ggplot2::scale_x_discrete(limits = x_categories, drop = FALSE) +
+          ggplot2::theme_bw(base_size = 12) +
+          ggplot2::labs(title = sprintf("%s (排序: %s)",
+                                        actual_gene,
+                                        if(final_order_to_use == "default") "默认" else "自定义"),
+                        y = data_list$expression_type,
+                        x = NULL) +
+          ggplot2::theme(
+            legend.position = "none",
+            axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
+          )
+
+        # 转换为plotly，并在plotly层面也强制顺序
+        ply <- plotly::ggplotly(p)
+
+        ply <- ply %>% plotly::layout(
+          xaxis = list(
+            categoryorder = "array",
+            categoryarray = x_categories,
+            title = ""
+          )
+        )
+
+        return(ply)
+
+      }, error = function(e) {
+        message(sprintf("❌ Boxplot错误: %s", e$message))
+        return(plotly::plot_ly() %>% plotly::layout(
+          title = sprintf("错误: %s", e$message)
+        ))
+      })
+    })
+
+
+    # 显示示当前排序状态（实时更新）
+    output$boxplot_order_status <- shiny::renderUI({
+      order <- boxplot_order_ref()  # 实时读取
+      if (is.null(order) || is.na(order) ||
+          order == "default" || order == "" || order == "limited") {
+        shiny::div(
+          style = "position: absolute; top: 5px; left: 25%; background: rgba(255,255,255,0.9); padding: 5px 10px; border-radius: 4px; font-size: 11px; color: #666;",
+          "排序: 默认"
+        )
+      } else {
+        shiny::div(
+          style = "position: absolute; top: 5px; left: 25%; background: rgba(212,237,218,0.9); padding: 5px 10px; border-radius: 4px; font-size: 11px; color: #155724;",
+          sprintf("排序: %s", gsub(",", " → ", order))
+        )
       }
-
-      # 查找基因 (大小写不敏感)
-      target_gene_upper <- gene_click$key
-      gene_names_upper <- toupper(rownames(expr_mat))
-      match_idx <- which(gene_names_upper == target_gene_upper)
-
-      if (length(match_idx) == 0) {
-        return(plotly::plot_ly() %>% plotly::layout(title = sprintf("基因 '%s' 未找到", target_gene_upper)))
-      }
-
-      actual_gene <- rownames(expr_mat)[match_idx[1]]
-      expr_values <- expr_mat[actual_gene, ]
-
-      # 构建绘图数据
-      plot_data <- data.frame(
-        Sample = names(expr_values),
-        Expression = as.numeric(expr_values),
-        Group = sample_meta$group[match(names(expr_values), rownames(sample_meta))],
-        stringsAsFactors = FALSE
-      )
-
-      # 移除 NA
-      plot_data <- plot_data[!is.na(plot_data$Group), ]
-
-      p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = Group, y = Expression, fill = Group)) +
-        ggplot2::geom_boxplot(alpha = 0.7) +
-        ggplot2::geom_jitter(width = 0.2, size = 3, ggplot2::aes(text = Sample)) +
-        ggplot2::theme_bw() +
-        ggplot2::labs(title = actual_gene, y = data_list$expression_type) +
-        ggplot2::theme(legend.position = "none", axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
-
-      plotly::ggplotly(p, tooltip = c("text", "y"))
     })
   })
 }
@@ -2255,6 +3183,7 @@ mod_pathway_modal_ui <- function(id) {
 }
 
 #' @title 详情弹窗 Server
+#' @description ComplexHeatmap重构：Leading Edge间隙、动态排序、无高度限制、基因名颜色区分
 #' @param id 模块 ID
 #' @param data_prep 数据流
 #' @param trigger_event 来自表格的点击事件 (reactive)
@@ -2274,7 +3203,7 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
       data_list <- data_prep()
       shiny::req(data_list)
 
-      # 提取通路基因
+      # 提取通路基因和核心基因
       gsea_obj <- data_list$gsea_res
       pathway_genes <- gsea_obj@geneSets[[pathway_id]]
 
@@ -2286,29 +3215,42 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
         character(0)
       }
 
+      # 获取NES值判断富集方向
+      nes_val <- res_df$NES[res_df$ID == pathway_id]
+
       current_data(list(
         pathway_id = pathway_id,
         pathway_genes = pathway_genes,
         core_genes = core_genes,
+        nes = nes_val,
         data_list = data_list
       ))
 
       # 显示弹窗
+      # 显示弹窗（修改窗口高度限制）
       shiny::showModal(shiny::modalDialog(
-        title = shiny::HTML(sprintf("<b>%s</b><br><small>%s vs %s</small>",
-                                    pathway_id, data_list$left_group, data_list$right_group)),
-        size = "l", easyClose = TRUE,
+        title = shiny::HTML(sprintf("<b>%s</b><br><small>%s vs %s | NES: %.2f</small>",
+                                    pathway_id,
+                                    data_list$left_group,
+                                    data_list$right_group,
+                                    nes_val)),
+        size = "l",
+        easyClose = TRUE,
         shiny::fluidRow(
           shiny::column(5, shiny::div(class = "white-box",
-                                      shiny::h4("GSEA 富集轮廓"),
+                                      shiny::h4("经典 GSEA 富集轮廓"),
                                       shiny::plotOutput(ns("modal_gsea_plot"), height = "400px"))),
           shiny::column(7, shiny::div(class = "white-box",
-                                      shiny::h4("核心基因表达热图"),
-                                      shiny::plotOutput(ns("modal_heatmap"), height = "auto")))
+                                      shiny::h4("核心基因表达热图 (CPM)"),
+                                      # 🔧 修复3：限制最大高度为600px，内部滚动
+                                      shiny::div(
+                                        style = "height: 600px; overflow-y: auto; overflow-x: auto; border: 1px solid #ddd;",
+                                        shiny::plotOutput(ns("modal_heatmap"), height = "auto", width = "100%")
+                                      )))
         ),
         shiny::hr(),
         shiny::div(class = "white-box",
-                   shiny::h4("Leading Edge 基因统计"),
+                   shiny::h4("Leading Edge 基因统计表"),
                    DT::dataTableOutput(ns("modal_gene_table"))),
         footer = shiny::modalButton("关闭")
       ))
@@ -2323,8 +3265,10 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
         print(plot_directional_gsea(
           directional_gsea_obj = list(
             gsea_res = pdata$data_list$gsea_res,
-            meta = list(left_group = pdata$data_list$left_group,
-                        right_group = pdata$data_list$right_group)
+            meta = list(
+              left_group = pdata$data_list$left_group,
+              right_group = pdata$data_list$right_group
+            )
           ),
           target_pathways = pdata$pathway_id,
           subPlot = 3,
@@ -2336,21 +3280,24 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
       })
     })
 
-    # 渲染热图 (ComplexHeatmap)
+    # 🔧 Phase 7 核心：ComplexHeatmap美学优化
     output$modal_heatmap <- shiny::renderPlot({
       pdata <- current_data()
       shiny::req(pdata)
 
-      # 使用统一接口获取表达矩阵
+      # 使用访问器获取表达矩阵
       expr_mat <- get_expr_matrix(gsea_res, type = pdata$data_list$expression_type)
       sample_meta <- get_sample_meta(gsea_res)
 
       shiny::req(expr_mat, sample_meta)
 
-      # 筛选样本 (仅当前对比组的两组)
-      groups <- c(pdata$data_list$left_group, pdata$data_list$right_group)
-      sample_idx <- sample_meta$group %in% groups
-      if (!any(sample_idx)) return()
+      # 筛选样本（仅当前对比组的两组）
+      left_grp <- pdata$data_list$left_group
+      right_grp <- pdata$data_list$right_group
+      groups <- c(left_grp, right_grp)
+
+      sample_idx <- which(sample_meta$group %in% groups)
+      if (length(sample_idx) == 0) return()
 
       target_samples <- rownames(sample_meta)[sample_idx]
       expr_mat <- expr_mat[, target_samples, drop = FALSE]
@@ -2363,40 +3310,186 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
       plot_genes <- rownames(expr_mat)[gene_idx]
       plot_mat <- expr_mat[plot_genes, , drop = FALSE]
 
-      # Z-score 标准化
+      # 移除方差为0的基因
+      plot_mat <- plot_mat[apply(plot_mat, 1, var) > 1e-6, , drop = FALSE]
+      if (nrow(plot_mat) < 2) return()
+
+      # 获取GSEA的geneList用于排序
+      gene_list <- pdata$data_list$gsea_res@geneList
+
+      # 计算每个基因在geneList中的统计量
+      gene_metrics <- sapply(rownames(plot_mat), function(g) {
+        idx <- match(toupper(g), toupper(names(gene_list)))
+        if (is.na(idx)) return(0)
+        return(gene_list[idx])
+      })
+
+      # 判断是否为Leading Edge基因
+      is_leading <- toupper(rownames(plot_mat)) %in% toupper(pdata$core_genes)
+
+      # 🔧 Phase 7 关键：动态排序方向
+      # NES > 0（富集在左组）：高统计量在上（Leading Edge在上）
+      # NES < 0（富集在右组）：低统计量在上（Leading Edge在下，即翻转）
+      if (pdata$nes > 0) {
+        # 正向富集：按统计量降序（高在上）
+        sort_order <- order(gene_metrics, decreasing = TRUE)
+      } else {
+        # 负向富集：按统计量升序（低在上，即翻转后Leading Edge在下）
+        sort_order <- order(gene_metrics, decreasing = FALSE)
+      }
+
+      plot_mat <- plot_mat[sort_order, , drop = FALSE]
+      is_leading <- is_leading[sort_order]
+      gene_metrics <- gene_metrics[sort_order]
+
+      # Z-score标准化（行方向）
       z_mat <- t(scale(t(plot_mat)))
       z_mat[is.na(z_mat)] <- 0
-      z_mat <- pmax(pmin(z_mat, 1.5), -1.5)  # 截断
 
-      # 分组注释
+      # 严格截断到-1到1
+      z_mat[z_mat > 1] <- 1
+      z_mat[z_mat < -1] <- -1
+
+      # 获取CPM数值用于显示
+      cpm_mat <- tryCatch({
+        if (pdata$data_list$backend == "limma_voom" &&
+            !is.null(gsea_res$expr_bundle$dge_list)) {
+          edgeR::cpm(gsea_res$expr_bundle$dge_list, log = FALSE)[rownames(plot_mat), target_samples, drop = FALSE]
+        } else {
+          raw_counts <- gsea_res$expr_bundle$raw_counts[rownames(plot_mat), target_samples, drop = FALSE]
+          t(t(raw_counts) / colSums(raw_counts)) * 1e6
+        }
+      }, error = function(e) plot_mat)
+
+      display_numbers <- round(cpm_mat)
+
+      # 🔧 Phase 7：构建ComplexHeatmap（美学优化版）
+
+      # 1. 颜色映射
+      col_fun <- circlize::colorRamp2(
+        c(-1, 0, 1),
+        c("#67a9cf", "#f7f7f7", "#ef8a62")
+      )
+
+      # 2. 列注释（分组条）
       grp_col <- c("#E41A1C", "#377EB8")
-      names(grp_col) <- groups
+      names(grp_col) <- c(left_grp, right_grp)
+
+      group_factor <- factor(
+        sample_meta$group[sample_idx],
+        levels = c(left_grp, right_grp)
+      )
 
       top_ann <- ComplexHeatmap::HeatmapAnnotation(
-        Group = sample_meta$group[sample_idx],
+        Group = group_factor,
         col = list(Group = grp_col),
-        annotation_name_gp = grid::gpar(fontsize = 12)
+        annotation_name_gp = grid::gpar(fontsize = 12, fontface = "bold"),
+        simple_anno_size = grid::unit(0.6, "cm")
       )
 
-      # Leading Edge 标记
-      is_leading <- toupper(rownames(z_mat)) %in% toupper(pdata$core_genes)
+      # 3. 行注释：Leading Edge标记（右侧）
+      leading_status <- ifelse(is_leading, "YES", "NO")
+      leading_colors <- c("YES" = "#FF9800", "NO" = "transparent")
 
-      ComplexHeatmap::Heatmap(
-        z_mat, name = "Z-Score",
-        col = circlize::colorRamp2(c(-1.5, 0, 1.5), c("#67a9cf", "#f7f7f7", "#ef8a62")),
-        cluster_rows = FALSE, cluster_columns = FALSE,
-        column_split = factor(sample_meta$group[sample_idx], levels = groups),
+      right_ann <- ComplexHeatmap::rowAnnotation(
+        LeadingEdge = leading_status,
+        col = list(LeadingEdge = leading_colors),
+        annotation_name_gp = grid::gpar(fontsize = 12, fontface = "bold"),
+        simple_anno_size = grid::unit(0.4, "cm")
+      )
+
+      # 4. 细胞渲染：显示CPM整数，黑色粗体
+      cell_fun <- function(j, i, x, y, width, height, fill) {
+        val <- display_numbers[i, j]
+        grid::grid.text(
+          val,
+          x,
+          y,
+          gp = grid::gpar(fontsize = 13, col = "black", fontface = "bold")
+        )
+      }
+
+      # 🔧 Phase 7 关键：row_split创建Leading Edge间隙
+      # 将Leading Edge和非Leading Edge分成两组，自动产生间隙
+      row_split_factor <- factor(
+        ifelse(is_leading, "Leading Edge", "Other Genes"),
+        levels = c("Leading Edge", "Other Genes")
+      )
+
+      # 根据NES方向调整因子顺序（确保Leading Edge在正确位置）
+      if (pdata$nes > 0) {
+        # NES>0：Leading Edge在上（因子水平先出现）
+        row_split_factor <- factor(
+          ifelse(is_leading, "Leading Edge", "Other Genes"),
+          levels = c("Leading Edge", "Other Genes")
+        )
+      } else {
+        # NES<0：Leading Edge在下（因子水平后出现）
+        row_split_factor <- factor(
+          ifelse(is_leading, "Other Genes", "Leading Edge"),  # 注意顺序交换
+          levels = c("Other Genes", "Leading Edge")
+        )
+      }
+
+      # 5. 构建Heatmap
+      ht <- ComplexHeatmap::Heatmap(
+        z_mat,
+        name = "Z-Score",
+        col = col_fun,
+        cluster_rows = FALSE,           # 禁用行聚类（保持GSEA排序）
+        cluster_columns = FALSE,        # 禁用列聚类
+        column_split = group_factor,    # 按组分割列
+        cluster_column_slices = FALSE,
+
+        # 🔧 Phase 7：row_split创建间隙
+        row_split = row_split_factor,
+        cluster_row_slices = FALSE,
+        row_gap = grid::unit(2, "mm"),  # 组间间隙
+
         top_annotation = top_ann,
-        row_names_gp = grid::gpar(fontsize = 14,
-                                  fontface = ifelse(is_leading, "bold", "plain"),
-                                  col = ifelse(is_leading, "#FF9800", "black")),
-        rect_gp = grid::gpar(col = "white", lwd = 1)
+        right_annotation = right_ann,
+        cell_fun = cell_fun,
+
+        # 🔧 Phase 7：基因名颜色（Leading Edge橙色，其他黑色）
+        row_names_gp = grid::gpar(
+          fontsize = 15,
+          fontface = ifelse(is_leading, "bold", "plain"),
+          col = ifelse(is_leading, "#FF9800", "black")  # 橙色或黑色
+        ),
+
+        column_names_gp = grid::gpar(fontsize = 15, fontface = "bold"),
+        rect_gp = grid::gpar(col = "white", lwd = 1),
+        show_heatmap_legend = TRUE,
+        heatmap_legend_param = list(
+          title = "Z-Score",
+          at = c(-1, 0, 1),
+          labels = c("-1", "0", "1")
+        ),
+        width = NULL,
+        height = NULL  # 🔧 Phase 7：移除固定高度限制
       )
+
+      # 绘制
+      title_text <- sprintf(
+        "Row-Scaled Z-Score [-1, 1] | Enriched in: %s",
+        ifelse(pdata$nes > 0, left_grp, right_grp)
+      )
+
+      ComplexHeatmap::draw(
+        ht,
+        merge_legend = TRUE,
+        column_title = title_text,
+        column_title_gp = grid::gpar(fontsize = 14, fontface = "bold")
+      )
+
     }, height = function() {
+      # 🔧 Phase 7：动态高度计算（无上限）
       pdata <- current_data()
       if (is.null(pdata)) return(400)
       n_genes <- length(pdata$pathway_genes)
-      return(max(400, n_genes * 25 + 100))
+      # 完全根据基因数计算高度，不设上限
+      height_px <- max(400, n_genes * 25 + 150)
+      return(height_px)
     })
 
     # 基因统计表
@@ -2416,15 +3509,39 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
       )
 
       gene_df <- gene_df[toupper(gene_df$Gene) %in% toupper(all_genes), ]
-      gene_df$Is_Core <- ifelse(toupper(gene_df$Gene) %in% toupper(core_genes), "✅ YES", "—")
-      gene_df <- gene_df[order(gene_df$Is_Core == "✅ YES", gene_df$Rank_Metric, decreasing = TRUE), ]
+      gene_df$Is_Core <- ifelse(
+        toupper(gene_df$Gene) %in% toupper(core_genes),
+        "✅ YES",
+        "—"
+      )
+
+      # 排序：Leading Edge在前，其次按统计量绝对值降序
+      gene_df <- gene_df[order(
+        gene_df$Is_Core == "✅ YES",
+        abs(gene_df$Rank_Metric),
+        decreasing = TRUE
+      ), ]
+
+      colnames(gene_df) <- c("基因", "排序统计量", "列表中的排名", "Leading Edge")
 
       DT::datatable(
-        gene_df, rownames = FALSE, escape = FALSE,
-        options = list(pageLength = -1, scrollY = "40vh", scroller = TRUE, dom = 'frtip'),
-        colnames = c("Gene", "Metric", "Rank in List", "Leading Edge")
+        gene_df,
+        rownames = FALSE,
+        escape = FALSE,
+        extensions = c('Scroller'),
+        options = list(
+          pageLength = -1,
+          scrollY = "40vh",
+          scroller = TRUE,
+          dom = 'frtip'
+        )
       ) %>%
-        DT::formatStyle("Is_Core", backgroundColor = DT::styleEqual("✅ YES", "#FF9800"))
+        DT::formatStyle(
+          columns = "Leading Edge",
+          backgroundColor = DT::styleEqual(c("✅ YES", "—"), c("#FF9800", "transparent")),
+          fontWeight = DT::styleEqual("✅ YES", "bold"),
+          color = DT::styleEqual("✅ YES", "white")
+        )
     })
   })
 }
@@ -2539,7 +3656,7 @@ mod_multi_plot_server <- function(id, data_prep, table_controller) {
 [文件 14/20] R\utils-accessors.R
 ====================================================================================================
 #' @title 数据访问器工具函数
-#' @description 提供统一的数据提取接口，隔离底层对象结构差异。
+#' @description 提供统一的数据提取接口，隔离底层对象结构差异。修复DESeq2样本名匹配问题。
 #' @keywords internal
 #' @name utils-accessors
 NULL
@@ -2570,10 +3687,12 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
 }
 
 #' @title 内部表达矩阵提取逻辑
+#' @description 修复DESeq2后端表达矩阵与样本元数据匹配问题
 #' @keywords internal
+
 .get_expr_internal <- function(expr_bundle, backend_info, type = "default", ...) {
 
-  # 1. 标准化类型名称（处理别名）
+  # 1. 标准化类型名称
   type_normalized <- tolower(type)
   type_aliases <- c(
     "log2cpm" = "logcpm",
@@ -2583,6 +3702,7 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
     "vst" = "vst",
     "log2fpkm" = "logfpkm",
     "fpkm" = "fpkm",
+    "lognorm" = "lognorm",
     "default" = "default",
     "raw" = "raw"
   )
@@ -2591,33 +3711,44 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
     type_normalized <- type_aliases[[type_normalized]]
   }
 
-  # 2. 如果请求默认展示矩阵，且已存在，直接返回
+  backend <- backend_info$backend
+
+  # 2. 如果请求默认展示矩阵
   if (type_normalized == "default" && !is.null(expr_bundle$display_expr)) {
-    return(expr_bundle$display_expr)
+    expr_mat <- expr_bundle$display_expr
+    if (!is.null(expr_bundle$sample_meta)) {
+      if (!is.null(rownames(expr_bundle$sample_meta))) {
+        common_samples <- intersect(colnames(expr_mat), rownames(expr_bundle$sample_meta))
+        if (length(common_samples) > 0) {
+          expr_mat <- expr_mat[, common_samples, drop = FALSE]
+        }
+      }
+    }
+    return(expr_mat)
   }
 
-  # 3. 否则根据类型动态计算
+  # 3. 获取原始数据
   raw_counts <- expr_bundle$raw_counts
   sample_meta <- expr_bundle$sample_meta
+  gene_lengths <- expr_bundle$gene_meta$length  # 假设有基因长度信息
 
-  # 如果 raw_counts 为空
   if (is.null(raw_counts)) {
     warning("对象中未包含原始计数矩阵，无法动态计算表达量。")
     return(NULL)
   }
 
-  # 4. 根据后端类型分发计算逻辑
-  backend <- backend_info$backend
-
+  # 4. 严格根据后端类型分发
   res <- switch(type_normalized,
                 "raw" = raw_counts,
 
-                # CPM 相关
+                # CPM 相关（通用）
                 "cpm" = {
                   if (backend == "limma_voom" && !is.null(expr_bundle$dge_list)) {
                     edgeR::cpm(expr_bundle$dge_list, log = FALSE)
+                  } else if (backend == "deseq2" && !is.null(expr_bundle$dds_obj)) {
+                    counts <- DESeq2::counts(expr_bundle$dds_obj, normalized = FALSE)
+                    t(t(counts) / colSums(counts)) * 1e6
                   } else {
-                    # DESeq2 或其他：手动计算 CPM
                     t(t(raw_counts) / colSums(raw_counts)) * 1e6
                   }
                 },
@@ -2625,40 +3756,92 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
                 "logcpm" = {
                   if (backend == "limma_voom" && !is.null(expr_bundle$dge_list)) {
                     edgeR::cpm(expr_bundle$dge_list, log = TRUE)
+                  } else if (backend == "deseq2" && !is.null(expr_bundle$dds_obj)) {
+                    counts <- DESeq2::counts(expr_bundle$dds_obj, normalized = FALSE)
+                    log2(t(t(counts) / colSums(counts)) * 1e6 + 1)
                   } else {
-                    # DESeq2：log2(CPM + 1)
                     log2(t(t(raw_counts) / colSums(raw_counts)) * 1e6 + 1)
                   }
                 },
 
-                # VST (DESeq2 专属)
+                # 🔧 FPKM计算（需要基因长度）
+                "fpkm" = {
+                  if (is.null(gene_lengths)) {
+                    warning("FPKM计算需要基因长度信息(gene_meta$length)，回退到CPM。")
+                    t(t(raw_counts) / colSums(raw_counts)) * 1e6
+                  } else {
+                    # FPKM = (counts / gene_length_kb) / (total_counts / 1e6)
+                    gene_lengths_kb <- gene_lengths / 1000
+                    rpm <- t(t(raw_counts) / colSums(raw_counts)) * 1e6
+                    rpm / gene_lengths_kb
+                  }
+                },
+
+                "logfpkm" = {
+                  if (is.null(gene_lengths)) {
+                    warning("logFPKM计算需要基因长度信息，回退到logCPM。")
+                    log2(t(t(raw_counts) / colSums(raw_counts)) * 1e6 + 1)
+                  } else {
+                    gene_lengths_kb <- gene_lengths / 1000
+                    rpm <- t(t(raw_counts) / colSums(raw_counts)) * 1e6
+                    fpkm <- rpm / gene_lengths_kb
+                    log2(fpkm + 1)
+                  }
+                },
+
+                # VST (DESeq2 专属，严格检查)
                 "vst" = {
                   if (backend != "deseq2") {
-                    warning("VST 仅支持 DESeq2 后端，回退到 logCPM。")
-                    log2(t(t(raw_counts) / colSums(raw_counts)) * 1e6 + 1)
+                    # 🔧 关键修复：Limma流程中如果请求VST，给出明确警告并回退
+                    warning(sprintf("VST(方差稳定变换)是DESeq2专属方法，当前后端为'%s'，自动回退到logCPM。", backend))
+                    if (backend == "limma_voom" && !is.null(expr_bundle$dge_list)) {
+                      edgeR::cpm(expr_bundle$dge_list, log = TRUE)
+                    } else {
+                      log2(t(t(raw_counts) / colSums(raw_counts)) * 1e6 + 1)
+                    }
                   } else if (!is.null(expr_bundle$vst_matrix)) {
                     expr_bundle$vst_matrix
                   } else if (!is.null(expr_bundle$dds_obj)) {
-                    # 尝试从 dds_obj 计算 VST
                     tryCatch({
                       SummarizedExperiment::assay(DESeq2::vst(expr_bundle$dds_obj, blind = FALSE))
                     }, error = function(e) {
-                      warning("VST 计算失败，回退到 logCPM: ", e$message)
-                      log2(t(t(raw_counts) / colSums(raw_counts)) * 1e6 + 1)
+                      warning("VST计算失败，回退到logCPM: ", e$message)
+                      counts <- DESeq2::counts(expr_bundle$dds_obj, normalized = FALSE)
+                      log2(t(t(counts) / colSums(counts)) * 1e6 + 1)
                     })
                   } else {
-                    stop("VST 矩阵未预计算且无法从 dds_obj 计算。")
+                    stop("VST矩阵未预计算且无法从dds_obj计算。")
                   }
                 },
 
-                # TPM/FPKM (需要基因长度)
-                "tpm" = , "logtpm" = , "fpkm" = , "logfpkm" = {
-                  stop(sprintf("%s 计算需要基因长度信息，当前未实现。", type))
+                # log2 Normalized counts (DESeq2)
+                "lognorm" = {
+                  if (backend == "deseq2" && !is.null(expr_bundle$dds_obj)) {
+                    norm_counts <- DESeq2::counts(expr_bundle$dds_obj, normalized = TRUE)
+                    log2(norm_counts + 1)
+                  } else {
+                    # Limma中也支持：使用logCPM作为替代
+                    if (backend == "limma_voom" && !is.null(expr_bundle$dge_list)) {
+                      edgeR::cpm(expr_bundle$dge_list, log = TRUE)
+                    } else {
+                      log2(t(t(raw_counts) / colSums(raw_counts)) * 1e6 + 1)
+                    }
+                  }
                 },
 
                 # 未知类型
                 stop(sprintf("不支持的表达量类型: %s", type))
   )
+
+  # 确保表达矩阵列名与sample_meta行名匹配
+  if (!is.null(sample_meta) && !is.null(rownames(sample_meta))) {
+    common_samples <- intersect(colnames(res), rownames(sample_meta))
+    if (length(common_samples) == 0) {
+      warning("表达矩阵列名与样本元数据行名无匹配！请检查样本标识。")
+    } else {
+      res <- res[, common_samples, drop = FALSE]
+    }
+  }
 
   return(res)
 }
@@ -2676,28 +3859,56 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
 get_de_table <- function(obj, contrast_id) {
   UseMethod("get_de_table")
 }
-
-#' @export
-get_de_table.GseaEnv <- function(obj, contrast_id) {
-  if (is.null(obj$de_store[[contrast_id]])) {
-    stop(sprintf("对比组 '%s' 不存在于 de_store 中。", contrast_id))
-  }
-  obj$de_store[[contrast_id]]
-}
-
 #' @export
 get_de_table.GseaRes <- function(obj, contrast_id) {
-  if (is.null(obj$de_store[[contrast_id]])) {
-    stop(sprintf("对比组 '%s' 不存在于 de_store 中。", contrast_id))
+  # 🔧 修复3：检查是否为反向对比（如 PREA_vs_IBAA）
+  # 如果是反向，找到正向对比并翻转logFC符号
+
+  if (contrast_id %in% names(obj$de_store)) {
+    # 正向对比直接返回
+    return(obj$de_store[[contrast_id]])
   }
-  obj$de_store[[contrast_id]]
+
+  # 🔧 新增：尝试解析反向对比
+  parts <- strsplit(contrast_id, "_vs_")[[1]]
+  if (length(parts) == 2) {
+    # 构建反向ID（交换左右）
+    reverse_id <- paste(parts[2], parts[1], sep = "_vs_")
+
+    if (reverse_id %in% names(obj$de_store)) {
+      # 找到正向数据，翻转符号
+      de_df <- obj$de_store[[reverse_id]]
+
+      # 🆕 新增：翻转logFC和stat符号（关键！）
+      if ("logFC" %in% colnames(de_df)) {
+        de_df$logFC <- -de_df$logFC
+      }
+      if ("stat" %in% colnames(de_df)) {
+        de_df$stat <- -de_df$stat
+      }
+      if ("t" %in% colnames(de_df)) {  # limma的t统计量
+        de_df$t <- -de_df$t
+      }
+
+      message(sprintf("🔄 自动映射反向对比: %s -> %s (已翻转logFC符号)",
+                      contrast_id, reverse_id))
+      return(de_df)
+    }
+  }
+
+  # 如果都找不到，报错
+  stop(sprintf("对比组 '%s' 及其反向 '%s' 都不存在于 de_store 中。可用: %s",
+               contrast_id,
+               ifelse(length(parts)==2, paste(parts[2], parts[1], sep="_vs_"), "N/A"),
+               paste(names(obj$de_store), collapse = ", ")))
 }
 
 # ==============================================================================
-# 3. 元数据访问器
+# 3. 元数据访问器（关键修复区域）
 # ==============================================================================
 
 #' @title 获取样本元数据
+#' @description 修复DESeq2后端：统一分组列名为'group'，确保行名与表达矩阵匹配
 #' @export
 get_sample_meta <- function(obj) {
   UseMethod("get_sample_meta")
@@ -2705,12 +3916,68 @@ get_sample_meta <- function(obj) {
 
 #' @export
 get_sample_meta.GseaEnv <- function(obj) {
-  obj$expr_bundle$sample_meta
+  .process_sample_meta(obj$expr_bundle$sample_meta, obj$expr_bundle)
 }
 
 #' @export
 get_sample_meta.GseaRes <- function(obj) {
-  obj$expr_bundle$sample_meta
+  .process_sample_meta(obj$expr_bundle$sample_meta, obj$expr_bundle)
+}
+
+#' @title 内部样本元数据处理
+#' @description 统一处理样本元数据：修复行名、统一分组列名
+#' @keywords internal
+.process_sample_meta <- function(sample_meta, expr_bundle) {
+  if (is.null(sample_meta)) return(NULL)
+
+  # 转换为data.frame（如果是tibble或其他）
+  if (!is.data.frame(sample_meta)) {
+    sample_meta <- as.data.frame(sample_meta)
+  }
+
+  # 关键修复1：确保有rownames（来自原始colData的行名）
+  if (is.null(rownames(sample_meta))) {
+    # 尝试从raw_counts的colnames获取
+    if (!is.null(expr_bundle$raw_counts)) {
+      if (ncol(expr_bundle$raw_counts) == nrow(sample_meta)) {
+        rownames(sample_meta) <- colnames(expr_bundle$raw_counts)
+        message("[Accessor] 已从表达矩阵列名恢复样本元数据行名")
+      }
+    }
+  }
+
+  # 关键修复2：统一分组列名（DESeq2使用"分组"，limma使用"group"）
+  # 优先使用"group"，如果不存在则查找其他可能的列名
+  if (!"group" %in% colnames(sample_meta)) {
+    # 常见的中文分组列名
+    alt_names <- c("分组", "Group", "condition", "Condition", "treatment", "Treatment")
+    found_name <- NULL
+    for (name in alt_names) {
+      if (name %in% colnames(sample_meta)) {
+        found_name <- name
+        break
+      }
+    }
+
+    if (!is.null(found_name)) {
+      sample_meta$group <- sample_meta[[found_name]]
+      message(sprintf("[Accessor] 已将分组列 '%s' 映射为 'group'", found_name))
+    } else {
+      # 如果没有找到，尝试推断第一个factor列作为分组
+      factor_cols <- names(sample_meta)[sapply(sample_meta, is.factor)]
+      if (length(factor_cols) > 0) {
+        sample_meta$group <- sample_meta[[factor_cols[1]]]
+        warning(sprintf("[Accessor] 未找到标准分组列，使用 '%s' 作为分组", factor_cols[1]))
+      }
+    }
+  }
+
+  # 关键修复3：确保group列是factor类型
+  if ("group" %in% colnames(sample_meta) && !is.factor(sample_meta$group)) {
+    sample_meta$group <- as.factor(sample_meta$group)
+  }
+
+  return(sample_meta)
 }
 
 #' @title 获取对比组注册表
@@ -2727,6 +3994,22 @@ get_contrast_registry.GseaEnv <- function(obj) {
 #' @export
 get_contrast_registry.GseaRes <- function(obj) {
   obj$contrast_registry
+}
+
+#' @title 获取基因集信息
+#' @export
+get_geneset_info <- function(obj) {
+  UseMethod("get_geneset_info")
+}
+
+#' @export
+get_geneset_info.GseaRes <- function(obj) {
+  obj$geneset_info
+}
+
+#' @export
+get_geneset_info.GseaEnv <- function(obj) {
+  obj$geneset
 }
 
 

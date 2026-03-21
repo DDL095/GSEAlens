@@ -10,7 +10,7 @@ mod_quadrant_ui <- function(id) {
                                     style = "position: relative;",
                                     plotly::plotlyOutput(ns("volcano_pathway"), height = "450px"),
                                     shiny::div(
-                                      style = "position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.9); padding: 5px 10px; border-radius: 4px; font-size: 11px; color: #666;",
+                                      style = "position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.9); padding: 5px 10px; border-radius: 4px; font-size: 11px; color: #666;",
                                       "点击通路查看详情"
                                     )
                                   ))),
@@ -418,8 +418,9 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
 
         if (final_order_to_use != "default" && final_order_to_use != "" && !is.na(final_order_to_use)) {
           # 将逗号分隔的字符串转换为组名向量
-          order_parts <- strsplit(final_order_to_use, ",")[[1]]
-          order_parts <- trimws(order_parts)  # 移除空格
+          sep <- if (grepl("→", final_order_to_use, fixed = TRUE)) "→" else ","
+          order_parts <- strsplit(final_order_to_use, sep)[[1]]
+          order_parts <- trimws(order_parts)
 
           message(sprintf("   🔍 解析排序字符串: [%s]", paste(order_parts, collapse=" | ")))
 
@@ -429,7 +430,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
 
           if (length(missing_parts) > 0) {
             message(sprintf("   ⚠️ 警告：排序包含不存在的组[%s]，自动修正",
-                            paste(missing_parts, collapse=",")))
+                            paste(missing_parts, collapse= ",")))
           }
 
           # 严格按照指定顺序排列
@@ -458,18 +459,19 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
           names(group_colors) <- unique_groups
         }
 
-        # ✅ 关键第四步：ggplot2层面强制顺序
+        # ggplot2层面强制分组顺序
         p <- ggplot2::ggplot(plot_data,
                              ggplot2::aes(x = Group, y = Expression, fill = Group)) +
           ggplot2::geom_boxplot(alpha = 0.7, outlier.shape = NA) +
           ggplot2::geom_jitter(width = 0.2, size = 3, alpha = 0.6) +
           ggplot2::scale_fill_manual(values = group_colors) +
-          # 🔴 最关键：使用 limits 参数固定顺序
+          #使用 limits 参数固定顺序
           ggplot2::scale_x_discrete(limits = x_categories, drop = FALSE) +
           ggplot2::theme_bw(base_size = 12) +
-          ggplot2::labs(title = sprintf("%s (排序: %s)",
-                                        actual_gene,
-                                        if(final_order_to_use == "default") "默认" else "自定义"),
+          ggplot2::labs(title = sprintf("%s",#"%s (Group Order: %s)"
+                                        actual_gene#,paste(x_categories, collapse = " → ")
+                                        )#图四箱线图题图显示
+                        ,
                         y = data_list$expression_type,
                         x = NULL) +
           ggplot2::theme(
@@ -498,37 +500,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
       })
     })
 
-    # 显示排序状态指示器
-    output$boxplot_order_status <- shiny::renderUI({
-      order <- boxplot_order_ref()
-      if (is.null(order) || order == "default" || order == "" || is.na(order)) {
-        shiny::div(
-          style = "position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.9); padding: 5px 10px; border-radius: 4px; font-size: 11px; color: #666;",
-          "排序: 默认"
-        )
-      } else {
-        shiny::div(
-          style = "position: absolute; top: 10px; right: 10px; background: rgba(76,175,80,0.2); padding: 5px 10px; border-radius: 4px; font-size: 11px; color: #2e7d32; font-weight: bold;",
-          sprintf("排序: %s ✓", gsub(",", " → ", order))
-        )
-      }
-    })
 
-    # ✅ 修复 6：显示当前排序状态（实时更新）
-    output$boxplot_order_status <- shiny::renderUI({
-      order <- boxplot_order_ref()  # 实时读取
-      if (is.null(order) || is.na(order) ||
-          order == "default" || order == "" || order == "limited") {
-        shiny::div(
-          style = "position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.9); padding: 5px 10px; border-radius: 4px; font-size: 11px; color: #666;",
-          "排序: 默认"
-        )
-      } else {
-        shiny::div(
-          style = "position: absolute; top: 10px; right: 10px; background: rgba(212,237,218,0.9); padding: 5px 10px; border-radius: 4px; font-size: 11px; color: #155724;",
-          sprintf("排序: %s", gsub(",", " → ", order))
-        )
-      }
-    })
+
   })
 }
