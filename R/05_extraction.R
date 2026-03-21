@@ -1,3 +1,95 @@
+#' @title 加载并智能归位 GSEA 计算胶囊
+#' @description 安全载入计算胶囊。若文件脱离原始项目路径（比如被拷贝到了桌面），
+#' 引擎将自动在当前工作目录复原标准文件夹，并将胶囊护送归位。
+#' 完全兼容 GseaEnv 和 GseaRes 对象。
+#' @param file_path 字符型。胶囊 rds 文件的绝对或相对路径。
+#' @param auto_relocate 逻辑值。是否自动根据内置血统在当前目录下修复文件夹并归位？默认 TRUE。
+#' @param inspect 逻辑值。加载后是否自动打印胶囊概览？默认 TRUE。
+#' @return 返回解析后的 GseaRes 或 GseaEnv 胶囊对象。
+#' @export
+import_gsea_capsule <- function(file_path, auto_relocate = TRUE, inspect = TRUE) {
+
+  # 1. 文件存在性检查
+  if (!file.exists(file_path)) {
+    stop(sprintf("❌ 文件不存在: %s", file_path))
+  }
+
+  message("🎁 正在唤醒计算胶囊...")
+  capsule <- readRDS(file_path)
+
+  # 2. 识别胶囊类型
+  if (inherits(capsule, c("GseaEnv", "GseaEnvPro"))) {
+    message("✅ 成功载入 [GseaEnv] 环境封装胶囊 (尚未进行并行计算)。")
+
+    if (inspect && exists("inspect_gsea_env", mode = "function")) {
+      inspect_gsea_env(capsule)
+    }
+
+    return(invisible(capsule))
+  }
+
+  # 3. 对于计算结果胶囊，执行智能归位逻辑
+  if (!inherits(capsule, "GseaRes")) {
+    warning("⚠️ 该文件似乎不是标准的 GSEAlens 胶囊！")
+    return(invisible(capsule))
+  }
+
+  # 4. 检查是否有血统记忆（project_info）
+  project_info <- capsule$metadata$project_info
+
+  if (is.null(project_info)) {
+    message("⚠️ 该胶囊为旧版本生成，缺乏项目血统记忆。直接载入（无法自动归位）。")
+  } else {
+    # 5. 获取当前路径与预期路径
+    current_abs <- normalizePath(file_path, winslash = "/", mustWork = FALSE)
+    expected_abs <- normalizePath(project_info$rds_path, winslash = "/", mustWork = FALSE)
+
+    # 6. 路径不一致，且开启了自动归位
+    if (current_abs != expected_abs && auto_relocate) {
+      message(sprintf("🚨 [血统警报] 胶囊当前处于非标准路径"))
+      message(sprintf("   📍 当前位置: %s", current_abs))
+      message(sprintf("   🏠 原籍项目: [%s]", project_info$custom_series_name))
+
+      # 7. 根据当前工作目录重建标准档案库
+      local_series_dir <- file.path(getwd(), "GSEA_Output", project_info$custom_series_name)
+      if (!dir.exists(local_series_dir)) {
+        dir.create(local_series_dir, recursive = TRUE, showWarnings = FALSE)
+        message(sprintf("   ✨ 已创建标准档案库目录: %s", local_series_dir))
+      }
+
+      # 8. 执行文件归位
+      target_file <- file.path(local_series_dir, basename(file_path))
+
+      if (!file.exists(target_file) || target_file == current_abs) {
+        file.copy(from = file_path, to = target_file, overwrite = TRUE)
+        message(sprintf("   🚀 已自动将胶囊遣返归位至标准档案库"))
+        message(sprintf("   📦 新位置: %s", target_file))
+
+        # 9. 更新胶囊内部的路径信息，防止下次加载时重复警告
+        capsule$metadata$project_info$output_dir <- file.path(getwd(), "GSEA_Output")
+        capsule$metadata$project_info$series_dir <- local_series_dir
+        capsule$metadata$project_info$rds_path <- target_file
+
+      } else {
+        message("   ✅ 标准档案库中已有该文件备份（无需重复复制）。")
+      }
+    }
+  }
+
+  # 10. 自动调用探针函数打印概况
+  if (inspect) {
+    if (exists("inspect_gsea_res", mode = "function")) {
+      inspect_gsea_res(capsule)
+    } else {
+      message("✅ 成功载入 [GseaRes] 计算完成结果胶囊！")
+    }
+  }
+
+  return(invisible(capsule))
+}
+
+
+
 #' @title 提取特定对比组的 GSEA 结果
 #' @description 从 GseaRes 胶囊中提取指定对比组的结果。
 #' 支持按基因集子集 进行切片，并自动重新计算 FDR。
