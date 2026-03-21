@@ -1,4 +1,4 @@
-#' @title 数据预处理模块 UI（动态表达类型版）
+#' @title 数据预处理模块 UI（联合画布控制增强版）
 #' @keywords internal
 mod_data_prep_ui <- function(id) {
   ns <- shiny::NS(id)
@@ -118,6 +118,39 @@ mod_data_prep_ui <- function(id) {
       selected = "abs_nes_desc"
     ),
 
+    # 🔧 新增：联合GSEA画布控制（完全移入侧边栏）
+    shiny::h4("🖼️ 联合GSEA画布"),
+    shiny::selectizeInput(
+      ns("joint_contrasts"),
+      label = "选择对比组（多选，支持排列）:",
+      choices = NULL,
+      multiple = TRUE,
+      options = list(
+        plugins = list("remove_button"),
+        placeholder = '选择对比组...',
+        maxItems = 50
+      )
+    ),
+    shiny::helpText(
+      style = "margin-top: 8px; color: #666; font-size: 11px;",
+      "支持正向与反向对比（如 A_vs_B 和 B_vs_A 可同时选择）"
+    ),
+    shiny::numericInput(
+      ns("joint_ncol"),
+      "每行数量 (ncol):",
+      value = 2,
+      min = 1,
+      max = 10,
+      step = 1
+    ),
+    shiny::actionButton(
+      ns("joint_generate"),
+      "🎨 生成画布",
+      class = "btn-success",
+      style = "width: 100%; font-weight: bold; margin-top: 10px;"
+    ),
+    shiny::hr(),
+
     shiny::actionButton(
       ns("run_btn"),
       label = "🚀 确认配置 / 更新工作台",
@@ -132,7 +165,7 @@ mod_data_prep_ui <- function(id) {
   )
 }
 
-#' @title 数据预处理模块 Server（动态表达类型 + 根治排序）
+#' @title 数据预处理模块 Server（联合画布参数传递版）
 #' @keywords internal
 mod_data_prep_server <- function(id, gsea_res) {
   shiny::moduleServer(id, function(input, output, session) {
@@ -143,6 +176,10 @@ mod_data_prep_server <- function(id, gsea_res) {
 
     applied_genes <- shiny::reactiveVal(character(0))
     applied_boxplot_order <- shiny::reactiveVal("default")
+
+    # 🔧 新增：联合画布参数缓存
+    canvas_contrasts_val <- shiny::reactiveVal(character(0))
+    canvas_ncol_val <- shiny::reactiveVal(3)
 
     current_contrast_cache <- shiny::reactiveVal(NULL)
     pending_genes_internal <- shiny::reactiveVal(character(0))
@@ -184,25 +221,38 @@ mod_data_prep_server <- function(id, gsea_res) {
       )
     })
 
-    # 初始化对比组
+    # 初始化对比组（包含排列：正向+反向）
     shiny::observe({
       registry <- gsea_res$contrast_registry
       all_contrasts <- list()
+
+      # 构建排列：包含正向和反向
       for (i in 1:nrow(registry)) {
         row <- registry[i, ]
+        # 正向
         all_contrasts[[row$contrast_id]] <- paste(row$left_group, "vs", row$right_group)
+        # 反向（排列）
         rev_id <- paste(row$right_group, row$left_group, sep = "_vs_")
-        rev_display <- paste(row$right_group, "vs", row$left_group)
+        rev_display <- paste(row$right_group, "vs", row$left_group, "(反向)")
         all_contrasts[[rev_id]] <- rev_display
       }
 
       choices <- setNames(names(all_contrasts), unlist(all_contrasts))
 
+      # 更新单选（主工作台）
       shiny::updateSelectInput(
         session,
         "selected_contrast",
         choices = choices,
         selected = registry$contrast_id[1]
+      )
+
+      # 🔧 更新多选（联合画布）- 默认全选所有排列
+      shiny::updateSelectizeInput(
+        session,
+        "joint_contrasts",
+        choices = choices,
+        selected = names(all_contrasts)[1:min(4, length(all_contrasts))]
       )
     })
 
@@ -225,7 +275,7 @@ mod_data_prep_server <- function(id, gsea_res) {
           gene_choices <- gene_choices[!is.na(gene_choices)]
           gene_choices <- sort(unique(gene_choices))
 
-          # ✅ 关键：切换对比组时不清空 UI 勾选；把“已确认基因”回填到 pending_genes
+          # ✅ 关键：切换对比组时不清空 UI 勾选；把"已确认基因"回填到 pending_genes
           current_applied <- applied_genes()  # 已确认基因（永不清空）
 
           # 由于当前对比组的 gene_choices 可能不包含全部 applied 基因，所以取交集（大小写不敏感）
@@ -373,16 +423,16 @@ mod_data_prep_server <- function(id, gsea_res) {
       )
     }, ignoreInit = TRUE)  # 👈 关键：添加 ignoreInit = TRUE
     # 在 mod_data_prep_server 的关键处添加：
-#shiny::observe({
-#  applied <- applied_genes()
-#  pending <- pending_genes_internal()
-#  contrast <- current_contrast_cache()
-#
-#  message(sprintf(
-#    "📊 [基因管理状态] 对比组=%s | 已确认=%d个 | 待选=%d个",
-#    contrast, length(applied), length(pending)
-#  ))
-#})
+    #shiny::observe({
+    #  applied <- applied_genes()
+    #  pending <- pending_genes_internal()
+    #  contrast <- current_contrast_cache()
+    #
+    #  message(sprintf(
+    #    "📊 [基因管理状态] 对比组=%s | 已确认=%d个 | 待选=%d个",
+    #    contrast, length(applied), length(pending)
+    #  ))
+    #})
 
     # 显示实时排序状态
     output$order_status_display <- shiny::renderUI({
@@ -419,6 +469,15 @@ mod_data_prep_server <- function(id, gsea_res) {
           shiny::span(paste(genes, collapse = ", "), style = "font-size: 12px; color: #555;")
         )
       }
+    })
+
+    # 🔧 新增：监听画布参数变化
+    shiny::observeEvent(input$canvas_contrasts, {
+      canvas_contrasts_val(input$canvas_contrasts)
+    }, ignoreNULL = FALSE)
+
+    shiny::observeEvent(input$canvas_ncol, {
+      canvas_ncol_val(input$canvas_ncol)
     })
 
 
@@ -481,7 +540,10 @@ mod_data_prep_server <- function(id, gsea_res) {
         plot_subtype = as.numeric(plot_subtype),
         custom_colors = colors,
         is_preview = is_auto,
-        backend = gsea_res$backend_info$backend
+        backend = gsea_res$backend_info$backend,
+        # 🔧 新增：传递画布参数
+        joint_contrasts = canvas_contrasts_val(),
+        joint_ncol = canvas_ncol_val()
       )
     }
 
@@ -560,10 +622,23 @@ mod_data_prep_server <- function(id, gsea_res) {
       shiny::showNotification("✅ 工作台已更新", type = "message", duration = 3)
     })
 
+    # 🔧 新增：画布生成触发器（事件反应式）
+    joint_generate_event <- shiny::eventReactive(input$joint_generate, {
+      list(
+        contrasts = input$joint_contrasts,
+        ncol = input$joint_ncol,
+        timestamp = Sys.time()
+      )
+    }, ignoreNULL = TRUE)
+
     return(list(
       data = shiny::reactive({ result_data() }),
       highlight_genes = applied_genes,
-      boxplot_order = applied_boxplot_order  # reactiveVal
+      boxplot_order = applied_boxplot_order,  # reactiveVal
+      # 🔧 新增：联合画布控制项（统一命名）
+      joint_contrasts = shiny::reactive({ input$joint_contrasts }),
+      joint_ncol = shiny::reactive({ input$joint_ncol }),
+      joint_generate = joint_generate_event  # 事件反应式
     ))
   })
 }

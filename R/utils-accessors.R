@@ -354,3 +354,6 @@ get_geneset_info.GseaRes <- function(obj) {
 get_geneset_info.GseaEnv <- function(obj) {
   obj$geneset
 }
+
+
+

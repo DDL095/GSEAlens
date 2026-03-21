@@ -58,6 +58,16 @@ launch_gsea_app <- function(gsea_res, lang = "zh") {
             title = shiny::HTML("🌋 全息四重联动"),
             shiny::br(),
             mod_quadrant_ui("quadrant")
+          ),
+          shiny::tabPanel(
+            title = shiny::HTML("🧬 通路关系探索"),
+            shiny::br(),
+            mod_pathway_relation_ui("pathway_relation")
+          ),
+          shiny::tabPanel(
+            title = shiny::HTML("🖼️ 联合GSEA画布"),
+            shiny::br(),
+            mod_joint_canvas_ui("joint_canvas")
           )
         )
       )
@@ -85,6 +95,12 @@ launch_gsea_app <- function(gsea_res, lang = "zh") {
 
     # 5. 详情弹窗模块（传入 data reactive）
     mod_pathway_modal_server("pathway_modal", data_prep_list$data, table_result$show_modal, gsea_res)
+
+    # 6. 通路关系探索模块（Phase 2）
+    mod_pathway_relation_server("pathway_relation", data_prep_list, gsea_res)
+
+    # 7. 联合GSEA画布模块（侧边栏控制版）
+    mod_joint_canvas_server("joint_canvas", gsea_res, data_prep_list, table_result)
   }
 
   message("🚀 GSEAlens PRO 4.0 已启动")

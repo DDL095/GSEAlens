@@ -1,3 +1,74 @@
+
+# ==============================================================================
+# 云雨图专用：半小提琴图Geom（必须置于模块文件开头）
+# ==============================================================================
+
+#' @title 半小提琴图Geom（为云雨图提供半边小提琴）
+#' @description 修改自ggplot2 geom_violin源码，仅绘制半边小提琴
+#' @keywords internal
+GeomFlatViolin <- ggplot2::ggproto(
+  "GeomFlatViolin",
+  ggplot2::Geom,
+  setup_data = function(data, params) {
+    data$width <- data$width %||% params$width %||% (ggplot2::resolution(data$x, FALSE) * 0.9)
+    data %>%
+      dplyr::group_by(group) %>%
+      dplyr::mutate(
+        ymin = min(y),
+        ymax = max(y),
+        xmin = x,
+        xmax = x + width / 2
+      )
+  },
+  draw_group = function(data, panel_scales, coord) {
+    data <- transform(data, xminv = x, xmaxv = x + violinwidth * (xmax - x))
+    newdata <- rbind(
+      plyr::arrange(transform(data, x = xmaxv), -y),
+      plyr::arrange(transform(data, x = xminv), y)
+    )
+    newdata_Polygon <- rbind(newdata, newdata[1,])
+    newdata_Polygon$colour <- NA
+
+    newdata_Path <- plyr::arrange(transform(data, x = xmaxv), -y)
+
+    ggplot2::ggname(
+      "geom_flat_violin",
+      grid::grobTree(
+        ggplot2::GeomPolygon$draw_panel(newdata_Polygon, panel_scales, coord),
+        ggplot2::GeomPath$draw_panel(newdata_Path, panel_scales, coord)
+      )
+    )
+  },
+  draw_key = ggplot2::draw_key_polygon,
+  default_aes = ggplot2::aes(
+    weight = 1, colour = "grey20", fill = "white", size = 0.5,
+    alpha = NA, linetype = "solid"
+  ),
+  required_aes = c("x", "y")
+)
+
+#' @title 半小提琴图图层函数
+#' @keywords internal
+geom_flat_violin <- function(mapping = NULL, data = NULL, stat = "ydensity",
+                             position = "dodge", trim = TRUE, scale = "area",
+                             show.legend = NA, inherit.aes = TRUE, ...) {
+  ggplot2::layer(
+    data = data,
+    mapping = mapping,
+    stat = stat,
+    geom = GeomFlatViolin,
+    position = position,
+    show.legend = show.legend,
+    inherit.aes = inherit.aes,
+    params = list(trim = trim, scale = scale, ...)
+  )
+}
+
+#' @title 辅助操作符（ggplot2内部使用）
+#' @keywords internal
+`%||%` <- function(a, b) {
+  if (!is.null(a)) a else b
+}
 #' @title 四重联动 UI（修复版）
 #' @keywords internal
 mod_quadrant_ui <- function(id) {
@@ -23,9 +94,20 @@ mod_quadrant_ui <- function(id) {
                                   shiny::h4("3. 差异表达火山图"),
                                   plotly::plotlyOutput(ns("de_volcano"), height = "450px"))),
       shiny::column(6, shiny::div(class = "white-box",
-                                  shiny::h4("4. 全量表达箱线图"),
+                                  shiny::h4("4. 全量表达分布图"),
                                   shiny::div(
                                     style = "position: relative;",
+                                    # 添加切换控件
+                                    shiny::div(
+                                      style = "position: absolute; top: -40px; right: 10px; z-index: 100;",
+                                      shiny::selectInput(
+                                        ns("plot_style_g4"),
+                                        label = NULL,
+                                        choices = c("箱线图" = "boxplot", "云雨图" = "raincloud"),
+                                        selected = "boxplot",
+                                        width = "120px"
+                                      )
+                                    ),
                                     plotly::plotlyOutput(ns("gene_expr_box"), height = "450px"),
                                     shiny::uiOutput(ns("boxplot_order_status"))
                                   )))
@@ -346,12 +428,10 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
     })
 
     # 4. 全量表达箱线图（完全根治版）
+    # 4. 全量表达分布图（Phase 1: Boxplot/Raincloud双模式，排序根治版）
     output$gene_expr_box <- plotly::renderPlotly({
-      # ✅ 第一步：最前端立即读取排序选择
-      current_pending_order <- input$boxplot_order_pending  # 从UI读取
-      current_confirmed_order <- boxplot_order_ref()       # 从reactiveVal读取
-
-      # 使用已确认的排序（优先级更高）
+      # 读取排序设置（保持与原有逻辑一致）
+      current_confirmed_order <- boxplot_order_ref()
       final_order_to_use <- if (!is.null(current_confirmed_order) &&
                                 current_confirmed_order != "default" &&
                                 current_confirmed_order != "") {
@@ -360,10 +440,10 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
         "default"
       }
 
-      message(sprintf("📋 [Boxplot Render] 读取排序: pending='%s' | confirmed='%s' | 最终使用='%s'",
-                      current_pending_order, current_confirmed_order, final_order_to_use))
+      # 读取绘图样式
+      plot_style <- input$plot_style_g4 %||% "boxplot"
 
-      # 获取点击事件
+      # 获取点击事件（来自DE火山图）
       gene_click <- plotly::event_data("plotly_click", source = ns("deg_volcano"))
 
       if (is.null(gene_click) || is.null(gene_click$key)) {
@@ -407,44 +487,25 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
         )
 
         plot_data <- plot_data[!is.na(plot_data$Group), ]
-
         if (nrow(plot_data) == 0) {
           return(plotly::plot_ly() %>% plotly::layout(title = "无有效分组数据"))
         }
 
-        # ✅ 关键第二步：解析排序设置，转换为x_categories排列顺序
+        # 解析排序（保持与原有逻辑完全一致）
         actual_groups <- unique(as.character(plot_data$Group))
         x_categories <- NULL
 
         if (final_order_to_use != "default" && final_order_to_use != "" && !is.na(final_order_to_use)) {
-          # 将逗号分隔的字符串转换为组名向量
           sep <- if (grepl("→", final_order_to_use, fixed = TRUE)) "→" else ","
           order_parts <- strsplit(final_order_to_use, sep)[[1]]
           order_parts <- trimws(order_parts)
-
-          message(sprintf("   🔍 解析排序字符串: [%s]", paste(order_parts, collapse=" | ")))
-
-          # 验证解析结果
           valid_parts <- order_parts[order_parts %in% actual_groups]
-          missing_parts <- setdiff(order_parts, actual_groups)
-
-          if (length(missing_parts) > 0) {
-            message(sprintf("   ⚠️ 警告：排序包含不存在的组[%s]，自动修正",
-                            paste(missing_parts, collapse= ",")))
-          }
-
-          # 严格按照指定顺序排列
-          x_categories <- valid_parts
-          # 追加未指定的组
-          x_categories <- c(x_categories, setdiff(actual_groups, x_categories))
-
-          message(sprintf("   ✅ 最终排序: [%s]", paste(x_categories, collapse=" → ")))
+          x_categories <- c(valid_parts, setdiff(actual_groups, valid_parts))
         } else {
           x_categories <- actual_groups
-          message(sprintf("   ✅ 使用默认排序: [%s]", paste(x_categories, collapse=" → ")))
         }
 
-        # ✅ 关键第三步：确保Group因子级别与x_categories完全一致
+        # 强制factor levels（关键：保持排序稳定性）
         plot_data <- plot_data[plot_data$Group %in% x_categories, ]
         plot_data$Group <- factor(plot_data$Group, levels = x_categories, ordered = TRUE)
 
@@ -459,41 +520,79 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
           names(group_colors) <- unique_groups
         }
 
-        # ggplot2层面强制分组顺序
-        p <- ggplot2::ggplot(plot_data,
-                             ggplot2::aes(x = Group, y = Expression, fill = Group)) +
-          ggplot2::geom_boxplot(alpha = 0.7, outlier.shape = NA) +
-          ggplot2::geom_jitter(width = 0.2, size = 3, alpha = 0.6) +
-          ggplot2::scale_fill_manual(values = group_colors) +
-          #使用 limits 参数固定顺序
-          ggplot2::scale_x_discrete(limits = x_categories, drop = FALSE) +
-          ggplot2::theme_bw(base_size = 12) +
-          ggplot2::labs(title = sprintf("%s",#"%s (Group Order: %s)"
-                                        actual_gene#,paste(x_categories, collapse = " → ")
-                                        )#图四箱线图题图显示
-                        ,
-                        y = data_list$expression_type,
-                        x = NULL) +
-          ggplot2::theme(
-            legend.position = "none",
-            axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
-          )
+        # Phase 1核心：根据样式选择Geom
+        if (plot_style == "raincloud") {
+          # 标准云雨图：半小提琴(右) + 雨滴散点(左) + 箱线图(中)
+          # 注意：coord_flip在ggplotly中可能有问题，改用横向美学映射
 
-        # 转换为plotly，并在plotly层面也强制顺序
-        ply <- plotly::ggplotly(p)
+          # 先进行坐标翻转的数据处理：交换x和y的角色
+          p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = Group, y = Expression, fill = Group, color = Group)) +
+            # 小提琴(云) —— y 是连续，因此 stat="ydensity" 才会工作
+            geom_flat_violin(
+              width = 0.9,
+              alpha = 0.6,
+              trim = FALSE
+            ) +
+            # 雨(散点)
+            ggplot2::geom_jitter(
+              width = 0.12,
+              height = 0,
+              size = 2.5,
+              alpha = 0.8
+            ) +
+            # 箱线(云下界限)
+            ggplot2::geom_boxplot(
+              width = 0.15,
+              alpha = 0.8,
+              outlier.shape = NA
+            ) +
+            ggplot2::scale_fill_manual(values = group_colors) +
+            ggplot2::scale_color_manual(values = group_colors) +
+            ggplot2::labs(
+              title = sprintf("%s (云雨图)", actual_gene),
+              x = NULL,
+              y = data_list$expression_type
+            ) +
+            ggplot2::theme_bw(base_size = 12) +
+            ggplot2::theme(
+              legend.position = "none",
+              axis.text.x = ggplot2::element_text(size = 11, face = "bold")
+            )
+        } else {
+          # 经典箱线图（保持原有逻辑）
+          p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = Group, y = Expression, fill = Group)) +
+            ggplot2::geom_boxplot(alpha = 0.7, outlier.shape = NA) +
+            ggplot2::geom_jitter(width = 0.2, size = 3, alpha = 0.6) +
+            ggplot2::scale_fill_manual(values = group_colors) +
+            ggplot2::scale_x_discrete(limits = x_categories, drop = FALSE) +
+            ggplot2::theme_bw(base_size = 12) +
+            ggplot2::labs(
+              title = sprintf("%s (%s)", actual_gene, "箱线图"),
+              y = data_list$expression_type,
+              x = NULL
+            ) +
+            ggplot2::theme(
+              legend.position = "none",
+              axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
+            )
+        }
+
+        # 转换为plotly并强制X轴顺序
+        ply <- plotly::ggplotly(p, tooltip = c("x", "y", "Sample"))
 
         ply <- ply %>% plotly::layout(
           xaxis = list(
             categoryorder = "array",
             categoryarray = x_categories,
             title = ""
-          )
+          ),
+          dragmode = FALSE  # 禁止拖拽，避免误触改变顺序
         )
 
         return(ply)
 
       }, error = function(e) {
-        message(sprintf("❌ Boxplot错误: %s", e$message))
+        message(sprintf("❌ Boxplot/Raincloud错误: %s", e$message))
         return(plotly::plot_ly() %>% plotly::layout(
           title = sprintf("错误: %s", e$message)
         ))

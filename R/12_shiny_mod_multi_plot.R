@@ -11,11 +11,11 @@ mod_multi_plot_ui <- function(id) {
         ns("pathway_selector"),
         label = "当前已选择通路（可点击 × 删除）:",
         choices = character(0), multiple = TRUE,
-        options = list(plugins = list("remove_button"), placeholder = "当前勾选的通路...")
+        options = list(plugins = list("remove_button"), placeholder = "当前勾选的通路..."),width = "100%",
       ),
       shiny::actionButton(ns("clear_btn"), "🗑️ 清空选择", class = "btn-warning",
                           style = "margin-bottom: 15px;"),
-      shiny::plotOutput(ns("multi_plot"), height = "600px")
+      shiny::plotOutput(ns("multi_plot"), height = "800px",width = "100%")
     )
   )
 }
