@@ -1,9 +1,9 @@
 Package: GSEAlens
 Type: Package
 Title: Gene Set Enrichment Analysis Interactive Explorer
-Version: 0.0.2
+Version: 0.0.3
 Author: Dudali
-Maintainer: Dudali <your.email@example.com>
+Maintainer: Dudali <sealgod@qq.com>
 Description: Interactive GSEA exploration and visualization platform supporting both Limma-Voom and DESeq2 backends.
 License: MIT + file LICENSE
 Encoding: UTF-8
