@@ -613,7 +613,14 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
         # 绘制箱线图
         p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = Group, y = Expression, fill = Group)) +
           ggplot2::geom_boxplot(alpha = 0.7, outlier.shape = NA) +
-          ggplot2::geom_jitter(width = 0.2, size = 3, alpha = 0.6) +
+          ggplot2::geom_jitter(width = 0.2, size = 3, alpha = 0.6,
+                               ggplot2::aes(
+                                 text = sprintf(
+                                   "<b>Sample:</b> %s<br><b>Group:</b> %s<br><b>Expression:</b> %.3f",
+                                   Sample, Group, Expression
+                                 )
+                               )
+          )+
           ggplot2::scale_fill_manual(values = group_colors) +
           ggplot2::scale_x_discrete(limits = x_categories, drop = FALSE) +
           ggplot2::coord_cartesian(ylim = c(y_min, y_max)) +
@@ -636,7 +643,8 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
         }
 
         # 转换为plotly并强制X轴顺序
-        ply <- plotly::ggplotly(p, tooltip = c("x", "y", "Sample"))
+        ply <- plotly::ggplotly(p, tooltip = "text")
+        #ply <- plotly::ggplotly(p, tooltip = c("x", "y", "Sample"))
 
         ply <- ply %>% plotly::layout(
           xaxis = list(

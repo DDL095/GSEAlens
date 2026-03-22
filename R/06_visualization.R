@@ -3,9 +3,6 @@
 #' @name visualization
 NULL
 
-
-# 1. 静态绘图函数
-
 #' @title 绘制方向性 GSEA 图
 #' @description 极客级 GSEA 绘图引擎，完美兼容单通路/多通路合图。
 #'   自动生成优雅图例、拦截并重绘经典红蓝基因分布带。

@@ -1,5 +1,5 @@
 GSEAlens 全量 R 代码汇总
-生成时间: 2026-03-22 17:16:14
+生成时间: 2026-03-22 17:46:02
 扫描目录: G:\2025_11_13_sto_双参考基因组的转录分析\2026_02_01_新十三线参考组\GSEAlens
 R 文件数量: 23
 ====================================================================================================
@@ -1229,9 +1229,6 @@ print.GseaRes <- function(x, ...) {
 #' @description 提供静态绘图函数和交互式 HTML 报告生成功能。
 #' @name visualization
 NULL
-
-
-# 1. 静态绘图函数
 
 #' @title 绘制方向性 GSEA 图
 #' @description 极客级 GSEA 绘图引擎，完美兼容单通路/多通路合图。
@@ -3512,7 +3509,14 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
         # 绘制箱线图
         p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = Group, y = Expression, fill = Group)) +
           ggplot2::geom_boxplot(alpha = 0.7, outlier.shape = NA) +
-          ggplot2::geom_jitter(width = 0.2, size = 3, alpha = 0.6) +
+          ggplot2::geom_jitter(width = 0.2, size = 3, alpha = 0.6,
+                               ggplot2::aes(
+                                 text = sprintf(
+                                   "<b>Sample:</b> %s<br><b>Group:</b> %s<br><b>Expression:</b> %.3f",
+                                   Sample, Group, Expression
+                                 )
+                               )
+          )+
           ggplot2::scale_fill_manual(values = group_colors) +
           ggplot2::scale_x_discrete(limits = x_categories, drop = FALSE) +
           ggplot2::coord_cartesian(ylim = c(y_min, y_max)) +
@@ -3535,7 +3539,8 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
         }
 
         # 转换为plotly并强制X轴顺序
-        ply <- plotly::ggplotly(p, tooltip = c("x", "y", "Sample"))
+        ply <- plotly::ggplotly(p, tooltip = "text")
+        #ply <- plotly::ggplotly(p, tooltip = c("x", "y", "Sample"))
 
         ply <- ply %>% plotly::layout(
           xaxis = list(
