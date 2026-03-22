@@ -125,31 +125,6 @@ mod_pathway_relation_ui <- function(id) {
                                  )
                                ),
 
-                               # UpSet专用
-                               shiny::conditionalPanel(
-                                 condition = sprintf("input['%s'] == 'upset'", ns("active_tab")),
-                                 shiny::sliderInput(
-                                   ns("max_sets"),
-                                   "最大集合数:",
-                                   min = 2, max = 15, value = 8, step = 1
-                                 ),
-                                 shiny::sliderInput(
-                                   ns("min_intersection"),
-                                   "最小交集大小:",
-                                   min = 1, max = 50, value = 5, step = 1
-                                 )
-                               ),
-
-                               # Chord专用
-                               shiny::conditionalPanel(
-                                 condition = sprintf("input['%s'] == 'chord'", ns("active_tab")),
-                                 shiny::sliderInput(
-                                   ns("genes_per_pathway"),
-                                   "每通路显示基因数:",
-                                   min = 5, max = 50, value = 20, step = 1
-                                 )
-                               ),
-
                                shiny::hr(),
                                shiny::actionButton(
                                  ns("refresh_plot"),
@@ -180,15 +155,6 @@ mod_pathway_relation_ui <- function(id) {
                         )
                       ),
 
-                      # Sub 2: Chord
-                      shiny::tabPanel(
-                        title = shiny::HTML("🎻 EnrichmentChord"),
-                        value = "chord",
-                        shiny::div(class = "white-box", style = "margin-top: 15px;",
-                                   shiny::plotOutput(ns("plot_chord"), height = "600px")
-                        )
-                      ),
-
                       # Sub 3: Network
                       shiny::tabPanel(
                         title = shiny::HTML("🕸️ Network"),
@@ -196,17 +162,8 @@ mod_pathway_relation_ui <- function(id) {
                         shiny::div(class = "white-box", style = "margin-top: 15px;",
                                    plotly::plotlyOutput(ns("plot_network"), height = "600px")
                         )
-                      ),
-
-                      # Sub 4: UpSet
-                      shiny::tabPanel(
-                        title = shiny::HTML("📊 UpSet"),
-                        value = "upset",
-                        shiny::div(class = "white-box", style = "margin-top: 15px;",
-                                   # 使用ComplexUpset输出
-                                   shiny::plotOutput(ns("plot_upset"), height = "600px")
-                        )
                       )
+
                     )
       )
     )
@@ -251,10 +208,10 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res) {
       return(task)
     })
 
-    # 1. DotPlot实现（经典GSEA气泡图）
+    # 1. DotPlot实现（经典GSEA气泡图）- 带对数比例尺
     output$plot_dotplot <- plotly::renderPlotly({
       shiny::req(selected_pathways(), current_task())
-      shiny::req(input$refresh_plot)  # 依赖更新按钮
+      shiny::req(input$refresh_plot)
 
       pathways <- selected_pathways()
       task <- current_task()
@@ -267,7 +224,6 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res) {
       }
 
       # 获取DE基因（用于ORA计算）
-      # 从gsea_res中提取DE表（需要实现辅助函数）
       de_table <- tryCatch({
         get_de_table(gsea_res, task$meta$contrast_id)
       }, error = function(e) NULL)
@@ -289,35 +245,53 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res) {
         term_genes <- get_term_genes(gsea_res, pid)
 
         # 计算Ratio
-        if (input$ratio_source == "ora" && length(term_genes) > 0) {
-          ratio <- length(core_genes) / length(term_genes)
-        } else if (length(de_genes_sig) > 0) {
-          overlap <- intersect(core_genes, toupper(de_genes_sig))
-          ratio <- length(overlap) / length(de_genes_sig)
+        if (input$ratio_source == "ora") {
+          # ORA模式: Core Genes / Term Genes (通路基因)
+          if (length(term_genes) > 0) {
+            ratio <- length(core_genes) / length(term_genes)
+          } else {
+            ratio <- 0
+          }
         } else {
-          ratio <- length(core_genes) / row$setSize
+          # Leading Edge模式: (Core Genes ∩ DE Genes) / DE Genes
+          if (length(de_genes_sig) > 0) {
+            overlap <- intersect(core_genes, toupper(de_genes_sig))
+            ratio <- length(overlap) / length(de_genes_sig)
+          } else {
+            ratio <- 0
+          }
         }
 
-        # Size映射
-        size_val <- switch(input$size_mode,
+        # Size映射 - 使用对数变换
+        raw_size <- switch(input$size_mode,
                            "core_size" = length(core_genes),
                            "setsize" = row$setSize,
                            "ratio" = ratio * 100,
                            length(core_genes))
 
+        # 对数变换用于气泡大小（避免极端值导致比例失调）
+        log_size <- log10(raw_size + 1)  # +1避免log(0)
+
         # Color映射
-        color_val <- switch(input$stat_color_mode,
+        raw_color <- switch(input$stat_color_mode,
                             "pval" = -log10(row$pvalue),
                             "padj" = -log10(row$p.adjust),
                             "nes" = abs(row$NES),
                             -log10(row$p.adjust))
 
+        # 颜色截断（避免极端值）
+        color_cap <- input$color_cap %||% 20
+        color_val <- min(raw_color, color_cap)
+
         data.frame(
           Pathway = pid,
           Description = ifelse(is.na(row$Description), pid, row$Description),
           Ratio = ratio,
-          Size = size_val,
+          RawSize = raw_size,      # 原始大小用于显示
+          LogSize = log_size,      # 对数变换后的大小用于绘图
+          Size = raw_size,         # 保持兼容性
           Color = color_val,
+          RawColor = raw_color,    # 原始颜色值
           NES = row$NES,
           PValue = row$pvalue,
           FDR = row$p.adjust,
@@ -338,6 +312,49 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res) {
                             "padj" = "-log10(FDR)",
                             "nes" = "|NES|")
 
+      # 计算气泡大小范围（对数尺度）
+      size_range <- input$size_range %||% c(5, 20)
+      min_log_size <- min(plot_df$LogSize)
+      max_log_size <- max(plot_df$LogSize)
+
+      # 线性映射到像素大小
+      if (max_log_size > min_log_size) {
+        plot_df$MarkerSize <- size_range[1] +
+          (plot_df$LogSize - min_log_size) / (max_log_size - min_log_size) *
+          (size_range[2] - size_range[1])
+      } else {
+        plot_df$MarkerSize <- mean(size_range)
+      }
+
+      # 构建标题
+      contrast_id <- task$meta$contrast_id
+      left_group <- task$meta$left_group
+      right_group <- task$meta$right_group
+
+      # 计算比例尺刻度（以10的倍数）
+      max_raw_size <- max(plot_df$RawSize)
+      # 找到比最大值大的最近的10的幂
+      scale_max <- 10^ceiling(log10(max_raw_size + 1))
+      # 生成比例尺刻度：1, 10, 100, 1000... 或 1, 5, 10, 50...
+      if (scale_max > 100) {
+        scale_breaks <- c(1, 10, 100, 1000)
+        scale_breaks <- scale_breaks[scale_breaks <= scale_max * 10]
+      } else {
+        scale_breaks <- c(1, 5, 10, 50, 100)
+        scale_breaks <- scale_breaks[scale_breaks <= scale_max]
+      }
+
+      # 计算每个刻度对应的像素大小
+      scale_sizes <- sapply(scale_breaks, function(s) {
+        log_s <- log10(s + 1)
+        if (max_log_size > min_log_size) {
+          size_range[1] + (log_s - min_log_size) / (max_log_size - min_log_size) *
+            (size_range[2] - size_range[1])
+        } else {
+          mean(size_range)
+        }
+      })
+
       # 绘制（仅hover，无click事件监听）
       p <- plotly::plot_ly(
         data = plot_df,
@@ -346,12 +363,15 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res) {
         type = "scatter",
         mode = "markers",
         marker = list(
-          size = ~Size,
+          size = ~MarkerSize,
           color = ~Color,
           colorscale = "RdBu",
           showscale = TRUE,
-          colorbar = list(title = color_title),
-          opacity = input$dot_alpha,
+          colorbar = list(
+            title = list(text = color_title, font = list(size = 12)),
+            tickfont = list(size = 10)
+          ),
+          opacity = input$dot_alpha %||% 0.8,
           line = list(color = "black", width = 1)
         ),
         text = ~sprintf(
@@ -360,172 +380,70 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res) {
         ),
         hoverinfo = "text"
       ) %>% plotly::layout(
-        xaxis = list(title = ifelse(input$ratio_source == "ora",
-                                    "Overlap Ratio (Core/Term)",
-                                    "Overlap Ratio (Core/DE)")),
-        yaxis = list(title = ""),
+        xaxis = list(
+          title = list(
+            text = ifelse(input$ratio_source == "ora",
+                          "Overlap Ratio (Core/Term)",
+                          "Overlap Ratio (Core/DE)"),
+            font = list(size = 12)
+          ),
+          tickfont = list(size = 10)
+        ),
+        yaxis = list(
+          title = "",
+          tickfont = list(size = 9)
+        ),
         showlegend = FALSE,
-        dragmode = FALSE  # 禁止拖拽，确保无click联动
+        dragmode = FALSE,  # 禁止拖拽，确保无click联动
+        title = list(
+          text = sprintf("DotPlot: %s vs %s (%d pathways)", left_group, right_group, nrow(plot_df)),
+          font = list(size = 14),
+          x = 0.5,
+          xanchor = "center"
+        ),
+        margin = list(l = 200),  # 给y轴标签留空间
+        # 添加自定义比例尺注释
+        annotations = list(
+          list(
+            x = 0.98,
+            y = 0.02,
+            xref = "paper",
+            yref = "paper",
+            text = "<b>Bubble Size Scale</b><br>(Core Genes)",
+            showarrow = FALSE,
+            font = list(size = 10),
+            align = "right",
+            bgcolor = "rgba(255,255,255,0.8)",
+            bordercolor = "gray",
+            borderwidth = 1
+          )
+        )
       )
+
+      # 添加比例尺气泡（在右下角）
+      for (i in seq_along(scale_breaks)) {
+        p <- p %>% plotly::add_trace(
+          x = max(plot_df$Ratio) * 1.05,  # 放在图右侧
+          y = nrow(plot_df) * (0.1 + i * 0.08),  # 垂直排列
+          mode = "markers+text",
+          marker = list(
+            size = scale_sizes[i],
+            color = "lightgray",
+            line = list(color = "black", width = 1)
+          ),
+          text = paste0(" ", scale_breaks[i]),
+          textposition = "middle right",
+          textfont = list(size = 9),
+          hoverinfo = "skip",
+          showlegend = FALSE
+        )
+      }
 
       return(p)
     }) %>% shiny::bindEvent(input$refresh_plot, ignoreNULL = FALSE)
 
-    # 2. EnrichmentChord（基因-通路弦图）
-    # 2. EnrichmentChord（基因-通路弦图）- 修复空间不足问题
-    output$plot_chord <- shiny::renderPlot({
-      shiny::req(selected_pathways(), current_task())
-      shiny::req(input$refresh_plot)
 
-      pathways <- selected_pathways()
-      task <- current_task()
-
-      # 限制规模，避免gap.degree错误
-      max_pathways <- min(length(pathways), 8)  # 最多8个通路
-      if (length(pathways) > max_pathways) {
-        pathways <- pathways[1:max_pathways]
-      }
-
-      # 构建基因-通路关联
-      genes_list <- list()
-      total_genes <- 0
-
-      for (pid in pathways) {
-        core_genes <- get_core_genes_for_pathway(task, pid)
-        # 严格限制每个通路的基因数
-        n_genes <- min(length(core_genes), input$genes_per_pathway %||% 10)
-        if (n_genes > 0) {
-          genes_list[[pid]] <- core_genes[1:n_genes]
-          total_genes <- total_genes + n_genes
-        }
-      }
-
-      # 安全检查：如果总节点数过多，进一步截断
-      if (total_genes > 50) {
-        # 重新分配配额
-        genes_per_pathway <- floor(50 / length(pathways))
-        for (pid in names(genes_list)) {
-          if (length(genes_list[[pid]]) > genes_per_pathway) {
-            genes_list[[pid]] <- genes_list[[pid]][1:genes_per_pathway]
-          }
-        }
-      }
-
-      # 构建边列表
-      edges <- data.frame(
-        from = character(0),
-        to = character(0),
-        stringsAsFactors = FALSE
-      )
-
-      for (pid in names(genes_list)) {
-        genes <- genes_list[[pid]]
-        if (length(genes) > 0) {
-          edges <- rbind(edges, data.frame(
-            from = genes,
-            to = rep(pid, length(genes)),
-            stringsAsFactors = FALSE
-          ))
-        }
-      }
-
-      if (nrow(edges) == 0 || length(unique(edges$from)) < 2) {
-        graphics::plot(1, type = "n", axes = FALSE, xlab = "", ylab = "")
-        graphics::text(1, 1, "无足够基因数据\n(每个通路至少需要1个core gene)", col = "red")
-        return()
-      }
-
-      # 构建邻接矩阵（仅包含出现在edges中的基因）
-      all_genes <- unique(edges$from)
-      all_paths <- unique(edges$to)
-
-      # 如果维度太大，进一步截断
-      if (length(all_genes) > 30 || length(all_paths) > 8) {
-        graphics::plot(1, type = "n", axes = FALSE)
-        graphics::text(1, 1, "数据维度太大\n请减少通路数量或降低每通路基因数", col = "red")
-        return()
-      }
-
-      mat <- matrix(0, nrow = length(all_genes), ncol = length(all_paths))
-      rownames(mat) <- all_genes
-      colnames(mat) <- all_paths
-
-      for (i in 1:nrow(edges)) {
-        if (edges$from[i] %in% rownames(mat) && edges$to[i] %in% colnames(mat)) {
-          mat[edges$from[i], edges$to[i]] <- 1
-        }
-      }
-
-      # 设置circos参数（关键修复：减小gap.degree）
-      circlize::circos.clear()
-      circlize::circos.par(
-        gap.degree = 2,  # 从默认5降到2，节省空间
-        start.degree = 90,
-        track.margin = c(-0.1, 0.1),
-        points.overflow.warning = FALSE
-      )
-
-      # 准备颜色
-      path_colors <- RColorBrewer::brewer.pal(max(3, length(all_paths)), "Set2")[1:length(all_paths)]
-      names(path_colors) <- all_paths
-
-      gene_color <- "grey70"
-
-      grid_colors <- c(
-        rep(gene_color, length(all_genes)),
-        path_colors[all_paths]
-      )
-
-      # 绘制弦图（带错误处理）
-      tryCatch({
-        circlize::chordDiagram(
-          mat,
-          transparency = 0.4,
-          annotationTrack = c("grid", "axis"),
-          preAllocateTracks = list(track.height = 0.1),
-          grid.col = grid_colors,
-          link.border = "white",
-          link.lwd = 0.5,
-          direction = 1,
-          diffHeight = 0.05
-        )
-
-        # 添加标签（仅通路，基因太多不显示）
-        circlize::circos.track(
-          track.index = 1,
-          panel.fun = function(x, y) {
-            sector.name <- get.cell.meta.data("sector.index")
-            if (sector.name %in% all_paths) {
-              circlize::circos.text(
-                CELL_META$xcenter,
-                CELL_META$ylim[1],
-                sector.name,
-                facing = "clockwise",
-                niceFacing = TRUE,
-                adj = c(0, 0.5),
-                cex = 0.8,
-                font = 2,
-                col = path_colors[sector.name]
-              )
-            }
-          },
-          bg.border = NA
-        )
-
-        graphics::title(main = sprintf("Gene-Pathway Chord\n(%d genes × %d pathways)",
-                                       length(all_genes), length(all_paths)))
-
-      }, error = function(e) {
-        graphics::text(0.5, 0.5, sprintf("Chord Diagram Error:\n%s\n\n建议：减少通路数量至5个以下",
-                                         e$message), col = "red")
-      })
-
-      circlize::circos.clear()
-
-    }, height = 600, width = 800)
-
-    # 3. Network（通路关系网络，基于core_genes Jaccard相似度）
-    # 3. Network（通路关系网络）- 修复连线显示
+    # 3. Network（通路关系网络，基于core_genes Jaccard相似度）- Plotly交互版
     output$plot_network <- plotly::renderPlotly({
       shiny::req(selected_pathways(), current_task())
       shiny::req(input$refresh_plot)
@@ -577,7 +495,10 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res) {
 
       if (nrow(edge_list) == 0) {
         return(plotly::plot_ly() %>% plotly::layout(
-          title = "无足够连接的通路（请降低最小共享基因数）"
+          title = list(
+            text = "无足够连接的通路（请降低最小共享基因数）",
+            font = list(size = 14)
+          )
         ))
       }
 
@@ -607,161 +528,117 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res) {
       node_df$NES <- node_info$NES
       node_df$color_val <- ifelse(is.na(node_df$NES), 0, node_df$NES)
 
-      # 构建边数据框（关键修复：为plotly创建线段数据）
-      edge_segments <- data.frame(
-        x = numeric(0),
-        y = numeric(0),
-        xend = numeric(0),
-        yend = numeric(0),
-        weight = numeric(0),
-        shared = integer(0),
-        stringsAsFactors = FALSE
-      )
+      # 提取对比组信息用于标题
+      contrast_id <- task$meta$contrast_id
+      left_group <- task$meta$left_group
+      right_group <- task$meta$right_group
 
+      # 创建plotly图形 - 使用add_trace而不是scatter
+      p <- plotly::plot_ly()
+
+      # 添加边（使用add_segments）
       for (i in 1:nrow(edge_list)) {
-        from_pos <- node_df[node_df$name == edge_list$from[i], c("x", "y")]
-        to_pos <- node_df[node_df$name == edge_list$to[i], c("x", "y")]
+        from_node <- node_df[node_df$name == edge_list$from[i], ]
+        to_node <- node_df[node_df$name == edge_list$to[i], ]
 
-        if (nrow(from_pos) == 1 && nrow(to_pos) == 1) {
-          edge_segments <- rbind(edge_segments, data.frame(
-            x = from_pos$x,
-            y = from_pos$y,
-            xend = to_pos$x,
-            yend = to_pos$y,
-            weight = edge_list$weight[i],
-            shared = edge_list$shared[i]
-          ))
-        }
-      }
-
-      # 使用ggplot2绘制（更稳定的线段渲染）
-      p <- ggplot2::ggplot() +
-        # 边（线段）
-        ggplot2::geom_segment(
-          data = edge_segments,
-          ggplot2::aes(x = x, y = y, xend = xend, yend = yend,
-                       alpha = weight, size = weight),
-          color = "gray50",
-          show.legend = FALSE
-        ) +
-        # 节点
-        ggplot2::geom_point(
-          data = node_df,
-          ggplot2::aes(x = x, y = y, color = color_val),
-          size = 8,
-          shape = 21,
-          fill = "white",
-          stroke = 2
-        ) +
-        # 节点标签
-        ggplot2::geom_text(
-          data = node_df,
-          ggplot2::aes(x = x, y = y, label = name),
-          size = 3,
-          vjust = -1.5,
-          check_overlap = TRUE
-        ) +
-        ggplot2::scale_color_gradient2(
-          low = "#377EB8", mid = "white", high = "#E41A1C", midpoint = 0,
-          name = "NES"
-        ) +
-        ggplot2::scale_size_continuous(range = c(0.5, 3)) +
-        ggplot2::scale_alpha_continuous(range = c(0.3, 0.8)) +
-        ggplot2::coord_fixed() +
-        ggplot2::theme_void() +
-        ggplot2::theme(
-          legend.position = "right",
-          plot.title = ggplot2::element_text(hjust = 0.5)
-        ) +
-        ggplot2::labs(
-          title = sprintf("Pathway Network (edges=%d, min_shared=%d)",
-                          nrow(edge_segments), input$min_shared)
+        p <- p %>% plotly::add_segments(
+          x = from_node$x,
+          y = from_node$y,
+          xend = to_node$x,
+          yend = to_node$y,
+          line = list(
+            color = "rgba(128, 128, 128, 0.6)",
+            width = 1 + edge_list$weight[i] * 3
+          ),
+          hoverinfo = "text",
+          text = sprintf("Shared: %d genes<br>Jaccard: %.3f",
+                         edge_list$shared[i], edge_list$weight[i]),
+          showlegend = FALSE,
+          inherit = FALSE
         )
-
-      # 转换为plotly（保留悬停，移除click）
-      ply <- plotly::ggplotly(p, tooltip = c("label", "color_val")) %>%
-        plotly::layout(
-          dragmode = FALSE,
-          hovermode = "closest"
-        ) %>%
-        plotly::config(displayModeBar = FALSE)
-
-      return(ply)
-    }) %>% shiny::bindEvent(input$refresh_plot, ignoreNULL = FALSE)
-
-    # 4. UpSet（交集分析）
-    # 4. UpSet（交集分析）- 修复参数名
-    output$plot_upset <- shiny::renderPlot({
-      shiny::req(selected_pathways(), current_task())
-      shiny::req(input$refresh_plot)
-
-      # 检查ComplexUpset是否可用
-      if (!requireNamespace("ComplexUpset", quietly = TRUE)) {
-        graphics::plot(1, type = "n", axes = FALSE)
-        graphics::text(1, 1, "请安装ComplexUpset包\ninstall.packages('ComplexUpset')", col = "red")
-        return()
       }
 
-      pathways <- selected_pathways()
-      task <- current_task()
-
-      # 限制集合数
-      max_sets <- validate_param(input$max_sets, 8, 2, 15, "max_sets")
-      if (length(pathways) > max_sets) {
-        pathways <- pathways[1:max_sets]
-      }
-
-      # 构建集合列表
-      core_list <- get_core_genes_list(task, pathways)
-
-      # 转换为数据框（ComplexUpset格式）
-      all_genes <- unique(unlist(core_list))
-      if (length(all_genes) == 0) {
-        graphics::plot(1, type = "n", axes = FALSE)
-        graphics::text(1, 1, "无Core Genes数据", col = "red")
-        return()
-      }
-
-      membership_df <- data.frame(
-        gene = all_genes,
-        stringsAsFactors = FALSE
+      # 添加节点
+      p <- p %>% plotly::add_markers(
+        data = node_df,
+        x = ~x,
+        y = ~y,
+        marker = list(
+          size = 15,
+          color = ~color_val,
+          colorscale = list(
+            c(0, "#377EB8"),    # 负值 - 蓝色
+            c(0.5, "white"),    # 中点 - 白色
+            c(1, "#E41A1C")     # 正值 - 红色
+          ),
+          showscale = TRUE,
+          colorbar = list(
+            title = list(text = "NES", font = list(size = 12)),
+            tickfont = list(size = 10)
+          ),
+          line = list(color = "black", width = 2)
+        ),
+        text = ~name,
+        hoverinfo = "text",
+        hovertext = ~sprintf(
+          "<b>%s</b><br>NES: %.2f<br>Core Genes: %d",
+          name,
+          ifelse(is.na(NES), 0, NES),
+          sapply(name, function(n) length(core_list[[n]]))
+        ),
+        showlegend = FALSE
       )
 
-      for (pid in pathways) {
-        membership_df[[pid]] <- membership_df$gene %in% core_list[[pid]]
-      }
+      # 添加节点标签
+      p <- p %>% plotly::add_text(
+        data = node_df,
+        x = ~x,
+        y = ~y,
+        text = ~name,
+        textposition = "top center",
+        textfont = list(size = 9, color = "black"),
+        hoverinfo = "skip",
+        showlegend = FALSE
+      )
 
-      # 修复：ComplexUpset 1.0+ 使用 mode = 'distinct' 替代 min_intersection_size
-      # 或使用 intersections 参数控制显示哪些交集
-      min_size <- input$min_intersection
+      # 构建标题
+      title_text <- sprintf(
+        "Pathway Network: %s → %s<br><sub>%d nodes, %d edges (min_shared=%d)</sub>",
+        left_group, right_group,
+        nrow(node_df), nrow(edge_list), input$min_shared
+      )
 
-      # 方法：先计算所有交集，过滤后再绘图
-      tryCatch({
-        ComplexUpset::upset(
-          membership_df,
-          intersect = pathways,
-          min_size = min_size,  # 使用min_size而非min_intersection_size
-          width_ratio = 0.2,
-          name = "Pathway Intersections",
-          base_annotations = list(
-            'Intersection size' = ComplexUpset::intersection_size(
-              text = ComplexUpset::aes_(color = 'black'),
-              text_mapping = ComplexUpset::aes_(label = ggplot2::aes(label = !!ggplot2::sym('size')))
-            )
-          ),
-          themes = ComplexUpset::upset_default_themes(
-            panel.grid.major = ggplot2::element_blank(),
-            panel.grid.minor = ggplot2::element_blank(),
-            axis.text.y = ggplot2::element_blank()
-          )
-        )
-      }, error = function(e) {
-        # 降级方案：使用基础 upset
-        graphics::plot(1, type = "n", axes = FALSE)
-        graphics::text(1, 1, sprintf("UpSet Error:\n%s", e$message), col = "red")
-      })
+      # 设置布局
+      p %>% plotly::layout(
+        title = list(
+          text = title_text,
+          font = list(size = 14),
+          x = 0.5,
+          xanchor = "center"
+        ),
+        xaxis = list(
+          title = "",
+          showgrid = FALSE,
+          showticklabels = FALSE,
+          zeroline = FALSE
+        ),
+        yaxis = list(
+          title = "",
+          showgrid = FALSE,
+          showticklabels = FALSE,
+          zeroline = FALSE
+        ),
+        hovermode = "closest",
+        dragmode = "pan",
+        showlegend = FALSE,
+        margin = list(l = 50, r = 50, t = 80, b = 50)
+      ) %>% plotly::config(
+        displayModeBar = TRUE,
+        displaylogo = FALSE,
+        modeBarButtonsToRemove = c("lasso2d", "select2d")
+      )
+    })
 
-    }, height = 600, width = 800)
 
   })
 }

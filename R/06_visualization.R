@@ -6,16 +6,17 @@ NULL
 
 # 1. 静态绘图函数
 
-
 #' @title 绘制方向性 GSEA 图
 #' @description 极客级 GSEA 绘图引擎，完美兼容单通路/多通路合图。
-#' 自动生成优雅图例、拦截并重绘经典红蓝基因分布带。
+#'   自动生成优雅图例、拦截并重绘经典红蓝基因分布带。
 #' @param directional_gsea_obj 封装好的 GseaTask 对象 (由 extract_gsea_task 返回)
 #' @param target_pathways 需要绘制的通路 ID 向量 (支持单个或多个)
 #' @param main_title 主标题名称
 #' @param subPlot 控制 GseaVis 生成的子图数量 (1: 仅富集图; 2: 富集+热图带; 3: 完整带Rank)
 #' @param curveCol 自定义曲线颜色向量
 #' @param add_pval 是否在图上添加统计学标注。默认 FALSE。
+#' @param show_contrast_in_axis 逻辑值。是否在 Rank 图的 x 轴显示对比组信息。
+#'   默认为 FALSE，仅在联合画布模式建议设为 TRUE。
 #' @param ... 传递给 GseaVis::gseaNb 的额外参数
 #' @return ggplot2 复合对象
 #' @importFrom ggplot2 ggplot aes geom_col scale_fill_gradient2 geom_hline scale_x_continuous theme_bw theme element_blank element_text margin coord_cartesian labs geom_vline annotate scale_color_manual
@@ -25,7 +26,9 @@ NULL
 #' @export
 plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
                                   main_title = "GSEA Plot", subPlot = 3,
-                                  curveCol = NULL, add_pval = FALSE, ...) {
+                                  curveCol = NULL, add_pval = FALSE,
+                                  show_contrast_in_axis = FALSE,  # 🔧 新增参数
+                                  ...) {
 
   # 1. 解析对象与提取基础数据
   res <- directional_gsea_obj$gsea_res
@@ -96,9 +99,23 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
     }
   }
 
-  # 5. 原生经典红蓝底部分布图
+  # 5. 原生经典红蓝底部分布图（🔧 修改：条件显示对比组）
   if (subPlot == 3) {
     df_rank <- data.frame(x = seq_along(gList), y = as.numeric(gList))
+
+    # 🔧【关键修改】根据参数决定是否显示对比组信息
+    if (isTRUE(show_contrast_in_axis)) {
+      # 联合画布模式：显示对比组
+      x_axis_label <- sprintf(
+        "%s vs %s",
+        meta$left_group,
+        meta$right_group
+      )
+    } else {
+      # 默认模式：保持原样
+      x_axis_label <- "Rank in Ordered Dataset"
+    }
+
     prank_classic <- ggplot2::ggplot(df_rank, ggplot2::aes(x = x, y = y)) +
       ggplot2::geom_col(ggplot2::aes(fill = y), width = 1, color = NA, show.legend = FALSE) +
       ggplot2::scale_fill_gradient2(low = "#08519C", mid = "white", high = "#A50F15", midpoint = 0) +
@@ -109,7 +126,21 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
                      axis.text = ggplot2::element_text(colour = "black"),
                      plot.margin = ggplot2::margin(t = -0.1, r = 0.2, b = 0.2, l = 0.2, unit = "cm")) +
       ggplot2::coord_cartesian(expand = 0) +
-      ggplot2::labs(x = "Rank in Ordered Dataset", y = "Ranked List")
+      ggplot2::labs(x = x_axis_label, y = "Ranked List")  # 🔧 使用动态标签
+
+    # 🔧【新增】联合画布模式：加粗加大 X 轴标签
+    if (isTRUE(show_contrast_in_axis)) {
+      prank_classic <- prank_classic +
+        ggplot2::theme(
+          axis.title.x = ggplot2::element_text(
+            face = "bold",      # 加粗
+            size = 18#,          # 字号（默认base_size=14，这里加大到16）
+            #color = "#2c3e50"#,  # 深蓝灰色，更醒目
+            #margin = ggplot2::margin(t = 10)  # 与图形保持适当间距
+          )
+        )
+    }
+
 
     z_cross <- sum(gList > 0); m_rank <- length(gList)
     anno_layers <- list(

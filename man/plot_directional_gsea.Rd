@@ -11,6 +11,7 @@ plot_directional_gsea(
   subPlot = 3,
   curveCol = NULL,
   add_pval = FALSE,
+  show_contrast_in_axis = FALSE,
   ...
 )
 }
@@ -27,6 +28,9 @@ plot_directional_gsea(
 
 \item{add_pval}{是否在图上添加统计学标注。默认 FALSE。}
 
+\item{show_contrast_in_axis}{逻辑值。是否在 Rank 图的 x 轴显示对比组信息。
+默认为 FALSE，仅在联合画布模式建议设为 TRUE。}
+
 \item{...}{传递给 GseaVis::gseaNb 的额外参数}
 }
 \value{
@@ -34,5 +38,5 @@ ggplot2 复合对象
 }
 \description{
 极客级 GSEA 绘图引擎，完美兼容单通路/多通路合图。
-自动生成优雅图例、拦截并重绘经典红蓝基因分布带。
+  自动生成优雅图例、拦截并重绘经典红蓝基因分布带。
 }

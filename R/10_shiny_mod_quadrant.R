@@ -1,80 +1,12 @@
 
-# ==============================================================================
-# 云雨图专用：半小提琴图Geom（必须置于模块文件开头）
-# ==============================================================================
-
-#' @title 半小提琴图Geom（为云雨图提供半边小提琴）
-#' @description 修改自ggplot2 geom_violin源码，仅绘制半边小提琴
-#' @keywords internal
-GeomFlatViolin <- ggplot2::ggproto(
-  "GeomFlatViolin",
-  ggplot2::Geom,
-  setup_data = function(data, params) {
-    data$width <- data$width %||% params$width %||% (ggplot2::resolution(data$x, FALSE) * 0.9)
-    data %>%
-      dplyr::group_by(group) %>%
-      dplyr::mutate(
-        ymin = min(y),
-        ymax = max(y),
-        xmin = x,
-        xmax = x + width / 2
-      )
-  },
-  draw_group = function(data, panel_scales, coord) {
-    data <- transform(data, xminv = x, xmaxv = x + violinwidth * (xmax - x))
-    newdata <- rbind(
-      plyr::arrange(transform(data, x = xmaxv), -y),
-      plyr::arrange(transform(data, x = xminv), y)
-    )
-    newdata_Polygon <- rbind(newdata, newdata[1,])
-    newdata_Polygon$colour <- NA
-
-    newdata_Path <- plyr::arrange(transform(data, x = xmaxv), -y)
-
-    ggplot2::ggname(
-      "geom_flat_violin",
-      grid::grobTree(
-        ggplot2::GeomPolygon$draw_panel(newdata_Polygon, panel_scales, coord),
-        ggplot2::GeomPath$draw_panel(newdata_Path, panel_scales, coord)
-      )
-    )
-  },
-  draw_key = ggplot2::draw_key_polygon,
-  default_aes = ggplot2::aes(
-    weight = 1, colour = "grey20", fill = "white", size = 0.5,
-    alpha = NA, linetype = "solid"
-  ),
-  required_aes = c("x", "y")
-)
-
-#' @title 半小提琴图图层函数
-#' @keywords internal
-geom_flat_violin <- function(mapping = NULL, data = NULL, stat = "ydensity",
-                             position = "dodge", trim = TRUE, scale = "area",
-                             show.legend = NA, inherit.aes = TRUE, ...) {
-  ggplot2::layer(
-    data = data,
-    mapping = mapping,
-    stat = stat,
-    geom = GeomFlatViolin,
-    position = position,
-    show.legend = show.legend,
-    inherit.aes = inherit.aes,
-    params = list(trim = trim, scale = scale, ...)
-  )
-}
-
-#' @title 辅助操作符（ggplot2内部使用）
-#' @keywords internal
-`%||%` <- function(a, b) {
-  if (!is.null(a)) a else b
-}
-#' @title 四重联动 UI（修复版）
+#' @title 四重联动 UI
 #' @keywords internal
 mod_quadrant_ui <- function(id) {
   ns <- shiny::NS(id)
   shiny::tagList(
     shiny::fluidRow(
+
+
       shiny::column(6, shiny::div(class = "white-box",
                                   shiny::h4("1. 宏观: 通路火山图"),
                                   shiny::div(
@@ -85,27 +17,63 @@ mod_quadrant_ui <- function(id) {
                                       "点击通路查看详情"
                                     )
                                   ))),
+
+
       shiny::column(6, shiny::div(class = "white-box",
                                   shiny::h4("2. 微观: 基因 Rank 分布"),
                                   plotly::plotlyOutput(ns("volcano_gene"), height = "450px")))
     ),
+
+
     shiny::fluidRow(
       shiny::column(6, shiny::div(class = "white-box",
                                   shiny::h4("3. 差异表达火山图"),
+                                  shiny::div(
+                                    style = "position: absolute; top: 10px; right: 50%; z-index: 100;",
+                                    shiny::actionButton(
+                                      ns("toggle_volcano_settings"),
+                                      label = "⚙️",
+                                      style = "padding: 2px 8px; font-size: 12px;"
+                                    )
+                                  ),
+                                  shiny::conditionalPanel(
+                                    condition = sprintf("input['%s'] %% 2 == 1", ns("toggle_volcano_settings")),
+                                    shiny::div(
+                                      style = "background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px;",
+                                      shiny::numericInput(
+                                        ns("volcano_logfc_thresh"),
+                                        "logFC阈值:",
+                                        value = 1,
+                                        min = 0,
+                                        max = 22,
+                                        step = 0.5
+                                      ),
+                                      shiny::numericInput(
+                                        ns("volcano_pval_thresh"),
+                                        "P-value阈值:",
+                                        value = 0.05,
+                                        min = 0.001,
+                                        max = 1,
+                                        step = 0.01
+                                      ),
+                                      shiny::helpText("设置后点击火山图区域刷新")
+                                    )
+                                  ),
                                   plotly::plotlyOutput(ns("de_volcano"), height = "450px"))),
+
+
       shiny::column(6, shiny::div(class = "white-box",
                                   shiny::h4("4. 全量表达分布图"),
                                   shiny::div(
                                     style = "position: relative;",
                                     # 添加切换控件
                                     shiny::div(
-                                      style = "position: absolute; top: -40px; right: 10px; z-index: 100;",
-                                      shiny::selectInput(
-                                        ns("plot_style_g4"),
-                                        label = NULL,
-                                        choices = c("箱线图" = "boxplot", "云雨图" = "raincloud"),
-                                        selected = "boxplot",
-                                        width = "120px"
+                                      style = "position: absolute; top: -40px; left: 30%; z-index: 100;",
+                                      # 添加 0 基准点切换
+                                      shiny::checkboxInput(
+                                        ns("zero_baseline"),
+                                        label = "以0为基准线",
+                                        value = FALSE
                                       )
                                     ),
                                     plotly::plotlyOutput(ns("gene_expr_box"), height = "450px"),
@@ -209,6 +177,14 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
         source = ns("pathway_volcano")
       ) %>%
         plotly::layout(
+          title = list(
+            text = sprintf("Pathway Volcano: %s vs %s<br><sub>%d pathways | %d significant (FDR<0.25)</sub>",
+                           data_list$left_group, data_list$right_group,
+                           nrow(df), sum(df$p.adjust < 0.25, na.rm = TRUE)),
+            font = list(size = 14),
+            x = 0.5,
+            xanchor = "center"
+          ),
           xaxis = list(title = "NES", zeroline = FALSE),
           yaxis = list(title = "-log10 (FDR)", zeroline = FALSE),
           showlegend = FALSE,
@@ -289,12 +265,14 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
       )
     })
 
-    # 3. 差异表达火山图
+    # 3. 差异表达火山图（恢复美学 + 可调阈值 + 修复点击联动）
     output$de_volcano <- plotly::renderPlotly({
       data_list <- data_prep_data()
       shiny::req(data_list)
 
       contrast_id <- data_list$contrast_id
+      left_group <- data_list$left_group
+      right_group <- data_list$right_group
 
       de_df <- tryCatch({
         get_de_table(gsea_res, contrast_id)
@@ -325,6 +303,10 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
       de_df <- de_df[!is.na(de_df$logFC) & !is.na(de_df$pvalue) & !is.na(de_df$padj), ]
       if (nrow(de_df) == 0) return(NULL)
 
+      # 获取阈值设置（使用输入值或默认值）
+      logfc_thresh <- if (!is.null(input$volcano_logfc_thresh)) input$volcano_logfc_thresh else 0
+      pval_thresh <- if (!is.null(input$volcano_pval_thresh)) input$volcano_pval_thresh else 0.05
+
       de_df$x_axis <- de_df$logFC
       de_df$y_axis <- -log10(de_df$pvalue)
 
@@ -338,72 +320,97 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
       pathway_genes <- selected_pathway_genes()
       de_df$gene_upper <- toupper(de_df$gene_symbol)
 
+      # 分类基因 - 优先级：user > pathway > normal
       de_df$category <- "normal"
       de_df$category[de_df$gene_upper %in% pathway_genes] <- "pathway"
       de_df$category[de_df$gene_upper %in% user_genes] <- "user"
 
-      de_df$color <- COLOR_NS
-      de_df$size <- 6
-      de_df$significant <- abs(de_df$logFC) > 0.5 & de_df$padj < 0.05
+      # 根据阈值判断差异基因
+      de_df$is_significant <- abs(de_df$logFC) > logfc_thresh & de_df$pvalue < pval_thresh
 
-      user_idx <- which(de_df$category == "user")
-      if (length(user_idx) > 0) {
-        de_df$color[user_idx] <- ifelse(de_df$logFC[user_idx] > 0, COLOR_LEFT, COLOR_RIGHT)
-        de_df$size[user_idx] <- 15
-      }
+      # 统计差异基因数量
+      n_up <- sum(de_df$is_significant & de_df$logFC > 0, na.rm = TRUE)
+      n_down <- sum(de_df$is_significant & de_df$logFC < 0, na.rm = TRUE)
+      n_not_sig <- sum(!de_df$is_significant, na.rm = TRUE)
 
-      pathway_idx <- which(de_df$category == "pathway" & de_df$color == COLOR_NS)
-      if (length(pathway_idx) > 0) {
-        de_df$color[pathway_idx] <- COLOR_HIGHLIGHT
-        de_df$size[pathway_idx] <- 12
-      }
+      # 颜色设置
+      COLOR_LEFT <- "#E41A1C"    # 红色 - 上调
+      COLOR_RIGHT <- "#377EB8"   # 蓝色 - 下调
+      COLOR_NS <- "#C0C0C0"      # 灰色 - 不显著
+      COLOR_USER <- "#4DAF4A"    # 绿色- 用户基因
+      COLOR_PATHWAY <- "#FF9800" # 橙色 - 通路基因
 
-      sig_idx <- which(de_df$significant & de_df$color == COLOR_NS)
-      if (length(sig_idx) > 0) {
-        de_df$color[sig_idx] <- ifelse(de_df$logFC[sig_idx] > 0, COLOR_LEFT, COLOR_RIGHT)
-        de_df$size[sig_idx] <- 8
-      }
+      # 设置基础颜色
+      de_df$color <- dplyr::case_when(
+        de_df$category == "user" ~ COLOR_USER,
+        de_df$category == "pathway" ~ COLOR_PATHWAY,
+        de_df$is_significant & de_df$logFC > 0 ~ COLOR_LEFT,
+        de_df$is_significant & de_df$logFC < 0 ~ COLOR_RIGHT,
+        TRUE ~ COLOR_NS
+      )
 
-      de_df$priority <- ifelse(de_df$category == "user", 4,
-                               ifelse(de_df$category == "pathway", 3,
-                                      ifelse(de_df$significant, 2, 1)))
-      de_df <- de_df[order(de_df$priority), ]
+      # 大小设置
+      de_df$size <- dplyr::case_when(
+        de_df$category == "user" ~ 17,
+        de_df$category == "pathway" ~ 13,
+        de_df$is_significant ~ 9,
+        TRUE ~ 4
+      )
 
-      user_genes_df <- de_df[de_df$category == "user", ]
+      # 透明度设置
+      de_df$opacity <- dplyr::case_when(
+        de_df$category %in% c("user", "pathway") ~ 1.0,
+        de_df$is_significant ~ 0.7,
+        TRUE ~ 0.5
+      )
 
-      p <- plotly::plot_ly(
-        data = de_df,
-        x = ~x_axis,
-        y = ~y_axis,
-        type = "scattergl",
-        mode = "markers",
-        marker = list(
-          color = ~color,
-          size = ~size,
-          opacity = 0.9,
-          line = list(color = "white", width = 1)
-        ),
-        text = ~sprintf("%s<br>logFC: %.2f<br>FDR: %.2e%s",
-                        gene_symbol, logFC, padj,
-                        ifelse(category == "user", " ⭐ USER",
-                               ifelse(category == "pathway", " 🔥 PATHWAY", ""))),
-        hoverinfo = "text",
-        key = ~gene_upper,
-        source = ns("deg_volcano")
-      ) %>%
-        plotly::layout(
-          xaxis = list(title = "log2 Fold Change", zeroline = FALSE),
-          yaxis = list(title = "-log10 P-value", zeroline = FALSE),
-          showlegend = FALSE
+      # 边框宽度
+      de_df$linewidth <- dplyr::case_when(
+        de_df$category %in% c("user", "pathway") ~ 0.8,
+        TRUE ~ 0
+      )
+
+      # 关键修复：按plot_order排序，确保正确的绘制顺序
+      de_df$plot_order <- dplyr::case_when(
+        de_df$category == "user" ~ 3,
+        de_df$category == "pathway" ~ 2,
+        TRUE ~ 1
+      )
+      de_df <- de_df[order(de_df$plot_order), ]
+
+      # 构建标题
+      title_text <- sprintf(
+        "%s vs %s<br><sup>↑ %d | ↓ %d | NS %d (logFC>|%.1f|, p<%.3f)</sup>",
+        left_group, right_group,
+        n_up, n_down, n_not_sig,
+        logfc_thresh, pval_thresh
+      )
+
+      # 准备注释
+      annotations_list <- list()
+
+      if (logfc_thresh > 0) {
+        annotations_list[[length(annotations_list) + 1]] <- list(
+          x = logfc_thresh,
+          y = max(de_df$y_axis) * 0.95,
+          text = sprintf("logFC=%.1f", logfc_thresh),
+          showarrow = FALSE,
+          font = list(size = 10, color = "gray")
         )
+        annotations_list[[length(annotations_list) + 1]] <- list(
+          x = -logfc_thresh,
+          y = max(de_df$y_axis) * 0.95,
+          text = sprintf("-logFC=%.1f", logfc_thresh),
+          showarrow = FALSE,
+          font = list(size = 10, color = "gray")
+        )
+      }
 
+      # 用户基因标签
+      user_genes_df <- de_df[de_df$category == "user", ]
       if (nrow(user_genes_df) > 0) {
-        annotations <- lapply(1:nrow(user_genes_df), function(i) {
+        annotations_list <- c(annotations_list, lapply(1:nrow(user_genes_df), function(i) {
           gene <- user_genes_df[i, ]
-          base_ay <- -40
-          stagger <- (i %% 3) * 15
-          ax <- ifelse(gene$logFC > 0, 30 + (i %% 2) * 20, -30 - (i %% 2) * 20)
-
           list(
             x = gene$x_axis,
             y = gene$y_axis,
@@ -411,24 +418,92 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
             showarrow = TRUE,
             arrowhead = 0,
             arrowsize = 1,
-            arrowwidth = 1,
-            arrowcolor = ifelse(gene$logFC > 0, COLOR_LEFT, COLOR_RIGHT),
-            ax = ax,
-            ay = base_ay - stagger,
-            bgcolor = "rgba(255,255,255,0.9)",
-            bordercolor = ifelse(gene$logFC > 0, COLOR_LEFT, COLOR_RIGHT),
-            borderwidth = 1,
-            font = list(size = 10, color = ifelse(gene$logFC > 0, COLOR_LEFT, COLOR_RIGHT))
+            arrowwidth = 2,
+            arrowcolor = COLOR_USER,
+            ax = ifelse(gene$logFC > 0, 50, -50),
+            ay = -35,
+            bgcolor = "rgba(255,255,255,0.85)",
+            bordercolor = COLOR_USER,
+            borderwidth = 0.5,
+            font = list(size = 13, color = COLOR_USER)
           )
-        })
-        p <- p %>% plotly::layout(annotations = annotations)
+        }))
       }
+
+      # 关键修复：使用plot_ly初始化，确保key正确绑定
+      # 将数据框按plot_order排序后一次性传入
+      p <- plotly::plot_ly(
+        data = de_df,
+        x = ~x_axis,
+        y = ~y_axis,
+        type = "scatter",
+        mode = "markers",
+        marker = list(
+          color = ~color,
+          size = ~size,
+          opacity = ~opacity,
+          line = list(color = "white", width = ~linewidth)
+        ),
+        text = ~sprintf("%s<br>logFC: %.2f<br>-log10(p): %.2f<br>FDR: %.2e<br>Category: %s",
+                        gene_symbol, logFC, y_axis, padj, category),
+        hoverinfo = "text",
+        key = ~gene_upper,  # 关键：确保key正确绑定到gene_upper列
+        source = ns("deg_volcano"),
+        showlegend = FALSE
+      ) %>% plotly::layout(
+        title = list(
+          text = title_text,
+          font = list(size = 14),
+          x = 0.5,
+          xanchor = "center"
+        ),
+        xaxis = list(
+          title = "logFC",
+          zeroline = FALSE,
+          showgrid = TRUE,
+          gridcolor = "lightgray"
+        ),
+        yaxis = list(
+          title = "-log10 (P-value)",
+          zeroline = FALSE,
+          showgrid = TRUE,
+          gridcolor = "lightgray"
+        ),
+        showlegend = FALSE,
+        dragmode = "pan",
+        annotations = annotations_list,
+        shapes = list(
+          list(
+            type = "line",
+            x0 = logfc_thresh,
+            x1 = logfc_thresh,
+            y0 = 0,
+            y1 = max(de_df$y_axis) * 1.05,
+            line = list(color = "gray", dash = "dash", width = 1)
+          ),
+          list(
+            type = "line",
+            x0 = -logfc_thresh,
+            x1 = -logfc_thresh,
+            y0 = 0,
+            y1 = max(de_df$y_axis) * 1.05,
+            line = list(color = "gray", dash = "dash", width = 1)
+          ),
+          list(
+            type = "line",
+            x0 = min(de_df$x_axis) * 1.1,
+            x1 = max(de_df$x_axis) * 1.1,
+            y0 = -log10(pval_thresh),
+            y1 = -log10(pval_thresh),
+            line = list(color = "gray", dash = "dash", width = 1)
+          )
+        )
+      )
 
       p
     })
 
-    # 4. 全量表达箱线图（完全根治版）
-    # 4. 全量表达分布图（Phase 1: Boxplot/Raincloud双模式，排序根治版）
+    # 4. 全量表达箱线图（带0基准线选项）
     output$gene_expr_box <- plotly::renderPlotly({
       # 读取排序设置（保持与原有逻辑一致）
       current_confirmed_order <- boxplot_order_ref()
@@ -439,9 +514,6 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
       } else {
         "default"
       }
-
-      # 读取绘图样式
-      plot_style <- input$plot_style_g4 %||% "boxplot"
 
       # 获取点击事件（来自DE火山图）
       gene_click <- plotly::event_data("plotly_click", source = ns("deg_volcano"))
@@ -520,61 +592,47 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
           names(group_colors) <- unique_groups
         }
 
-        # Phase 1核心：根据样式选择Geom
-        if (plot_style == "raincloud") {
-          # 标准云雨图：半小提琴(右) + 雨滴散点(左) + 箱线图(中)
-          # 注意：coord_flip在ggplotly中可能有问题，改用横向美学映射
+        # 获取0基准线设置
+        use_zero_baseline <- input$zero_baseline %||% FALSE
 
-          # 先进行坐标翻转的数据处理：交换x和y的角色
-          p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = Group, y = Expression, fill = Group, color = Group)) +
-            # 小提琴(云) —— y 是连续，因此 stat="ydensity" 才会工作
-            geom_flat_violin(
-              width = 0.9,
-              alpha = 0.6,
-              trim = FALSE
-            ) +
-            # 雨(散点)
-            ggplot2::geom_jitter(
-              width = 0.12,
-              height = 0,
-              size = 2.5,
-              alpha = 0.8
-            ) +
-            # 箱线(云下界限)
-            ggplot2::geom_boxplot(
-              width = 0.15,
-              alpha = 0.8,
-              outlier.shape = NA
-            ) +
-            ggplot2::scale_fill_manual(values = group_colors) +
-            ggplot2::scale_color_manual(values = group_colors) +
-            ggplot2::labs(
-              title = sprintf("%s (云雨图)", actual_gene),
-              x = NULL,
-              y = data_list$expression_type
-            ) +
-            ggplot2::theme_bw(base_size = 12) +
-            ggplot2::theme(
-              legend.position = "none",
-              axis.text.x = ggplot2::element_text(size = 11, face = "bold")
-            )
-        } else {
-          # 经典箱线图（保持原有逻辑）
-          p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = Group, y = Expression, fill = Group)) +
-            ggplot2::geom_boxplot(alpha = 0.7, outlier.shape = NA) +
-            ggplot2::geom_jitter(width = 0.2, size = 3, alpha = 0.6) +
-            ggplot2::scale_fill_manual(values = group_colors) +
-            ggplot2::scale_x_discrete(limits = x_categories, drop = FALSE) +
-            ggplot2::theme_bw(base_size = 12) +
-            ggplot2::labs(
-              title = sprintf("%s (%s)", actual_gene, "箱线图"),
-              y = data_list$expression_type,
-              x = NULL
-            ) +
-            ggplot2::theme(
-              legend.position = "none",
-              axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
-            )
+        # 计算y轴范围
+        y_min <- min(plot_data$Expression, na.rm = TRUE)
+        y_max <- max(plot_data$Expression, na.rm = TRUE)
+
+        # 如果启用0基准线，确保包含0
+        if (use_zero_baseline) {
+          y_min <- min(y_min, 0)
+          y_max <- max(y_max, 0)
+        }
+
+        # 添加一些边距
+        y_range <- y_max - y_min
+        y_min <- y_min - y_range * 0.1
+        y_max <- y_max + y_range * 0.1
+
+        # 绘制箱线图
+        p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = Group, y = Expression, fill = Group)) +
+          ggplot2::geom_boxplot(alpha = 0.7, outlier.shape = NA) +
+          ggplot2::geom_jitter(width = 0.2, size = 3, alpha = 0.6) +
+          ggplot2::scale_fill_manual(values = group_colors) +
+          ggplot2::scale_x_discrete(limits = x_categories, drop = FALSE) +
+          ggplot2::coord_cartesian(ylim = c(y_min, y_max)) +
+          ggplot2::theme_bw(base_size = 12) +
+          ggplot2::labs(
+            title = sprintf("%s",
+                            actual_gene),
+            y = data_list$expression_type,
+            x = NULL
+          ) +
+          ggplot2::theme(
+            legend.position = "none",
+            axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
+          )
+
+        # 如果启用0基准线，添加虚线
+        if (use_zero_baseline) {
+          p <- p + ggplot2::geom_hline(yintercept = 0, linetype = "dashed",
+                                       color = "red", alpha = 0.7, size = 0.8)
         }
 
         # 转换为plotly并强制X轴顺序
@@ -592,7 +650,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
         return(ply)
 
       }, error = function(e) {
-        message(sprintf("❌ Boxplot/Raincloud错误: %s", e$message))
+        message(sprintf("❌ 箱线图错误: %s", e$message))
         return(plotly::plot_ly() %>% plotly::layout(
           title = sprintf("错误: %s", e$message)
         ))

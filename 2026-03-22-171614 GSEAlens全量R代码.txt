@@ -1,5 +1,5 @@
 GSEAlens 全量 R 代码汇总
-生成时间: 2026-03-22 00:19:11
+生成时间: 2026-03-22 17:16:14
 扫描目录: G:\2025_11_13_sto_双参考基因组的转录分析\2026_02_01_新十三线参考组\GSEAlens
 R 文件数量: 23
 ====================================================================================================
@@ -1233,16 +1233,17 @@ NULL
 
 # 1. 静态绘图函数
 
-
 #' @title 绘制方向性 GSEA 图
 #' @description 极客级 GSEA 绘图引擎，完美兼容单通路/多通路合图。
-#' 自动生成优雅图例、拦截并重绘经典红蓝基因分布带。
+#'   自动生成优雅图例、拦截并重绘经典红蓝基因分布带。
 #' @param directional_gsea_obj 封装好的 GseaTask 对象 (由 extract_gsea_task 返回)
 #' @param target_pathways 需要绘制的通路 ID 向量 (支持单个或多个)
 #' @param main_title 主标题名称
 #' @param subPlot 控制 GseaVis 生成的子图数量 (1: 仅富集图; 2: 富集+热图带; 3: 完整带Rank)
 #' @param curveCol 自定义曲线颜色向量
 #' @param add_pval 是否在图上添加统计学标注。默认 FALSE。
+#' @param show_contrast_in_axis 逻辑值。是否在 Rank 图的 x 轴显示对比组信息。
+#'   默认为 FALSE，仅在联合画布模式建议设为 TRUE。
 #' @param ... 传递给 GseaVis::gseaNb 的额外参数
 #' @return ggplot2 复合对象
 #' @importFrom ggplot2 ggplot aes geom_col scale_fill_gradient2 geom_hline scale_x_continuous theme_bw theme element_blank element_text margin coord_cartesian labs geom_vline annotate scale_color_manual
@@ -1252,7 +1253,9 @@ NULL
 #' @export
 plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
                                   main_title = "GSEA Plot", subPlot = 3,
-                                  curveCol = NULL, add_pval = FALSE, ...) {
+                                  curveCol = NULL, add_pval = FALSE,
+                                  show_contrast_in_axis = FALSE,  # 🔧 新增参数
+                                  ...) {
 
   # 1. 解析对象与提取基础数据
   res <- directional_gsea_obj$gsea_res
@@ -1323,9 +1326,23 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
     }
   }
 
-  # 5. 原生经典红蓝底部分布图
+  # 5. 原生经典红蓝底部分布图（🔧 修改：条件显示对比组）
   if (subPlot == 3) {
     df_rank <- data.frame(x = seq_along(gList), y = as.numeric(gList))
+
+    # 🔧【关键修改】根据参数决定是否显示对比组信息
+    if (isTRUE(show_contrast_in_axis)) {
+      # 联合画布模式：显示对比组
+      x_axis_label <- sprintf(
+        "%s vs %s",
+        meta$left_group,
+        meta$right_group
+      )
+    } else {
+      # 默认模式：保持原样
+      x_axis_label <- "Rank in Ordered Dataset"
+    }
+
     prank_classic <- ggplot2::ggplot(df_rank, ggplot2::aes(x = x, y = y)) +
       ggplot2::geom_col(ggplot2::aes(fill = y), width = 1, color = NA, show.legend = FALSE) +
       ggplot2::scale_fill_gradient2(low = "#08519C", mid = "white", high = "#A50F15", midpoint = 0) +
@@ -1336,7 +1353,21 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
                      axis.text = ggplot2::element_text(colour = "black"),
                      plot.margin = ggplot2::margin(t = -0.1, r = 0.2, b = 0.2, l = 0.2, unit = "cm")) +
       ggplot2::coord_cartesian(expand = 0) +
-      ggplot2::labs(x = "Rank in Ordered Dataset", y = "Ranked List")
+      ggplot2::labs(x = x_axis_label, y = "Ranked List")  # 🔧 使用动态标签
+
+    # 🔧【新增】联合画布模式：加粗加大 X 轴标签
+    if (isTRUE(show_contrast_in_axis)) {
+      prank_classic <- prank_classic +
+        ggplot2::theme(
+          axis.title.x = ggplot2::element_text(
+            face = "bold",      # 加粗
+            size = 18#,          # 字号（默认base_size=14，这里加大到16）
+            #color = "#2c3e50"#,  # 深蓝灰色，更醒目
+            #margin = ggplot2::margin(t = 10)  # 与图形保持适当间距
+          )
+        )
+    }
+
 
     z_cross <- sum(gList > 0); m_rank <- length(gList)
     anno_layers <- list(
@@ -1676,7 +1707,7 @@ launch_gsea_app <- function(gsea_res, lang = "zh") {
         .well { background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; }
       "))
     ),
-    shiny::titlePanel(shiny::HTML("🧬 GSEAlens PRO 4.0: 双后端全息分析工作站")),
+    shiny::titlePanel(shiny::HTML("🧬 GSEAlens: Seek Inside")),
     shiny::sidebarLayout(
       shiny::sidebarPanel(
         width = 3,
@@ -1738,7 +1769,7 @@ launch_gsea_app <- function(gsea_res, lang = "zh") {
     # 6. 通路关系探索模块（Phase 2）
     mod_pathway_relation_server("pathway_relation", data_prep_list, gsea_res)
 
-    # 7. 联合GSEA画布模块（Phase 3 - 侧边栏控制版）
+    # 7. 联合GSEA画布模块（侧边栏控制版）
     mod_joint_canvas_server("joint_canvas", gsea_res, data_prep_list, table_result)
   }
 
@@ -1763,6 +1794,65 @@ mod_data_prep_ui <- function(id) {
       label = "选择对比组 (Contrast)",
       choices = NULL
     ),
+    shiny::h4("🎯 数据切片"),
+    shiny::selectizeInput(
+      ns("selected_collections"),
+      label = "选择基因集亚组:",
+      choices = NULL,
+      multiple = TRUE,
+      options = list(plugins = list("remove_button"), placeholder = "选择亚组或保留ALL")
+    ),
+    shiny::selectInput(
+      ns("sort_by"),
+      label = "全局排序策略:",
+      choices = c(
+        "按 NES 绝对值 (降序)" = "abs_nes_desc",
+        "按 NES (降序)" = "nes_desc",
+        "按 P-value (升序)" = "pval_asc"
+      ),
+      selected = "abs_nes_desc"
+    ),
+    shiny::actionButton(
+      ns("run_btn"),
+      label = "🚀 确认对比组与富集基因集",
+      class = "btn-success",
+      style = "width: 100%; font-weight: bold; margin-top: 15px; font-size: 16px;"
+    ),
+
+    shiny::helpText(
+      style = "margin-top: 10px; text-align: center; color: #28a745;",
+      "💡 修改设置后必须点击此按钮"
+    ),
+
+    shiny::hr(),
+
+    # 🔧 新增：联合GSEA画布控制（完全移入侧边栏）
+    shiny::h4("🖼️ 联合GSEA画布"),
+    shiny::selectizeInput(
+      ns("joint_contrasts"),
+      label = "选择对比组（多选，支持排列）:",
+      choices = NULL,
+      multiple = TRUE,
+      options = list(
+        plugins = list("remove_button"),
+        placeholder = '选择对比组...',
+        maxItems = 999
+      )
+    ),
+    shiny::numericInput(
+      ns("joint_ncol"),
+      "每行数量 (ncol):",
+      value = 2,
+      min = 1,
+      max = 10,
+      step = 1
+    ),
+    shiny::actionButton(
+      ns("joint_generate"),
+      "🎨 生成/更新多通路画布",
+      class = "btn-success",
+      style = "width: 100%; font-weight: bold; margin-top: 10px;"
+    ) ,
     shiny::hr(),
 
     shiny::h4("🎯 差异表达基因标记"),
@@ -1851,71 +1941,6 @@ mod_data_prep_ui <- function(id) {
       label = "选择表达数据类型:",
       choices = NULL,  # 动态填充
       selected = NULL
-    ),
-    shiny::hr(),
-
-    shiny::h4("🎯 数据切片"),
-    shiny::selectizeInput(
-      ns("selected_collections"),
-      label = "选择基因集亚组:",
-      choices = NULL,
-      multiple = TRUE,
-      options = list(plugins = list("remove_button"), placeholder = "选择亚组或保留ALL")
-    ),
-    shiny::selectInput(
-      ns("sort_by"),
-      label = "全局排序策略:",
-      choices = c(
-        "按 NES 绝对值 (降序)" = "abs_nes_desc",
-        "按 NES (降序)" = "nes_desc",
-        "按 P-value (升序)" = "pval_asc"
-      ),
-      selected = "abs_nes_desc"
-    ),
-
-    # 🔧 新增：联合GSEA画布控制（完全移入侧边栏）
-    shiny::h4("🖼️ 联合GSEA画布"),
-    shiny::selectizeInput(
-      ns("joint_contrasts"),
-      label = "选择对比组（多选，支持排列）:",
-      choices = NULL,
-      multiple = TRUE,
-      options = list(
-        plugins = list("remove_button"),
-        placeholder = '选择对比组...',
-        maxItems = 50
-      )
-    ),
-    shiny::helpText(
-      style = "margin-top: 8px; color: #666; font-size: 11px;",
-      "支持正向与反向对比（如 A_vs_B 和 B_vs_A 可同时选择）"
-    ),
-    shiny::numericInput(
-      ns("joint_ncol"),
-      "每行数量 (ncol):",
-      value = 2,
-      min = 1,
-      max = 10,
-      step = 1
-    ),
-    shiny::actionButton(
-      ns("joint_generate"),
-      "🎨 生成画布",
-      class = "btn-success",
-      style = "width: 100%; font-weight: bold; margin-top: 10px;"
-    ),
-    shiny::hr(),
-
-    shiny::actionButton(
-      ns("run_btn"),
-      label = "🚀 确认配置 / 更新工作台",
-      class = "btn-success",
-      style = "width: 100%; font-weight: bold; margin-top: 15px; font-size: 16px;"
-    ),
-
-    shiny::helpText(
-      style = "margin-top: 10px; text-align: center; color: #28a745;",
-      "💡 修改设置后必须点击此按钮"
     )
   )
 }
@@ -2297,8 +2322,8 @@ mod_data_prep_server <- function(id, gsea_res) {
         is_preview = is_auto,
         backend = gsea_res$backend_info$backend,
         # 🔧 新增：传递画布参数
-        canvas_contrasts = canvas_contrasts_val(),
-        canvas_ncol = canvas_ncol_val()
+        joint_contrasts = canvas_contrasts_val(),
+        joint_ncol = canvas_ncol_val()
       )
     }
 
@@ -2377,13 +2402,23 @@ mod_data_prep_server <- function(id, gsea_res) {
       shiny::showNotification("✅ 工作台已更新", type = "message", duration = 3)
     })
 
+    # 🔧 新增：画布生成触发器（事件反应式）
+    joint_generate_event <- shiny::eventReactive(input$joint_generate, {
+      list(
+        contrasts = input$joint_contrasts,
+        ncol = input$joint_ncol,
+        timestamp = Sys.time()
+      )
+    }, ignoreNULL = TRUE)
+
     return(list(
       data = shiny::reactive({ result_data() }),
       highlight_genes = applied_genes,
       boxplot_order = applied_boxplot_order,  # reactiveVal
-      # 🔧 新增：返回画布控制参数
-      canvas_contrasts = canvas_contrasts_val,
-      canvas_ncol = canvas_ncol_val
+      # 🔧 新增：联合画布控制项（统一命名）
+      joint_contrasts = shiny::reactive({ input$joint_contrasts }),
+      joint_ncol = shiny::reactive({ input$joint_ncol }),
+      joint_generate = joint_generate_event  # 事件反应式
     ))
   })
 }
@@ -2392,11 +2427,35 @@ mod_data_prep_server <- function(id, gsea_res) {
 ====================================================================================================
 [文件 10/23] R\09_shiny_mod_table.R
 ====================================================================================================
-#' @title 主工作台表格 UI（Phase 11完整版）
+#' @title 主工作台表格 UI（Phase 11完整版 + Checkbox解耦）
 #' @keywords internal
 mod_master_table_ui <- function(id) {
   ns <- shiny::NS(id)
   shiny::tagList(
+    # 🔧【新增】JavaScript 消息监听，用于同步复选框状态而不刷新表格
+    shiny::tags$head(
+      shiny::tags$script(shiny::HTML(sprintf("
+        // 监听来自 Shiny 的消息，更新复选框状态
+        Shiny.addCustomMessageHandler('%s', function(message) {
+          var ids = message.ids;
+          var ns = message.ns;
+
+          // 获取所有复选框
+          var checkboxes = document.querySelectorAll('.joint-plot-checkbox');
+
+          checkboxes.forEach(function(cb) {
+            var id = cb.getAttribute('data-id');
+            var shouldBeChecked = ids.includes(id);
+
+            // 只有状态变化时才更新，避免不必要的DOM操作
+            if (cb.checked !== shouldBeChecked) {
+              cb.checked = shouldBeChecked;
+            }
+          });
+        });
+      ", ns("updateCheckbox"))))
+    ),
+
     shiny::div(
       class = "master-table-container",
       style = "width: 100%; overflow-x: auto;",
@@ -2413,8 +2472,10 @@ mod_master_table_ui <- function(id) {
   )
 }
 
-#' @title 主工作台表格 Server（Phase 11完整版：CSV集成 + 所有修复）
+
+#' @title 主工作台表格 Server（Phase 11完整版：CSV集成 + Checkbox解耦修复）
 #' @description 功能：数据展示、CSV注释合并、BLANK列预留、列显示控制
+#'   【关键修复】使用 isolate() 解耦 checkbox 与表格渲染，通过 JavaScript 消息同步状态
 #' @param id 模块 ID
 #' @param data_prep 来自数据预处理模块的响应式数据
 #' @return 列表，包含 selected_pathways 和 show_modal
@@ -2490,6 +2551,7 @@ mod_master_table_server <- function(id, data_prep) {
       }
     })
 
+
     # 🔧 Phase 8：p值格式化函数（可调阈值）
     format_pvalue <- function(x, threshold = 0.001) {
       ifelse(x < threshold,
@@ -2497,6 +2559,8 @@ mod_master_table_server <- function(id, data_prep) {
              format(round(x, 3), nsmall = 3))
     }
 
+
+    # 🔧【核心修复】表格渲染 - 使用 isolate() 阻止 checkbox 状态触发刷新
     output$table <- DT::renderDataTable({
       data_list <- data_prep()
       shiny::validate(shiny::need(data_list, "等待数据加载..."))
@@ -2527,16 +2591,20 @@ mod_master_table_server <- function(id, data_prep) {
       }
       df$Description[is.na(df$Description)] <- df$ID[is.na(df$Description)]
 
-      # 🔧 Phase 8：格式化数值（<0.001用科学计数法，否则3位小数）
+      # Phase 8：格式化数值
       df$NES_display <- round(df$NES, 2)
       df$pvalue_display <- format_pvalue(df$pvalue, threshold = 0.001)
       df$padj_display <- format_pvalue(df$p.adjust, threshold = 0.001)
+
+      # 🔧【关键修改】使用 isolate() 阻止 joint_selected 触发表格刷新
+      # 这样勾选复选框时，表格不会重新渲染，保持滚动位置和搜索状态
+      current_selection <- isolate(joint_selected())
 
       # 交互列
       df$Select_for_Plot <- sprintf(
         '<input type="checkbox" class="joint-plot-checkbox" data-id="%s" %s onclick="Shiny.setInputValue(&#39;%s&#39;, {id: &#39;%s&#39;, checked: this.checked}, {priority: &#39;event&#39;});"/>',
         df$Safe_ID,
-        ifelse(df$Safe_ID %in% joint_selected(), 'checked="checked"', ''),
+        ifelse(df$Safe_ID %in% current_selection, 'checked="checked"', ''),
         ns("joint_plot_toggle"),
         df$Safe_ID
       )
@@ -2548,51 +2616,42 @@ mod_master_table_server <- function(id, data_prep) {
         "Dashboard"
       )
 
-      # 🔧 Phase 11：合并CSV注释数据（如果存在）
+      # Phase 11：合并CSV注释数据
       anno_df <- pathway_annotations()
       if (!is.null(anno_df)) {
-        # 只保留非空的注释列（排除全NA的列）
         cols_to_keep <- sapply(anno_df, function(col) {
           !all(is.na(col) | col == "" | col == "NA")
         })
-
-        # 确保ID列被保留用于合并
         cols_to_keep["ID"] <- TRUE
 
-        if (sum(cols_to_keep) > 1) {  # 至少除了ID还有一列
+        if (sum(cols_to_keep) > 1) {
           anno_df_filtered <- anno_df[, cols_to_keep, drop = FALSE]
-
-          # 使用left_join合并（保留所有通路，注释缺失则留NA）
           df <- dplyr::left_join(df, anno_df_filtered, by = "ID")
           message(sprintf("🔗 已合并注释列: %s",
                           paste(setdiff(colnames(anno_df_filtered), "ID"), collapse = ", ")))
         }
       }
 
-      # 🔧 Phase 8 & 11：构建显示列（动态识别CSV列和BLANK列）
+      # Phase 8 & 11：构建显示列
       base_cols <- c("Rank", "Select_for_Plot", "Detail_Btn", "ID", "Enriched_In",
                      "NES_display", "pvalue_display", "padj_display", "setSize", "Description")
 
-      # 🔧 Phase 11：添加CSV中的注释列（排除ID列和全空列）
+      # 添加CSV中的注释列
       if (!is.null(anno_df)) {
         csv_cols <- setdiff(colnames(anno_df), "ID")
-
-        # 检查这些列在df中是否全空（NA或空字符串）
         csv_cols_non_empty <- sapply(csv_cols, function(col) {
           if (!col %in% colnames(df)) return(FALSE)
           vals <- df[[col]]
           !all(is.na(vals) | vals == "" | vals == "NA")
         })
-
         csv_cols_to_show <- csv_cols[csv_cols_non_empty]
         base_cols <- c(base_cols, csv_cols_to_show)
       }
 
-      # 🔧 Phase 8：预留BLANK1-10列（如果存在则显示）
+      # 预留BLANK1-10列
       blank_cols <- paste0("BLANK", 1:10)
       existing_blank <- blank_cols[blank_cols %in% colnames(df)]
       if (length(existing_blank) > 0) {
-        # 检查是否全空
         blank_non_empty <- sapply(existing_blank, function(col) {
           !all(is.na(df[[col]]) | df[[col]] == "")
         })
@@ -2602,7 +2661,7 @@ mod_master_table_server <- function(id, data_prep) {
       display_cols <- intersect(base_cols, colnames(df))
       dt_data <- df[, display_cols]
 
-      # 🔧 Phase 8：直接修改列名（避免escape参数问题）
+      # Phase 8：列名映射
       col_name_map <- c(
         "Rank" = "Rank",
         "Select_for_Plot" = "联合展示",
@@ -2616,43 +2675,114 @@ mod_master_table_server <- function(id, data_prep) {
         "Description" = "Description"
       )
 
-      # 🔧 Phase 11：为CSV列和BLANK列保留原始名称（或映射为中文）
+      # 为CSV列和BLANK列保留原始名称
       for (col in display_cols) {
         if (!col %in% names(col_name_map)) {
-          # 对于未知列（CSV或BLANK），使用原始列名，或转换为中文标签
-          col_name_map[col] <- col  # 保持原样，或可根据需要翻译
+          col_name_map[col] <- col
         }
       }
 
       names(dt_data) <- col_name_map[display_cols]
 
-      # 🔧 Phase 8 & 11：动态构建columnDefs（避免targets越界）
+
+      # 关键修复：优化 columnDefs 配置
+
+
       col_defs <- list()
 
+      # 1. 为关键列设置合理的固定宽度（左侧核心列较窄，防止挤压）
       if ("Select_for_Plot" %in% display_cols) {
         idx <- which(display_cols == "Select_for_Plot") - 1
-        col_defs[[length(col_defs) + 1]] <- list(width = '60px', targets = idx, className = 'dt-center', orderable = FALSE)
-      }
-      if ("Detail_Btn" %in% display_cols) {
-        idx <- which(display_cols == "Detail_Btn") - 1
-        col_defs[[length(col_defs) + 1]] <- list(width = '90px', targets = idx, orderable = FALSE)
-      }
-      if ("Enriched_In" %in% display_cols) {
-        idx <- which(display_cols == "Enriched_In") - 1
-        col_defs[[length(col_defs) + 1]] <- list(width = '100px', targets = idx)
-      }
-      if ("Description" %in% display_cols) {
-        idx <- which(display_cols == "Description") - 1
-        col_defs[[length(col_defs) + 1]] <- list(width = '300px', targets = idx, className = 'description-cell')
+        col_defs[[length(col_defs) + 1]] <- list(
+          width = '40px',
+          targets = idx,
+          className = 'dt-center',
+          orderable = FALSE
+        )
       }
 
-      # 🔧 Phase 8：构建DT（包含ColVis按钮）
+      if ("Detail_Btn" %in% display_cols) {
+        idx <- which(display_cols == "Detail_Btn") - 1
+        col_defs[[length(col_defs) + 1]] <- list(
+          width = '60px',
+          targets = idx,
+          className = 'dt-center',
+          orderable = FALSE
+        )
+      }
+
+      if ("Rank" %in% display_cols) {
+        idx <- which(display_cols == "Rank") - 1
+        col_defs[[length(col_defs) + 1]] <- list(
+          width = '20px',
+          targets = idx,
+          className = 'dt-center'
+        )
+      }
+
+      if ("ID" %in% display_cols) {
+        idx <- which(display_cols == "ID") - 1
+        col_defs[[length(col_defs) + 1]] <- list(
+          width = '200px',
+          targets = idx
+        )
+      }
+
+      if ("Enriched_In" %in% display_cols) {
+        idx <- which(display_cols == "Enriched_In") - 1
+        col_defs[[length(col_defs) + 1]] <- list(
+          width = '80px',
+          targets = idx,
+          className = 'dt-center'
+        )
+      }
+
+      # 数值列设置较窄宽度
+      numeric_cols <- c("NES_display", "pvalue_display", "padj_display", "setSize")
+      for (numeric_col in numeric_cols) {
+        if (numeric_col %in% display_cols) {
+          idx <- which(display_cols == numeric_col) - 1
+          col_defs[[length(col_defs) + 1]] <- list(
+            width = '60px',
+            targets = idx,
+            className = 'dt-center'
+          )
+        }
+      }
+
+      if ("Description" %in% display_cols) {
+        idx <- which(display_cols == "Description") - 1
+        col_defs[[length(col_defs) + 1]] <- list(
+          width = '800px',
+          targets = idx,
+          className = 'description-cell'
+        )
+      }
+
+      # 2. 为CSV列和BLANK列设置合理的默认宽度
+      csv_and_blank_cols <- setdiff(display_cols, c("Rank", "Select_for_Plot", "Detail_Btn", "ID",
+                                                    "Enriched_In", "NES_display", "pvalue_display",
+                                                    "padj_display", "setSize", "Description"))
+
+      for (col in csv_and_blank_cols) {
+        idx <- which(display_cols == col) - 1
+        col_defs[[length(col_defs) + 1]] <- list(
+          width = '800px',
+          targets = idx,
+          className = 'dt-csv-column'
+        )
+      }
+
+
+      # 关键修复：优化 DT::datatable 配置
+
+
       dt <- DT::datatable(
         dt_data,
         escape = FALSE,
         selection = "multiple",
         rownames = FALSE,
-        extensions = c('Buttons', 'Scroller', 'ColReorder'),
+        extensions = c('Buttons', 'Scroller', 'ColReorder', 'FixedColumns'),
         options = list(
           scrollX = TRUE,
           scrollY = "60vh",
@@ -2660,41 +2790,76 @@ mod_master_table_server <- function(id, data_prep) {
           deferRender = TRUE,
           pageLength = -1,
           dom = 'Bfrtip',
-          buttons = c('copy', 'csv', 'excel', 'colvis'),  # 🔧 Phase 8：恢复ColVis
+          buttons = c('copy', 'csv', 'excel', 'colvis'),
           colReorder = TRUE,
           columnDefs = col_defs,
-          order = list(list(0, 'asc'))
+          order = list(list(0, 'asc')),
+          autoWidth = TRUE,
+          fixedColumns = list(
+            leftColumns = 2
+          ),
+          scrollCollapse = TRUE,
+          language = list(
+            emptyTable = "暂无数据",
+            zeroRecords = "未找到匹配记录"
+          )
         )
       )
 
-      # 样式设置（使用重命名后的列名）
-      if ("Enriched_In" %in% display_cols) {
+
+      # 关键修复：恢复美学样式（NES方向着色 + P值/FDR渐变色）
+
+
+      # 1. Enriched In 列美学（背景色 + 文字颜色 + 粗体）
+      if ("Enriched In" %in% names(dt_data)) {
         dt <- dt %>% DT::formatStyle(
-          columns = "Enriched In",  # 使用显示名
+          columns = "Enriched In",
           backgroundColor = DT::styleEqual(c(left_grp, right_grp), c('#fee0d2', '#deebf7')),
           color = DT::styleEqual(c(left_grp, right_grp), c('#cc212f', '#1052bd')),
           fontWeight = 'bold'
         )
       }
 
-      if ("NES_display" %in% display_cols) {
+      # 2. NES 列方向着色（使用十六进制色值：负值蓝色，正值红色）
+      if ("NES" %in% names(dt_data)) {
         dt <- dt %>% DT::formatStyle(
           columns = "NES",
-          color = DT::styleInterval(0, c('#1052bd', '#cc212f')),
+          color = DT::styleInterval(0, c('#1052bd', '#cc212f')),  # 负值深蓝，正值深红
           fontWeight = 'bold'
         )
       }
 
-      if ("padj_display" %in% display_cols) {
+      # 3. FDR 列分段着色（使用styleInterval：根据阈值设置不同颜色）
+      if ("FDR" %in% names(dt_data)) {
         dt <- dt %>% DT::formatStyle(
           columns = "FDR",
+          backgroundColor = DT::styleInterval(c(0.01,0.05, 0.25), c('#fc9272',"#fdb9a2", '#fee0d2', 'transparent')),
+          fontWeight = DT::styleInterval(0.05, c('bold', 'normal'))
+        )
+      }
+      # 4. P-value 列渐变色（根据数值大小，越显著越红）
+      if ("P-value" %in% names(dt_data)) {
+        dt <- dt %>% DT::formatStyle(
+          columns = "P-value",
           backgroundColor = DT::styleInterval(c(0.01, 0.05), c('#fc9272', '#fee0d2', 'transparent')),
           fontWeight = DT::styleInterval(0.05, c('bold', 'normal'))
         )
       }
 
+
       dt
     }, server = TRUE)
+
+    # 🔧【新增】监听 joint_selected 变化，通过 JavaScript 同步复选框状态
+    # 这样表格不会刷新，但复选框的视觉状态会更新
+    shiny::observe({
+      sel <- joint_selected()
+      # 发送自定义消息到前端，更新复选框状态
+      session$sendCustomMessage(type = ns("updateCheckbox"), message = list(
+        ids = sel,
+        ns = ns("")
+      ))
+    })
 
     selected_pathways <- shiny::reactive({
       if (isTRUE(has_interaction())) return(to_original(joint_selected()))
@@ -2733,82 +2898,14 @@ mod_master_table_server <- function(id, data_prep) {
 [文件 11/23] R\10_shiny_mod_quadrant.R
 ====================================================================================================
 
-# ==============================================================================
-# 云雨图专用：半小提琴图Geom（必须置于模块文件开头）
-# ==============================================================================
-
-#' @title 半小提琴图Geom（为云雨图提供半边小提琴）
-#' @description 修改自ggplot2 geom_violin源码，仅绘制半边小提琴
-#' @keywords internal
-GeomFlatViolin <- ggplot2::ggproto(
-  "GeomFlatViolin",
-  ggplot2::Geom,
-  setup_data = function(data, params) {
-    data$width <- data$width %||% params$width %||% (ggplot2::resolution(data$x, FALSE) * 0.9)
-    data %>%
-      dplyr::group_by(group) %>%
-      dplyr::mutate(
-        ymin = min(y),
-        ymax = max(y),
-        xmin = x,
-        xmax = x + width / 2
-      )
-  },
-  draw_group = function(data, panel_scales, coord) {
-    data <- transform(data, xminv = x, xmaxv = x + violinwidth * (xmax - x))
-    newdata <- rbind(
-      plyr::arrange(transform(data, x = xmaxv), -y),
-      plyr::arrange(transform(data, x = xminv), y)
-    )
-    newdata_Polygon <- rbind(newdata, newdata[1,])
-    newdata_Polygon$colour <- NA
-
-    newdata_Path <- plyr::arrange(transform(data, x = xmaxv), -y)
-
-    ggplot2::ggname(
-      "geom_flat_violin",
-      grid::grobTree(
-        ggplot2::GeomPolygon$draw_panel(newdata_Polygon, panel_scales, coord),
-        ggplot2::GeomPath$draw_panel(newdata_Path, panel_scales, coord)
-      )
-    )
-  },
-  draw_key = ggplot2::draw_key_polygon,
-  default_aes = ggplot2::aes(
-    weight = 1, colour = "grey20", fill = "white", size = 0.5,
-    alpha = NA, linetype = "solid"
-  ),
-  required_aes = c("x", "y")
-)
-
-#' @title 半小提琴图图层函数
-#' @keywords internal
-geom_flat_violin <- function(mapping = NULL, data = NULL, stat = "ydensity",
-                             position = "dodge", trim = TRUE, scale = "area",
-                             show.legend = NA, inherit.aes = TRUE, ...) {
-  ggplot2::layer(
-    data = data,
-    mapping = mapping,
-    stat = stat,
-    geom = GeomFlatViolin,
-    position = position,
-    show.legend = show.legend,
-    inherit.aes = inherit.aes,
-    params = list(trim = trim, scale = scale, ...)
-  )
-}
-
-#' @title 辅助操作符（ggplot2内部使用）
-#' @keywords internal
-`%||%` <- function(a, b) {
-  if (!is.null(a)) a else b
-}
-#' @title 四重联动 UI（修复版）
+#' @title 四重联动 UI
 #' @keywords internal
 mod_quadrant_ui <- function(id) {
   ns <- shiny::NS(id)
   shiny::tagList(
     shiny::fluidRow(
+
+
       shiny::column(6, shiny::div(class = "white-box",
                                   shiny::h4("1. 宏观: 通路火山图"),
                                   shiny::div(
@@ -2819,27 +2916,63 @@ mod_quadrant_ui <- function(id) {
                                       "点击通路查看详情"
                                     )
                                   ))),
+
+
       shiny::column(6, shiny::div(class = "white-box",
                                   shiny::h4("2. 微观: 基因 Rank 分布"),
                                   plotly::plotlyOutput(ns("volcano_gene"), height = "450px")))
     ),
+
+
     shiny::fluidRow(
       shiny::column(6, shiny::div(class = "white-box",
                                   shiny::h4("3. 差异表达火山图"),
+                                  shiny::div(
+                                    style = "position: absolute; top: 10px; right: 50%; z-index: 100;",
+                                    shiny::actionButton(
+                                      ns("toggle_volcano_settings"),
+                                      label = "⚙️",
+                                      style = "padding: 2px 8px; font-size: 12px;"
+                                    )
+                                  ),
+                                  shiny::conditionalPanel(
+                                    condition = sprintf("input['%s'] %% 2 == 1", ns("toggle_volcano_settings")),
+                                    shiny::div(
+                                      style = "background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px;",
+                                      shiny::numericInput(
+                                        ns("volcano_logfc_thresh"),
+                                        "logFC阈值:",
+                                        value = 1,
+                                        min = 0,
+                                        max = 22,
+                                        step = 0.5
+                                      ),
+                                      shiny::numericInput(
+                                        ns("volcano_pval_thresh"),
+                                        "P-value阈值:",
+                                        value = 0.05,
+                                        min = 0.001,
+                                        max = 1,
+                                        step = 0.01
+                                      ),
+                                      shiny::helpText("设置后点击火山图区域刷新")
+                                    )
+                                  ),
                                   plotly::plotlyOutput(ns("de_volcano"), height = "450px"))),
+
+
       shiny::column(6, shiny::div(class = "white-box",
                                   shiny::h4("4. 全量表达分布图"),
                                   shiny::div(
                                     style = "position: relative;",
                                     # 添加切换控件
                                     shiny::div(
-                                      style = "position: absolute; top: -40px; right: 10px; z-index: 100;",
-                                      shiny::selectInput(
-                                        ns("plot_style_g4"),
-                                        label = NULL,
-                                        choices = c("箱线图" = "boxplot", "云雨图" = "raincloud"),
-                                        selected = "boxplot",
-                                        width = "120px"
+                                      style = "position: absolute; top: -40px; left: 30%; z-index: 100;",
+                                      # 添加 0 基准点切换
+                                      shiny::checkboxInput(
+                                        ns("zero_baseline"),
+                                        label = "以0为基准线",
+                                        value = FALSE
                                       )
                                     ),
                                     plotly::plotlyOutput(ns("gene_expr_box"), height = "450px"),
@@ -2943,6 +3076,14 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
         source = ns("pathway_volcano")
       ) %>%
         plotly::layout(
+          title = list(
+            text = sprintf("Pathway Volcano: %s vs %s<br><sub>%d pathways | %d significant (FDR<0.25)</sub>",
+                           data_list$left_group, data_list$right_group,
+                           nrow(df), sum(df$p.adjust < 0.25, na.rm = TRUE)),
+            font = list(size = 14),
+            x = 0.5,
+            xanchor = "center"
+          ),
           xaxis = list(title = "NES", zeroline = FALSE),
           yaxis = list(title = "-log10 (FDR)", zeroline = FALSE),
           showlegend = FALSE,
@@ -3023,12 +3164,14 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
       )
     })
 
-    # 3. 差异表达火山图
+    # 3. 差异表达火山图（恢复美学 + 可调阈值 + 修复点击联动）
     output$de_volcano <- plotly::renderPlotly({
       data_list <- data_prep_data()
       shiny::req(data_list)
 
       contrast_id <- data_list$contrast_id
+      left_group <- data_list$left_group
+      right_group <- data_list$right_group
 
       de_df <- tryCatch({
         get_de_table(gsea_res, contrast_id)
@@ -3059,6 +3202,10 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
       de_df <- de_df[!is.na(de_df$logFC) & !is.na(de_df$pvalue) & !is.na(de_df$padj), ]
       if (nrow(de_df) == 0) return(NULL)
 
+      # 获取阈值设置（使用输入值或默认值）
+      logfc_thresh <- if (!is.null(input$volcano_logfc_thresh)) input$volcano_logfc_thresh else 0
+      pval_thresh <- if (!is.null(input$volcano_pval_thresh)) input$volcano_pval_thresh else 0.05
+
       de_df$x_axis <- de_df$logFC
       de_df$y_axis <- -log10(de_df$pvalue)
 
@@ -3072,72 +3219,97 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
       pathway_genes <- selected_pathway_genes()
       de_df$gene_upper <- toupper(de_df$gene_symbol)
 
+      # 分类基因 - 优先级：user > pathway > normal
       de_df$category <- "normal"
       de_df$category[de_df$gene_upper %in% pathway_genes] <- "pathway"
       de_df$category[de_df$gene_upper %in% user_genes] <- "user"
 
-      de_df$color <- COLOR_NS
-      de_df$size <- 6
-      de_df$significant <- abs(de_df$logFC) > 0.5 & de_df$padj < 0.05
+      # 根据阈值判断差异基因
+      de_df$is_significant <- abs(de_df$logFC) > logfc_thresh & de_df$pvalue < pval_thresh
 
-      user_idx <- which(de_df$category == "user")
-      if (length(user_idx) > 0) {
-        de_df$color[user_idx] <- ifelse(de_df$logFC[user_idx] > 0, COLOR_LEFT, COLOR_RIGHT)
-        de_df$size[user_idx] <- 15
-      }
+      # 统计差异基因数量
+      n_up <- sum(de_df$is_significant & de_df$logFC > 0, na.rm = TRUE)
+      n_down <- sum(de_df$is_significant & de_df$logFC < 0, na.rm = TRUE)
+      n_not_sig <- sum(!de_df$is_significant, na.rm = TRUE)
 
-      pathway_idx <- which(de_df$category == "pathway" & de_df$color == COLOR_NS)
-      if (length(pathway_idx) > 0) {
-        de_df$color[pathway_idx] <- COLOR_HIGHLIGHT
-        de_df$size[pathway_idx] <- 12
-      }
+      # 颜色设置
+      COLOR_LEFT <- "#E41A1C"    # 红色 - 上调
+      COLOR_RIGHT <- "#377EB8"   # 蓝色 - 下调
+      COLOR_NS <- "#C0C0C0"      # 灰色 - 不显著
+      COLOR_USER <- "#4DAF4A"    # 绿色- 用户基因
+      COLOR_PATHWAY <- "#FF9800" # 橙色 - 通路基因
 
-      sig_idx <- which(de_df$significant & de_df$color == COLOR_NS)
-      if (length(sig_idx) > 0) {
-        de_df$color[sig_idx] <- ifelse(de_df$logFC[sig_idx] > 0, COLOR_LEFT, COLOR_RIGHT)
-        de_df$size[sig_idx] <- 8
-      }
+      # 设置基础颜色
+      de_df$color <- dplyr::case_when(
+        de_df$category == "user" ~ COLOR_USER,
+        de_df$category == "pathway" ~ COLOR_PATHWAY,
+        de_df$is_significant & de_df$logFC > 0 ~ COLOR_LEFT,
+        de_df$is_significant & de_df$logFC < 0 ~ COLOR_RIGHT,
+        TRUE ~ COLOR_NS
+      )
 
-      de_df$priority <- ifelse(de_df$category == "user", 4,
-                               ifelse(de_df$category == "pathway", 3,
-                                      ifelse(de_df$significant, 2, 1)))
-      de_df <- de_df[order(de_df$priority), ]
+      # 大小设置
+      de_df$size <- dplyr::case_when(
+        de_df$category == "user" ~ 17,
+        de_df$category == "pathway" ~ 13,
+        de_df$is_significant ~ 9,
+        TRUE ~ 4
+      )
 
-      user_genes_df <- de_df[de_df$category == "user", ]
+      # 透明度设置
+      de_df$opacity <- dplyr::case_when(
+        de_df$category %in% c("user", "pathway") ~ 1.0,
+        de_df$is_significant ~ 0.7,
+        TRUE ~ 0.5
+      )
 
-      p <- plotly::plot_ly(
-        data = de_df,
-        x = ~x_axis,
-        y = ~y_axis,
-        type = "scattergl",
-        mode = "markers",
-        marker = list(
-          color = ~color,
-          size = ~size,
-          opacity = 0.9,
-          line = list(color = "white", width = 1)
-        ),
-        text = ~sprintf("%s<br>logFC: %.2f<br>FDR: %.2e%s",
-                        gene_symbol, logFC, padj,
-                        ifelse(category == "user", " ⭐ USER",
-                               ifelse(category == "pathway", " 🔥 PATHWAY", ""))),
-        hoverinfo = "text",
-        key = ~gene_upper,
-        source = ns("deg_volcano")
-      ) %>%
-        plotly::layout(
-          xaxis = list(title = "log2 Fold Change", zeroline = FALSE),
-          yaxis = list(title = "-log10 P-value", zeroline = FALSE),
-          showlegend = FALSE
+      # 边框宽度
+      de_df$linewidth <- dplyr::case_when(
+        de_df$category %in% c("user", "pathway") ~ 0.8,
+        TRUE ~ 0
+      )
+
+      # 关键修复：按plot_order排序，确保正确的绘制顺序
+      de_df$plot_order <- dplyr::case_when(
+        de_df$category == "user" ~ 3,
+        de_df$category == "pathway" ~ 2,
+        TRUE ~ 1
+      )
+      de_df <- de_df[order(de_df$plot_order), ]
+
+      # 构建标题
+      title_text <- sprintf(
+        "%s vs %s<br><sup>↑ %d | ↓ %d | NS %d (logFC>|%.1f|, p<%.3f)</sup>",
+        left_group, right_group,
+        n_up, n_down, n_not_sig,
+        logfc_thresh, pval_thresh
+      )
+
+      # 准备注释
+      annotations_list <- list()
+
+      if (logfc_thresh > 0) {
+        annotations_list[[length(annotations_list) + 1]] <- list(
+          x = logfc_thresh,
+          y = max(de_df$y_axis) * 0.95,
+          text = sprintf("logFC=%.1f", logfc_thresh),
+          showarrow = FALSE,
+          font = list(size = 10, color = "gray")
         )
+        annotations_list[[length(annotations_list) + 1]] <- list(
+          x = -logfc_thresh,
+          y = max(de_df$y_axis) * 0.95,
+          text = sprintf("-logFC=%.1f", logfc_thresh),
+          showarrow = FALSE,
+          font = list(size = 10, color = "gray")
+        )
+      }
 
+      # 用户基因标签
+      user_genes_df <- de_df[de_df$category == "user", ]
       if (nrow(user_genes_df) > 0) {
-        annotations <- lapply(1:nrow(user_genes_df), function(i) {
+        annotations_list <- c(annotations_list, lapply(1:nrow(user_genes_df), function(i) {
           gene <- user_genes_df[i, ]
-          base_ay <- -40
-          stagger <- (i %% 3) * 15
-          ax <- ifelse(gene$logFC > 0, 30 + (i %% 2) * 20, -30 - (i %% 2) * 20)
-
           list(
             x = gene$x_axis,
             y = gene$y_axis,
@@ -3145,24 +3317,92 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
             showarrow = TRUE,
             arrowhead = 0,
             arrowsize = 1,
-            arrowwidth = 1,
-            arrowcolor = ifelse(gene$logFC > 0, COLOR_LEFT, COLOR_RIGHT),
-            ax = ax,
-            ay = base_ay - stagger,
-            bgcolor = "rgba(255,255,255,0.9)",
-            bordercolor = ifelse(gene$logFC > 0, COLOR_LEFT, COLOR_RIGHT),
-            borderwidth = 1,
-            font = list(size = 10, color = ifelse(gene$logFC > 0, COLOR_LEFT, COLOR_RIGHT))
+            arrowwidth = 2,
+            arrowcolor = COLOR_USER,
+            ax = ifelse(gene$logFC > 0, 50, -50),
+            ay = -35,
+            bgcolor = "rgba(255,255,255,0.85)",
+            bordercolor = COLOR_USER,
+            borderwidth = 0.5,
+            font = list(size = 13, color = COLOR_USER)
           )
-        })
-        p <- p %>% plotly::layout(annotations = annotations)
+        }))
       }
+
+      # 关键修复：使用plot_ly初始化，确保key正确绑定
+      # 将数据框按plot_order排序后一次性传入
+      p <- plotly::plot_ly(
+        data = de_df,
+        x = ~x_axis,
+        y = ~y_axis,
+        type = "scatter",
+        mode = "markers",
+        marker = list(
+          color = ~color,
+          size = ~size,
+          opacity = ~opacity,
+          line = list(color = "white", width = ~linewidth)
+        ),
+        text = ~sprintf("%s<br>logFC: %.2f<br>-log10(p): %.2f<br>FDR: %.2e<br>Category: %s",
+                        gene_symbol, logFC, y_axis, padj, category),
+        hoverinfo = "text",
+        key = ~gene_upper,  # 关键：确保key正确绑定到gene_upper列
+        source = ns("deg_volcano"),
+        showlegend = FALSE
+      ) %>% plotly::layout(
+        title = list(
+          text = title_text,
+          font = list(size = 14),
+          x = 0.5,
+          xanchor = "center"
+        ),
+        xaxis = list(
+          title = "logFC",
+          zeroline = FALSE,
+          showgrid = TRUE,
+          gridcolor = "lightgray"
+        ),
+        yaxis = list(
+          title = "-log10 (P-value)",
+          zeroline = FALSE,
+          showgrid = TRUE,
+          gridcolor = "lightgray"
+        ),
+        showlegend = FALSE,
+        dragmode = "pan",
+        annotations = annotations_list,
+        shapes = list(
+          list(
+            type = "line",
+            x0 = logfc_thresh,
+            x1 = logfc_thresh,
+            y0 = 0,
+            y1 = max(de_df$y_axis) * 1.05,
+            line = list(color = "gray", dash = "dash", width = 1)
+          ),
+          list(
+            type = "line",
+            x0 = -logfc_thresh,
+            x1 = -logfc_thresh,
+            y0 = 0,
+            y1 = max(de_df$y_axis) * 1.05,
+            line = list(color = "gray", dash = "dash", width = 1)
+          ),
+          list(
+            type = "line",
+            x0 = min(de_df$x_axis) * 1.1,
+            x1 = max(de_df$x_axis) * 1.1,
+            y0 = -log10(pval_thresh),
+            y1 = -log10(pval_thresh),
+            line = list(color = "gray", dash = "dash", width = 1)
+          )
+        )
+      )
 
       p
     })
 
-    # 4. 全量表达箱线图（完全根治版）
-    # 4. 全量表达分布图（Phase 1: Boxplot/Raincloud双模式，排序根治版）
+    # 4. 全量表达箱线图（带0基准线选项）
     output$gene_expr_box <- plotly::renderPlotly({
       # 读取排序设置（保持与原有逻辑一致）
       current_confirmed_order <- boxplot_order_ref()
@@ -3173,9 +3413,6 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
       } else {
         "default"
       }
-
-      # 读取绘图样式
-      plot_style <- input$plot_style_g4 %||% "boxplot"
 
       # 获取点击事件（来自DE火山图）
       gene_click <- plotly::event_data("plotly_click", source = ns("deg_volcano"))
@@ -3254,61 +3491,47 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
           names(group_colors) <- unique_groups
         }
 
-        # Phase 1核心：根据样式选择Geom
-        if (plot_style == "raincloud") {
-          # 标准云雨图：半小提琴(右) + 雨滴散点(左) + 箱线图(中)
-          # 注意：coord_flip在ggplotly中可能有问题，改用横向美学映射
+        # 获取0基准线设置
+        use_zero_baseline <- input$zero_baseline %||% FALSE
 
-          # 先进行坐标翻转的数据处理：交换x和y的角色
-          p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = Group, y = Expression, fill = Group, color = Group)) +
-            # 小提琴(云) —— y 是连续，因此 stat="ydensity" 才会工作
-            geom_flat_violin(
-              width = 0.9,
-              alpha = 0.6,
-              trim = FALSE
-            ) +
-            # 雨(散点)
-            ggplot2::geom_jitter(
-              width = 0.12,
-              height = 0,
-              size = 2.5,
-              alpha = 0.8
-            ) +
-            # 箱线(云下界限)
-            ggplot2::geom_boxplot(
-              width = 0.15,
-              alpha = 0.8,
-              outlier.shape = NA
-            ) +
-            ggplot2::scale_fill_manual(values = group_colors) +
-            ggplot2::scale_color_manual(values = group_colors) +
-            ggplot2::labs(
-              title = sprintf("%s (云雨图)", actual_gene),
-              x = NULL,
-              y = data_list$expression_type
-            ) +
-            ggplot2::theme_bw(base_size = 12) +
-            ggplot2::theme(
-              legend.position = "none",
-              axis.text.x = ggplot2::element_text(size = 11, face = "bold")
-            )
-        } else {
-          # 经典箱线图（保持原有逻辑）
-          p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = Group, y = Expression, fill = Group)) +
-            ggplot2::geom_boxplot(alpha = 0.7, outlier.shape = NA) +
-            ggplot2::geom_jitter(width = 0.2, size = 3, alpha = 0.6) +
-            ggplot2::scale_fill_manual(values = group_colors) +
-            ggplot2::scale_x_discrete(limits = x_categories, drop = FALSE) +
-            ggplot2::theme_bw(base_size = 12) +
-            ggplot2::labs(
-              title = sprintf("%s (%s)", actual_gene, "箱线图"),
-              y = data_list$expression_type,
-              x = NULL
-            ) +
-            ggplot2::theme(
-              legend.position = "none",
-              axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
-            )
+        # 计算y轴范围
+        y_min <- min(plot_data$Expression, na.rm = TRUE)
+        y_max <- max(plot_data$Expression, na.rm = TRUE)
+
+        # 如果启用0基准线，确保包含0
+        if (use_zero_baseline) {
+          y_min <- min(y_min, 0)
+          y_max <- max(y_max, 0)
+        }
+
+        # 添加一些边距
+        y_range <- y_max - y_min
+        y_min <- y_min - y_range * 0.1
+        y_max <- y_max + y_range * 0.1
+
+        # 绘制箱线图
+        p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = Group, y = Expression, fill = Group)) +
+          ggplot2::geom_boxplot(alpha = 0.7, outlier.shape = NA) +
+          ggplot2::geom_jitter(width = 0.2, size = 3, alpha = 0.6) +
+          ggplot2::scale_fill_manual(values = group_colors) +
+          ggplot2::scale_x_discrete(limits = x_categories, drop = FALSE) +
+          ggplot2::coord_cartesian(ylim = c(y_min, y_max)) +
+          ggplot2::theme_bw(base_size = 12) +
+          ggplot2::labs(
+            title = sprintf("%s",
+                            actual_gene),
+            y = data_list$expression_type,
+            x = NULL
+          ) +
+          ggplot2::theme(
+            legend.position = "none",
+            axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
+          )
+
+        # 如果启用0基准线，添加虚线
+        if (use_zero_baseline) {
+          p <- p + ggplot2::geom_hline(yintercept = 0, linetype = "dashed",
+                                       color = "red", alpha = 0.7, size = 0.8)
         }
 
         # 转换为plotly并强制X轴顺序
@@ -3326,7 +3549,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
         return(ply)
 
       }, error = function(e) {
-        message(sprintf("❌ Boxplot/Raincloud错误: %s", e$message))
+        message(sprintf("❌ 箱线图错误: %s", e$message))
         return(plotly::plot_ly() %>% plotly::layout(
           title = sprintf("错误: %s", e$message)
         ))
@@ -3730,11 +3953,11 @@ mod_multi_plot_ui <- function(id) {
         ns("pathway_selector"),
         label = "当前已选择通路（可点击 × 删除）:",
         choices = character(0), multiple = TRUE,
-        options = list(plugins = list("remove_button"), placeholder = "当前勾选的通路...")
+        options = list(plugins = list("remove_button"), placeholder = "当前勾选的通路..."),width = "100%",
       ),
       shiny::actionButton(ns("clear_btn"), "🗑️ 清空选择", class = "btn-warning",
                           style = "margin-bottom: 15px;"),
-      shiny::plotOutput(ns("multi_plot"), height = "600px")
+      shiny::plotOutput(ns("multi_plot"), height = "800px",width = "100%")
     )
   )
 }
@@ -3949,31 +4172,6 @@ mod_pathway_relation_ui <- function(id) {
                                  )
                                ),
 
-                               # UpSet专用
-                               shiny::conditionalPanel(
-                                 condition = sprintf("input['%s'] == 'upset'", ns("active_tab")),
-                                 shiny::sliderInput(
-                                   ns("max_sets"),
-                                   "最大集合数:",
-                                   min = 2, max = 15, value = 8, step = 1
-                                 ),
-                                 shiny::sliderInput(
-                                   ns("min_intersection"),
-                                   "最小交集大小:",
-                                   min = 1, max = 50, value = 5, step = 1
-                                 )
-                               ),
-
-                               # Chord专用
-                               shiny::conditionalPanel(
-                                 condition = sprintf("input['%s'] == 'chord'", ns("active_tab")),
-                                 shiny::sliderInput(
-                                   ns("genes_per_pathway"),
-                                   "每通路显示基因数:",
-                                   min = 5, max = 50, value = 20, step = 1
-                                 )
-                               ),
-
                                shiny::hr(),
                                shiny::actionButton(
                                  ns("refresh_plot"),
@@ -4004,15 +4202,6 @@ mod_pathway_relation_ui <- function(id) {
                         )
                       ),
 
-                      # Sub 2: Chord
-                      shiny::tabPanel(
-                        title = shiny::HTML("🎻 EnrichmentChord"),
-                        value = "chord",
-                        shiny::div(class = "white-box", style = "margin-top: 15px;",
-                                   shiny::plotOutput(ns("plot_chord"), height = "600px")
-                        )
-                      ),
-
                       # Sub 3: Network
                       shiny::tabPanel(
                         title = shiny::HTML("🕸️ Network"),
@@ -4020,17 +4209,8 @@ mod_pathway_relation_ui <- function(id) {
                         shiny::div(class = "white-box", style = "margin-top: 15px;",
                                    plotly::plotlyOutput(ns("plot_network"), height = "600px")
                         )
-                      ),
-
-                      # Sub 4: UpSet
-                      shiny::tabPanel(
-                        title = shiny::HTML("📊 UpSet"),
-                        value = "upset",
-                        shiny::div(class = "white-box", style = "margin-top: 15px;",
-                                   # 使用ComplexUpset输出
-                                   shiny::plotOutput(ns("plot_upset"), height = "600px")
-                        )
                       )
+
                     )
       )
     )
@@ -4075,10 +4255,10 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res) {
       return(task)
     })
 
-    # 1. DotPlot实现（经典GSEA气泡图）
+    # 1. DotPlot实现（经典GSEA气泡图）- 带对数比例尺
     output$plot_dotplot <- plotly::renderPlotly({
       shiny::req(selected_pathways(), current_task())
-      shiny::req(input$refresh_plot)  # 依赖更新按钮
+      shiny::req(input$refresh_plot)
 
       pathways <- selected_pathways()
       task <- current_task()
@@ -4091,7 +4271,6 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res) {
       }
 
       # 获取DE基因（用于ORA计算）
-      # 从gsea_res中提取DE表（需要实现辅助函数）
       de_table <- tryCatch({
         get_de_table(gsea_res, task$meta$contrast_id)
       }, error = function(e) NULL)
@@ -4113,35 +4292,53 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res) {
         term_genes <- get_term_genes(gsea_res, pid)
 
         # 计算Ratio
-        if (input$ratio_source == "ora" && length(term_genes) > 0) {
-          ratio <- length(core_genes) / length(term_genes)
-        } else if (length(de_genes_sig) > 0) {
-          overlap <- intersect(core_genes, toupper(de_genes_sig))
-          ratio <- length(overlap) / length(de_genes_sig)
+        if (input$ratio_source == "ora") {
+          # ORA模式: Core Genes / Term Genes (通路基因)
+          if (length(term_genes) > 0) {
+            ratio <- length(core_genes) / length(term_genes)
+          } else {
+            ratio <- 0
+          }
         } else {
-          ratio <- length(core_genes) / row$setSize
+          # Leading Edge模式: (Core Genes ∩ DE Genes) / DE Genes
+          if (length(de_genes_sig) > 0) {
+            overlap <- intersect(core_genes, toupper(de_genes_sig))
+            ratio <- length(overlap) / length(de_genes_sig)
+          } else {
+            ratio <- 0
+          }
         }
 
-        # Size映射
-        size_val <- switch(input$size_mode,
+        # Size映射 - 使用对数变换
+        raw_size <- switch(input$size_mode,
                            "core_size" = length(core_genes),
                            "setsize" = row$setSize,
                            "ratio" = ratio * 100,
                            length(core_genes))
 
+        # 对数变换用于气泡大小（避免极端值导致比例失调）
+        log_size <- log10(raw_size + 1)  # +1避免log(0)
+
         # Color映射
-        color_val <- switch(input$stat_color_mode,
+        raw_color <- switch(input$stat_color_mode,
                             "pval" = -log10(row$pvalue),
                             "padj" = -log10(row$p.adjust),
                             "nes" = abs(row$NES),
                             -log10(row$p.adjust))
 
+        # 颜色截断（避免极端值）
+        color_cap <- input$color_cap %||% 20
+        color_val <- min(raw_color, color_cap)
+
         data.frame(
           Pathway = pid,
           Description = ifelse(is.na(row$Description), pid, row$Description),
           Ratio = ratio,
-          Size = size_val,
+          RawSize = raw_size,      # 原始大小用于显示
+          LogSize = log_size,      # 对数变换后的大小用于绘图
+          Size = raw_size,         # 保持兼容性
           Color = color_val,
+          RawColor = raw_color,    # 原始颜色值
           NES = row$NES,
           PValue = row$pvalue,
           FDR = row$p.adjust,
@@ -4162,6 +4359,49 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res) {
                             "padj" = "-log10(FDR)",
                             "nes" = "|NES|")
 
+      # 计算气泡大小范围（对数尺度）
+      size_range <- input$size_range %||% c(5, 20)
+      min_log_size <- min(plot_df$LogSize)
+      max_log_size <- max(plot_df$LogSize)
+
+      # 线性映射到像素大小
+      if (max_log_size > min_log_size) {
+        plot_df$MarkerSize <- size_range[1] +
+          (plot_df$LogSize - min_log_size) / (max_log_size - min_log_size) *
+          (size_range[2] - size_range[1])
+      } else {
+        plot_df$MarkerSize <- mean(size_range)
+      }
+
+      # 构建标题
+      contrast_id <- task$meta$contrast_id
+      left_group <- task$meta$left_group
+      right_group <- task$meta$right_group
+
+      # 计算比例尺刻度（以10的倍数）
+      max_raw_size <- max(plot_df$RawSize)
+      # 找到比最大值大的最近的10的幂
+      scale_max <- 10^ceiling(log10(max_raw_size + 1))
+      # 生成比例尺刻度：1, 10, 100, 1000... 或 1, 5, 10, 50...
+      if (scale_max > 100) {
+        scale_breaks <- c(1, 10, 100, 1000)
+        scale_breaks <- scale_breaks[scale_breaks <= scale_max * 10]
+      } else {
+        scale_breaks <- c(1, 5, 10, 50, 100)
+        scale_breaks <- scale_breaks[scale_breaks <= scale_max]
+      }
+
+      # 计算每个刻度对应的像素大小
+      scale_sizes <- sapply(scale_breaks, function(s) {
+        log_s <- log10(s + 1)
+        if (max_log_size > min_log_size) {
+          size_range[1] + (log_s - min_log_size) / (max_log_size - min_log_size) *
+            (size_range[2] - size_range[1])
+        } else {
+          mean(size_range)
+        }
+      })
+
       # 绘制（仅hover，无click事件监听）
       p <- plotly::plot_ly(
         data = plot_df,
@@ -4170,12 +4410,15 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res) {
         type = "scatter",
         mode = "markers",
         marker = list(
-          size = ~Size,
+          size = ~MarkerSize,
           color = ~Color,
           colorscale = "RdBu",
           showscale = TRUE,
-          colorbar = list(title = color_title),
-          opacity = input$dot_alpha,
+          colorbar = list(
+            title = list(text = color_title, font = list(size = 12)),
+            tickfont = list(size = 10)
+          ),
+          opacity = input$dot_alpha %||% 0.8,
           line = list(color = "black", width = 1)
         ),
         text = ~sprintf(
@@ -4184,172 +4427,70 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res) {
         ),
         hoverinfo = "text"
       ) %>% plotly::layout(
-        xaxis = list(title = ifelse(input$ratio_source == "ora",
-                                    "Overlap Ratio (Core/Term)",
-                                    "Overlap Ratio (Core/DE)")),
-        yaxis = list(title = ""),
+        xaxis = list(
+          title = list(
+            text = ifelse(input$ratio_source == "ora",
+                          "Overlap Ratio (Core/Term)",
+                          "Overlap Ratio (Core/DE)"),
+            font = list(size = 12)
+          ),
+          tickfont = list(size = 10)
+        ),
+        yaxis = list(
+          title = "",
+          tickfont = list(size = 9)
+        ),
         showlegend = FALSE,
-        dragmode = FALSE  # 禁止拖拽，确保无click联动
+        dragmode = FALSE,  # 禁止拖拽，确保无click联动
+        title = list(
+          text = sprintf("DotPlot: %s vs %s (%d pathways)", left_group, right_group, nrow(plot_df)),
+          font = list(size = 14),
+          x = 0.5,
+          xanchor = "center"
+        ),
+        margin = list(l = 200),  # 给y轴标签留空间
+        # 添加自定义比例尺注释
+        annotations = list(
+          list(
+            x = 0.98,
+            y = 0.02,
+            xref = "paper",
+            yref = "paper",
+            text = "<b>Bubble Size Scale</b><br>(Core Genes)",
+            showarrow = FALSE,
+            font = list(size = 10),
+            align = "right",
+            bgcolor = "rgba(255,255,255,0.8)",
+            bordercolor = "gray",
+            borderwidth = 1
+          )
+        )
       )
+
+      # 添加比例尺气泡（在右下角）
+      for (i in seq_along(scale_breaks)) {
+        p <- p %>% plotly::add_trace(
+          x = max(plot_df$Ratio) * 1.05,  # 放在图右侧
+          y = nrow(plot_df) * (0.1 + i * 0.08),  # 垂直排列
+          mode = "markers+text",
+          marker = list(
+            size = scale_sizes[i],
+            color = "lightgray",
+            line = list(color = "black", width = 1)
+          ),
+          text = paste0(" ", scale_breaks[i]),
+          textposition = "middle right",
+          textfont = list(size = 9),
+          hoverinfo = "skip",
+          showlegend = FALSE
+        )
+      }
 
       return(p)
     }) %>% shiny::bindEvent(input$refresh_plot, ignoreNULL = FALSE)
 
-    # 2. EnrichmentChord（基因-通路弦图）
-    # 2. EnrichmentChord（基因-通路弦图）- 修复空间不足问题
-    output$plot_chord <- shiny::renderPlot({
-      shiny::req(selected_pathways(), current_task())
-      shiny::req(input$refresh_plot)
 
-      pathways <- selected_pathways()
-      task <- current_task()
-
-      # 限制规模，避免gap.degree错误
-      max_pathways <- min(length(pathways), 8)  # 最多8个通路
-      if (length(pathways) > max_pathways) {
-        pathways <- pathways[1:max_pathways]
-      }
-
-      # 构建基因-通路关联
-      genes_list <- list()
-      total_genes <- 0
-
-      for (pid in pathways) {
-        core_genes <- get_core_genes_for_pathway(task, pid)
-        # 严格限制每个通路的基因数
-        n_genes <- min(length(core_genes), input$genes_per_pathway %||% 10)
-        if (n_genes > 0) {
-          genes_list[[pid]] <- core_genes[1:n_genes]
-          total_genes <- total_genes + n_genes
-        }
-      }
-
-      # 安全检查：如果总节点数过多，进一步截断
-      if (total_genes > 50) {
-        # 重新分配配额
-        genes_per_pathway <- floor(50 / length(pathways))
-        for (pid in names(genes_list)) {
-          if (length(genes_list[[pid]]) > genes_per_pathway) {
-            genes_list[[pid]] <- genes_list[[pid]][1:genes_per_pathway]
-          }
-        }
-      }
-
-      # 构建边列表
-      edges <- data.frame(
-        from = character(0),
-        to = character(0),
-        stringsAsFactors = FALSE
-      )
-
-      for (pid in names(genes_list)) {
-        genes <- genes_list[[pid]]
-        if (length(genes) > 0) {
-          edges <- rbind(edges, data.frame(
-            from = genes,
-            to = rep(pid, length(genes)),
-            stringsAsFactors = FALSE
-          ))
-        }
-      }
-
-      if (nrow(edges) == 0 || length(unique(edges$from)) < 2) {
-        graphics::plot(1, type = "n", axes = FALSE, xlab = "", ylab = "")
-        graphics::text(1, 1, "无足够基因数据\n(每个通路至少需要1个core gene)", col = "red")
-        return()
-      }
-
-      # 构建邻接矩阵（仅包含出现在edges中的基因）
-      all_genes <- unique(edges$from)
-      all_paths <- unique(edges$to)
-
-      # 如果维度太大，进一步截断
-      if (length(all_genes) > 30 || length(all_paths) > 8) {
-        graphics::plot(1, type = "n", axes = FALSE)
-        graphics::text(1, 1, "数据维度太大\n请减少通路数量或降低每通路基因数", col = "red")
-        return()
-      }
-
-      mat <- matrix(0, nrow = length(all_genes), ncol = length(all_paths))
-      rownames(mat) <- all_genes
-      colnames(mat) <- all_paths
-
-      for (i in 1:nrow(edges)) {
-        if (edges$from[i] %in% rownames(mat) && edges$to[i] %in% colnames(mat)) {
-          mat[edges$from[i], edges$to[i]] <- 1
-        }
-      }
-
-      # 设置circos参数（关键修复：减小gap.degree）
-      circlize::circos.clear()
-      circlize::circos.par(
-        gap.degree = 2,  # 从默认5降到2，节省空间
-        start.degree = 90,
-        track.margin = c(-0.1, 0.1),
-        points.overflow.warning = FALSE
-      )
-
-      # 准备颜色
-      path_colors <- RColorBrewer::brewer.pal(max(3, length(all_paths)), "Set2")[1:length(all_paths)]
-      names(path_colors) <- all_paths
-
-      gene_color <- "grey70"
-
-      grid_colors <- c(
-        rep(gene_color, length(all_genes)),
-        path_colors[all_paths]
-      )
-
-      # 绘制弦图（带错误处理）
-      tryCatch({
-        circlize::chordDiagram(
-          mat,
-          transparency = 0.4,
-          annotationTrack = c("grid", "axis"),
-          preAllocateTracks = list(track.height = 0.1),
-          grid.col = grid_colors,
-          link.border = "white",
-          link.lwd = 0.5,
-          direction = 1,
-          diffHeight = 0.05
-        )
-
-        # 添加标签（仅通路，基因太多不显示）
-        circlize::circos.track(
-          track.index = 1,
-          panel.fun = function(x, y) {
-            sector.name <- get.cell.meta.data("sector.index")
-            if (sector.name %in% all_paths) {
-              circlize::circos.text(
-                CELL_META$xcenter,
-                CELL_META$ylim[1],
-                sector.name,
-                facing = "clockwise",
-                niceFacing = TRUE,
-                adj = c(0, 0.5),
-                cex = 0.8,
-                font = 2,
-                col = path_colors[sector.name]
-              )
-            }
-          },
-          bg.border = NA
-        )
-
-        graphics::title(main = sprintf("Gene-Pathway Chord\n(%d genes × %d pathways)",
-                                       length(all_genes), length(all_paths)))
-
-      }, error = function(e) {
-        graphics::text(0.5, 0.5, sprintf("Chord Diagram Error:\n%s\n\n建议：减少通路数量至5个以下",
-                                         e$message), col = "red")
-      })
-
-      circlize::circos.clear()
-
-    }, height = 600, width = 800)
-
-    # 3. Network（通路关系网络，基于core_genes Jaccard相似度）
-    # 3. Network（通路关系网络）- 修复连线显示
+    # 3. Network（通路关系网络，基于core_genes Jaccard相似度）- Plotly交互版
     output$plot_network <- plotly::renderPlotly({
       shiny::req(selected_pathways(), current_task())
       shiny::req(input$refresh_plot)
@@ -4401,7 +4542,10 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res) {
 
       if (nrow(edge_list) == 0) {
         return(plotly::plot_ly() %>% plotly::layout(
-          title = "无足够连接的通路（请降低最小共享基因数）"
+          title = list(
+            text = "无足够连接的通路（请降低最小共享基因数）",
+            font = list(size = 14)
+          )
         ))
       }
 
@@ -4431,161 +4575,117 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res) {
       node_df$NES <- node_info$NES
       node_df$color_val <- ifelse(is.na(node_df$NES), 0, node_df$NES)
 
-      # 构建边数据框（关键修复：为plotly创建线段数据）
-      edge_segments <- data.frame(
-        x = numeric(0),
-        y = numeric(0),
-        xend = numeric(0),
-        yend = numeric(0),
-        weight = numeric(0),
-        shared = integer(0),
-        stringsAsFactors = FALSE
-      )
+      # 提取对比组信息用于标题
+      contrast_id <- task$meta$contrast_id
+      left_group <- task$meta$left_group
+      right_group <- task$meta$right_group
 
+      # 创建plotly图形 - 使用add_trace而不是scatter
+      p <- plotly::plot_ly()
+
+      # 添加边（使用add_segments）
       for (i in 1:nrow(edge_list)) {
-        from_pos <- node_df[node_df$name == edge_list$from[i], c("x", "y")]
-        to_pos <- node_df[node_df$name == edge_list$to[i], c("x", "y")]
+        from_node <- node_df[node_df$name == edge_list$from[i], ]
+        to_node <- node_df[node_df$name == edge_list$to[i], ]
 
-        if (nrow(from_pos) == 1 && nrow(to_pos) == 1) {
-          edge_segments <- rbind(edge_segments, data.frame(
-            x = from_pos$x,
-            y = from_pos$y,
-            xend = to_pos$x,
-            yend = to_pos$y,
-            weight = edge_list$weight[i],
-            shared = edge_list$shared[i]
-          ))
-        }
-      }
-
-      # 使用ggplot2绘制（更稳定的线段渲染）
-      p <- ggplot2::ggplot() +
-        # 边（线段）
-        ggplot2::geom_segment(
-          data = edge_segments,
-          ggplot2::aes(x = x, y = y, xend = xend, yend = yend,
-                       alpha = weight, size = weight),
-          color = "gray50",
-          show.legend = FALSE
-        ) +
-        # 节点
-        ggplot2::geom_point(
-          data = node_df,
-          ggplot2::aes(x = x, y = y, color = color_val),
-          size = 8,
-          shape = 21,
-          fill = "white",
-          stroke = 2
-        ) +
-        # 节点标签
-        ggplot2::geom_text(
-          data = node_df,
-          ggplot2::aes(x = x, y = y, label = name),
-          size = 3,
-          vjust = -1.5,
-          check_overlap = TRUE
-        ) +
-        ggplot2::scale_color_gradient2(
-          low = "#377EB8", mid = "white", high = "#E41A1C", midpoint = 0,
-          name = "NES"
-        ) +
-        ggplot2::scale_size_continuous(range = c(0.5, 3)) +
-        ggplot2::scale_alpha_continuous(range = c(0.3, 0.8)) +
-        ggplot2::coord_fixed() +
-        ggplot2::theme_void() +
-        ggplot2::theme(
-          legend.position = "right",
-          plot.title = ggplot2::element_text(hjust = 0.5)
-        ) +
-        ggplot2::labs(
-          title = sprintf("Pathway Network (edges=%d, min_shared=%d)",
-                          nrow(edge_segments), input$min_shared)
+        p <- p %>% plotly::add_segments(
+          x = from_node$x,
+          y = from_node$y,
+          xend = to_node$x,
+          yend = to_node$y,
+          line = list(
+            color = "rgba(128, 128, 128, 0.6)",
+            width = 1 + edge_list$weight[i] * 3
+          ),
+          hoverinfo = "text",
+          text = sprintf("Shared: %d genes<br>Jaccard: %.3f",
+                         edge_list$shared[i], edge_list$weight[i]),
+          showlegend = FALSE,
+          inherit = FALSE
         )
-
-      # 转换为plotly（保留悬停，移除click）
-      ply <- plotly::ggplotly(p, tooltip = c("label", "color_val")) %>%
-        plotly::layout(
-          dragmode = FALSE,
-          hovermode = "closest"
-        ) %>%
-        plotly::config(displayModeBar = FALSE)
-
-      return(ply)
-    }) %>% shiny::bindEvent(input$refresh_plot, ignoreNULL = FALSE)
-
-    # 4. UpSet（交集分析）
-    # 4. UpSet（交集分析）- 修复参数名
-    output$plot_upset <- shiny::renderPlot({
-      shiny::req(selected_pathways(), current_task())
-      shiny::req(input$refresh_plot)
-
-      # 检查ComplexUpset是否可用
-      if (!requireNamespace("ComplexUpset", quietly = TRUE)) {
-        graphics::plot(1, type = "n", axes = FALSE)
-        graphics::text(1, 1, "请安装ComplexUpset包\ninstall.packages('ComplexUpset')", col = "red")
-        return()
       }
 
-      pathways <- selected_pathways()
-      task <- current_task()
-
-      # 限制集合数
-      max_sets <- validate_param(input$max_sets, 8, 2, 15, "max_sets")
-      if (length(pathways) > max_sets) {
-        pathways <- pathways[1:max_sets]
-      }
-
-      # 构建集合列表
-      core_list <- get_core_genes_list(task, pathways)
-
-      # 转换为数据框（ComplexUpset格式）
-      all_genes <- unique(unlist(core_list))
-      if (length(all_genes) == 0) {
-        graphics::plot(1, type = "n", axes = FALSE)
-        graphics::text(1, 1, "无Core Genes数据", col = "red")
-        return()
-      }
-
-      membership_df <- data.frame(
-        gene = all_genes,
-        stringsAsFactors = FALSE
+      # 添加节点
+      p <- p %>% plotly::add_markers(
+        data = node_df,
+        x = ~x,
+        y = ~y,
+        marker = list(
+          size = 15,
+          color = ~color_val,
+          colorscale = list(
+            c(0, "#377EB8"),    # 负值 - 蓝色
+            c(0.5, "white"),    # 中点 - 白色
+            c(1, "#E41A1C")     # 正值 - 红色
+          ),
+          showscale = TRUE,
+          colorbar = list(
+            title = list(text = "NES", font = list(size = 12)),
+            tickfont = list(size = 10)
+          ),
+          line = list(color = "black", width = 2)
+        ),
+        text = ~name,
+        hoverinfo = "text",
+        hovertext = ~sprintf(
+          "<b>%s</b><br>NES: %.2f<br>Core Genes: %d",
+          name,
+          ifelse(is.na(NES), 0, NES),
+          sapply(name, function(n) length(core_list[[n]]))
+        ),
+        showlegend = FALSE
       )
 
-      for (pid in pathways) {
-        membership_df[[pid]] <- membership_df$gene %in% core_list[[pid]]
-      }
+      # 添加节点标签
+      p <- p %>% plotly::add_text(
+        data = node_df,
+        x = ~x,
+        y = ~y,
+        text = ~name,
+        textposition = "top center",
+        textfont = list(size = 9, color = "black"),
+        hoverinfo = "skip",
+        showlegend = FALSE
+      )
 
-      # 修复：ComplexUpset 1.0+ 使用 mode = 'distinct' 替代 min_intersection_size
-      # 或使用 intersections 参数控制显示哪些交集
-      min_size <- input$min_intersection
+      # 构建标题
+      title_text <- sprintf(
+        "Pathway Network: %s → %s<br><sub>%d nodes, %d edges (min_shared=%d)</sub>",
+        left_group, right_group,
+        nrow(node_df), nrow(edge_list), input$min_shared
+      )
 
-      # 方法：先计算所有交集，过滤后再绘图
-      tryCatch({
-        ComplexUpset::upset(
-          membership_df,
-          intersect = pathways,
-          min_size = min_size,  # 使用min_size而非min_intersection_size
-          width_ratio = 0.2,
-          name = "Pathway Intersections",
-          base_annotations = list(
-            'Intersection size' = ComplexUpset::intersection_size(
-              text = ComplexUpset::aes_(color = 'black'),
-              text_mapping = ComplexUpset::aes_(label = ggplot2::aes(label = !!ggplot2::sym('size')))
-            )
-          ),
-          themes = ComplexUpset::upset_default_themes(
-            panel.grid.major = ggplot2::element_blank(),
-            panel.grid.minor = ggplot2::element_blank(),
-            axis.text.y = ggplot2::element_blank()
-          )
-        )
-      }, error = function(e) {
-        # 降级方案：使用基础 upset
-        graphics::plot(1, type = "n", axes = FALSE)
-        graphics::text(1, 1, sprintf("UpSet Error:\n%s", e$message), col = "red")
-      })
+      # 设置布局
+      p %>% plotly::layout(
+        title = list(
+          text = title_text,
+          font = list(size = 14),
+          x = 0.5,
+          xanchor = "center"
+        ),
+        xaxis = list(
+          title = "",
+          showgrid = FALSE,
+          showticklabels = FALSE,
+          zeroline = FALSE
+        ),
+        yaxis = list(
+          title = "",
+          showgrid = FALSE,
+          showticklabels = FALSE,
+          zeroline = FALSE
+        ),
+        hovermode = "closest",
+        dragmode = "pan",
+        showlegend = FALSE,
+        margin = list(l = 50, r = 50, t = 80, b = 50)
+      ) %>% plotly::config(
+        displayModeBar = TRUE,
+        displaylogo = FALSE,
+        modeBarButtonsToRemove = c("lasso2d", "select2d")
+      )
+    })
 
-    }, height = 600, width = 800)
 
   })
 }
@@ -4594,137 +4694,100 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res) {
 ====================================================================================================
 [文件 15/23] R\14_shiny_mod_joint_canvas.R
 ====================================================================================================
-#' @title 联合GSEA填充画布模块 UI（精简版）
-#' @description 控件已移至主左侧栏，此处仅保留生成按钮和下载
+#' @title 联合GSEA填充画布模块 UI（纯展示版）
+#' @description 所有控制已移至侧边栏，此处仅显示画布结果
 #' @keywords internal
 mod_joint_canvas_ui <- function(id) {
   ns <- shiny::NS(id)
   shiny::tagList(
-    shiny::fluidRow(
-      # 左侧控制区（精简：仅保留生成和下载）
-      shiny::column(3,
-                    shiny::div(class = "well",
-                               shiny::h4("🖼️ 画布控制"),
-
-                               shiny::helpText(
-                                 style = "margin-top: 8px; color: #666; font-size: 11px;",
-                                 "对比组和列数设置已移至左侧主控制栏"
-                               ),
-
-                               shiny::hr(),
-
-                               shiny::actionButton(
-                                 ns("generate_canvas"),
-                                 "🎨 生成画布",
-                                 class = "btn-success",
-                                 style = "width: 100%; font-weight: bold; margin-bottom: 15px;"
-                               ),
-
-                               shiny::downloadButton(
-                                 ns("download_canvas"),
-                                 "💾 保存画布 (PNG)",
-                                 style = "width: 100%;"
-                               ),
-
-                               shiny::hr(),
-
-                               # 🔧 新增：画布信息展示
-                               shiny::uiOutput(ns("canvas_params_info"))
-                    )
-      ),
-
-      # 右侧画布区
-      shiny::column(9,
-                    shiny::div(class = "white-box", style = "min-height: 700px;",
-                               shiny::h4("GSEA 联合画布"),
-                               shiny::uiOutput(ns("canvas_info")),
-                               shiny::plotOutput(ns("canvas_plot"), height = "auto")
-                    )
-      )
+    # 🔧 修改：移除所有控制元素，仅保留画布展示（占满12列）
+    shiny::div(class = "white-box", style = "min-height: 900px;",
+               shiny::h4("GSEA 联合画布"),
+               shiny::uiOutput(ns("canvas_info")),
+               shiny::plotOutput(ns("canvas_plot"), height = "auto", width = "100%")
     )
   )
 }
 
-#' @title 联合GSEA填充画布模块 Server（排列模式 + 美学统一版）
+#' @title 联合GSEA填充画布模块 Server（侧边栏控制版）
 #' @description
-#'   1. 支持排列（Permutation）：保持用户选择对比组的顺序
-#'   2. 删除最大行数限制：自动计算所需行数
-#'   3. 美学统一：与 multi_plot 使用完全相同的绘图参数
+#'   1. 接收侧边栏控制参数（排列模式）
+#'   2. 无最大行数限制
+#'   3. 美学与multi_plot完全一致
 #' @keywords internal
-mod_joint_canvas_server <- function(id, gsea_res, data_prep_data, table_result)  {
+mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
     # 存储当前画布结果
     canvas_result <- shiny::reactiveVal(NULL)
 
-    # 🔧 核心：生成画布（排列模式 + 美学统一）
-    shiny::observeEvent(input$generate_canvas, {
+    # 🔧 核心：监听侧边栏的生成按钮（而非本地按钮）
+    shiny::observeEvent(data_prep_list$joint_generate(), {
 
-      # 从 data_prep 获取排列（而非组合）
-      data_list <- data_prep_data()
-      shiny::req(data_list)
+      # 🔧 从data_prep_list获取参数（而非input）
+      contrasts <- data_prep_list$joint_contrasts()
+      ncol_val <- data_prep_list$joint_ncol()
 
-      # 🔧 排列模式：直接使用用户选择的顺序，不重新排序
-      contrasts <- data_list$canvas_contrasts
-      shiny::req(contrasts)
+      shiny::req(contrasts, ncol_val)
       if (length(contrasts) == 0) {
         shiny::showNotification("请先在左侧控制栏选择对比组（排列模式）", type = "error")
         return()
       }
 
-      # 🔧 通路：100% 同步主 table（与 multi_plot 一致）
+      # 🔧 从data_prep_list获取绘图参数（与multi_plot一致）
+      data_list <- data_prep_list$data()
+      shiny::req(data_list)
+
+      plot_subtype <- data_list$plot_subtype
+      custom_colors <- data_list$custom_colors
+
+      # 🔧 通路：与multi_plot共用选择
       pathways <- table_result$selected_pathways()
       shiny::req(pathways)
       if (length(pathways) == 0) {
-        shiny::showNotification("请先在主工作台勾选\"联合展示/联合绘图\"的通路", type = "error")
+        shiny::showNotification("请先在主工作台勾选\"联合展示\"的通路", type = "error")
         return()
       }
 
-      # 🔧 美学统一：使用与 multi_plot 完全相同的参数
-      plot_subtype <- data_list$plot_subtype  # 使用主控制栏设置的 subPlot
-      colors <- trimws(strsplit(data_list$custom_colors, ",")[[1]])
+      # 验证ncol
+      if (is.null(ncol_val) || ncol_val < 1) ncol_val <- 2
+
+      # 解析颜色
+      colors <- trimws(strsplit(custom_colors, ",")[[1]])
       if (length(colors) < length(pathways)) {
         colors <- rep(colors, length.out = length(pathways))
       }
 
-      # 🔧 获取列数（从主控制栏）
-      ncol_val <- data_list$canvas_ncol
-      if (is.null(ncol_val) || ncol_val <= 0) ncol_val <- 3
-
-      shiny::incProgress(0.1, detail = "提取GSEA任务并绘制联合通路...")
+      shiny::incProgress(0.1, detail = "提取GSEA任务...")
 
       plot_list <- list()
 
-      # 🔧 排列模式：严格按照用户选择的顺序（contrasts向量顺序）处理
+      # 🔧 排列模式：严格按用户选择顺序（支持A_vs_B和B_vs_A同时存在）
       for (i in seq_along(contrasts)) {
         contrast_id <- contrasts[i]
 
-        # 提取任务
         task_obj <- tryCatch({
           extract_gsea_task(gsea_res, contrast_id, "ALL")
         }, error = function(e) {
-          message(sprintf("提取对比组 %s 失败: %s", contrast_id, e$message))
-          return(NULL)
+          message(sprintf("提取 %s 失败: %s", contrast_id, e$message))
+          NULL
         })
 
         if (is.null(task_obj)) {
-          # 如果提取失败，添加错误占位图，保持排列顺序
           p <- ggplot2::ggplot() +
             ggplot2::annotate("text", x = 0.5, y = 0.5,
-                              label = sprintf("Contrast Not Found:\n%s", contrast_id),
-                              size = 4, color = "red"
-            ) +
+                              label = sprintf("未找到:\n%s", contrast_id),
+                              size = 3, color = "red") +
             ggplot2::theme_void()
           plot_list[[i]] <- p
           next
         }
 
-        # 🔧 美学统一：与 multi_plot 使用完全相同的参数调用
-        # 标题格式统一为：对比组名称 + 联合展示信息
+        # 🔧 美学统一：与multi_plot完全一致
         main_title <- sprintf(
-          "%s\n联合展示: %d 条通路",
-          gsub("_vs_", " ", contrast_id),
+          "%s [%d 通路]",
+          gsub("_vs_", " vs ", contrast_id),
           length(pathways)
         )
 
@@ -4732,24 +4795,23 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_data, table_result) 
           plot_directional_gsea(
             directional_gsea_obj = task_obj,
             target_pathways = pathways,
-            subPlot = plot_subtype,      # 🔧 与 multi_plot 一致：使用主控制栏的 subPlot
-            curveCol = colors,           # 🔧 与 multi_plot 一致：使用相同颜色
+            subPlot = as.numeric(plot_subtype),  # 使用主控制栏的subPlot
+            curveCol = colors,
             main_title = main_title,
-            add_pval = FALSE             # 🔧 与 multi_plot 一致：不显示p值（节省空间）
+            add_pval = FALSE,
+            show_contrast_in_axis = TRUE
           )
         }, error = function(e) {
-          message(sprintf("绘制 %s 失败: %s", contrast_id, e$message))
           ggplot2::ggplot() +
             ggplot2::annotate("text", x = 0.5, y = 0.5,
-                              label = sprintf("Plot Error:\n%s", substr(e$message, 1, 120)),
-                              size = 3, color = "red"
-            ) +
+                              label = sprintf("错误:\n%s", substr(e$message, 1, 80)),
+                              size = 3, color = "red") +
             ggplot2::theme_void()
         })
 
         plot_list[[i]] <- p
 
-        if (i %% 2 == 0) {
+        if (i %% 2 == 0 || i == length(contrasts)) {
           shiny::incProgress(0.6 * i / length(contrasts),
                              detail = sprintf("绘制 %d/%d ...", i, length(contrasts)))
         }
@@ -4760,30 +4822,24 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_data, table_result) 
         return()
       }
 
-      # 🔧 删除最大行数限制：自动计算行数
       n_plots <- length(plot_list)
+      # 🔧 删除最大行数限制：自动计算
       actual_nrow <- ceiling(n_plots / ncol_val)
 
-      # 🔧 美学优化：使用 patchwork 的 wrap_plots，移除固定尺寸限制
-      # 允许子图根据内容自动调整比例
+      # 🔧 美学优化：与multi_plot一致
       combined_plot <- patchwork::wrap_plots(
         plot_list,
         ncol = ncol_val,
         nrow = actual_nrow,
         byrow = TRUE,
-        # 🔧 关键：允许子图填充更多空间
-        widths = rep(1, ncol_val),
-        heights = rep(1, actual_nrow)
+        guides = "collect"
       ) + patchwork::plot_annotation(
-        title = "GSEA Joint Canvas (Permutation Mode)",
-        subtitle = sprintf("排列顺序: %s | 每行 %d 个 | 共 %d 个对比组",
-                           paste(contrasts, collapse = " → "),
-                           ncol_val,
-                           n_plots
-        ),
+        title = sprintf("联合GSEA画布: %d 对比组 × %d 通路", n_plots, length(pathways)),
+        subtitle = sprintf("排列: %s", paste(contrasts, collapse = " → ")),
         theme = ggplot2::theme(
-          plot.title = ggplot2::element_text(size = 14, face = "bold"),
-          plot.subtitle = ggplot2::element_text(size = 10, color = "gray40")
+          plot.title = ggplot2::element_text(size = 12, face = "bold", hjust = 0.5),
+          plot.subtitle = ggplot2::element_text(size = 8, color = "gray50", hjust = 0.5),
+          plot.margin = ggplot2::margin(10, 10, 10, 10)
         )
       )
 
@@ -4792,12 +4848,8 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_data, table_result) 
         n_plots = n_plots,
         ncol = ncol_val,
         nrow = actual_nrow,
-        contrasts = contrasts,  # 🔧 记录排列顺序
-        pathways = pathways,
-        items = data.frame(
-          contrast = contrasts,
-          order = seq_along(contrasts)  # 🔧 记录排列序号
-        )
+        contrasts = contrasts,
+        pathways = pathways
       ))
 
       shiny::incProgress(1.0, detail = "完成!")
@@ -4808,87 +4860,29 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_data, table_result) 
       shiny::req(canvas_result())
       canvas_result()$plot
     }, height = function() {
-      # 🔧 动态高度：根据行数计算，无上限（删除最大行数限制）
-      if (is.null(canvas_result())) return(400)
+      if (is.null(canvas_result())) return(900)
       nrow <- canvas_result()$nrow
-      # 🔧 每个图高度根据 subPlot 类型动态调整
-      # subPlot=1: 300px, subPlot=2: 400px, subPlot=3: 500px
-      data_list <- data_prep_data()
-      sub_type <- if (!is.null(data_list)) data_list$plot_subtype else 3
-      height_per_plot <- switch(as.character(sub_type), "1" = 300, "2" = 400, 500)
+      # 🔧 每行400px，无上限
+      return(max(900, nrow * 400))
+    }, width = 1600, res = 72)
 
-      return(max(400, nrow * height_per_plot))
-    }, width = 1000, res = 120)
-
-    # 画布信息（增强版）
+    # 画布信息
     output$canvas_info <- shiny::renderUI({
       shiny::req(canvas_result())
       info <- canvas_result()
 
       shiny::tags$div(
-        style = "margin-bottom: 15px; padding: 10px; background-color: #e7f3ff; border-radius: 5px;",
+        style = "margin-bottom: 15px; padding: 10px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 8px;",
         shiny::HTML(sprintf(
-          "<strong>📊 画布信息:</strong> %d个图表 | 布局: %d列 × %d行 | <strong>排列顺序:</strong> %s",
-          info$n_plots, info$ncol, info$nrow,
+          "<strong>📊 画布信息:</strong> %d个对比组 | 布局: %d列 × %d行 | 共 %d 条通路<br>
+           <small>排列顺序: %s</small>",
+          info$n_plots, info$ncol, info$nrow, length(info$pathways),
           paste(info$contrasts, collapse = " → ")
         ))
       )
     })
 
-    # 🔧 新增：参数信息展示
-    output$canvas_params_info <- shiny::renderUI({
-      data_list <- data_prep_data()
-      if (is.null(data_list)) return(NULL)
-
-      shiny::tagList(
-        shiny::helpText(
-          style = "color: #28a745; font-size: 11px;",
-          sprintf("当前对比组: %d个", length(data_list$canvas_contrasts))
-        ),
-        shiny::helpText(
-          style = "color: #666; font-size: 11px;",
-          sprintf("每行数量: %d", data_list$canvas_ncol)
-        ),
-        shiny::helpText(
-          style = "color: #666; font-size: 11px;",
-          sprintf("GSEA样式: %s", data_list$plot_subtype)
-        )
-      )
-    })
-
-    # 下载功能（优化尺寸计算）
-    output$download_canvas <- shiny::downloadHandler(
-      filename = function() {
-        timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
-        sprintf("GSEA_Canvas_%s.png", timestamp)
-      },
-      content = function(file) {
-        shiny::req(canvas_result())
-        info <- canvas_result()
-
-        # 🔧 根据 subPlot 类型和布局计算最优尺寸
-        data_list <- data_prep_data()
-        sub_type <- if (!is.null(data_list)) data_list$plot_subtype else 3
-
-        # 基础尺寸（英寸）
-        base_width <- switch(as.character(sub_type), "1" = 4, "2" = 5, 6)
-        base_height <- switch(as.character(sub_type), "1" = 3, "2" = 4, 5)
-
-        # 总尺寸计算
-        width <- info$ncol * base_width
-        height <- info$nrow * base_height
-
-        ggplot2::ggsave(
-          file,
-          plot = info$plot,
-          width = width,
-          height = height,
-          dpi = 300,
-          limitsize = FALSE,
-          bg = "white"
-        )
-      }
-    )
+    # 🔧 删除：保存画布功能已移除（根据用户要求）
 
   })
 }

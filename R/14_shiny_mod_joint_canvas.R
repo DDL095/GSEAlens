@@ -102,7 +102,8 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
             subPlot = as.numeric(plot_subtype),  # 使用主控制栏的subPlot
             curveCol = colors,
             main_title = main_title,
-            add_pval = FALSE
+            add_pval = FALSE,
+            show_contrast_in_axis = TRUE
           )
         }, error = function(e) {
           ggplot2::ggplot() +

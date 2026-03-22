@@ -8,6 +8,65 @@ mod_data_prep_ui <- function(id) {
       label = "选择对比组 (Contrast)",
       choices = NULL
     ),
+    shiny::h4("🎯 数据切片"),
+    shiny::selectizeInput(
+      ns("selected_collections"),
+      label = "选择基因集亚组:",
+      choices = NULL,
+      multiple = TRUE,
+      options = list(plugins = list("remove_button"), placeholder = "选择亚组或保留ALL")
+    ),
+    shiny::selectInput(
+      ns("sort_by"),
+      label = "全局排序策略:",
+      choices = c(
+        "按 NES 绝对值 (降序)" = "abs_nes_desc",
+        "按 NES (降序)" = "nes_desc",
+        "按 P-value (升序)" = "pval_asc"
+      ),
+      selected = "abs_nes_desc"
+    ),
+    shiny::actionButton(
+      ns("run_btn"),
+      label = "🚀 确认对比组与富集基因集",
+      class = "btn-success",
+      style = "width: 100%; font-weight: bold; margin-top: 15px; font-size: 16px;"
+    ),
+
+    shiny::helpText(
+      style = "margin-top: 10px; text-align: center; color: #28a745;",
+      "💡 修改设置后必须点击此按钮"
+    ),
+
+    shiny::hr(),
+
+    # 🔧 新增：联合GSEA画布控制（完全移入侧边栏）
+    shiny::h4("🖼️ 联合GSEA画布"),
+    shiny::selectizeInput(
+      ns("joint_contrasts"),
+      label = "选择对比组（多选，支持排列）:",
+      choices = NULL,
+      multiple = TRUE,
+      options = list(
+        plugins = list("remove_button"),
+        placeholder = '选择对比组...',
+        maxItems = 999
+      )
+    ),
+    shiny::numericInput(
+      ns("joint_ncol"),
+      "每行数量 (ncol):",
+      value = 2,
+      min = 1,
+      max = 10,
+      step = 1
+    ),
+    shiny::actionButton(
+      ns("joint_generate"),
+      "🎨 生成/更新多通路画布",
+      class = "btn-success",
+      style = "width: 100%; font-weight: bold; margin-top: 10px;"
+    ) ,
     shiny::hr(),
 
     shiny::h4("🎯 差异表达基因标记"),
@@ -96,71 +155,6 @@ mod_data_prep_ui <- function(id) {
       label = "选择表达数据类型:",
       choices = NULL,  # 动态填充
       selected = NULL
-    ),
-    shiny::hr(),
-
-    shiny::h4("🎯 数据切片"),
-    shiny::selectizeInput(
-      ns("selected_collections"),
-      label = "选择基因集亚组:",
-      choices = NULL,
-      multiple = TRUE,
-      options = list(plugins = list("remove_button"), placeholder = "选择亚组或保留ALL")
-    ),
-    shiny::selectInput(
-      ns("sort_by"),
-      label = "全局排序策略:",
-      choices = c(
-        "按 NES 绝对值 (降序)" = "abs_nes_desc",
-        "按 NES (降序)" = "nes_desc",
-        "按 P-value (升序)" = "pval_asc"
-      ),
-      selected = "abs_nes_desc"
-    ),
-
-    # 🔧 新增：联合GSEA画布控制（完全移入侧边栏）
-    shiny::h4("🖼️ 联合GSEA画布"),
-    shiny::selectizeInput(
-      ns("joint_contrasts"),
-      label = "选择对比组（多选，支持排列）:",
-      choices = NULL,
-      multiple = TRUE,
-      options = list(
-        plugins = list("remove_button"),
-        placeholder = '选择对比组...',
-        maxItems = 50
-      )
-    ),
-    shiny::helpText(
-      style = "margin-top: 8px; color: #666; font-size: 11px;",
-      "支持正向与反向对比（如 A_vs_B 和 B_vs_A 可同时选择）"
-    ),
-    shiny::numericInput(
-      ns("joint_ncol"),
-      "每行数量 (ncol):",
-      value = 2,
-      min = 1,
-      max = 10,
-      step = 1
-    ),
-    shiny::actionButton(
-      ns("joint_generate"),
-      "🎨 生成画布",
-      class = "btn-success",
-      style = "width: 100%; font-weight: bold; margin-top: 10px;"
-    ),
-    shiny::hr(),
-
-    shiny::actionButton(
-      ns("run_btn"),
-      label = "🚀 确认配置 / 更新工作台",
-      class = "btn-success",
-      style = "width: 100%; font-weight: bold; margin-top: 15px; font-size: 16px;"
-    ),
-
-    shiny::helpText(
-      style = "margin-top: 10px; text-align: center; color: #28a745;",
-      "💡 修改设置后必须点击此按钮"
     )
   )
 }

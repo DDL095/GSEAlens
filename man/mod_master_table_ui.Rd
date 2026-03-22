@@ -2,11 +2,11 @@
 % Please edit documentation in R/09_shiny_mod_table.R
 \name{mod_master_table_ui}
 \alias{mod_master_table_ui}
-\title{主工作台表格 UI（Phase 11完整版）}
+\title{主工作台表格 UI（Phase 11完整版 + Checkbox解耦）}
 \usage{
 mod_master_table_ui(id)
 }
 \description{
-主工作台表格 UI（Phase 11完整版）
+主工作台表格 UI（Phase 11完整版 + Checkbox解耦）
 }
 \keyword{internal}

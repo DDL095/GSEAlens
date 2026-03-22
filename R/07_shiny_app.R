@@ -37,7 +37,7 @@ launch_gsea_app <- function(gsea_res, lang = "zh") {
         .well { background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; }
       "))
     ),
-    shiny::titlePanel(shiny::HTML("🧬 GSEAlens PRO 4.0: 双后端全息分析工作站")),
+    shiny::titlePanel(shiny::HTML("🧬 GSEAlens: Seek Inside")),
     shiny::sidebarLayout(
       shiny::sidebarPanel(
         width = 3,

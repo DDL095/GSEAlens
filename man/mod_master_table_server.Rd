@@ -2,7 +2,7 @@
 % Please edit documentation in R/09_shiny_mod_table.R
 \name{mod_master_table_server}
 \alias{mod_master_table_server}
-\title{主工作台表格 Server（Phase 11完整版：CSV集成 + 所有修复）}
+\title{主工作台表格 Server（Phase 11完整版：CSV集成 + Checkbox解耦修复）}
 \usage{
 mod_master_table_server(id, data_prep)
 }
@@ -16,5 +16,6 @@ mod_master_table_server(id, data_prep)
 }
 \description{
 功能：数据展示、CSV注释合并、BLANK列预留、列显示控制
+  【关键修复】使用 isolate() 解耦 checkbox 与表格渲染，通过 JavaScript 消息同步状态
 }
 \keyword{internal}
