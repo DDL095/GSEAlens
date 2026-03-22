@@ -535,17 +535,100 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
           return(plotly::plot_ly() %>% plotly::layout(title = "表达矩阵不可用"))
         }
 
+
+
+
+
         target_gene_upper <- gene_click$key
+
+
+        # 🧬 多策略基因匹配逻辑（SYMBOL ↔ Ensembl ID 双向匹配）
+
+        match_idx <- integer(0)
+
+        # 策略1: 直接匹配表达矩阵行名（可能是 SYMBOL 或 Ensembl ID）
         gene_names_upper <- toupper(rownames(expr_mat))
         match_idx <- which(gene_names_upper == target_gene_upper)
 
+        # 策略2: 如果失败，通过 gene_meta 进行 SYMBOL -> Ensembl ID 映射
         if (length(match_idx) == 0) {
+          gene_meta <- gsea_res$expr_bundle$gene_meta
+
+          if (!is.null(gene_meta) && nrow(gene_meta) > 0) {
+            # 确保 gene_meta 有行名（与 expr_mat 对应）
+            if (is.null(rownames(gene_meta))) {
+              rownames(gene_meta) <- rownames(expr_mat)
+            }
+
+            # 查找可能的 SYMBOL 列（多候选兼容不同注释来源）
+            symbol_candidates <- c("SYMBOL", "symbol", "Gene", "gene_name",
+                                   "gene_symbol", "Gene.Symbol", "GeneName",
+                                   "SYMBOL_char", "symbol_char")
+            symbol_col <- intersect(symbol_candidates, colnames(gene_meta))[1]
+
+            if (!is.na(symbol_col)) {
+              # 在 gene_meta 中查找匹配的 SYMBOL（不区分大小写）
+              meta_symbols_upper <- toupper(as.character(gene_meta[[symbol_col]]))
+              meta_matches <- which(meta_symbols_upper == target_gene_upper)
+
+              if (length(meta_matches) > 0) {
+                # 获取对应的 Ensembl ID（行名）
+                ensembl_ids <- rownames(gene_meta)[meta_matches]
+
+                # 在表达矩阵中查找这些 Ensembl ID（优先找第一个存在的）
+                for (eid in ensembl_ids) {
+                  idx_in_expr <- which(rownames(expr_mat) == eid)
+                  if (length(idx_in_expr) > 0) {
+                    match_idx <- idx_in_expr[1]
+                    break
+                  }
+                }
+
+                if (length(match_idx) > 0) {
+                  message(sprintf("✅ 通过 gene_meta$%s 映射: %s -> %s",
+                                  symbol_col, target_gene_upper, ensembl_ids[1]))
+                }
+              }
+            }
+          }
+        }
+
+        # 策略3: 尝试部分匹配（容错处理，适用于不完整输入）
+        if (length(match_idx) == 0) {
+          # 在行名中部分匹配
+          match_idx <- grep(target_gene_upper, gene_names_upper, ignore.case = TRUE)[1]
+
+          # 如果仍失败，在 gene_meta 的所有字符列中搜索
+          if (is.na(match_idx) && !is.null(gene_meta)) {
+            for (col in colnames(gene_meta)) {
+              if (is.character(gene_meta[[col]]) || is.factor(gene_meta[[col]])) {
+                col_values <- toupper(as.character(gene_meta[[col]]))
+                found_idx <- which(col_values == target_gene_upper)[1]
+                if (!is.na(found_idx)) {
+                  ensembl_id <- rownames(gene_meta)[found_idx]
+                  match_idx <- which(rownames(expr_mat) == ensembl_id)[1]
+                  if (!is.na(match_idx)) break
+                }
+              }
+            }
+          }
+        }
+
+        if (length(match_idx) == 0 || is.na(match_idx)) {
           return(plotly::plot_ly() %>% plotly::layout(
-            title = sprintf("基因 '%s' 未找到", target_gene_upper)
+            title = sprintf("基因 '%s' 未找到（已尝试匹配 ID 和 SYMBOL）", target_gene_upper)
           ))
         }
 
-        actual_gene <- rownames(expr_mat)[match_idx[1]]
+        actual_gene <- rownames(expr_mat)[match_idx]
+        # 🎯 关键：保留原始点击的 SYMBOL 作为显示名称（而非 Ensembl ID）
+        display_gene_name <- gene_click$key
+
+        message(sprintf("📊 箱线图数据: %s (匹配到行: %s)", display_gene_name, actual_gene))
+
+
+
+
         expr_values <- expr_mat[actual_gene, ]
 
         sample_names <- names(expr_values)
@@ -627,7 +710,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
           ggplot2::theme_bw(base_size = 12) +
           ggplot2::labs(
             title = sprintf("%s",
-                            actual_gene),
+                            display_gene_name),
             y = data_list$expression_type,
             x = NULL
           ) +
