@@ -1,3 +1,7 @@
+# GSEAlens 0.0.6
+
+Rectify the pairing issues between Ensembl IDs and SYMBOLs in the expression matrix.
+
 # GSEAlens 0.0.5
 
 ## 功能完善
