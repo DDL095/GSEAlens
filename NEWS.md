@@ -1,3 +1,5 @@
+# GSEAlens 0.0.6
+
 # GSEAlens 0.0.5
 
 ## 功能完善
