@@ -2,7 +2,7 @@
 % Please edit documentation in R/04_calculation.R
 \name{batch_calc_gsea}
 \alias{batch_calc_gsea}
-\title{批量并行 GSEA 计算}
+\title{批量并行 GSEA 计算（带性能监控）}
 \usage{
 batch_calc_gsea(
   gsea_env,
@@ -13,7 +13,9 @@ batch_calc_gsea(
   minGSSize = 10,
   maxGSSize = 500,
   pvalueCutoff = 1,
-  force = FALSE
+  force = FALSE,
+  enable_monitoring = FALSE,
+  monitor_interval = 0.5
 )
 }
 \arguments{
@@ -34,11 +36,15 @@ batch_calc_gsea(
 \item{pvalueCutoff}{P 值阈值，默认 1 (保留全量结果)。}
 
 \item{force}{逻辑值。是否强制重新计算，默认 FALSE。}
+
+\item{enable_monitoring}{逻辑值。是否启用系统级性能监控（需要ps包），默认 FALSE。}
+
+\item{monitor_interval}{数值。监控采样间隔（秒），默认 0.5。}
 }
 \value{
-GseaRes 对象。
+GseaRes 对象，包含 gsea_running_time_monitor 字段（如启用监控）。
 }
 \description{
 消费标准 GseaEnv 对象，执行并行 GSEA 计算。
-自动从 de_store 中提取统计量进行排序，支持双向对比生成。
+  支持系统级性能监控，用于基准测试和发表文章。
 }
