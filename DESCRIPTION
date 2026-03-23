@@ -49,8 +49,6 @@ Suggests:
     testthat (>= 3.0.0),
     knitr,
     rmarkdown,
-    shinytest2,
-    ps (>= 1.7.0),
-    callr (>= 3.7.0)
+    shinytest2
 Depends: 
     R (>= 4.2.0)
