@@ -11,7 +11,7 @@
 #' aligned <- align_benchmark_data(res, "system_monitor.csv")
 #' plot(aligned$relative_sec, aligned$rss_mb, type = "l")
 #' }
-#' @noRd
+
 align_benchmark_data <- function(gsea_res, monitor_csv) {
 
   if (!inherits(gsea_res, "GseaRes")) {
@@ -69,7 +69,7 @@ align_benchmark_data <- function(gsea_res, monitor_csv) {
 #' @param highlight_phases 是否按阶段着色，默认TRUE
 #' @return ggplot对象
 #' @export
-#' @noRd
+
 #' @importFrom ggplot2 ggplot aes geom_line geom_vline labs theme_minimal scale_color_manual
 plot_gsea_memory <- function(aligned_data, highlight_phases = TRUE) {
 
@@ -112,7 +112,7 @@ plot_gsea_memory <- function(aligned_data, highlight_phases = TRUE) {
 
 #' @title 打印GSEA基准测试对齐结果
 #' @export
-#' @noRd
+
 print.GseaBenchmarkAligned <- function(x, ...) {
   info <- attr(x, "gsea_info")
 
@@ -152,7 +152,7 @@ print.GseaBenchmarkAligned <- function(x, ...) {
 #' @param monitor_csv_list 对应的监控CSV路径列表（与gsea_res_list同名）
 #' @return 对比数据框
 #' @export
-#' @noRd
+
 analyze_scalability <- function(gsea_res_list, monitor_csv_list = NULL) {
 
   if (is.null(names(gsea_res_list))) {

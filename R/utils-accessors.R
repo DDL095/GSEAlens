@@ -21,13 +21,13 @@ get_expr_matrix <- function(obj, type = "default", ...) {
 }
 
 #' @export
-#' @noRd
+
 get_expr_matrix.GseaEnv <- function(obj, type = "default", ...) {
   .get_expr_internal(obj$expr_bundle, obj$backend_info, type, ...)
 }
 
 #' @export
-#' @noRd
+
 get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
   .get_expr_internal(obj$expr_bundle, obj$backend_info, type, ...)
 }
@@ -35,7 +35,7 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
 #' @title 内部表达矩阵提取逻辑
 #' @description 修复DESeq2后端表达矩阵与样本元数据匹配问题
 #' @keywords internal
-#' @noRd
+
 
 .get_expr_internal <- function(expr_bundle, backend_info, type = "default", ...) {
 
@@ -262,13 +262,13 @@ get_sample_meta <- function(obj) {
 }
 
 #' @export
-#' @noRd
+
 get_sample_meta.GseaEnv <- function(obj) {
   .process_sample_meta(obj$expr_bundle$sample_meta, obj$expr_bundle)
 }
 
 #' @export
-#' @noRd
+
 get_sample_meta.GseaRes <- function(obj) {
   .process_sample_meta(obj$expr_bundle$sample_meta, obj$expr_bundle)
 }
@@ -276,7 +276,7 @@ get_sample_meta.GseaRes <- function(obj) {
 #' @title 内部样本元数据处理
 #' @description 统一处理样本元数据：修复行名、统一分组列名
 #' @keywords internal
-#' @noRd
+
 .process_sample_meta <- function(sample_meta, expr_bundle) {
   if (is.null(sample_meta)) return(NULL)
 
@@ -337,13 +337,13 @@ get_contrast_registry <- function(obj) {
 }
 
 #' @export
-#' @noRd
+
 get_contrast_registry.GseaEnv <- function(obj) {
   obj$contrast_registry
 }
 
 #' @export
-#' @noRd
+
 get_contrast_registry.GseaRes <- function(obj) {
   obj$contrast_registry
 }
@@ -355,13 +355,13 @@ get_geneset_info <- function(obj) {
 }
 
 #' @export
-#' @noRd
+
 get_geneset_info.GseaRes <- function(obj) {
   obj$geneset_info
 }
 
 #' @export
-#' @noRd
+
 get_geneset_info.GseaEnv <- function(obj) {
   obj$geneset
 }

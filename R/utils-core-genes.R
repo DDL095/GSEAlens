@@ -9,7 +9,7 @@
 #' @param pathway_id 字符串，通路ID
 #' @return 字符向量，core genes（大写标准化）
 #' @export
-#' @noRd
+
 #' @examples
 #' \dontrun{
 #' core_genes <- get_core_genes_for_pathway(gsea_res, "HALLMARK_OXIDATIVE_PHOSPHORYLATION")
@@ -61,7 +61,7 @@ get_core_genes_for_pathway <- function(gsea_res_obj, pathway_id) {
 #' @param pathway_ids 字符向量，通路ID列表
 #' @return 命名列表，names=pathway_id, values=core_genes向量
 #' @export
-#' @noRd
+
 get_core_genes_list <- function(gsea_task_obj, pathway_ids) {
   if (!inherits(gsea_task_obj, "GseaTask")) {
     stop("必须传入GseaTask对象")
@@ -81,7 +81,7 @@ get_core_genes_list <- function(gsea_task_obj, pathway_ids) {
 #' @param ratio_mode 字符串，"ora"（交集/通路大小）或"leading"（交集/DE大小）
 #' @return 数值，ratio值
 #' @export
-#' @noRd
+
 calculate_overlap_ratio <- function(pathway_genes, de_genes, ratio_mode = c("ora", "leading")) {
   ratio_mode <- match.arg(ratio_mode)
 
@@ -105,7 +105,7 @@ calculate_overlap_ratio <- function(pathway_genes, de_genes, ratio_mode = c("ora
 #' @param pathway_id 通路ID
 #' @return 字符向量
 #' @export
-#' @noRd
+
 get_term_genes <- function(gsea_res, pathway_id) {
   term2gene <- gsea_res$geneset_info$term2gene
   genes <- term2gene$gene_symbol[term2gene$gs_name == pathway_id]
@@ -121,7 +121,7 @@ get_term_genes <- function(gsea_res, pathway_id) {
 #' @param param_name 参数名（用于警告信息）
 #' @return 校验后的值
 #' @export
-#' @noRd
+
 validate_param <- function(value, default, min_val = 1, max_val = NULL, param_name = "parameter") {
   # 处理NULL或NA
   if (is.null(value) || is.na(value)) {

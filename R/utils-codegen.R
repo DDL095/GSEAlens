@@ -1,7 +1,7 @@
 #' @title GSEAlens 代码生成工具
 #' @description 根据用户交互参数生成可复现的 R 代码，支持剪贴板复制和脚本导出。
 #' @name utils-codegen
-#' @noRd
+
 NULL
 
 #' @title 生成 GSEA 绘图代码
@@ -19,7 +19,7 @@ NULL
 #' @param rds_path 字符串，GseaRes 对象文件路径（用于代码中的注释）。
 #' @return 字符串，格式化后的 R 代码。
 #' @export
-#' @noRd
+
 #' @examples
 #' \dontrun{
 #' code <- generate_plot_code(
@@ -258,7 +258,7 @@ top_plots[2]
 #' @param quiet 逻辑值，是否静默模式（不显示成功消息）。
 #' @return 逻辑值，是否成功。
 #' @export
-#' @noRd
+
 #' @importFrom clipr write_clip
 copy_code_to_clipboard <- function(code, quiet = FALSE) {
   if (!requireNamespace("clipr", quietly = TRUE)) {
@@ -293,7 +293,7 @@ copy_code_to_clipboard <- function(code, quiet = FALSE) {
 #' @param file_path 字符串，文件路径。如果为 NULL，使用交互式选择。
 #' @return 字符串，保存的文件路径。
 #' @export
-#' @noRd
+
 save_code_to_file <- function(code, file_path = NULL) {
   if (is.null(file_path)) {
     # 生成默认文件名
@@ -329,7 +329,7 @@ save_code_to_file <- function(code, file_path = NULL) {
 #' @param rds_path 字符串，胶囊文件路径。
 #' @return 字符串，R 代码。
 #' @export
-#' @noRd
+
 generate_summary_code <- function(rds_path = "path/to/your/GSEA_Capsule.rds") {
   sprintf('
 # GSEAlens 数据对象分析代码

@@ -1,6 +1,6 @@
 #' @title 四重联动 UI
 #' @keywords internal
-#' @noRd
+
 mod_quadrant_ui <- function(id) {
   ns <- shiny::NS(id)
   shiny::tagList(
@@ -86,7 +86,7 @@ mod_quadrant_ui <- function(id) {
 #' @title 四重联动 Server（连续点击多选 + 排序根治版）
 #' @description 支持连续点击标记多个通路，Boxplot排序强制锁定
 #' @keywords internal
-#' @noRd
+
 mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns

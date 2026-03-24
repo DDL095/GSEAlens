@@ -1,6 +1,6 @@
 #' @title 联合绘图 UI
 #' @keywords internal
-#' @noRd
+
 mod_multi_plot_ui <- function(id) {
   ns <- shiny::NS(id)
   shiny::tagList(
@@ -23,7 +23,7 @@ mod_multi_plot_ui <- function(id) {
 
 #' @title 联合绘图 Server
 #' @keywords internal
-#' @noRd
+
 mod_multi_plot_server <- function(id, data_prep, table_controller) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns

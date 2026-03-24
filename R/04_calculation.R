@@ -10,7 +10,7 @@
 #' @param pvalueCutoff P 值阈值，默认 1 (保留全量结果)。
 #' @param force 逻辑值。是否强制重新计算，默认 FALSE。
 #' @return GseaRes 对象，包含 metadata$gsea_benchmark 时间戳字段。
-#' @noRd
+
 batch_calc_gsea_old <- function(gsea_env,
                             custom_series_name = "Auto_Analysis",
                             output_dir = "./GSEA_Output",
@@ -207,7 +207,7 @@ batch_calc_gsea_old <- function(gsea_env,
 #' @param flip 是否翻转符号 (用于反向对比)
 #' @return 排序后的命名向量
 #' @keywords internal
-#' @noRd
+
 .prepare_rank_vector <- function(de_table, flip = FALSE) {
 
   # 清洗
@@ -572,7 +572,7 @@ batch_calc_gsea <- function(gsea_env,
 #' @param pvalueCutoff P值阈值
 #' @return 当前 chunk 的结果列表
 #' @keywords internal
-#' @noRd
+
 .process_gsea_chunk <- function(chunk_task_names,
                                 task_metadata,
                                 de_list,
@@ -677,7 +677,7 @@ batch_calc_gsea <- function(gsea_env,
 #' @title 快速准备排序向量（优化版）
 #' @description 使用 tidyverse 管道优化排序向量生成
 #' @keywords internal
-#' @noRd
+
 .prepare_rank_vector_fast <- function(de_table, flip = FALSE) {
 
   # 单管道操作，减少中间对象
@@ -710,7 +710,7 @@ batch_calc_gsea <- function(gsea_env,
 #' @param meta_dict 元数据字典，包含 ID, Collection, Combo_Name, URL, Description 等列
 #' @return  enriched 的数据框
 #' @keywords internal
-#' @noRd
+
 .enrich_gsea_result <- function(result_df, meta_dict) {
 
   # 防御性检查：确保 meta_dict 是 data.frame/tibble
@@ -718,7 +718,8 @@ batch_calc_gsea <- function(gsea_env,
     warning("meta_dict 为空，返回原始结果")
     return(result_df)
   }
-
+  # 保留原始 ID 用于后续恢复行名
+  original_ids <- result_df$ID
   # 将 meta_dict 转换为 tibble 并检查列
   meta_tibble <- dplyr::as_tibble(meta_dict)
 
@@ -784,7 +785,7 @@ batch_calc_gsea <- function(gsea_env,
     # 第四步：清理临时列
     dplyr::select(
       -dplyr::any_of(c("Original_Description")),  # 删除临时备份列
-      -dplyr::any_of(c("URL")),  # 删除 URL（已转为链接）
+      #-dplyr::any_of(c("URL")),  # 删除 URL（已转为链接）
       -dplyr::ends_with("_meta")  # 删除可能的 _meta 后缀列（如果存在）
     )
 
@@ -794,6 +795,15 @@ batch_calc_gsea <- function(gsea_env,
       dplyr::select(-Description_meta)
   }
 
-  as.data.frame(final_result)
+  # 🔧 关键修复：恢复行名
+  final_result <- as.data.frame(final_result)
+  if ("ID" %in% colnames(final_result)) {
+    rownames(final_result) <- final_result$ID
+  } else if (length(original_ids) == nrow(final_result)) {
+    rownames(final_result) <- original_ids
+  }
+
+  return(final_result)
 }
+
 

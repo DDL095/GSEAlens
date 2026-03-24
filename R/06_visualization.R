@@ -1,7 +1,7 @@
 #' @title GSEA 可视化与报告生成
 #' @description 提供静态绘图函数和交互式 HTML 报告生成功能。
 #' @name visualization
-#' @noRd
+
 NULL
 
 #' @title 绘制方向性 GSEA 图

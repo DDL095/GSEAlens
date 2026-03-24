@@ -1,6 +1,6 @@
 #' @title 主工作台表格 UI（Phase 11完整版 + Checkbox解耦）
 #' @keywords internal
-#' @noRd
+
 mod_master_table_ui <- function(id) {
   ns <- shiny::NS(id)
   shiny::tagList(
@@ -52,7 +52,7 @@ mod_master_table_ui <- function(id) {
 #' @param data_prep 来自数据预处理模块的响应式数据
 #' @return 列表，包含 selected_pathways 和 show_modal
 #' @keywords internal
-#' @noRd
+
 mod_master_table_server <- function(id, data_prep) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
