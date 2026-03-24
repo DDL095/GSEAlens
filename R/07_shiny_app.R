@@ -77,8 +77,6 @@ launch_gsea_app <- function(gsea_res, lang = "zh") {
   )
 
   # Server 逻辑
-  # Server 逻辑
-  # Server 逻辑
   server <- function(input, output, session) {
 
     # 1. 数据预处理模块（返回列表）

@@ -2,7 +2,7 @@
 % Please edit documentation in R/04_calculation.R
 \name{batch_calc_gsea}
 \alias{batch_calc_gsea}
-\title{批量并行 GSEA 计算}
+\title{批量并行 GSEA 计算（优化版）}
 \usage{
 batch_calc_gsea(
   gsea_env,
@@ -13,31 +13,39 @@ batch_calc_gsea(
   minGSSize = 10,
   maxGSSize = 500,
   pvalueCutoff = 1,
-  force = FALSE
+  force = FALSE,
+  use_progress = TRUE,
+  chunk_size = NULL
 )
 }
 \arguments{
-\item{gsea_env}{GseaEnv 对象 (由 setup_gsea_env 生成)}
+\item{gsea_env}{GseaEnv 对象}
 
-\item{custom_series_name}{字符串。分析系列名称，用于结果存档。}
+\item{custom_series_name}{字符串。分析系列名称}
 
-\item{output_dir}{字符串。结果输出路径，默认 "./GSEA_Output"。}
+\item{output_dir}{字符串。结果输出路径，默认 "./GSEA_Output"}
 
-\item{workers}{并行核心数。默认 4。}
+\item{workers}{并行核心数。默认 4}
 
-\item{bidirectional}{逻辑值。是否自动生成反向对比，默认 TRUE。}
+\item{bidirectional}{逻辑值。是否自动生成反向对比，默认 TRUE}
 
-\item{minGSSize}{最小基因集大小，默认 10。}
+\item{minGSSize}{最小基因集大小，默认 10}
 
-\item{maxGSSize}{最大基因集大小，默认 500。}
+\item{maxGSSize}{最大基因集大小，默认 500}
 
-\item{pvalueCutoff}{P 值阈值，默认 1 (保留全量结果)。}
+\item{pvalueCutoff}{P 值阈值，默认 1}
 
-\item{force}{逻辑值。是否强制重新计算，默认 FALSE。}
+\item{force}{逻辑值。是否强制重新计算，默认 FALSE}
+
+\item{use_progress}{逻辑值。是否显示进度条，默认 TRUE}
+
+\item{chunk_size}{整数。每个worker一次处理的任务数，默认 NULL（自动）}
 }
 \value{
-GseaRes 对象，包含 metadata$gsea_benchmark 时间戳字段。
+GseaRes 对象
 }
 \description{
-消费标准 GseaEnv 对象，执行并行 GSEA 计算。
+消费标准 GseaEnv 对象，执行高效并行 GSEA 计算。
+
+消费标准 GseaEnv 对象，执行高效并行 GSEA 计算。
 }

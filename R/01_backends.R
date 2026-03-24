@@ -2,6 +2,7 @@
 #' @description 从 limma 或 DESeq2 对象中提取标准化数据结构。
 #' @keywords internal
 #' @name backends
+#' @noRd
 NULL
 
 
@@ -80,6 +81,7 @@ NULL
 #' @param target_factor 字符串。目标因子。若为 NULL，自动推断为设计公式最后一项。
 #' @return 包含 contrast_registry, de_store, expr_bundle 的列表
 #' @keywords internal
+#' @noRd
 .extract_deseq2_data <- function(dds, target_factor = NULL) {
 
   # 1. 确定 target_factor
@@ -162,6 +164,7 @@ NULL
 #' @title 标准化差异分析表列名
 #' @description 将不同后端的列名统一为: gene_symbol, logFC, stat, pvalue, padj
 #' @keywords internal
+#' @noRd
 .standardize_de_columns <- function(df, backend) {
 
   # 添加基因名列
@@ -199,6 +202,7 @@ NULL
 #' @title 构建表达数据包
 #' @description 统一封装表达矩阵和元数据
 #' @keywords internal
+#' @noRd
 .build_expr_bundle <- function(obj, backend) {
 
   if (is.null(obj)) {

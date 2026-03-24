@@ -1,6 +1,7 @@
 #' @title 通路关系探索模块 UI
 #' @description 包含DotPlot、Chord、Network、UpSet四个子Tab
 #' @keywords internal
+#' @noRd
 mod_pathway_relation_ui <- function(id) {
   ns <- shiny::NS(id)
   shiny::tagList(
@@ -173,6 +174,7 @@ mod_pathway_relation_ui <- function(id) {
 #' @title 通路关系探索模块 Server
 #' @description 实现DotPlot、Chord、Network、UpSet逻辑，仅hover无click
 #' @keywords internal
+#' @noRd
 mod_pathway_relation_server <- function(id, data_prep_list, gsea_res) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns

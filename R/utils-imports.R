@@ -4,9 +4,9 @@
 #' @name utils-imports
 NULL
 
-# ==============================================================================
+
 # 基础 R 包导入（不需要 @importFrom，因为已在 Depends/Imports 中）
-# ==============================================================================
+
 
 #' @importFrom grDevices dev.off png colorRampPalette
 #' @importFrom graphics plot text par lines points abline legend
@@ -22,9 +22,9 @@ NULL
 #' @importFrom utils head tail packageVersion data
 NULL
 
-# ==============================================================================
+
 # Tidyverse 核心
-# ==============================================================================
+
 
 #' @importFrom dplyr filter arrange mutate select left_join right_join
 #' @importFrom dplyr distinct desc group_by summarise ungroup bind_rows
@@ -35,9 +35,9 @@ NULL
 #' @importFrom stringr str_replace_all str_to_title str_sub str_c
 NULL
 
-# ==============================================================================
+
 # 可视化
-# ==============================================================================
+
 
 #' @importFrom ggplot2 ggplot aes geom_point geom_line geom_col geom_boxplot
 #' @importFrom ggplot2 geom_jitter geom_hline geom_vline geom_text annotate
@@ -49,9 +49,9 @@ NULL
 #' @importFrom ggplot2 facet_wrap facet_grid
 NULL
 
-# ==============================================================================
+
 # Shiny 生态系统
-# ==============================================================================
+
 
 #' @importFrom shiny shinyApp fluidPage titlePanel sidebarLayout sidebarPanel
 #' @importFrom shiny mainPanel tabsetPanel tabPanel br tags HTML icon
@@ -71,9 +71,9 @@ NULL
 #' @importFrom plotly event_data ggplotly style
 NULL
 
-# ==============================================================================
+
 # 生物信息学核心
-# ==============================================================================
+
 
 #' @importFrom limma topTable eBayes contrasts.fit makeContrasts
 NULL
@@ -91,9 +91,9 @@ NULL
 #' @importFrom S4Vectors metadata metadata<-
 NULL
 
-# ==============================================================================
+
 # GSEA 相关
-# ==============================================================================
+
 
 # 找到这一行（约第98行）并删除：
 # @importFrom clusterProfiler enrichplot  <-- 删除这一行
@@ -112,9 +112,9 @@ NULL
 
 # GseaVis 不导入具体函数，使用 :: 调用避免冲突
 
-# ==============================================================================
+
 # 热图与可视化
-# ==============================================================================
+
 
 #' @importFrom ComplexHeatmap Heatmap HeatmapAnnotation draw rowAnnotation
 NULL
@@ -125,9 +125,9 @@ NULL
 #' @importFrom grid gpar unit grid.text
 NULL
 
-# ==============================================================================
+
 # 并行计算与工具
-# ==============================================================================
+
 
 #' @importFrom future plan multisession sequential
 #' @importFrom future.apply future_lapply

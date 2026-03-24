@@ -1,6 +1,7 @@
 #' @title 联合GSEA填充画布模块 UI（纯展示版）
 #' @description 所有控制已移至侧边栏，此处仅显示画布结果
 #' @keywords internal
+#' @noRd
 mod_joint_canvas_ui <- function(id) {
   ns <- shiny::NS(id)
   shiny::tagList(
@@ -19,6 +20,7 @@ mod_joint_canvas_ui <- function(id) {
 #'   2. 无最大行数限制
 #'   3. 美学与multi_plot完全一致
 #' @keywords internal
+#' @noRd
 mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns

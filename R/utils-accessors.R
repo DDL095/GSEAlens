@@ -4,9 +4,9 @@
 #' @name utils-accessors
 NULL
 
-# ==============================================================================
+
 # 1. 表达矩阵访问器
-# ==============================================================================
+
 
 #' @title 获取表达矩阵
 #' @description 从 GseaEnv 或 GseaRes 中提取表达矩阵，支持多种标准化方式。
@@ -15,16 +15,19 @@ NULL
 #' @param ... 额外参数
 #' @return 表达矩阵 (基因 x 样本)
 #' @export
+#'
 get_expr_matrix <- function(obj, type = "default", ...) {
   UseMethod("get_expr_matrix")
 }
 
 #' @export
+#' @noRd
 get_expr_matrix.GseaEnv <- function(obj, type = "default", ...) {
   .get_expr_internal(obj$expr_bundle, obj$backend_info, type, ...)
 }
 
 #' @export
+#' @noRd
 get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
   .get_expr_internal(obj$expr_bundle, obj$backend_info, type, ...)
 }
@@ -32,6 +35,7 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
 #' @title 内部表达矩阵提取逻辑
 #' @description 修复DESeq2后端表达矩阵与样本元数据匹配问题
 #' @keywords internal
+#' @noRd
 
 .get_expr_internal <- function(expr_bundle, backend_info, type = "default", ...) {
 
@@ -189,9 +193,9 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
   return(res)
 }
 
-# ==============================================================================
+
 # 2. 差异分析表访问器
-# ==============================================================================
+
 
 #' @title 获取差异分析表
 #' @description 从 de_store 中提取指定对比组的结果。
@@ -246,9 +250,9 @@ get_de_table.GseaRes <- function(obj, contrast_id) {
                paste(names(obj$de_store), collapse = ", ")))
 }
 
-# ==============================================================================
+
 # 3. 元数据访问器（关键修复区域）
-# ==============================================================================
+
 
 #' @title 获取样本元数据
 #' @description 修复DESeq2后端：统一分组列名为'group'，确保行名与表达矩阵匹配
@@ -258,11 +262,13 @@ get_sample_meta <- function(obj) {
 }
 
 #' @export
+#' @noRd
 get_sample_meta.GseaEnv <- function(obj) {
   .process_sample_meta(obj$expr_bundle$sample_meta, obj$expr_bundle)
 }
 
 #' @export
+#' @noRd
 get_sample_meta.GseaRes <- function(obj) {
   .process_sample_meta(obj$expr_bundle$sample_meta, obj$expr_bundle)
 }
@@ -270,6 +276,7 @@ get_sample_meta.GseaRes <- function(obj) {
 #' @title 内部样本元数据处理
 #' @description 统一处理样本元数据：修复行名、统一分组列名
 #' @keywords internal
+#' @noRd
 .process_sample_meta <- function(sample_meta, expr_bundle) {
   if (is.null(sample_meta)) return(NULL)
 
@@ -330,11 +337,13 @@ get_contrast_registry <- function(obj) {
 }
 
 #' @export
+#' @noRd
 get_contrast_registry.GseaEnv <- function(obj) {
   obj$contrast_registry
 }
 
 #' @export
+#' @noRd
 get_contrast_registry.GseaRes <- function(obj) {
   obj$contrast_registry
 }
@@ -346,11 +355,13 @@ get_geneset_info <- function(obj) {
 }
 
 #' @export
+#' @noRd
 get_geneset_info.GseaRes <- function(obj) {
   obj$geneset_info
 }
 
 #' @export
+#' @noRd
 get_geneset_info.GseaEnv <- function(obj) {
   obj$geneset
 }

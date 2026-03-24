@@ -2,6 +2,7 @@
 #' @description 定义 GseaEnv, GseaRes, GseaTask 结构，并提供内部校验逻辑。
 #' @keywords internal
 #' @name class_validations
+#' @noRd
 NULL
 
 
@@ -11,6 +12,7 @@ NULL
 #' @title 定义 GseaEnv 类
 #' @description 标准化的 GSEA 输入环境对象。
 #' @export
+#' @noRd
 create_gsea_env <- function(backend_info, contrast_registry, de_store, expr_bundle, geneset, raw_obj) {
   structure(
     list(
@@ -28,6 +30,7 @@ create_gsea_env <- function(backend_info, contrast_registry, de_store, expr_bund
 #' @title 定义 GseaRes 类
 #' @description GSEA 计算结果胶囊。
 #' @export
+#' @noRd
 create_gsea_res <- function(metadata, backend_info, contrast_registry, de_store, expr_bundle, geneset_info, results) {
   structure(
     list(
@@ -46,6 +49,7 @@ create_gsea_res <- function(metadata, backend_info, contrast_registry, de_store,
 #' @title 定义 GseaTask 类
 #' @description 单个对比组的提取结果对象。
 #' @export
+#' @noRd
 create_gsea_task <- function(gsea_res, meta) {
   structure(
     list(
@@ -65,6 +69,7 @@ create_gsea_task <- function(gsea_res, meta) {
 #' @param fit MArrayLM 对象
 #' @return TRUE 或抛出错误
 #' @keywords internal
+#' @noRd
 .validate_limma_design <- function(fit) {
   # 检查是否包含截距项
   # Intercept / (Intercept) 是 R 中默认的截距命名
@@ -96,6 +101,7 @@ create_gsea_task <- function(gsea_res, meta) {
 #' @param target_factor 字符串，指定的目标因子
 #' @return TRUE 或抛出错误
 #' @keywords internal
+#' @noRd
 .validate_deseq2_design <- function(dds, target_factor) {
   col_data <- as.data.frame(SummarizedExperiment::colData(dds))
 
@@ -120,6 +126,7 @@ create_gsea_task <- function(gsea_res, meta) {
 #' @param env_obj GseaEnv 对象
 #' @return TRUE 或抛出错误
 #' @keywords internal
+#' @noRd
 .check_gsea_env <- function(env_obj) {
   if (!inherits(env_obj, "GseaEnv")) stop("输入对象不是 GseaEnv 类。")
 
@@ -141,6 +148,7 @@ create_gsea_task <- function(gsea_res, meta) {
 
 #' @title 校验 GseaRes 对象完整性
 #' @keywords internal
+#' @noRd
 .check_gsea_res <- function(res_obj) {
   if (!inherits(res_obj, "GseaRes")) stop("输入对象不是 GseaRes 类。")
   # 简单检查 results 列表是否存在

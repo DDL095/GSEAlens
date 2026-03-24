@@ -11,6 +11,7 @@ NULL
 #' @description 设置当前会话的语言环境，影响所有 Shiny UI 和消息显示。
 #' @param lang 字符串，语言代码。可选 "zh"（中文）或 "en"（英文）。
 #' @return 无返回值，设置全局选项。
+#' @noRd
 #' @export
 #' @examples
 #' \dontrun{
@@ -44,6 +45,7 @@ set_gsealens_lang <- function(lang = "zh") {
 #' @description 内部函数，获取当前设置的语言代码。
 #' @return 字符串，当前语言代码。
 #' @keywords internal
+#' @noRd
 .get_current_lang <- function() {
   lang <- getOption("GSEALENS.LANG")
   if (is.null(lang)) {
@@ -59,6 +61,7 @@ set_gsealens_lang <- function(lang = "zh") {
 #' @param lang 语言代码。
 #' @return 命名列表，包含所有翻译键值对。
 #' @keywords internal
+#' @noRd
 .load_i18n_dict <- function(lang) {
   # 构建文件路径
   file_name <- sprintf("i18n_%s.json", lang)
@@ -104,6 +107,7 @@ set_gsealens_lang <- function(lang = "zh") {
 #' @param lang 可选，强制指定语言代码。默认为 NULL，使用当前设置。
 #' @param default 可选，如果键不存在时返回的默认值。默认为键名本身。
 #' @return 字符串，翻译后的文本。
+#' @noRd
 #' @export
 #' @examples
 #' \dontrun{
@@ -150,6 +154,7 @@ set_gsealens_lang <- function(lang = "zh") {
 
 #' @title 带缓存的字典加载
 #' @keywords internal
+#' @noRd
 .load_i18n_dict_cached <- function(lang) {
   cache_key <- paste0("dict_", lang)
 
@@ -165,6 +170,7 @@ set_gsealens_lang <- function(lang = "zh") {
 #' @title 清除翻译缓存
 #' @description 清除内部字典缓存，用于开发调试或热重载语言文件。
 #' @export
+#' @noRd
 clear_i18n_cache <- function() {
   rm(list = ls(envir = .i18n_cache), envir = .i18n_cache)
   message("🌐 语言缓存已清除")
@@ -176,6 +182,7 @@ clear_i18n_cache <- function() {
 #' @param lang 语言代码，默认当前语言。
 #' @return 字符向量，所有键名（展平格式，使用点号分隔）。
 #' @export
+#' @noRd
 list_i18n_keys <- function(lang = NULL) {
   if (is.null(lang)) lang <- .get_current_lang()
   dict <- .load_i18n_dict(lang)

@@ -1,5 +1,6 @@
 #' @title 数据预处理模块 UI（联合画布控制增强版）
 #' @keywords internal
+#' @noRd
 mod_data_prep_ui <- function(id) {
   ns <- shiny::NS(id)
   shiny::tagList(
@@ -161,6 +162,7 @@ mod_data_prep_ui <- function(id) {
 
 #' @title 数据预处理模块 Server（联合画布参数传递版）
 #' @keywords internal
+#' @noRd
 mod_data_prep_server <- function(id, gsea_res) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns

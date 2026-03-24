@@ -1,5 +1,6 @@
 #' @title 详情弹窗 UI
 #' @keywords internal
+#' @noRd
 mod_pathway_modal_ui <- function(id) {
   ns <- shiny::NS(id)
   NULL  # 弹窗通过 server 动态生成
@@ -12,6 +13,7 @@ mod_pathway_modal_ui <- function(id) {
 #' @param trigger_event 来自表格的点击事件 (reactive)
 #' @param gsea_res GseaRes 对象 (用于获取表达矩阵)
 #' @keywords internal
+#' @noRd
 mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
