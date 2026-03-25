@@ -1,3 +1,12 @@
+<!-- NEWS.md is maintained by https://cynkra.github.io/fledge, do not edit -->
+
+# GSEAlens 0.0.6.9000
+
+- Update to the new parallel execution logic, and enable `progressr` as the progress bar.
+- Add external data to monitor system memory and CPU status and monitor the running status of the GSEAlens enrichment function.
+- Update on performance testing and monitoring when running GSEA detection.
+
+
 # GSEAlens 0.0.6
 
 * Rectify the pairing issues between Ensembl IDs and SYMBOLs in the expression matrix.
