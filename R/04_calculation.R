@@ -10,6 +10,7 @@
 #' @param pvalueCutoff P 值阈值，默认 1 (保留全量结果)。
 #' @param force 逻辑值。是否强制重新计算，默认 FALSE。
 #' @return GseaRes 对象，包含 metadata$gsea_benchmark 时间戳字段。
+#' @noRd
 
 batch_calc_gsea_old <- function(gsea_env,
                             custom_series_name = "Auto_Analysis",
@@ -265,7 +266,7 @@ batch_calc_gsea <- function(gsea_env,
                                       maxGSSize = 500,
                                       pvalueCutoff = 1,
                                       force = FALSE,
-                                      use_progress = TRUE,  # 控制是否显示进度
+                                      use_progress = F,  # 控制是否显示进度
                                       chunk_size = NULL) {
 
 
@@ -711,7 +712,7 @@ batch_calc_gsea <- function(gsea_env,
 #' @return  enriched 的数据框
 #' @keywords internal
 
-.enrich_gsea_result <- function(result_df, meta_dict) {
+.enrich_gsea_result_old <- function(result_df, meta_dict) {
 
   # 防御性检查：确保 meta_dict 是 data.frame/tibble
   if (is.null(meta_dict) || nrow(meta_dict) == 0) {
@@ -807,3 +808,169 @@ batch_calc_gsea <- function(gsea_env,
 }
 
 
+
+#' @title GSEA 结果元数据注入（安全版 - 保留行名）
+#' @description 将 GSEA 结果与元数据字典合并，添加显示名称、链接等信息。
+#'   此版本专门修复了行名丢失问题，确保 gseaResult 对象结构完整性。
+#' @param result_df GSEA 结果数据框（来自 clusterProfiler::GSEA 的 @result）
+#' @param meta_dict 元数据字典，包含 ID, Collection, Combo_Name, URL, Description 等列
+#' @return enriched 的数据框，保持原始行名和行数
+#' @keywords internal
+
+.enrich_gsea_result <- function(result_df, meta_dict) {
+
+  # --- 1. 输入验证与原始状态保存 ---
+
+  if (!is.data.frame(result_df) || nrow(result_df) == 0) {
+    warning("result_df 无效或为空，返回原样")
+    return(result_df)
+  }
+
+  if (!is.data.frame(meta_dict) || nrow(meta_dict) == 0) {
+    warning("meta_dict 无效或为空，返回原始结果")
+    return(result_df)
+  }
+
+  if (!"ID" %in% colnames(result_df)) {
+    stop("result_df 必须包含 'ID' 列用于匹配元数据")
+  }
+
+  if (!"ID" %in% colnames(meta_dict)) {
+    stop("meta_dict 必须包含 'ID' 列用于匹配")
+  }
+
+  # 关键修复：立即保存原始行名，防止后续任何操作丢失
+  original_rownames <- rownames(result_df)
+
+  # 保存原始 Description（如果存在），用于后续合并
+  has_original_desc <- "Description" %in% colnames(result_df)
+  original_description <- if (has_original_desc) result_df$Description else NULL
+
+  # --- 2. 准备元数据子集 ---
+
+  # 确定 meta_dict 中可用的列，避免 select 时出错
+  available_meta_cols <- colnames(meta_dict)
+  cols_to_select <- c("ID")
+
+  # 按优先级添加可选列
+  optional_cols <- c("Combo_Name", "Collection", "URL", "Description")
+  present_optional <- intersect(optional_cols, available_meta_cols)
+  cols_to_select <- c(cols_to_select, present_optional)
+
+  # 安全地选择列
+  meta_subset <- meta_dict[, cols_to_select, drop = FALSE]
+
+  # 检查重复 ID（会导致 join 后行数增加，破坏行名对应关系）
+  if (any(duplicated(meta_subset$ID))) {
+    warning("meta_dict 中存在重复的 ID，将保留首次出现项")
+    meta_subset <- meta_subset[!duplicated(meta_subset$ID), ]
+  }
+
+  # --- 3. 执行数据合并（保持行顺序和行数） ---
+
+  # 创建工作副本，移除原始的 Description 列（如果存在），避免与 meta_dict 冲突
+  result_work <- result_df
+  if (has_original_desc) {
+    result_work$Description <- NULL
+  }
+
+  # 使用 base::merge 替代 dplyr::left_join 以更好控制行名行为
+  # 或者使用 dplyr 但确保后续恢复行名
+  merged_df <- dplyr::left_join(
+    dplyr::as_tibble(result_work),  # 临时转为 tibble 进行 tidyverse 操作
+    dplyr::as_tibble(meta_subset),
+    by = "ID",
+    suffix = c("", "_meta")  # 如果冲突，meta_dict 的列加 _meta 后缀
+  )
+
+  # 转回 data.frame 以便后续处理
+  merged_df <- as.data.frame(merged_df)
+
+  # --- 4. 构建展示列 ---
+
+  # 4.1 Display_Collection: 优先级 Combo_Name > Collection > "Unknown"
+  if ("Combo_Name" %in% colnames(merged_df)) {
+    merged_df$Display_Collection <- dplyr::coalesce(merged_df$Combo_Name, merged_df$Collection)
+  } else if ("Collection" %in% colnames(merged_df)) {
+    merged_df$Display_Collection <- merged_df$Collection
+  } else {
+    merged_df$Display_Collection <- "Unknown"
+  }
+
+  # 处理 NA 并转换为因子
+  na_collection <- is.na(merged_df$Display_Collection) | merged_df$Display_Collection == ""
+  merged_df$Display_Collection[na_collection] <- "Unknown"
+  merged_df$Display_Collection <- as.factor(merged_df$Display_Collection)
+
+  # 4.2 Pathway_Link: 基于 URL 创建 HTML 链接
+  if ("URL" %in% colnames(merged_df)) {
+    merged_df$Pathway_Link <- ifelse(
+      is.na(merged_df$URL) | merged_df$URL == "",
+      sprintf("<b>%s</b>", merged_df$ID),
+      sprintf('<a href="%s" target="_blank">%s</a>', merged_df$URL, merged_df$ID)
+    )
+  } else {
+    merged_df$Pathway_Link <- sprintf("<b>%s</b>", merged_df$ID)
+  }
+
+  # 4.3 Description: 优先级 meta_dict.Description > original.Description > ID
+  # 处理可能的 Description_meta 列（来自 suffix 冲突）
+  if ("Description_meta" %in% colnames(merged_df)) {
+    # 如果存在 Description_meta，说明 result_df 和 meta_dict 都有 Description
+    meta_desc <- merged_df$Description_meta
+    merged_df$Description_meta <- NULL  # 删除临时列
+  } else if ("Description" %in% colnames(merged_df)) {
+    # 只有 meta_dict 有 Description（result_work 中的已被删除）
+    meta_desc <- merged_df$Description
+  } else {
+    meta_desc <- NULL
+  }
+
+  # 合并 Description 逻辑
+  if (!is.null(meta_desc)) {
+    # 有 meta_dict 的描述
+    if (!is.null(original_description)) {
+      merged_df$Description <- dplyr::coalesce(meta_desc, original_description)
+    } else {
+      merged_df$Description <- meta_desc
+    }
+  } else {
+    # 没有 meta_dict 的描述，使用原始的
+    if (!is.null(original_description)) {
+      merged_df$Description <- original_description
+    } else {
+      merged_df$Description <- merged_df$ID
+    }
+  }
+
+  # 最终后备：任何 NA 或空值都用 ID 填充
+  na_desc_idx <- is.na(merged_df$Description) | merged_df$Description == ""
+  merged_df$Description[na_desc_idx] <- merged_df$ID[na_desc_idx]
+
+  # --- 5. 清理临时/中间列 ---
+
+  # 删除从 meta_dict 引入的原始元数据列（保留我们构建的新列）
+  cols_to_remove <- intersect(c("Combo_Name", "Collection", "URL"), colnames(merged_df))
+  if (length(cols_to_remove) > 0) {
+    merged_df <- merged_df[, !(colnames(merged_df) %in% cols_to_remove), drop = FALSE]
+  }
+
+  # --- 6. 关键修复：恢复原始行名 ---
+
+  if (length(original_rownames) == nrow(merged_df)) {
+    rownames(merged_df) <- original_rownames
+  } else {
+    # 如果行数不匹配（理论上不应发生，因为 left_join 保持左表行数）
+    warning(sprintf(
+      "行名长度不匹配: 原始 %d 行，处理后 %d 行。尝试使用 ID 列作为行名。",
+      length(original_rownames),
+      nrow(merged_df)
+    ))
+    # 后备方案：使用 ID 列
+    if ("ID" %in% colnames(merged_df)) {
+      rownames(merged_df) <- merged_df$ID
+    }
+  }
+
+  return(merged_df)
+}
