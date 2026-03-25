@@ -2,7 +2,7 @@
 % Please edit documentation in R/11_shiny_mod_modal.R
 \name{mod_pathway_modal_server}
 \alias{mod_pathway_modal_server}
-\title{详情弹窗 Server}
+\title{详情弹窗 Server - Phase 7 优化版}
 \usage{
 mod_pathway_modal_server(id, data_prep, trigger_event, gsea_res)
 }
@@ -13,9 +13,9 @@ mod_pathway_modal_server(id, data_prep, trigger_event, gsea_res)
 
 \item{trigger_event}{来自表格的点击事件 (reactive)}
 
-\item{gsea_res}{GseaRes 对象 (用于获取表达矩阵)}
+\item{gsea_res}{GseaRes 对象}
 }
 \description{
-ComplexHeatmap重构：Leading Edge间隙、动态排序、无高度限制、基因名颜色区分
+修复 ComplexHeatmap 性能警告，使用 layer_fun 替代 cell_fun
 }
 \keyword{internal}
