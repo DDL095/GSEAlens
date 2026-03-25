@@ -30,6 +30,7 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
 
   # 1. 解析对象与提取基础数据
   res <- directional_gsea_obj$gsea_res
+  res@result$Description <- res@result$ID #2026-03-25-205956 适配gseaNb制图函数，防止过长的description导致图像异常。
   meta <- directional_gsea_obj$meta
   df <- as.data.frame(res)
   n_lines <- length(target_pathways)
@@ -52,7 +53,7 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
   }
 
   p_base <- GseaVis::gseaNb(
-    object = res,
+    object = res,# 2026-03-25-205752 gseaNb强制传递res当中的description作为绘图的列名，因此这里修改没有任何用处，必须强制赋值
     geneSetID = target_pathways,
     subPlot = subPlot,
     addPval = add_pval,
