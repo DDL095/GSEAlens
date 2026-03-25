@@ -14,7 +14,7 @@ batch_calc_gsea(
   maxGSSize = 500,
   pvalueCutoff = 1,
   force = FALSE,
-  use_progress = TRUE,
+  use_progress = F,
   chunk_size = NULL
 )
 }
