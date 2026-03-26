@@ -1,6 +1,9 @@
-用于多组比较的GSEA数据的探索与发现。名称中的lens代表这个包如同放大透镜一样，探索相关的gsea通路。
-通过在网页内展示通路介绍与通路说明，加入便于AI导出通路富集情况，让GSEA富集分析更加方便与便捷，并且还可以根据所需信息，导入经过翻译后的通路注释与摘要说明。
-这个R包通过打包流程，规范输入内容，能够简化GSEA富集分析的查看与探索过程。
-由于多组比较在limma-voom流程中使用无截距组别设置会更加方便，本项目的代码基于无截距组别设置进行结果分析与处理。
+The name "lens" in GSEAlens symbolizes that this package acts like a magnifying glass, exploring relevant GSEA pathways.
 
-基于参考文献`Pathway enrichment analysis and visualization of omics data using g:Profiler, GSEA, cytoscape and EnrichmentMap`，GSEAlens 将接受deseq2::result中的wald值(`result$stat`)与limma::fit的t值(`fit$t`)作为fgsea的输入并进行排序，对应的比对将基于输入数据中包含的分组信息自动生成。因此，用户需要指定的目标分类因子（例如 condition 或 group），deseq2流程允许模型中包含额外的加性协变量（例如 batch、subject、sex）用于校正。在limma-voom流程中，需要指定分组为无截距方式`(~0+group)`;在deseq2当中支持`~ group`，`~ batch + group`，`~ subject + group`，但最终均只支持针对group的分组分析。GSEAlens 暂不考虑支持交互项、连续变量效应或复杂自定义 contrast 的批量 GSEA 比对结果的生成与探索。
+GSEAlens provides a web-based interface to display pathway introductions and descriptions, incorporating AI-assisted export functionality for pathway enrichment results. This makes GSEA enrichment analysis more convenient, while also allowing users to import translated pathway annotations and summaries as needed.
+
+By packaging the workflow and standardizing input formats, this R package simplifies the viewing and exploration process of GSEA enrichment analysis.
+
+Since multi-group comparisons are more convenient using the no-intercept group specification in the limma-voom pipeline, the code in this project is based on the no-intercept group setting for result analysis and processing.
+
+Based on the reference `Pathway enrichment analysis and visualization of omics data using g:Profiler, GSEA, cytoscape and EnrichmentMap`, GSEAlens accepts Wald values from DESeq2::result (`result$stat`) and t-values from limma::fit (`fit$t`) as input for fgsea and performs ranking. The corresponding comparisons are automatically generated based on the group information contained in the input data. Therefore, users need to specify the target categorical factor (e.g., condition or group). The DESeq2 pipeline allows additional additive covariates (e.g., batch, subject, sex) in the model for correction. In the limma-voom pipeline, the group needs to be specified in a no-intercept manner `~0+group`) DESeq2 supports `~ group`, `~ batch + group`, and `~ subject + group`, but ultimately only supports group-based analysis. GSEAlens does not currently support the generation and exploration of batch GSEA comparison results with interaction terms, continuous variable effects, or complex custom contrasts.
