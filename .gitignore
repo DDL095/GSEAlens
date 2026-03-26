@@ -4,7 +4,6 @@
 .httr-oauth
 .DS_Store
 .quarto
-2026-03-20-182106 GSEAlens全量R代码.txt
 R汇总.py
-.txt
-2026-03-23-165332 GSEAlens全量R代码.txt
+*.txt
+
