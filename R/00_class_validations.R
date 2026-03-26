@@ -1,16 +1,16 @@
-#' @title 核心类定义与校验函数
-#' @description 定义 GseaEnv, GseaRes, GseaTask 结构，并提供内部校验逻辑。
+#' @title Core Class Definitions and Validation Functions
+#' @description Define GseaEnv, GseaRes, GseaTask structures and provide internal validation logic.
 #' @keywords internal
 #' @name class_validations
 
 NULL
 
 
-# 1. 核心类定义
+# 1. Core Class Definitions
 
 
-#' @title 定义 GseaEnv 类
-#' @description 标准化的 GSEA 输入环境对象。
+#' @title Define GseaEnv Class
+#' @description Standardized GSEA input environment object.
 #' @export
 
 create_gsea_env <- function(backend_info, contrast_registry, de_store, expr_bundle, geneset, raw_obj) {
@@ -27,8 +27,8 @@ create_gsea_env <- function(backend_info, contrast_registry, de_store, expr_bund
   )
 }
 
-#' @title 定义 GseaRes 类
-#' @description GSEA 计算结果胶囊。
+#' @title Define GseaRes Class
+#' @description GSEA computation result capsule.
 #' @export
 
 create_gsea_res <- function(metadata, backend_info, contrast_registry, de_store, expr_bundle, geneset_info, results) {
@@ -46,8 +46,8 @@ create_gsea_res <- function(metadata, backend_info, contrast_registry, de_store,
   )
 }
 
-#' @title 定义 GseaTask 类
-#' @description 单个对比组的提取结果对象。
+#' @title Define GseaTask Class
+#' @description Single contrast extraction result object.
 #' @export
 
 create_gsea_task <- function(gsea_res, meta) {
@@ -61,13 +61,13 @@ create_gsea_task <- function(gsea_res, meta) {
 }
 
 
-# 2. 内部校验函数
+# 2. Internal Validation Functions
 
 
-#' @title 校验 Limma 设计矩阵
-#' @description 强制要求无截距设计 (~ 0 + group)，确保对比组解析准确。
-#' @param fit MArrayLM 对象
-#' @return TRUE 或抛出错误
+#' @title Validate Limma Design Matrix
+#' @description Enforce no-intercept design (~ 0 + group) to ensure accurate contrast parsing.
+#' @param fit MArrayLM object
+#' @return TRUE or stop with error
 #' @keywords internal
 
 .validate_limma_design <- function(fit) {
@@ -78,28 +78,28 @@ create_gsea_task <- function(gsea_res, meta) {
 
   if (has_intercept) {
     stop(
-      "\n❌ [Limma 设计错误] 检测到截距项！\n",
-      "GSEAlens 要求使用无截距设计矩阵。\n",
-      "请修改您的设计公式，例如：\n",
+      "\n[Limma Design Error] Intercept term detected!\n",
+      "GSEAlens requires a no-intercept design matrix.\n",
+      "Please modify your design formula, e.g.:\n",
       "  design <- model.matrix(~ 0 + group, data = samples)\n",
       "  fit <- lmFit(expr, design)\n",
-      "原因：无截距设计能确保 colnames(fit) 直接对应组名，从而精准构建对比组。"
+      "Reason: No-intercept design ensures colnames(fit) directly correspond to group names, enabling precise contrast construction."
     )
   }
 
   # 检查是否有足够的列进行对比
   if (ncol(design_matrix) < 2) {
-    warning("⚠️ [Limma 警告] 设计矩阵仅包含 1 列，无法进行组间对比。")
+    warning("[Limma Warning] Design matrix contains only 1 column; no between-group comparisons possible.")
   }
 
   return(TRUE)
 }
 
-#' @title 校验 DESeq2 目标因子
-#' @description 检查 target_factor 是否存在于 colData 中。
-#' @param dds DESeqDataSet 对象
-#' @param target_factor 字符串，指定的目标因子
-#' @return TRUE 或抛出错误
+#' @title Validate DESeq2 Target Factor
+#' @description Check if target_factor exists in colData.
+#' @param dds DESeqDataSet object
+#' @param target_factor String, the target factor to validate
+#' @return TRUE or stop with error
 #' @keywords internal
 
 .validate_deseq2_design <- function(dds, target_factor) {
@@ -107,51 +107,51 @@ create_gsea_task <- function(gsea_res, meta) {
 
   if (!target_factor %in% colnames(col_data)) {
     stop(
-      sprintf("\n❌ [DESeq2 设计错误] 指定的 target_factor '%s' 不存在于 colData 中！\n", target_factor),
-      "可用的列名: ", paste(colnames(col_data), collapse = ", ")
+      sprintf("\n[DESeq2 Design Error] Specified target_factor '%s' not found in colData!\n", target_factor),
+      "Available column names: ", paste(colnames(col_data), collapse = ", ")
     )
   }
 
   # 检查是否为因子
   if (!is.factor(col_data[[target_factor]])) {
-    warning(sprintf("⚠️ [DESeq2 警告] target_factor '%s' 不是因子类型，正在尝试自动转换...", target_factor))
+    warning(sprintf("[DESeq2 Warning] target_factor '%s' is not a factor type; attempting automatic conversion...", target_factor))
     # 这里不实际转换，只是警告，因为 DESeq2 通常在构建时已处理
   }
 
   return(TRUE)
 }
 
-#' @title 校验 GseaEnv 对象完整性
-#' @description 内部函数，确保对象结构符合规范。
-#' @param env_obj GseaEnv 对象
-#' @return TRUE 或抛出错误
+#' @title Validate GseaEnv Object Integrity
+#' @description Internal function to ensure object structure conforms to specification.
+#' @param env_obj GseaEnv object
+#' @return TRUE or stop with error
 #' @keywords internal
 
 .check_gsea_env <- function(env_obj) {
-  if (!inherits(env_obj, "GseaEnv")) stop("输入对象不是 GseaEnv 类。")
+  if (!inherits(env_obj, "GseaEnv")) stop("Input object is not of class GseaEnv.")
 
   required_slots <- c("backend_info", "contrast_registry", "de_store", "expr_bundle", "geneset")
   missing_slots <- setdiff(required_slots, names(env_obj))
 
   if (length(missing_slots) > 0) {
-    stop(sprintf("GseaEnv 对象结构不完整，缺失: %s", paste(missing_slots, collapse = ", ")))
+    stop(sprintf("GseaEnv object structure is incomplete. Missing slots: %s", paste(missing_slots, collapse = ", ")))
   }
 
   # 检查 contrast_registry 必要字段
   reg <- env_obj$contrast_registry
   if (!is.data.frame(reg) || !all(c("contrast_id", "left_group", "right_group") %in% colnames(reg))) {
-    stop("contrast_registry 必须包含 contrast_id, left_group, right_group 列。")
+    stop("contrast_registry must contain columns: contrast_id, left_group, right_group.")
   }
 
   return(TRUE)
 }
 
-#' @title 校验 GseaRes 对象完整性
+#' @title Validate GseaRes Object Integrity
 #' @keywords internal
 
 .check_gsea_res <- function(res_obj) {
-  if (!inherits(res_obj, "GseaRes")) stop("输入对象不是 GseaRes 类。")
+  if (!inherits(res_obj, "GseaRes")) stop("Input object is not of class GseaRes.")
   # 简单检查 results 列表是否存在
-  if (is.null(res_obj$results)) stop("GseaRes 对象中无计算结果。")
+  if (is.null(res_obj$results)) stop("No computation results in GseaRes object.")
   return(TRUE)
 }
