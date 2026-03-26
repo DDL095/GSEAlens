@@ -105,16 +105,14 @@ mod_pathway_modal_server_OLD <- function(id, data_prep, trigger_event, gsea_res)
       })
     })
 
-    # 🔧 Phase 7 核心：ComplexHeatmap美学优化
+    # 🔧 修复：强制使用原始CPM，标题显示通路名称
     output$modal_heatmap <- shiny::renderPlot({
       pdata <- current_data()
       shiny::req(pdata)
 
-      # 使用访问器获取表达矩阵
-      expr_mat <- get_expr_matrix(gsea_res, type = pdata$data_list$expression_type)
+      # 获取样本元数据（用于分组）
       sample_meta <- get_sample_meta(gsea_res)
-
-      shiny::req(expr_mat, sample_meta)
+      shiny::req(sample_meta)
 
       # 筛选样本（仅当前对比组的两组）
       left_grp <- pdata$data_list$left_group
@@ -125,19 +123,149 @@ mod_pathway_modal_server_OLD <- function(id, data_prep, trigger_event, gsea_res)
       if (length(sample_idx) == 0) return()
 
       target_samples <- rownames(sample_meta)[sample_idx]
-      expr_mat <- expr_mat[, target_samples, drop = FALSE]
 
-      # 筛选通路基因
+      # ==================== 强制使用原始CPM（不受expression_type影响） ====================
+      # 优先从dge_list获取CPM，否则从raw_counts计算
+      expr_bundle <- gsea_res$expr_bundle
+
+      if (!is.null(expr_bundle$dge_list)) {
+        # 使用edgeR::cpm计算原始CPM（log=FALSE确保非log2）
+        cpm_mat <- edgeR::cpm(expr_bundle$dge_list, log = FALSE)
+        message("📊 热图使用 edgeR::cpm(dge_list, log=FALSE) 计算原始CPM")
+      } else if (!is.null(expr_bundle$raw_counts)) {
+        # 从raw_counts手动计算CPM
+        raw_counts <- expr_bundle$raw_counts[, target_samples, drop = FALSE]
+        lib_sizes <- colSums(raw_counts)
+        cpm_mat <- t(t(raw_counts) / lib_sizes) * 1e6
+        message("📊 热图从 raw_counts 手动计算原始CPM")
+      } else {
+        # 备用方案：尝试从expression_type获取（但会警告）
+        expr_mat <- get_expr_matrix(gsea_res, type = "cpm")
+        if (is.null(expr_mat)) {
+          stop("无法获取CPM数据：dge_list和raw_counts均不可用")
+        }
+        cpm_mat <- expr_mat
+        warning("使用备用CPM数据源")
+      }
+
+      # 确保只保留目标样本
+      cpm_mat <- cpm_mat[, target_samples, drop = FALSE]
+      # ==================== CPM数据准备完成 ====================
+
+      # 获取基因注释
+      gene_meta <- expr_bundle$gene_meta
+
+      # ==================== 基因映射逻辑（基于箱形图策略） ====================
       pathway_genes <- pdata$pathway_genes
-      gene_idx <- which(toupper(rownames(expr_mat)) %in% toupper(pathway_genes))
-      if (length(gene_idx) < 2) return()
 
-      plot_genes <- rownames(expr_mat)[gene_idx]
-      plot_mat <- expr_mat[plot_genes, , drop = FALSE]
+      # 检测 pathway_genes 的 ID 类型
+      is_ensembl <- all(grepl("^ENS(MUS)?G", pathway_genes))
 
-      # 移除方差为0的基因
-      plot_mat <- plot_mat[apply(plot_mat, 1, var) > 1e-6, , drop = FALSE]
+      if (is_ensembl) {
+        # 🧬 策略A: GSEA使用Ensembl ID
+        matched_mask <- rownames(cpm_mat) %in% pathway_genes
+        if (sum(matched_mask) == 0) return()
+
+        plot_mat <- cpm_mat[matched_mask, , drop = FALSE]
+
+        # 尝试通过 gene_meta 获取SYMBOL（保留原始大小写）
+        if (!is.null(gene_meta) && nrow(gene_meta) > 0) {
+          symbol_candidates <- c("SYMBOL", "symbol", "Gene", "gene_name",
+                                 "gene_symbol", "Gene.Symbol", "GeneName")
+          symbol_col <- intersect(symbol_candidates, colnames(gene_meta))[1]
+
+          if (!is.na(symbol_col)) {
+            ens_to_symbol <- setNames(
+              as.character(gene_meta[[symbol_col]]),
+              rownames(gene_meta)
+            )
+
+            current_ens_ids <- rownames(plot_mat)
+            symbol_names <- ens_to_symbol[current_ens_ids]
+
+            # 处理未匹配的（保留ENS ID）
+            na_idx <- is.na(symbol_names)
+            symbol_names[na_idx] <- current_ens_ids[na_idx]
+
+            # 处理重复SYMBOL（多个ENS对应一个SYMBOL）：取均值
+            if (any(duplicated(symbol_names[!na_idx]))) {
+              unique_syms <- unique(symbol_names)
+              merged_mat <- do.call(rbind, lapply(unique_syms, function(sym) {
+                rows <- plot_mat[symbol_names == sym, , drop = FALSE]
+                if (nrow(rows) > 1) {
+                  colMeans(rows, na.rm = TRUE)
+                } else {
+                  as.numeric(rows[1, ])
+                }
+              }))
+              plot_mat <- merged_mat
+              rownames(plot_mat) <- unique_syms
+              colnames(plot_mat) <- target_samples
+            } else {
+              rownames(plot_mat) <- symbol_names
+            }
+          }
+        }
+
+      } else {
+        # 🧬 策略B: GSEA使用SYMBOL，需通过gene_meta映射到ENS ID
+        if (is.null(gene_meta) || nrow(gene_meta) == 0) return()
+
+        symbol_candidates <- c("SYMBOL", "symbol", "Gene", "gene_name",
+                               "gene_symbol", "Gene.Symbol", "GeneName")
+        symbol_col <- intersect(symbol_candidates, colnames(gene_meta))[1]
+        if (is.na(symbol_col)) return()
+
+        meta_symbols <- as.character(gene_meta[[symbol_col]])
+
+        # 为每个 pathway_gene（保留原始大小写）提取表达数据
+        gene_expr_list <- lapply(pathway_genes, function(sym) {
+          match_idx <- which(toupper(meta_symbols) == toupper(sym))
+          if (length(match_idx) == 0) return(NULL)
+
+          ens_ids <- rownames(gene_meta)[match_idx]
+          valid_ens <- ens_ids[ens_ids %in% rownames(cpm_mat)]
+          if (length(valid_ens) == 0) return(NULL)
+
+          sub_mat <- cpm_mat[valid_ens, , drop = FALSE]
+
+          # 多个ENS对应一个SYMBOL：取均值（na.rm = TRUE）
+          if (nrow(sub_mat) > 1) {
+            expr_vals <- colMeans(sub_mat, na.rm = TRUE)
+          } else {
+            expr_vals <- as.numeric(sub_mat[1, ])
+          }
+
+          return(list(
+            symbol = sym,  # 保留原始大小写
+            values = expr_vals
+          ))
+        })
+
+        # 过滤未匹配的基因
+        gene_expr_list <- gene_expr_list[!sapply(gene_expr_list, is.null)]
+        if (length(gene_expr_list) == 0) return()
+
+        # 构建表达矩阵（行名为原始SYMBOL）
+        plot_mat <- do.call(rbind, lapply(gene_expr_list, `[[`, "values"))
+        rownames(plot_mat) <- sapply(gene_expr_list, `[[`, "symbol")
+        colnames(plot_mat) <- target_samples
+      }
+
+      # 移除方差为0或NA的基因
+      gene_vars <- apply(plot_mat, 1, var, na.rm = TRUE)
+      plot_mat <- plot_mat[gene_vars > 1e-6 & !is.na(gene_vars), , drop = FALSE]
       if (nrow(plot_mat) < 2) return()
+      # ==================== 基因映射逻辑结束 ====================
+
+      # 保存原始CPM用于显示（取整）
+      display_numbers <- round(plot_mat)
+
+      # Z-score标准化（用于颜色映射，行方向）
+      z_mat <- t(scale(t(plot_mat)))
+      z_mat[is.na(z_mat)] <- 0
+      z_mat[z_mat > 1] <- 1
+      z_mat[z_mat < -1] <- -1
 
       # 获取GSEA的geneList用于排序
       gene_list <- pdata$data_list$gsea_res@geneList
@@ -152,51 +280,25 @@ mod_pathway_modal_server_OLD <- function(id, data_prep, trigger_event, gsea_res)
       # 判断是否为Leading Edge基因
       is_leading <- toupper(rownames(plot_mat)) %in% toupper(pdata$core_genes)
 
-      # 🔧 Phase 7 关键：动态排序方向
-      # NES > 0（富集在左组）：高统计量在上（Leading Edge在上）
-      # NES < 0（富集在右组）：低统计量在上（Leading Edge在下，即翻转）
+      # 根据NES方向排序
       if (pdata$nes > 0) {
-        # 正向富集：按统计量降序（高在上）
         sort_order <- order(gene_metrics, decreasing = TRUE)
       } else {
-        # 负向富集：按统计量升序（低在上，即翻转后Leading Edge在下）
         sort_order <- order(gene_metrics, decreasing = FALSE)
       }
 
       plot_mat <- plot_mat[sort_order, , drop = FALSE]
+      z_mat <- z_mat[sort_order, , drop = FALSE]
+      display_numbers <- display_numbers[sort_order, , drop = FALSE]
       is_leading <- is_leading[sort_order]
       gene_metrics <- gene_metrics[sort_order]
 
-      # Z-score标准化（行方向）
-      z_mat <- t(scale(t(plot_mat)))
-      z_mat[is.na(z_mat)] <- 0
-
-      # 严格截断到-1到1
-      z_mat[z_mat > 1] <- 1
-      z_mat[z_mat < -1] <- -1
-
-      # 获取CPM数值用于显示
-      cpm_mat <- tryCatch({
-        if (pdata$data_list$backend == "limma_voom" &&
-            !is.null(gsea_res$expr_bundle$dge_list)) {
-          edgeR::cpm(gsea_res$expr_bundle$dge_list, log = FALSE)[rownames(plot_mat), target_samples, drop = FALSE]
-        } else {
-          raw_counts <- gsea_res$expr_bundle$raw_counts[rownames(plot_mat), target_samples, drop = FALSE]
-          t(t(raw_counts) / colSums(raw_counts)) * 1e6
-        }
-      }, error = function(e) plot_mat)
-
-      display_numbers <- round(cpm_mat)
-
-      # 🔧 Phase 7：构建ComplexHeatmap（美学优化版）
-
-      # 1. 颜色映射
+      # ComplexHeatmap配置
       col_fun <- circlize::colorRamp2(
         c(-1, 0, 1),
         c("#67a9cf", "#f7f7f7", "#ef8a62")
       )
 
-      # 2. 列注释（分组条）
       grp_col <- c("#E41A1C", "#377EB8")
       names(grp_col) <- c(left_grp, right_grp)
 
@@ -212,7 +314,6 @@ mod_pathway_modal_server_OLD <- function(id, data_prep, trigger_event, gsea_res)
         simple_anno_size = grid::unit(0.6, "cm")
       )
 
-      # 3. 行注释：Leading Edge标记（右侧）
       leading_status <- ifelse(is_leading, "YES", "NO")
       leading_colors <- c("YES" = "#FF9800", "NO" = "transparent")
 
@@ -223,65 +324,49 @@ mod_pathway_modal_server_OLD <- function(id, data_prep, trigger_event, gsea_res)
         simple_anno_size = grid::unit(0.4, "cm")
       )
 
-      # 4. 细胞渲染：显示CPM整数，黑色粗体
-      cell_fun <- function(j, i, x, y, width, height, fill) {
-        val <- display_numbers[i, j]
+      # 使用pindex正确处理row_split后的索引
+      layer_fun <- function(j, i, x, y, w, h, fill) {
+        vals <- ComplexHeatmap::pindex(display_numbers, i, j)
         grid::grid.text(
-          val,
-          x,
-          y,
+          label = vals,
+          x = x, y = y,
           gp = grid::gpar(fontsize = 13, col = "black", fontface = "bold")
         )
       }
 
-      # 🔧 Phase 7 关键：row_split创建Leading Edge间隙
-      # 将Leading Edge和非Leading Edge分成两组，自动产生间隙
-      row_split_factor <- factor(
-        ifelse(is_leading, "Leading Edge", "Other Genes"),
-        levels = c("Leading Edge", "Other Genes")
-      )
-
-      # 根据NES方向调整因子顺序（确保Leading Edge在正确位置）
+      # row_split配置
       if (pdata$nes > 0) {
-        # NES>0：Leading Edge在上（因子水平先出现）
         row_split_factor <- factor(
           ifelse(is_leading, "Leading Edge", "Other Genes"),
           levels = c("Leading Edge", "Other Genes")
         )
       } else {
-        # NES<0：Leading Edge在下（因子水平后出现）
         row_split_factor <- factor(
-          ifelse(is_leading, "Other Genes", "Leading Edge"),  # 注意顺序交换
+          ifelse(is_leading, "Other Genes", "Leading Edge"),
           levels = c("Other Genes", "Leading Edge")
         )
       }
 
-      # 5. 构建Heatmap
+      # 构建Heatmap
       ht <- ComplexHeatmap::Heatmap(
         z_mat,
         name = "Z-Score",
         col = col_fun,
-        cluster_rows = FALSE,           # 禁用行聚类（保持GSEA排序）
-        cluster_columns = FALSE,        # 禁用列聚类
-        column_split = group_factor,    # 按组分割列
+        cluster_rows = FALSE,
+        cluster_columns = FALSE,
+        column_split = group_factor,
         cluster_column_slices = FALSE,
-
-        # 🔧 Phase 7：row_split创建间隙
         row_split = row_split_factor,
         cluster_row_slices = FALSE,
-        row_gap = grid::unit(2, "mm"),  # 组间间隙
-
+        row_gap = grid::unit(2, "mm"),
         top_annotation = top_ann,
         right_annotation = right_ann,
-        cell_fun = cell_fun,
-
-        # 🔧 Phase 7：基因名颜色（Leading Edge橙色，其他黑色）
+        layer_fun = layer_fun,
         row_names_gp = grid::gpar(
           fontsize = 15,
           fontface = ifelse(is_leading, "bold", "plain"),
-          col = ifelse(is_leading, "#FF9800", "black")  # 橙色或黑色
+          col = ifelse(is_leading, "#FF9800", "black")
         ),
-
         column_names_gp = grid::gpar(fontsize = 15, fontface = "bold"),
         rect_gp = grid::gpar(col = "white", lwd = 1),
         show_heatmap_legend = TRUE,
@@ -291,13 +376,15 @@ mod_pathway_modal_server_OLD <- function(id, data_prep, trigger_event, gsea_res)
           labels = c("-1", "0", "1")
         ),
         width = NULL,
-        height = NULL  # 🔧 Phase 7：移除固定高度限制
+        height = NULL
       )
 
-      # 绘制
+      # 🔧 修复：动态标题显示通路名称和实际数据类型
+      enriched_group <- ifelse(pdata$nes > 0, left_grp, right_grp)
       title_text <- sprintf(
-        "Row-Scaled Z-Score [-1, 1] | Enriched in: %s",
-        ifelse(pdata$nes > 0, left_grp, right_grp)
+        "%s\nRow-Scaled Z-Score [-1, 1] | Raw CPM Values Shown | Enriched in: %s",
+        pdata$pathway_id,  # 加入通路名称
+        enriched_group
       )
 
       ComplexHeatmap::draw(
@@ -308,11 +395,9 @@ mod_pathway_modal_server_OLD <- function(id, data_prep, trigger_event, gsea_res)
       )
 
     }, height = function() {
-      # 🔧 Phase 7：动态高度计算（无上限）
       pdata <- current_data()
       if (is.null(pdata)) return(400)
       n_genes <- length(pdata$pathway_genes)
-      # 完全根据基因数计算高度，不设上限
       height_px <- max(400, n_genes * 25 + 150)
       return(height_px)
     })
@@ -373,12 +458,9 @@ mod_pathway_modal_server_OLD <- function(id, data_prep, trigger_event, gsea_res)
 
 
 
-#' @title Pathway Detail Modal Server - Phase 7 Optimized Version
-#' @description Fix ComplexHeatmap performance warnings, use layer_fun instead of cell_fun
-#' @param id Module ID
-#' @param data_prep Data pipeline
-#' @param trigger_event Click event from table (reactive)
-#' @param gsea_res GseaRes object
+#' @title Pathway Detail Modal Server - Fixed CPM Logic
+#' @description Forces raw CPM usage regardless of expression_type selection,
+#'   detects and reverses log2 transformation if necessary, displays pathway name in title
 #' @keywords internal
 
 mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
@@ -387,7 +469,7 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
 
     current_data <- shiny::reactiveVal(NULL)
 
-    # 监听弹窗触发（保持原有逻辑）
+    # 监听弹窗触发
     shiny::observeEvent(trigger_event(), {
       pathway_id <- trigger_event()
       shiny::req(pathway_id)
@@ -417,7 +499,7 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
         data_list = data_list
       ))
 
-      # 显示弹窗
+      # 显示弹窗（修改标题，移除固定的CPM字样）
       shiny::showModal(shiny::modalDialog(
         title = shiny::HTML(sprintf(
           "<b>%s</b><br><small>%s vs %s | NES: %.2f</small>",
@@ -436,7 +518,8 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
           )),
           shiny::column(7, shiny::div(
             class = "white-box",
-            shiny::h4("Core Gene Expression Heatmap (CPM)"),
+            # 🔧 修改：移除固定的"(CPM)"，改为通用描述
+            shiny::h4("Core Gene Expression Heatmap"),
             shiny::div(
               style = "height: 600px; overflow-y: auto; overflow-x: auto; border: 1px solid #ddd;",
               shiny::plotOutput(ns("modal_heatmap"), height = "auto", width = "100%")
@@ -477,18 +560,16 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
       })
     })
 
-    # 🔧 修复 3：使用 layer_fun 替代 cell_fun 提升性能
+    # 🔧 核心修复：强制使用原始CPM，检测并反转换log2数据
     output$modal_heatmap <- shiny::renderPlot({
       pdata <- current_data()
       shiny::req(pdata)
 
-      # 获取表达矩阵
-      expr_mat <- get_expr_matrix(gsea_res, type = pdata$data_list$expression_type)
+      # 获取样本元数据
       sample_meta <- get_sample_meta(gsea_res)
+      shiny::req(sample_meta)
 
-      shiny::req(expr_mat, sample_meta)
-
-      # 筛选样本
+      # 筛选样本（仅当前对比组的两组）
       left_grp <- pdata$data_list$left_group
       right_grp <- pdata$data_list$right_group
       groups <- c(left_grp, right_grp)
@@ -497,34 +578,168 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
       if (length(sample_idx) == 0) return()
 
       target_samples <- rownames(sample_meta)[sample_idx]
-      expr_mat <- expr_mat[, target_samples, drop = FALSE]
 
-      # 筛选通路基因
+      # ==================== 强制原始CPM获取逻辑 ====================
+      expr_bundle <- gsea_res$expr_bundle
+
+      # 策略1：优先使用DGEList计算CPM（最可靠，不受expression_type影响）
+      if (!is.null(expr_bundle$dge_list)) {
+        # 使用edgeR::cpm计算原始CPM（确保log=FALSE）
+        cpm_mat <- edgeR::cpm(expr_bundle$dge_list, log = FALSE)
+        message(sprintf("📊 [%s] Using edgeR::cpm(dge_list, log=FALSE)", pdata$pathway_id))
+
+        # 防御性检查：如果看起来像是log2转换过的数据（有负值或值域过小），进行反转换
+        if (max(cpm_mat, na.rm = TRUE) < 50 || any(cpm_mat < 0, na.rm = TRUE)) {
+          message("⚠️  Detected possible log2-transformed CPM, reversing transformation...")
+          cpm_mat <- 2^cpm_mat - 1  # 反转换：假设是log2(x+1)
+          # 再次计算CPM确保数值正确
+          cpm_mat <- edgeR::cpm(cpm_mat, log = FALSE)
+        }
+
+      } else if (!is.null(expr_bundle$raw_counts)) {
+        # 策略2：从raw_counts手动计算CPM
+        raw_counts <- expr_bundle$raw_counts[, target_samples, drop = FALSE]
+
+        # 检查raw_counts是否可能是log2转换过的（防御性编程）
+        if (max(raw_counts, na.rm = TRUE) < 50 || any(raw_counts < 0, na.rm = TRUE)) {
+          message("⚠️  raw_counts appears log2-transformed, reversing...")
+          raw_counts <- 2^raw_counts - 1
+        }
+
+        lib_sizes <- colSums(raw_counts)
+        cpm_mat <- t(t(raw_counts) / lib_sizes) * 1e6
+        message(sprintf("📊 [%s] Calculated CPM from raw_counts", pdata$pathway_id))
+
+      } else {
+        # 备用方案：尝试从display_expr反转换（不推荐，但兼容）
+        stop("Cannot generate heatmap: dge_list and raw_counts both unavailable")
+      }
+
+      # 确保只保留目标样本
+      cpm_mat <- cpm_mat[, target_samples, drop = FALSE]
+
+      # 最终验证：确保不是log2数据（CPM应该都是正数，且通常>1）
+      if (any(cpm_mat < 0, na.rm = TRUE) || max(cpm_mat, na.rm = TRUE) < 20) {
+        warning(sprintf("Expression values may still be log2-transformed (max=%.2f)",
+                        max(cpm_mat, na.rm = TRUE)))
+      }
+      # ==================== CPM数据准备完成 ====================
+
+      # 获取基因注释
+      gene_meta <- expr_bundle$gene_meta
       pathway_genes <- pdata$pathway_genes
-      gene_idx <- which(toupper(rownames(expr_mat)) %in% toupper(pathway_genes))
-      if (length(gene_idx) < 2) return()
 
-      plot_genes <- rownames(expr_mat)[gene_idx]
-      plot_mat <- expr_mat[plot_genes, , drop = FALSE]
+      # ==================== 基因映射逻辑（复用箱形图策略） ====================
+      is_ensembl <- all(grepl("^ENS(MUS)?G", pathway_genes))
 
-      # 移除方差为0的基因
-      plot_mat <- plot_mat[apply(plot_mat, 1, var) > 1e-6, , drop = FALSE]
+      if (is_ensembl) {
+        # GSEA使用Ensembl ID
+        matched_mask <- rownames(cpm_mat) %in% pathway_genes
+        if (sum(matched_mask) == 0) return()
+
+        plot_mat <- cpm_mat[matched_mask, , drop = FALSE]
+
+        # 尝试映射到SYMBOL
+        if (!is.null(gene_meta) && nrow(gene_meta) > 0) {
+          symbol_candidates <- c("SYMBOL", "symbol", "Gene", "gene_name",
+                                 "gene_symbol", "Gene.Symbol", "GeneName")
+          symbol_col <- intersect(symbol_candidates, colnames(gene_meta))[1]
+
+          if (!is.na(symbol_col)) {
+            ens_to_symbol <- setNames(
+              as.character(gene_meta[[symbol_col]]),
+              rownames(gene_meta)
+            )
+
+            current_ens_ids <- rownames(plot_mat)
+            symbol_names <- ens_to_symbol[current_ens_ids]
+            na_idx <- is.na(symbol_names)
+            symbol_names[na_idx] <- current_ens_ids[na_idx]
+
+            # 处理重复SYMBOL：取均值
+            if (any(duplicated(symbol_names[!na_idx]))) {
+              unique_syms <- unique(symbol_names)
+              merged_mat <- do.call(rbind, lapply(unique_syms, function(sym) {
+                rows <- plot_mat[symbol_names == sym, , drop = FALSE]
+                if (nrow(rows) > 1) {
+                  colMeans(rows, na.rm = TRUE)
+                } else {
+                  as.numeric(rows[1, ])
+                }
+              }))
+              plot_mat <- merged_mat
+              rownames(plot_mat) <- unique_syms
+              colnames(plot_mat) <- target_samples
+            } else {
+              rownames(plot_mat) <- symbol_names
+            }
+          }
+        }
+
+      } else {
+        # GSEA使用SYMBOL，映射到ENS ID
+        if (is.null(gene_meta) || nrow(gene_meta) == 0) return()
+
+        symbol_candidates <- c("SYMBOL", "symbol", "Gene", "gene_name",
+                               "gene_symbol", "Gene.Symbol", "GeneName")
+        symbol_col <- intersect(symbol_candidates, colnames(gene_meta))[1]
+        if (is.na(symbol_col)) return()
+
+        meta_symbols <- as.character(gene_meta[[symbol_col]])
+
+        gene_expr_list <- lapply(pathway_genes, function(sym) {
+          match_idx <- which(toupper(meta_symbols) == toupper(sym))
+          if (length(match_idx) == 0) return(NULL)
+
+          ens_ids <- rownames(gene_meta)[match_idx]
+          valid_ens <- ens_ids[ens_ids %in% rownames(cpm_mat)]
+          if (length(valid_ens) == 0) return(NULL)
+
+          sub_mat <- cpm_mat[valid_ens, , drop = FALSE]
+
+          if (nrow(sub_mat) > 1) {
+            expr_vals <- colMeans(sub_mat, na.rm = TRUE)
+          } else {
+            expr_vals <- as.numeric(sub_mat[1, ])
+          }
+
+          return(list(symbol = sym, values = expr_vals))
+        })
+
+        gene_expr_list <- gene_expr_list[!sapply(gene_expr_list, is.null)]
+        if (length(gene_expr_list) == 0) return()
+
+        plot_mat <- do.call(rbind, lapply(gene_expr_list, `[[`, "values"))
+        rownames(plot_mat) <- sapply(gene_expr_list, `[[`, "symbol")
+        colnames(plot_mat) <- target_samples
+      }
+
+      # 移除低方差基因
+      gene_vars <- apply(plot_mat, 1, var, na.rm = TRUE)
+      plot_mat <- plot_mat[gene_vars > 1e-6 & !is.na(gene_vars), , drop = FALSE]
       if (nrow(plot_mat) < 2) return()
 
-      # 获取 GSEA geneList 用于排序
+      # 保存原始CPM用于显示（取整）
+      display_numbers <- round(plot_mat)
+
+      # Z-score标准化（用于颜色）
+      z_mat <- t(scale(t(plot_mat)))
+      z_mat[is.na(z_mat)] <- 0
+      z_mat[z_mat > 1] <- 1
+      z_mat[z_mat < -1] <- -1
+
+      # 获取GSEA geneList用于排序
       gene_list <- pdata$data_list$gsea_res@geneList
 
-      # 计算基因统计量
       gene_metrics <- sapply(rownames(plot_mat), function(g) {
         idx <- match(toupper(g), toupper(names(gene_list)))
         if (is.na(idx)) return(0)
         return(gene_list[idx])
       })
 
-      # 判断 Leading Edge
       is_leading <- toupper(rownames(plot_mat)) %in% toupper(pdata$core_genes)
 
-      # 根据 NES 方向排序
+      # 根据NES方向排序
       if (pdata$nes > 0) {
         sort_order <- order(gene_metrics, decreasing = TRUE)
       } else {
@@ -532,39 +747,16 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
       }
 
       plot_mat <- plot_mat[sort_order, , drop = FALSE]
+      z_mat <- z_mat[sort_order, , drop = FALSE]
+      display_numbers <- display_numbers[sort_order, , drop = FALSE]
       is_leading <- is_leading[sort_order]
-      gene_metrics <- gene_metrics[sort_order]
 
-      # Z-score 标准化
-      z_mat <- t(scale(t(plot_mat)))
-      z_mat[is.na(z_mat)] <- 0
-      z_mat[z_mat > 1] <- 1
-      z_mat[z_mat < -1] <- -1
-
-      # 获取 CPM 数值
-      cpm_mat <- tryCatch({
-        if (pdata$data_list$backend == "limma_voom" &&
-            !is.null(gsea_res$expr_bundle$dge_list)) {
-          edgeR::cpm(gsea_res$expr_bundle$dge_list, log = FALSE)[
-            rownames(plot_mat), target_samples, drop = FALSE
-          ]
-        } else {
-          raw_counts <- gsea_res$expr_bundle$raw_counts[
-            rownames(plot_mat), target_samples, drop = FALSE
-          ]
-          t(t(raw_counts) / colSums(raw_counts)) * 1e6
-        }
-      }, error = function(e) plot_mat)
-
-      display_numbers <- round(cpm_mat)
-
-      # 🔧 ComplexHeatmap 配置
+      # ComplexHeatmap配置
       col_fun <- circlize::colorRamp2(
         c(-1, 0, 1),
         c("#67a9cf", "#f7f7f7", "#ef8a62")
       )
 
-      # 列注释
       grp_col <- c("#E41A1C", "#377EB8")
       names(grp_col) <- c(left_grp, right_grp)
 
@@ -580,7 +772,6 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
         simple_anno_size = grid::unit(0.6, "cm")
       )
 
-      # 行注释
       leading_status <- ifelse(is_leading, "YES", "NO")
       leading_colors <- c("YES" = "#FF9800", "NO" = "transparent")
 
@@ -591,18 +782,17 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
         simple_anno_size = grid::unit(0.4, "cm")
       )
 
-      # 🔧 关键修复：使用 layer_fun 替代 cell_fun（向量化，性能提升10倍+）
+      # 使用pindex正确处理row_split后的索引
       layer_fun <- function(j, i, x, y, w, h, fill) {
-        # 获取当前视窗的行索引（考虑 split 后的实际索引）
-        # layer_fun 是向量化的，i 和 j 是向量
+        vals <- ComplexHeatmap::pindex(display_numbers, i, j)
         grid::grid.text(
-          label = as.matrix(display_numbers)[i, j],
+          label = vals,
           x = x, y = y,
           gp = grid::gpar(fontsize = 13, col = "black", fontface = "bold")
         )
       }
 
-      # row_split 配置
+      # row_split配置
       if (pdata$nes > 0) {
         row_split_factor <- factor(
           ifelse(is_leading, "Leading Edge", "Other Genes"),
@@ -615,7 +805,7 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
         )
       }
 
-      # 🔧 构建 Heatmap（使用 layer_fun）
+      # 构建Heatmap
       ht <- ComplexHeatmap::Heatmap(
         z_mat,
         name = "Z-Score",
@@ -629,11 +819,7 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
         row_gap = grid::unit(2, "mm"),
         top_annotation = top_ann,
         right_annotation = right_ann,
-
-        # 🔧 关键：使用 layer_fun 替代 cell_fun
         layer_fun = layer_fun,
-
-        # 行名样式
         row_names_gp = grid::gpar(
           fontsize = 15,
           fontface = ifelse(is_leading, "bold", "plain"),
@@ -651,10 +837,12 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
         height = NULL
       )
 
-      # 绘制
+      # 🔧 修复：动态标题显示通路名称和实际数据类型
+      enriched_group <- ifelse(pdata$nes > 0, left_grp, right_grp)
       title_text <- sprintf(
-        "Row-Scaled Z-Score [-1, 1] | Enriched in: %s",
-        ifelse(pdata$nes > 0, left_grp, right_grp)
+        "%s\nRow-Scaled Z-Score [-1, 1] | Raw CPM Values Shown | Enriched in: %s",
+        pdata$pathway_id,  # 加入通路名称
+        enriched_group
       )
 
       ComplexHeatmap::draw(

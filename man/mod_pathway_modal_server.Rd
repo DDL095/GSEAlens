@@ -2,20 +2,12 @@
 % Please edit documentation in R/11_shiny_mod_modal.R
 \name{mod_pathway_modal_server}
 \alias{mod_pathway_modal_server}
-\title{Pathway Detail Modal Server - Phase 7 Optimized Version}
+\title{Pathway Detail Modal Server - Fixed CPM Logic}
 \usage{
 mod_pathway_modal_server(id, data_prep, trigger_event, gsea_res)
 }
-\arguments{
-\item{id}{Module ID}
-
-\item{data_prep}{Data pipeline}
-
-\item{trigger_event}{Click event from table (reactive)}
-
-\item{gsea_res}{GseaRes object}
-}
 \description{
-Fix ComplexHeatmap performance warnings, use layer_fun instead of cell_fun
+Forces raw CPM usage regardless of expression_type selection,
+  detects and reverses log2 transformation if necessary, displays pathway name in title
 }
 \keyword{internal}
