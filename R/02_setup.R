@@ -71,11 +71,25 @@ setup_gsea_env <- function(fit, pathway_obj, expr_data = NULL, target_factor = N
   }
 
   # 3. 组装基因集信息
+  # 在 setup_gsea_env 函数中，组装 geneset_info 部分需要确保：
   geneset_info <- list(
-    name = pathway_obj$SuperTag,
-    term2gene = pathway_obj$TERM2GENE,
-    meta_dict = pathway_obj$meta_dict,
-    used_collections = pathway_obj$collections_used
+    name = pathway_obj$SuperTag %||% pathway_obj$name,
+    term2gene = pathway_obj$TERM2GENE %||% pathway_obj$term2gene,
+    # 关键修复：确保meta_dict包含所有必需列
+    meta_dict = {
+      md <- pathway_obj$meta_dict %||% pathway_obj$TERM2NAME
+      # 确保DESeq2流程中也有Subcollection和Combo_Name
+      if (!"Subcollection" %in% colnames(md)) md$Subcollection <- ""
+      if (!"Combo_Name" %in% colnames(md)) {
+        md$Combo_Name <- ifelse(
+          is.na(md$Subcollection) | md$Subcollection == "",
+          md$Collection,
+          paste0(md$Collection, ":", md$Subcollection)
+        )
+      }
+      md
+    },
+    used_collections = pathway_obj$collections_used %||% pathway_obj$used_collections
   )
 
   # 4. 构建最终对象

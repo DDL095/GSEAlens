@@ -166,37 +166,35 @@ NULL
 #' @keywords internal
 
 .standardize_de_columns <- function(df, backend) {
-
-  # 添加基因名列
+  # 添加基因名列（保持大小写敏感，但确保存在）
   if ("gene_symbol" %in% colnames(df)) {
-    # pass
+    # 保持原样
   } else if ("SYMBOL" %in% colnames(df)) {
     df$gene_symbol <- df$SYMBOL
+  } else if ("row.names" %in% colnames(df)) {
+    df$gene_symbol <- df$row.names
   } else {
     df$gene_symbol <- rownames(df)
   }
 
-  if (backend == "limma_voom") {
-    df$stat <- df$t
-    df$logFC <- df$logFC
-    df$pvalue <- df$P.Value
-    df$padj <- df$adj.P.Val
-
-  } else if (backend == "deseq2") {
-    df$stat <- df$stat
-    df$logFC <- df$log2FoldChange
-    df$pvalue <- df$pvalue
-    df$padj <- df$padj
+  # 标准化统计列（DESeq2特定）
+  if (backend == "deseq2") {
+    df$stat <- df$stat %||% df$WaldStatistic %||% NA_real_
+    df$logFC <- df$log2FoldChange %||% df$logFC %||% NA_real_
+    df$pvalue <- df$pvalue %||% df$P.Value %||% NA_real_
+    df$padj <- df$padj %||% df$adj.P.Val %||% NA_real_
   }
 
-  # 保留核心列
+  # 核心列检查
   core_cols <- c("gene_symbol", "logFC", "stat", "pvalue", "padj")
-
-  # 确保列存在
   missing <- setdiff(core_cols, colnames(df))
-  if (length(missing) > 0) stop(sprintf("Standardization failed, missing columns: %s", paste(missing, collapse=", ")))
+  if (length(missing) > 0) {
+    stop(sprintf("Standardization failed, missing columns: %s", paste(missing, collapse=", ")))
+  }
 
-  return(df[, c(core_cols, setdiff(colnames(df), core_cols))])
+  # 保留所有原始列，但确保核心列在前
+  other_cols <- setdiff(colnames(df), core_cols)
+  return(df[, c(core_cols, other_cols), drop = FALSE])
 }
 
 #' @title Build Expression Data Bundle
@@ -229,9 +227,8 @@ NULL
 
   } else if (backend == "deseq2") {
     raw_counts <- counts(obj, normalized = FALSE)
-    sample_meta <- as.data.frame(colData(obj))
     gene_meta <- as.data.frame(rowData(obj))
-
+    sample_meta <- as.data.frame(colData(obj))
     # 默认展示 log2(normalized counts + 1)
     norm_counts <- counts(obj, normalized = TRUE)
     display_expr <- log2(norm_counts + 1)

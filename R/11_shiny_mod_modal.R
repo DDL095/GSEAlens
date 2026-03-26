@@ -458,9 +458,9 @@ mod_pathway_modal_server_OLD <- function(id, data_prep, trigger_event, gsea_res)
 
 
 
-#' @title Pathway Detail Modal Server - Fixed CPM Logic
-#' @description Forces raw CPM usage regardless of expression_type selection,
-#'   detects and reverses log2 transformation if necessary, displays pathway name in title
+#' @title Pathway Detail Modal Server - Fixed for DESeq2 DFrame compatibility
+#' @description Forces raw CPM usage, handles DFrame/DESeq2 colData properly,
+#'   ensures sample name matching between expression matrix and metadata
 #' @keywords internal
 
 mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
@@ -499,7 +499,7 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
         data_list = data_list
       ))
 
-      # 显示弹窗（修改标题，移除固定的CPM字样）
+      # 显示弹窗
       shiny::showModal(shiny::modalDialog(
         title = shiny::HTML(sprintf(
           "<b>%s</b><br><small>%s vs %s | NES: %.2f</small>",
@@ -518,7 +518,6 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
           )),
           shiny::column(7, shiny::div(
             class = "white-box",
-            # 🔧 修改：移除固定的"(CPM)"，改为通用描述
             shiny::h4("Core Gene Expression Heatmap"),
             shiny::div(
               style = "height: 600px; overflow-y: auto; overflow-x: auto; border: 1px solid #ddd;",
@@ -536,7 +535,7 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
       ))
     })
 
-    # 渲染 GSEA 图（保持原有逻辑）
+    # 渲染 GSEA 图
     output$modal_gsea_plot <- shiny::renderPlot({
       pdata <- current_data()
       shiny::req(pdata)
@@ -560,89 +559,224 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
       })
     })
 
-    # 🔧 核心修复：强制使用原始CPM，检测并反转换log2数据
+    # 🔧 核心修复：处理 DESeq2 DFrame 和样本匹配问题
     output$modal_heatmap <- shiny::renderPlot({
       pdata <- current_data()
       shiny::req(pdata)
 
-      # 获取样本元数据
-      sample_meta <- get_sample_meta(gsea_res)
+      # 获取样本元数据（关键修复：强制处理 DFrame）
+      sample_meta_raw <- gsea_res$expr_bundle$sample_meta
+
+      # 🔧 修复 DFrame 转换问题：确保转换为 data.frame 并保留行名
+      if (inherits(sample_meta_raw, "DFrame") || inherits(sample_meta_raw, "DataFrame")) {
+        # DESeq2 的 colData 返回 DFrame，需要特殊处理
+        sample_names <- rownames(sample_meta_raw)
+        sample_meta <- as.data.frame(sample_meta_raw)
+
+        # 确保行名被正确设置（DFrame 转 data.frame 有时会丢失行名）
+        if (is.null(rownames(sample_meta)) && !is.null(sample_names)) {
+          rownames(sample_meta) <- sample_names
+          message(sprintf("[Heatmap] Restored %d sample names from DFrame", length(sample_names)))
+        }
+      } else {
+        sample_meta <- as.data.frame(sample_meta_raw)
+      }
+
+      # 确保 sample_meta 有行名（尝试从 expr_bundle 恢复）
+      if (is.null(rownames(sample_meta)) || all(rownames(sample_meta) == "")) {
+        if (!is.null(gsea_res$expr_bundle$raw_counts)) {
+          raw_counts <- gsea_res$expr_bundle$raw_counts
+          if (nrow(sample_meta) == ncol(raw_counts)) {
+            rownames(sample_meta) <- colnames(raw_counts)
+            message("[Heatmap] Recovered sample names from raw_counts column names")
+          }
+        }
+      }
+
       shiny::req(sample_meta)
+      if (nrow(sample_meta) == 0) {
+        message("[Heatmap] ERROR: sample_meta is empty after processing")
+        return()
+      }
 
       # 筛选样本（仅当前对比组的两组）
       left_grp <- pdata$data_list$left_group
       right_grp <- pdata$data_list$right_group
       groups <- c(left_grp, right_grp)
 
+      # 🔧 关键修复：确保 group 列存在且为字符型以进行匹配
+      if (!"group" %in% colnames(sample_meta)) {
+        # 尝试找到分组列（DESeq2 设计公式中的变量）
+        possible_group_cols <- c("group", "condition", "treatment", "Group", "Condition")
+        group_col_found <- NULL
+        for (col in possible_group_cols) {
+          if (col %in% colnames(sample_meta)) {
+            group_col_found <- col
+            break
+          }
+        }
+
+        if (!is.null(group_col_found)) {
+          sample_meta$group <- as.character(sample_meta[[group_col_found]])
+          message(sprintf("[Heatmap] Mapped '%s' column to 'group'", group_col_found))
+        } else {
+          # 如果是因子且只有两个水平，假设第一个因子是分组
+          factor_cols <- names(sample_meta)[sapply(sample_meta, is.factor)]
+          if (length(factor_cols) > 0) {
+            sample_meta$group <- as.character(sample_meta[[factor_cols[1]]])
+            message(sprintf("[Heatmap] Using first factor column '%s' as group", factor_cols[1]))
+          }
+        }
+      } else {
+        # 确保 group 是字符型而非因子，避免匹配问题
+        sample_meta$group <- as.character(sample_meta$group)
+      }
+
+      # 🔧 调试信息：打印分组信息帮助排查
+      message(sprintf("[Heatmap] Looking for groups: %s, %s", left_grp, right_grp))
+      message(sprintf("[Heatmap] Available groups in metadata: %s",
+                      paste(unique(sample_meta$group), collapse = ", ")))
+      message(sprintf("[Heatmap] Sample metadata dimensions: %d x %d",
+                      nrow(sample_meta), ncol(sample_meta)))
+      message(sprintf("[Heatmap] Sample names (first 5): %s",
+                      paste(head(rownames(sample_meta), 5), collapse = ", ")))
+
       sample_idx <- which(sample_meta$group %in% groups)
-      if (length(sample_idx) == 0) return()
+
+      # 🔧 关键检查：如果没有匹配到样本，给出详细警告
+      if (length(sample_idx) == 0) {
+        message(sprintf("[Heatmap] ERROR: No samples found for groups: %s",
+                        paste(groups, collapse = ", ")))
+        message(sprintf("[Heatmap] Available groups: %s",
+                        paste(unique(sample_meta$group), collapse = ", ")))
+        return()
+      }
 
       target_samples <- rownames(sample_meta)[sample_idx]
+      message(sprintf("[Heatmap] Selected %d samples for heatmap", length(target_samples)))
 
-      # ==================== 强制原始CPM获取逻辑 ====================
+      # ==================== CPM 数据准备（强制原始 CPM） ====================
       expr_bundle <- gsea_res$expr_bundle
 
-      # 策略1：优先使用DGEList计算CPM（最可靠，不受expression_type影响）
-      if (!is.null(expr_bundle$dge_list)) {
-        # 使用edgeR::cpm计算原始CPM（确保log=FALSE）
-        cpm_mat <- edgeR::cpm(expr_bundle$dge_list, log = FALSE)
-        message(sprintf("📊 [%s] Using edgeR::cpm(dge_list, log=FALSE)", pdata$pathway_id))
+      # 策略1：优先使用 DESeq2 的 dds_obj 获取 normalized counts 并转为 CPM
+      if (!is.null(expr_bundle$dds_obj)) {
+        # DESeq2 流程：使用原始 counts 计算 CPM
+        tryCatch({
+          raw_counts <- DESeq2::counts(expr_bundle$dds_obj, normalized = FALSE)
 
-        # 防御性检查：如果看起来像是log2转换过的数据（有负值或值域过小），进行反转换
-        if (max(cpm_mat, na.rm = TRUE) < 50 || any(cpm_mat < 0, na.rm = TRUE)) {
-          message("⚠️  Detected possible log2-transformed CPM, reversing transformation...")
-          cpm_mat <- 2^cpm_mat - 1  # 反转换：假设是log2(x+1)
-          # 再次计算CPM确保数值正确
-          cpm_mat <- edgeR::cpm(cpm_mat, log = FALSE)
-        }
+          # 确保样本匹配
+          common_samples <- intersect(target_samples, colnames(raw_counts))
+          if (length(common_samples) == 0) {
+            message("[Heatmap] ERROR: No matching samples between metadata and count matrix")
+            message(sprintf("[Heatmap] Metadata samples: %s", paste(head(target_samples), collapse = ", ")))
+            message(sprintf("[Heatmap] Count matrix columns: %s", paste(head(colnames(raw_counts)), collapse = ", ")))
+            return()
+          }
+
+          raw_counts <- raw_counts[, common_samples, drop = FALSE]
+          lib_sizes <- colSums(raw_counts)
+          cpm_mat <- t(t(raw_counts) / lib_sizes) * 1e6
+
+          message(sprintf("[Heatmap] DESeq2: Calculated CPM from raw counts, dimensions: %d x %d",
+                          nrow(cpm_mat), ncol(cpm_mat)))
+        }, error = function(e) {
+          message(sprintf("[Heatmap] ERROR calculating CPM from dds_obj: %s", e$message))
+          return()
+        })
+
+      } else if (!is.null(expr_bundle$dge_list)) {
+        # Limma 流程
+        tryCatch({
+          cpm_mat <- edgeR::cpm(expr_bundle$dge_list, log = FALSE)
+          common_samples <- intersect(target_samples, colnames(cpm_mat))
+          if (length(common_samples) == 0) {
+            message("[Heatmap] ERROR: No matching samples in DGEList")
+            return()
+          }
+          cpm_mat <- cpm_mat[, common_samples, drop = FALSE]
+          message(sprintf("[Heatmap] Limma: Using edgeR CPM, dimensions: %d x %d",
+                          nrow(cpm_mat), ncol(cpm_mat)))
+        }, error = function(e) {
+          message(sprintf("[Heatmap] ERROR with DGEList: %s", e$message))
+          return()
+        })
 
       } else if (!is.null(expr_bundle$raw_counts)) {
-        # 策略2：从raw_counts手动计算CPM
-        raw_counts <- expr_bundle$raw_counts[, target_samples, drop = FALSE]
-
-        # 检查raw_counts是否可能是log2转换过的（防御性编程）
-        if (max(raw_counts, na.rm = TRUE) < 50 || any(raw_counts < 0, na.rm = TRUE)) {
-          message("⚠️  raw_counts appears log2-transformed, reversing...")
-          raw_counts <- 2^raw_counts - 1
+        # 通用流程
+        raw_counts <- expr_bundle$raw_counts
+        common_samples <- intersect(target_samples, colnames(raw_counts))
+        if (length(common_samples) == 0) {
+          message("[Heatmap] ERROR: No matching samples in raw_counts")
+          return()
         }
-
+        raw_counts <- raw_counts[, common_samples, drop = FALSE]
         lib_sizes <- colSums(raw_counts)
         cpm_mat <- t(t(raw_counts) / lib_sizes) * 1e6
-        message(sprintf("📊 [%s] Calculated CPM from raw_counts", pdata$pathway_id))
-
+        message(sprintf("[Heatmap] Generic: Calculated CPM from raw counts, dimensions: %d x %d",
+                        nrow(cpm_mat), ncol(cpm_mat)))
       } else {
-        # 备用方案：尝试从display_expr反转换（不推荐，但兼容）
-        stop("Cannot generate heatmap: dge_list and raw_counts both unavailable")
+        message("[Heatmap] ERROR: No expression data available (dds_obj, dge_list, or raw_counts)")
+        return()
       }
 
-      # 确保只保留目标样本
-      cpm_mat <- cpm_mat[, target_samples, drop = FALSE]
-
-      # 最终验证：确保不是log2数据（CPM应该都是正数，且通常>1）
-      if (any(cpm_mat < 0, na.rm = TRUE) || max(cpm_mat, na.rm = TRUE) < 20) {
-        warning(sprintf("Expression values may still be log2-transformed (max=%.2f)",
-                        max(cpm_mat, na.rm = TRUE)))
+      # 最终验证
+      if (is.null(cpm_mat) || ncol(cpm_mat) == 0 || nrow(cpm_mat) == 0) {
+        message("[Heatmap] ERROR: CPM matrix is empty after processing")
+        return()
       }
-      # ==================== CPM数据准备完成 ====================
 
-      # 获取基因注释
+      # ==================== 基因映射逻辑（复用原逻辑但增强错误处理） ====================
       gene_meta <- expr_bundle$gene_meta
       pathway_genes <- pdata$pathway_genes
 
-      # ==================== 基因映射逻辑（复用箱形图策略） ====================
+      message(sprintf("[Heatmap] Pathway has %d genes, expression matrix has %d genes",
+                      length(pathway_genes), nrow(cpm_mat)))
+
+      # 检测 pathway_genes 的 ID 类型
       is_ensembl <- all(grepl("^ENS(MUS)?G", pathway_genes))
 
       if (is_ensembl) {
-        # GSEA使用Ensembl ID
+        # GSEA 使用 Ensembl ID
         matched_mask <- rownames(cpm_mat) %in% pathway_genes
-        if (sum(matched_mask) == 0) return()
+        message(sprintf("[Heatmap] Ensembl ID matching: %d/%d genes found",
+                        sum(matched_mask), length(pathway_genes)))
+
+        if (sum(matched_mask) == 0) {
+          message("[Heatmap] WARNING: No Ensembl IDs matched, trying via gene_meta...")
+          # 尝试通过 gene_meta 转换
+          if (!is.null(gene_meta) && nrow(gene_meta) > 0) {
+            # 如果表达矩阵行名是 Symbol，但 pathway 是 Ensembl
+            symbol_candidates <- c("SYMBOL", "symbol", "Gene", "gene_name")
+            symbol_col <- intersect(symbol_candidates, colnames(gene_meta))[1]
+            ensembl_col <- intersect(c("ENSEMBL", "ensembl_id", "gene_id"), colnames(gene_meta))[1]
+
+            if (!is.na(symbol_col) && !is.na(ensembl_col)) {
+              # 构建 Ensembl -> Symbol 映射
+              ensembl_to_symbol <- setNames(
+                as.character(gene_meta[[symbol_col]]),
+                as.character(gene_meta[[ensembl_col]])
+              )
+
+              # 转换 pathway genes 为 Symbols
+              pathway_symbols <- ensembl_to_symbol[pathway_genes]
+              pathway_symbols <- pathway_symbols[!is.na(pathway_symbols)]
+
+              matched_mask <- toupper(rownames(cpm_mat)) %in% toupper(pathway_symbols)
+              message(sprintf("[Heatmap] After ID conversion: %d genes matched", sum(matched_mask)))
+            }
+          }
+        }
+
+        if (sum(matched_mask) == 0) {
+          message("[Heatmap] ERROR: No genes matched for heatmap")
+          return()
+        }
 
         plot_mat <- cpm_mat[matched_mask, , drop = FALSE]
 
-        # 尝试映射到SYMBOL
+        # 尝试映射到 SYMBOL 用于显示
         if (!is.null(gene_meta) && nrow(gene_meta) > 0) {
-          symbol_candidates <- c("SYMBOL", "symbol", "Gene", "gene_name",
-                                 "gene_symbol", "Gene.Symbol", "GeneName")
+          symbol_candidates <- c("SYMBOL", "symbol", "Gene", "gene_name")
           symbol_col <- intersect(symbol_candidates, colnames(gene_meta))[1]
 
           if (!is.na(symbol_col)) {
@@ -651,25 +785,21 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
               rownames(gene_meta)
             )
 
-            current_ens_ids <- rownames(plot_mat)
-            symbol_names <- ens_to_symbol[current_ens_ids]
+            current_ids <- rownames(plot_mat)
+            symbol_names <- ens_to_symbol[current_ids]
             na_idx <- is.na(symbol_names)
-            symbol_names[na_idx] <- current_ens_ids[na_idx]
+            symbol_names[na_idx] <- current_ids[na_idx]
 
-            # 处理重复SYMBOL：取均值
+            # 处理重复
             if (any(duplicated(symbol_names[!na_idx]))) {
               unique_syms <- unique(symbol_names)
               merged_mat <- do.call(rbind, lapply(unique_syms, function(sym) {
                 rows <- plot_mat[symbol_names == sym, , drop = FALSE]
-                if (nrow(rows) > 1) {
-                  colMeans(rows, na.rm = TRUE)
-                } else {
-                  as.numeric(rows[1, ])
-                }
+                if (nrow(rows) > 1) colMeans(rows, na.rm = TRUE) else as.numeric(rows[1, ])
               }))
               plot_mat <- merged_mat
               rownames(plot_mat) <- unique_syms
-              colnames(plot_mat) <- target_samples
+              colnames(plot_mat) <- colnames(cpm_mat)
             } else {
               rownames(plot_mat) <- symbol_names
             }
@@ -677,58 +807,84 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
         }
 
       } else {
-        # GSEA使用SYMBOL，映射到ENS ID
-        if (is.null(gene_meta) || nrow(gene_meta) == 0) return()
+        # GSEA 使用 SYMBOL，需要映射到表达矩阵的行名（可能是 Ensembl 或 Symbol）
+        if (is.null(gene_meta) || nrow(gene_meta) == 0) {
+          # 如果没有 gene_meta，尝试直接匹配（假设表达矩阵行名就是 Symbol）
+          matched_mask <- toupper(rownames(cpm_mat)) %in% toupper(pathway_genes)
+          message(sprintf("[Heatmap] Direct symbol matching: %d/%d genes found",
+                          sum(matched_mask), length(pathway_genes)))
 
-        symbol_candidates <- c("SYMBOL", "symbol", "Gene", "gene_name",
-                               "gene_symbol", "Gene.Symbol", "GeneName")
-        symbol_col <- intersect(symbol_candidates, colnames(gene_meta))[1]
-        if (is.na(symbol_col)) return()
+          if (sum(matched_mask) == 0) {
+            message("[Heatmap] ERROR: No symbols matched and no gene_meta available")
+            return()
+          }
+          plot_mat <- cpm_mat[matched_mask, , drop = FALSE]
 
-        meta_symbols <- as.character(gene_meta[[symbol_col]])
+        } else {
+          # 有 gene_meta，进行 ID 映射
+          symbol_candidates <- c("SYMBOL", "symbol", "Gene", "gene_name",
+                                 "gene_symbol", "Gene.Symbol", "GeneName")
+          symbol_col <- intersect(symbol_candidates, colnames(gene_meta))[1]
 
-        gene_expr_list <- lapply(pathway_genes, function(sym) {
-          match_idx <- which(toupper(meta_symbols) == toupper(sym))
-          if (length(match_idx) == 0) return(NULL)
-
-          ens_ids <- rownames(gene_meta)[match_idx]
-          valid_ens <- ens_ids[ens_ids %in% rownames(cpm_mat)]
-          if (length(valid_ens) == 0) return(NULL)
-
-          sub_mat <- cpm_mat[valid_ens, , drop = FALSE]
-
-          if (nrow(sub_mat) > 1) {
-            expr_vals <- colMeans(sub_mat, na.rm = TRUE)
-          } else {
-            expr_vals <- as.numeric(sub_mat[1, ])
+          if (is.na(symbol_col)) {
+            message("[Heatmap] ERROR: No symbol column found in gene_meta")
+            return()
           }
 
-          return(list(symbol = sym, values = expr_vals))
-        })
+          meta_symbols <- as.character(gene_meta[[symbol_col]])
 
-        gene_expr_list <- gene_expr_list[!sapply(gene_expr_list, is.null)]
-        if (length(gene_expr_list) == 0) return()
+          gene_expr_list <- lapply(pathway_genes, function(sym) {
+            match_idx <- which(toupper(meta_symbols) == toupper(sym))
+            if (length(match_idx) == 0) return(NULL)
 
-        plot_mat <- do.call(rbind, lapply(gene_expr_list, `[[`, "values"))
-        rownames(plot_mat) <- sapply(gene_expr_list, `[[`, "symbol")
-        colnames(plot_mat) <- target_samples
+            gene_ids <- rownames(gene_meta)[match_idx]
+            valid_ids <- gene_ids[gene_ids %in% rownames(cpm_mat)]
+            if (length(valid_ids) == 0) return(NULL)
+
+            sub_mat <- cpm_mat[valid_ids, , drop = FALSE]
+
+            if (nrow(sub_mat) > 1) {
+              expr_vals <- colMeans(sub_mat, na.rm = TRUE)
+            } else {
+              expr_vals <- as.numeric(sub_mat[1, ])
+            }
+
+            return(list(symbol = sym, values = expr_vals))
+          })
+
+          gene_expr_list <- gene_expr_list[!sapply(gene_expr_list, is.null)]
+          if (length(gene_expr_list) == 0) {
+            message("[Heatmap] ERROR: No pathway genes found in expression matrix")
+            return()
+          }
+
+          plot_mat <- do.call(rbind, lapply(gene_expr_list, `[[`, "values"))
+          rownames(plot_mat) <- sapply(gene_expr_list, `[[`, "symbol")
+          colnames(plot_mat) <- colnames(cpm_mat)
+        }
       }
 
-      # 移除低方差基因
+      # 数据验证和标准化
       gene_vars <- apply(plot_mat, 1, var, na.rm = TRUE)
       plot_mat <- plot_mat[gene_vars > 1e-6 & !is.na(gene_vars), , drop = FALSE]
-      if (nrow(plot_mat) < 2) return()
 
-      # 保存原始CPM用于显示（取整）
+      if (nrow(plot_mat) < 2) {
+        message(sprintf("[Heatmap] ERROR: Only %d genes with valid variance, need at least 2", nrow(plot_mat)))
+        return()
+      }
+
+      message(sprintf("[Heatmap] Final plot matrix: %d genes x %d samples", nrow(plot_mat), ncol(plot_mat)))
+
+      # 保存原始 CPM 用于显示（取整）
       display_numbers <- round(plot_mat)
 
-      # Z-score标准化（用于颜色）
+      # Z-score 标准化（行方向）
       z_mat <- t(scale(t(plot_mat)))
       z_mat[is.na(z_mat)] <- 0
       z_mat[z_mat > 1] <- 1
       z_mat[z_mat < -1] <- -1
 
-      # 获取GSEA geneList用于排序
+      # 获取 GSEA geneList 用于排序
       gene_list <- pdata$data_list$gsea_res@geneList
 
       gene_metrics <- sapply(rownames(plot_mat), function(g) {
@@ -739,7 +895,7 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
 
       is_leading <- toupper(rownames(plot_mat)) %in% toupper(pdata$core_genes)
 
-      # 根据NES方向排序
+      # 根据 NES 方向排序
       if (pdata$nes > 0) {
         sort_order <- order(gene_metrics, decreasing = TRUE)
       } else {
@@ -751,7 +907,7 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
       display_numbers <- display_numbers[sort_order, , drop = FALSE]
       is_leading <- is_leading[sort_order]
 
-      # ComplexHeatmap配置
+      # ComplexHeatmap 配置（保持原有美学）
       col_fun <- circlize::colorRamp2(
         c(-1, 0, 1),
         c("#67a9cf", "#f7f7f7", "#ef8a62")
@@ -760,8 +916,9 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
       grp_col <- c("#E41A1C", "#377EB8")
       names(grp_col) <- c(left_grp, right_grp)
 
+      # 确保分组因子水平顺序正确
       group_factor <- factor(
-        sample_meta$group[sample_idx],
+        sample_meta$group[match(colnames(plot_mat), rownames(sample_meta))],
         levels = c(left_grp, right_grp)
       )
 
@@ -782,7 +939,7 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
         simple_anno_size = grid::unit(0.4, "cm")
       )
 
-      # 使用pindex正确处理row_split后的索引
+      # 单元格数值显示
       layer_fun <- function(j, i, x, y, w, h, fill) {
         vals <- ComplexHeatmap::pindex(display_numbers, i, j)
         grid::grid.text(
@@ -792,7 +949,7 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
         )
       }
 
-      # row_split配置
+      # 行分割配置
       if (pdata$nes > 0) {
         row_split_factor <- factor(
           ifelse(is_leading, "Leading Edge", "Other Genes"),
@@ -805,7 +962,7 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
         )
       }
 
-      # 构建Heatmap
+      # 构建 Heatmap
       ht <- ComplexHeatmap::Heatmap(
         z_mat,
         name = "Z-Score",
@@ -837,11 +994,10 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
         height = NULL
       )
 
-      # 🔧 修复：动态标题显示通路名称和实际数据类型
       enriched_group <- ifelse(pdata$nes > 0, left_grp, right_grp)
       title_text <- sprintf(
         "%s\nRow-Scaled Z-Score [-1, 1] | Raw CPM Values Shown | Enriched in: %s",
-        pdata$pathway_id,  # 加入通路名称
+        pdata$pathway_id,
         enriched_group
       )
 
@@ -860,7 +1016,7 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
       return(height_px)
     })
 
-    # 基因统计表（保持原有逻辑）
+    # 基因统计表
     output$modal_gene_table <- DT::renderDataTable({
       pdata <- current_data()
       shiny::req(pdata)

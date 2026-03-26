@@ -809,168 +809,171 @@ batch_calc_gsea <- function(gsea_env,
 
 
 
-#' @title GSEA Result Metadata Injection (Safe Version - Preserving Row Names)
-#' @description Merges GSEA results with metadata dictionary and adds display names, links, etc.
-#'   This version specifically fixes the row name loss issue to ensure gseaResult object structural integrity.
-#' @param result_df GSEA result dataframe (from clusterProfiler::GSEA's @result)
+#' @title GSEA Result Metadata Injection (Safe Version - Fixed for DDS Backend)
+#' @description Merges GSEA results with metadata dictionary ensuring ALL columns are preserved.
+#'   Specifically fixes the missing URL/Collection/Subcollection issue in DESeq2 backend.
+#' @param result_df GSEA result dataframe from clusterProfiler::GSEA
 #' @param meta_dict Metadata dictionary containing ID, Collection, Combo_Name, URL, Description, etc.
-#' @return Enriched dataframe preserving original row names and row count
+#' @return Enriched dataframe with 17 standard columns
 #' @keywords internal
 
 .enrich_gsea_result <- function(result_df, meta_dict) {
 
-  # --- 1. 输入验证与原始状态保存 ---
-
+  # --- 0. 防御性检查 ---
   if (!is.data.frame(result_df) || nrow(result_df) == 0) {
-    warning("result_df is invalid or empty, returning as is")
+    warning("result_df is invalid or empty")
     return(result_df)
   }
 
   if (!is.data.frame(meta_dict) || nrow(meta_dict) == 0) {
-    warning("meta_dict is invalid or empty, returning original result")
+    warning("meta_dict is empty, cannot enrich results")
     return(result_df)
   }
 
-  if (!"ID" %in% colnames(result_df)) {
-    stop("result_df must contain 'ID' column for metadata matching")
+  if (!"ID" %in% colnames(result_df) || !"ID" %in% colnames(meta_dict)) {
+    stop("Both result_df and meta_dict must contain 'ID' column")
   }
 
-  if (!"ID" %in% colnames(meta_dict)) {
-    stop("meta_dict must contain 'ID' column for matching")
-  }
-
-  # 关键修复：立即保存原始行名，防止后续任何操作丢失
+  # 保存原始行名和ID
   original_rownames <- rownames(result_df)
+  original_ids <- result_df$ID
 
-  # 保存原始 Description（如果存在），用于后续合并
-  has_original_desc <- "Description" %in% colnames(result_df)
-  original_description <- if (has_original_desc) result_df$Description else NULL
+  # --- 1. 标准化meta_dict列结构（确保所有必需列存在）---
+  required_cols <- c("ID", "Description", "URL", "Collection", "Subcollection", "Combo_Name")
 
-  # --- 2. 准备元数据子集 ---
-
-  # 确定 meta_dict 中可用的列，避免 select 时出错
-  available_meta_cols <- colnames(meta_dict)
-  cols_to_select <- c("ID")
-
-  # 按优先级添加可选列
-  optional_cols <- c("Combo_Name", "Collection", "URL", "Description")
-  present_optional <- intersect(optional_cols, available_meta_cols)
-  cols_to_select <- c(cols_to_select, present_optional)
-
-  # 安全地选择列
-  meta_subset <- meta_dict[, cols_to_select, drop = FALSE]
-
-  # 检查重复 ID（会导致 join 后行数增加，破坏行名对应关系）
-  if (any(duplicated(meta_subset$ID))) {
-    warning("Duplicate IDs found in meta_dict, keeping first occurrence")
-    meta_subset <- meta_subset[!duplicated(meta_subset$ID), ]
+  # 如果meta_dict缺少某些列，创建空列占位
+  for (col in required_cols) {
+    if (!col %in% colnames(meta_dict)) {
+      warning(sprintf("meta_dict missing column '%s', creating placeholder", col))
+      meta_dict[[col]] <- NA_character_
+    }
   }
 
-  # --- 3. 执行数据合并（保持行顺序和行数） ---
-
-  # 创建工作副本，移除原始的 Description 列（如果存在），避免与 meta_dict 冲突
-  result_work <- result_df
-  if (has_original_desc) {
-    result_work$Description <- NULL
+  # 确保Subcollection不为NULL（DESeq2流程中可能出现）
+  if (all(is.na(meta_dict$Subcollection)) || is.null(meta_dict$Subcollection)) {
+    meta_dict$Subcollection <- ""
   }
 
-  # 使用 base::merge 替代 dplyr::left_join 以更好控制行名行为
-  # 或者使用 dplyr 但确保后续恢复行名
-  merged_df <- dplyr::left_join(
-    dplyr::as_tibble(result_work),  # 临时转为 tibble 进行 tidyverse 操作
-    dplyr::as_tibble(meta_subset),
-    by = "ID",
-    suffix = c("", "_meta")  # 如果冲突，meta_dict 的列加 _meta 后缀
+  # 确保Combo_Name正确生成（如果缺失）
+  if (all(is.na(meta_dict$Combo_Name))) {
+    meta_dict$Combo_Name <- ifelse(
+      is.na(meta_dict$Subcollection) | meta_dict$Subcollection == "",
+      meta_dict$Collection,
+      paste0(meta_dict$Collection, ":", meta_dict$Subcollection)
+    )
+  }
+
+  # --- 2. 安全地准备result_df（移除可能与meta_dict冲突的列，但保留核心统计列）---
+  # 定义GSEA核心列（统计结果，必须保留）
+  core_stat_cols <- c("ID", "setSize", "enrichmentScore", "NES", "pvalue",
+                      "p.adjust", "qvalue", "rank", "leading_edge", "core_enrichment")
+
+  # 定义可能冲突的元数据列（这些应该从meta_dict获取，而非保留原值）
+  conflict_cols <- c("Description", "URL", "Collection", "Subcollection", "Combo_Name")
+
+  # 安全移除冲突列（如果存在）
+  cols_to_keep <- setdiff(colnames(result_df), conflict_cols)
+  result_work <- result_df[, cols_to_keep, drop = FALSE]
+
+  # --- 3. 执行左连接（使用标准dplyr语法，确保列名不冲突）---
+  # 选择meta_dict中需要的列，避免携带过多列
+  meta_subset <- meta_dict[, required_cols, drop = FALSE]
+
+  # 使用dplyr::left_join，自动处理后缀
+  merged_df <- result_work %>%
+    dplyr::left_join(
+      meta_subset,
+      by = "ID",
+      suffix = c("", "_meta")  # 如果冲突，meta_dict的列加_meta后缀
+    )
+
+  # 检查合并结果
+  if (nrow(merged_df) != nrow(result_work)) {
+    warning(sprintf("Row count changed during merge: %d -> %d",
+                    nrow(result_work), nrow(merged_df)))
+  }
+
+  # --- 4. 构建标准输出列（确保17列标准格式）---
+
+  # 4.1 生成Display_Collection（从Combo_Name或Collection）
+  merged_df$Display_Collection <- dplyr::coalesce(
+    merged_df$Combo_Name,
+    merged_df$Collection,
+    "Unknown"
   )
-
-  # 转回 data.frame 以便后续处理
-  merged_df <- as.data.frame(merged_df)
-
-  # --- 4. 构建展示列 ---
-
-  # 4.1 Display_Collection: 优先级 Combo_Name > Collection > "Unknown"
-  if ("Combo_Name" %in% colnames(merged_df)) {
-    merged_df$Display_Collection <- dplyr::coalesce(merged_df$Combo_Name, merged_df$Collection)
-  } else if ("Collection" %in% colnames(merged_df)) {
-    merged_df$Display_Collection <- merged_df$Collection
-  } else {
-    merged_df$Display_Collection <- "Unknown"
-  }
-
-  # 处理 NA 并转换为因子
-  na_collection <- is.na(merged_df$Display_Collection) | merged_df$Display_Collection == ""
-  merged_df$Display_Collection[na_collection] <- "Unknown"
+  # 确保是因子类型（用于Shiny中的下拉筛选）
   merged_df$Display_Collection <- as.factor(merged_df$Display_Collection)
 
-  # 4.2 Pathway_Link: 基于 URL 创建 HTML 链接
-  if ("URL" %in% colnames(merged_df)) {
-    merged_df$Pathway_Link <- ifelse(
-      is.na(merged_df$URL) | merged_df$URL == "",
-      sprintf("<b>%s</b>", merged_df$ID),
-      sprintf('<a href="%s" target="_blank">%s</a>', merged_df$URL, merged_df$ID)
-    )
-  } else {
-    merged_df$Pathway_Link <- sprintf("<b>%s</b>", merged_df$ID)
-  }
+  # 4.2 生成Pathway_Link（HTML链接格式）
+  merged_df$Pathway_Link <- ifelse(
+    is.na(merged_df$URL) | merged_df$URL == "",
+    sprintf("<b>%s</b>", merged_df$ID),
+    sprintf('<a href="%s" target="_blank">%s</a>', merged_df$URL, merged_df$ID)
+  )
 
-  # 4.3 Description: 优先级 meta_dict.Description > original.Description > ID
-  # 处理可能的 Description_meta 列（来自 suffix 冲突）
+  # 4.3 确保Description列存在（优先使用meta_dict的Description）
   if ("Description_meta" %in% colnames(merged_df)) {
-    # 如果存在 Description_meta，说明 result_df 和 meta_dict 都有 Description
-    meta_desc <- merged_df$Description_meta
-    merged_df$Description_meta <- NULL  # 删除临时列
-  } else if ("Description" %in% colnames(merged_df)) {
-    # 只有 meta_dict 有 Description（result_work 中的已被删除）
-    meta_desc <- merged_df$Description
-  } else {
-    meta_desc <- NULL
+    # 如果发生了列名冲突（Description.x/Description.y情况）
+    # 使用meta_dict的Description（更完整的描述）
+    merged_df$Description <- dplyr::coalesce(
+      merged_df$Description_meta,
+      merged_df$ID
+    )
+    # 删除临时列
+    merged_df$Description_meta <- NULL
+  } else if (!"Description" %in% colnames(merged_df)) {
+    # 如果完全没有Description列，使用ID作为后备
+    merged_df$Description <- merged_df$ID
   }
 
-  # 合并 Description 逻辑
-  if (!is.null(meta_desc)) {
-    # 有 meta_dict 的描述
-    if (!is.null(original_description)) {
-      merged_df$Description <- dplyr::coalesce(meta_desc, original_description)
+  # 处理NA值
+  merged_df$Description[is.na(merged_df$Description)] <- merged_df$ID[is.na(merged_df$Description)]
+
+  # --- 5. 清理临时列并恢复行名 ---
+
+  # 删除所有_meta后缀的临时列（如果存在）
+  meta_temp_cols <- grep("_meta$", colnames(merged_df), value = TRUE)
+  if (length(meta_temp_cols) > 0) {
+    merged_df <- merged_df[, !(colnames(merged_df) %in% meta_temp_cols), drop = FALSE]
+  }
+
+  # 确保行名正确（使用ID作为行名，这是clusterProfiler的标准）
+  merged_df <- as.data.frame(merged_df)
+  if ("ID" %in% colnames(merged_df)) {
+    # 检查ID是否有重复
+    if (any(duplicated(merged_df$ID))) {
+      warning("Duplicate IDs found in result, using original rownames")
+      rownames(merged_df) <- original_rownames
     } else {
-      merged_df$Description <- meta_desc
-    }
-  } else {
-    # 没有 meta_dict 的描述，使用原始的
-    if (!is.null(original_description)) {
-      merged_df$Description <- original_description
-    } else {
-      merged_df$Description <- merged_df$ID
-    }
-  }
-
-  # 最终后备：任何 NA 或空值都用 ID 填充
-  na_desc_idx <- is.na(merged_df$Description) | merged_df$Description == ""
-  merged_df$Description[na_desc_idx] <- merged_df$ID[na_desc_idx]
-
-  # --- 5. 清理临时/中间列 ---
-
-  # 删除从 meta_dict 引入的原始元数据列（保留我们构建的新列）
-  cols_to_remove <- intersect(c("Combo_Name", "Collection", "URL"), colnames(merged_df))
-  if (length(cols_to_remove) > 0) {
-    merged_df <- merged_df[, !(colnames(merged_df) %in% cols_to_remove), drop = FALSE]
-  }
-
-  # --- 6. 关键修复：恢复原始行名 ---
-
-  if (length(original_rownames) == nrow(merged_df)) {
-    rownames(merged_df) <- original_rownames
-  } else {
-    # 如果行数不匹配（理论上不应发生，因为 left_join 保持左表行数）
-    warning(sprintf(
-      "Row name length mismatch: original %d rows, after processing %d rows. Attempting to use ID column as row names.",
-      length(original_rownames),
-      nrow(merged_df)
-    ))
-    # 后备方案：使用 ID 列
-    if ("ID" %in% colnames(merged_df)) {
       rownames(merged_df) <- merged_df$ID
     }
+  } else {
+    rownames(merged_df) <- original_rownames
   }
+
+  # --- 6. 最终验证（确保17列标准）---
+  standard_cols <- c("ID", "setSize", "enrichmentScore", "NES", "pvalue",
+                     "p.adjust", "qvalue", "rank", "leading_edge", "core_enrichment",
+                     "Description", "URL", "Collection", "Subcollection", "Combo_Name",
+                     "Display_Collection", "Pathway_Link")
+
+  missing_standard <- setdiff(standard_cols, colnames(merged_df))
+  if (length(missing_standard) > 0) {
+    warning(sprintf("Final result missing standard columns: %s",
+                    paste(missing_standard, collapse = ", ")))
+    # 为缺失的列创建空值
+    for (col in missing_standard) {
+      merged_df[[col]] <- NA_character_
+    }
+  }
+
+  # 重新排序列以匹配标准顺序（可选，但有助于一致性）
+  present_cols <- intersect(standard_cols, colnames(merged_df))
+  extra_cols <- setdiff(colnames(merged_df), standard_cols)
+  merged_df <- merged_df[, c(present_cols, extra_cols), drop = FALSE]
+
+  message(sprintf("[.enrich_gsea_result] Successfully enriched: %d rows x %d columns",
+                  nrow(merged_df), ncol(merged_df)))
 
   return(merged_df)
 }

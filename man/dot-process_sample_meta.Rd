@@ -5,8 +5,11 @@
 \title{Internal Sample Metadata Processing}
 \usage{
 .process_sample_meta(sample_meta, expr_bundle)
+
+.process_sample_meta(sample_meta, expr_bundle)
 }
 \description{
-Unified sample metadata processing: fixes row names, unifies group column names.
+Unified sample metadata processing: fixes row names, unifies group column names,
+  and converts numeric group codes to character labels.
 }
 \keyword{internal}

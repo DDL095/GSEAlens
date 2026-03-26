@@ -2,12 +2,12 @@
 % Please edit documentation in R/11_shiny_mod_modal.R
 \name{mod_pathway_modal_server}
 \alias{mod_pathway_modal_server}
-\title{Pathway Detail Modal Server - Fixed CPM Logic}
+\title{Pathway Detail Modal Server - Fixed for DESeq2 DFrame compatibility}
 \usage{
 mod_pathway_modal_server(id, data_prep, trigger_event, gsea_res)
 }
 \description{
-Forces raw CPM usage regardless of expression_type selection,
-  detects and reverses log2 transformation if necessary, displays pathway name in title
+Forces raw CPM usage, handles DFrame/DESeq2 colData properly,
+  ensures sample name matching between expression matrix and metadata
 }
 \keyword{internal}

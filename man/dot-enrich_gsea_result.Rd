@@ -2,20 +2,20 @@
 % Please edit documentation in R/04_calculation.R
 \name{.enrich_gsea_result}
 \alias{.enrich_gsea_result}
-\title{GSEA Result Metadata Injection (Safe Version - Preserving Row Names)}
+\title{GSEA Result Metadata Injection (Safe Version - Fixed for DDS Backend)}
 \usage{
 .enrich_gsea_result(result_df, meta_dict)
 }
 \arguments{
-\item{result_df}{GSEA result dataframe (from clusterProfiler::GSEA's @result)}
+\item{result_df}{GSEA result dataframe from clusterProfiler::GSEA}
 
 \item{meta_dict}{Metadata dictionary containing ID, Collection, Combo_Name, URL, Description, etc.}
 }
 \value{
-Enriched dataframe preserving original row names and row count
+Enriched dataframe with 17 standard columns
 }
 \description{
-Merges GSEA results with metadata dictionary and adds display names, links, etc.
-  This version specifically fixes the row name loss issue to ensure gseaResult object structural integrity.
+Merges GSEA results with metadata dictionary ensuring ALL columns are preserved.
+  Specifically fixes the missing URL/Collection/Subcollection issue in DESeq2 backend.
 }
 \keyword{internal}

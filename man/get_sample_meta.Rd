@@ -7,5 +7,5 @@
 get_sample_meta(obj)
 }
 \description{
-Fixes DESeq2 backend: unifies group column name to 'group', ensuring row names match expression matrix.
+Fixes DESeq2 backend: handles DFrame properly, unifies group column names
 }
