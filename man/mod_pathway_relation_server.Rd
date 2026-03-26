@@ -2,11 +2,11 @@
 % Please edit documentation in R/13_shiny_mod_pathway_relation.R
 \name{mod_pathway_relation_server}
 \alias{mod_pathway_relation_server}
-\title{通路关系探索模块 Server}
+\title{Pathway Relationship Exploration Module Server}
 \usage{
 mod_pathway_relation_server(id, data_prep_list, gsea_res)
 }
 \description{
-实现DotPlot、Chord、Network、UpSet逻辑，仅hover无click
+Implements DotPlot, Chord, Network, and UpSet logic with hover-only interactions (no click)
 }
 \keyword{internal}

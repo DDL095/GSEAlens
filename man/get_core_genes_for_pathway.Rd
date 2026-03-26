@@ -2,21 +2,21 @@
 % Please edit documentation in R/utils-core-genes.R
 \name{get_core_genes_for_pathway}
 \alias{get_core_genes_for_pathway}
-\title{提取通路的Core Genes（Leading Edge）}
+\title{Extract Pathway Core Genes (Leading Edge)}
 \usage{
 get_core_genes_for_pathway(gsea_res_obj, pathway_id)
 }
 \arguments{
-\item{gsea_res_obj}{GseaRes对象或单个GSEA结果（list(status=, data=, ...)）}
+\item{gsea_res_obj}{GseaRes object or single GSEA result (list(status=, data=, ...))}
 
-\item{pathway_id}{字符串，通路ID}
+\item{pathway_id}{Character, pathway ID}
 }
 \value{
-字符向量，core genes（大写标准化）
+Character vector, core genes (uppercase normalized)
 }
 \description{
-从GSEA结果中解析core_enrichment字段，提取基因列表。
-  这是03/04所有可视化模块的基础数据接口。
+Parse the core_enrichment field from GSEA results to extract gene list.
+  This is the fundamental data interface for all visualization modules in 03/04.
 }
 \examples{
 \dontrun{

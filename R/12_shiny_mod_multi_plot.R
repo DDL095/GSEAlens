@@ -1,4 +1,4 @@
-#' @title 联合绘图 UI
+#' @title Combined Pathway Plotting UI
 #' @keywords internal
 
 mod_multi_plot_ui <- function(id) {
@@ -6,22 +6,22 @@ mod_multi_plot_ui <- function(id) {
   shiny::tagList(
     shiny::div(
       style = "margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 8px;",
-      shiny::h4("🎨 联合通路绘图"),
+      shiny::h4("Combined Pathway Plotting"),
       shiny::uiOutput(ns("selection_info")),
       shiny::selectizeInput(
         ns("pathway_selector"),
-        label = "当前已选择通路（可点击 × 删除）:",
+        label = "Selected Pathways (click x to remove):",
         choices = character(0), multiple = TRUE,
-        options = list(plugins = list("remove_button"), placeholder = "当前勾选的通路..."),width = "100%",
+        options = list(plugins = list("remove_button"), placeholder = "Select pathways..."),width = "100%",
       ),
-      shiny::actionButton(ns("clear_btn"), "🗑️ 清空选择", class = "btn-warning",
+      shiny::actionButton(ns("clear_btn"), "Clear Selection", class = "btn-warning",
                           style = "margin-bottom: 15px;"),
       shiny::plotOutput(ns("multi_plot"), height = "800px",width = "100%")
     )
   )
 }
 
-#' @title 联合绘图 Server
+#' @title Combined Pathway Plotting Server
 #' @keywords internal
 
 mod_multi_plot_server <- function(id, data_prep, table_controller) {
@@ -62,10 +62,10 @@ mod_multi_plot_server <- function(id, data_prep, table_controller) {
       n <- length(selected_ids())
       if (n == 0) {
         shiny::tags$div(style = "color: #856404; background-color: #fff3cd; padding: 10px;",
-                        "⚠️ 请在工作台表格中勾选\"联合展示\"列")
+                        "Please check the 'Combined Display' column in the pathway table")
       } else {
         shiny::tags$div(style = "color: #155724; background-color: #d4edda; padding: 10px;",
-                        sprintf("✅ 已选择 %d 条通路", n))
+                        sprintf("%d pathway(s) selected", n))
       }
     })
 
@@ -91,11 +91,11 @@ mod_multi_plot_server <- function(id, data_prep, table_controller) {
           target_pathways = sel,
           subPlot = data_list$plot_subtype,
           curveCol = colors,
-          main_title = sprintf("联合展示: %d 条通路", length(sel))
+          main_title = sprintf("Combined Display: %d Pathway(s)", length(sel))
         ))
       }, error = function(e) {
         graphics::plot(1, type = "n", axes = FALSE)
-        graphics::text(1, 1, sprintf("绘图错误: %s", e$message), col = "red")
+        graphics::text(1, 1, sprintf("Plotting Error: %s", e$message), col = "red")
       })
     })
   })

@@ -2,13 +2,13 @@
 % Please edit documentation in R/14_shiny_mod_joint_canvas.R
 \name{mod_joint_canvas_server}
 \alias{mod_joint_canvas_server}
-\title{联合GSEA填充画布模块 Server（侧边栏控制版）}
+\title{Joint GSEA Fill Canvas Module Server (Sidebar Control Version)}
 \usage{
 mod_joint_canvas_server(id, gsea_res, data_prep_list, table_result)
 }
 \description{
-1. 接收侧边栏控制参数（排列模式）
-  2. 无最大行数限制
-  3. 美学与multi_plot完全一致
+1. Receive sidebar control parameters (arrangement mode)
+  2. No maximum row limit
+  3. Aesthetic consistency with multi_plot
 }
 \keyword{internal}

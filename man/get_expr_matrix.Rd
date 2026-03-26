@@ -2,20 +2,20 @@
 % Please edit documentation in R/utils-accessors.R
 \name{get_expr_matrix}
 \alias{get_expr_matrix}
-\title{获取表达矩阵}
+\title{Get Expression Matrix}
 \usage{
 get_expr_matrix(obj, type = "default", ...)
 }
 \arguments{
-\item{obj}{GseaEnv 或 GseaRes 对象}
+\item{obj}{GseaEnv or GseaRes object}
 
-\item{type}{字符串。可选值："default" (默认展示), "raw", "cpm", "logcpm", "vst", "fpkm", "tpm"。}
+\item{type}{Character. Options: "default" (default display), "raw", "cpm", "logcpm", "vst", "fpkm", "tpm".}
 
-\item{...}{额外参数}
+\item{...}{Additional arguments}
 }
 \value{
-表达矩阵 (基因 x 样本)
+Expression matrix (genes x samples)
 }
 \description{
-从 GseaEnv 或 GseaRes 中提取表达矩阵，支持多种标准化方式。
+Extract expression matrix from GseaEnv or GseaRes, supporting multiple normalization methods.
 }

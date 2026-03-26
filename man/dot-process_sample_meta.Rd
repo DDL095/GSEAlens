@@ -2,11 +2,11 @@
 % Please edit documentation in R/utils-accessors.R
 \name{.process_sample_meta}
 \alias{.process_sample_meta}
-\title{内部样本元数据处理}
+\title{Internal Sample Metadata Processing}
 \usage{
 .process_sample_meta(sample_meta, expr_bundle)
 }
 \description{
-统一处理样本元数据：修复行名、统一分组列名
+Unified sample metadata processing: fixes row names, unifies group column names.
 }
 \keyword{internal}

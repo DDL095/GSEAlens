@@ -2,11 +2,11 @@
 % Please edit documentation in R/11_shiny_mod_modal.R
 \name{mod_pathway_modal_ui}
 \alias{mod_pathway_modal_ui}
-\title{详情弹窗 UI}
+\title{Pathway Detail Modal UI}
 \usage{
 mod_pathway_modal_ui(id)
 }
 \description{
-详情弹窗 UI
+Pathway Detail Modal UI
 }
 \keyword{internal}

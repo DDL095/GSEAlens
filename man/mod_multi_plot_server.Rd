@@ -2,11 +2,11 @@
 % Please edit documentation in R/12_shiny_mod_multi_plot.R
 \name{mod_multi_plot_server}
 \alias{mod_multi_plot_server}
-\title{联合绘图 Server}
+\title{Combined Pathway Plotting Server}
 \usage{
 mod_multi_plot_server(id, data_prep, table_controller)
 }
 \description{
-联合绘图 Server
+Combined Pathway Plotting Server
 }
 \keyword{internal}

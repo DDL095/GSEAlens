@@ -1,24 +1,24 @@
-#' @title 联合GSEA填充画布模块 UI（纯展示版）
-#' @description 所有控制已移至侧边栏，此处仅显示画布结果
+#' @title Joint GSEA Fill Canvas Module UI (Display-Only Version)
+#' @description All controls have been moved to the sidebar; only canvas results are displayed here.
 #' @keywords internal
 
 mod_joint_canvas_ui <- function(id) {
   ns <- shiny::NS(id)
   shiny::tagList(
-    # 🔧 修改：移除所有控制元素，仅保留画布展示（占满12列）
+    # 🔧 Modification: Remove all control elements, keep only canvas display (full 12 columns)
     shiny::div(class = "white-box", style = "min-height: 900px;",
-               shiny::h4("GSEA 联合画布"),
+               shiny::h4("GSEA Joint Canvas"),
                shiny::uiOutput(ns("canvas_info")),
                shiny::plotOutput(ns("canvas_plot"), height = "auto", width = "100%")
     )
   )
 }
 
-#' @title 联合GSEA填充画布模块 Server（侧边栏控制版）
+#' @title Joint GSEA Fill Canvas Module Server (Sidebar Control Version)
 #' @description
-#'   1. 接收侧边栏控制参数（排列模式）
-#'   2. 无最大行数限制
-#'   3. 美学与multi_plot完全一致
+#'   1. Receive sidebar control parameters (arrangement mode)
+#'   2. No maximum row limit
+#'   3. Aesthetic consistency with multi_plot
 #' @keywords internal
 
 mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) {
@@ -28,31 +28,31 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
     # 存储当前画布结果
     canvas_result <- shiny::reactiveVal(NULL)
 
-    # 🔧 核心：监听侧边栏的生成按钮（而非本地按钮）
+    # 🔧 Core: Monitor the generate button in sidebar (instead of local button)
     shiny::observeEvent(data_prep_list$joint_generate(), {
 
-      # 🔧 从data_prep_list获取参数（而非input）
+      # 🔧 Get parameters from data_prep_list (instead of input)
       contrasts <- data_prep_list$joint_contrasts()
       ncol_val <- data_prep_list$joint_ncol()
 
       shiny::req(contrasts, ncol_val)
       if (length(contrasts) == 0) {
-        shiny::showNotification("请先在左侧控制栏选择对比组（排列模式）", type = "error")
+        shiny::showNotification("Please select contrast groups (arrangement mode) in the left control panel first", type = "error")
         return()
       }
 
-      # 🔧 从data_prep_list获取绘图参数（与multi_plot一致）
+      # 🔧 Get plotting parameters from data_prep_list (consistent with multi_plot)
       data_list <- data_prep_list$data()
       shiny::req(data_list)
 
       plot_subtype <- data_list$plot_subtype
       custom_colors <- data_list$custom_colors
 
-      # 🔧 通路：与multi_plot共用选择
+      # 🔧 Pathways: share selection with multi_plot
       pathways <- table_result$selected_pathways()
       shiny::req(pathways)
       if (length(pathways) == 0) {
-        shiny::showNotification("请先在主工作台勾选\"联合展示\"的通路", type = "error")
+        shiny::showNotification("Please check the pathways for 'Joint Display' in the main workspace first", type = "error")
         return()
       }
 
@@ -65,34 +65,34 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
         colors <- rep(colors, length.out = length(pathways))
       }
 
-      shiny::incProgress(0.1, detail = "提取GSEA任务...")
+      shiny::incProgress(0.1, detail = "Extracting GSEA tasks...")
 
       plot_list <- list()
 
-      # 🔧 排列模式：严格按用户选择顺序（支持A_vs_B和B_vs_A同时存在）
+      # 🔧 Arrangement mode: strictly follow user-selected order (support both A_vs_B and B_vs_A coexisting)
       for (i in seq_along(contrasts)) {
         contrast_id <- contrasts[i]
 
         task_obj <- tryCatch({
           extract_gsea_task(gsea_res, contrast_id, "ALL")
         }, error = function(e) {
-          message(sprintf("提取 %s 失败: %s", contrast_id, e$message))
+          message(sprintf("Extraction failed for %s: %s", contrast_id, e$message))
           NULL
         })
 
         if (is.null(task_obj)) {
           p <- ggplot2::ggplot() +
             ggplot2::annotate("text", x = 0.5, y = 0.5,
-                              label = sprintf("未找到:\n%s", contrast_id),
+                              label = sprintf("Not found:\n%s", contrast_id),
                               size = 3, color = "red") +
             ggplot2::theme_void()
           plot_list[[i]] <- p
           next
         }
 
-        # 🔧 美学统一：与multi_plot完全一致
+        # 🔧 Aesthetic unification: consistent with multi_plot
         main_title <- sprintf(
-          "%s [%d 通路]",
+          "%s [%d pathways]",
           gsub("_vs_", " vs ", contrast_id),
           length(pathways)
         )
@@ -110,7 +110,7 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
         }, error = function(e) {
           ggplot2::ggplot() +
             ggplot2::annotate("text", x = 0.5, y = 0.5,
-                              label = sprintf("错误:\n%s", substr(e$message, 1, 80)),
+                              label = sprintf("Error:\n%s", substr(e$message, 1, 80)),
                               size = 3, color = "red") +
             ggplot2::theme_void()
         })
@@ -119,20 +119,20 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
 
         if (i %% 2 == 0 || i == length(contrasts)) {
           shiny::incProgress(0.6 * i / length(contrasts),
-                             detail = sprintf("绘制 %d/%d ...", i, length(contrasts)))
+                             detail = sprintf("Plotting %d/%d ...", i, length(contrasts)))
         }
       }
 
       if (length(plot_list) == 0) {
-        shiny::showNotification("无有效图表可生成", type = "error")
+        shiny::showNotification("No valid plots can be generated", type = "error")
         return()
       }
 
       n_plots <- length(plot_list)
-      # 🔧 删除最大行数限制：自动计算
+      # 🔧 Remove max row limit: auto-calculate
       actual_nrow <- ceiling(n_plots / ncol_val)
 
-      # 🔧 美学优化：与multi_plot一致
+      # 🔧 Aesthetic optimization: consistent with multi_plot
       combined_plot <- patchwork::wrap_plots(
         plot_list,
         ncol = ncol_val,
@@ -140,8 +140,8 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
         byrow = TRUE,
         guides = "collect"
       ) + patchwork::plot_annotation(
-        title = sprintf("联合GSEA画布: %d 对比组 × %d 通路", n_plots, length(pathways)),
-        subtitle = sprintf("排列: %s", paste(contrasts, collapse = " → ")),
+        title = sprintf("Joint GSEA Canvas: %d contrast groups × %d pathways", n_plots, length(pathways)),
+        subtitle = sprintf("Arrangement: %s", paste(contrasts, collapse = " → ")),
         theme = ggplot2::theme(
           plot.title = ggplot2::element_text(size = 12, face = "bold", hjust = 0.5),
           plot.subtitle = ggplot2::element_text(size = 8, color = "gray50", hjust = 0.5),
@@ -158,7 +158,7 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
         pathways = pathways
       ))
 
-      shiny::incProgress(1.0, detail = "完成!")
+      shiny::incProgress(1.0, detail = "Done!")
     })
 
     # 渲染画布
@@ -168,7 +168,7 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
     }, height = function() {
       if (is.null(canvas_result())) return(900)
       nrow <- canvas_result()$nrow
-      # 🔧 每行400px，无上限
+      # 🔧 400px per row, no upper limit
       return(max(900, nrow * 400))
     }, width = 1600, res = 72)
 
@@ -180,15 +180,15 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
       shiny::tags$div(
         style = "margin-bottom: 15px; padding: 10px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 8px;",
         shiny::HTML(sprintf(
-          "<strong>📊 画布信息:</strong> %d个对比组 | 布局: %d列 × %d行 | 共 %d 条通路<br>
-           <small>排列顺序: %s</small>",
+          "<strong>📊 Canvas Info:</strong> %d contrast groups | Layout: %d cols × %d rows | %d pathways<br>
+           <small>Arrangement order: %s</small>",
           info$n_plots, info$ncol, info$nrow, length(info$pathways),
           paste(info$contrasts, collapse = " → ")
         ))
       )
     })
 
-    # 🔧 删除：保存画布功能已移除（根据用户要求）
+    # 🔧 Deletion: Save canvas function has been removed (per user request)
 
   })
 }

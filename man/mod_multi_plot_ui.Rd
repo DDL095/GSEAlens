@@ -2,11 +2,11 @@
 % Please edit documentation in R/12_shiny_mod_multi_plot.R
 \name{mod_multi_plot_ui}
 \alias{mod_multi_plot_ui}
-\title{联合绘图 UI}
+\title{Combined Pathway Plotting UI}
 \usage{
 mod_multi_plot_ui(id)
 }
 \description{
-联合绘图 UI
+Combined Pathway Plotting UI
 }
 \keyword{internal}

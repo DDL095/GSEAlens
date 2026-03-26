@@ -1,4 +1,4 @@
-#' @title 四重联动 UI
+#' @title Quadrant Linkage UI
 #' @keywords internal
 
 mod_quadrant_ui <- function(id) {
@@ -8,26 +8,26 @@ mod_quadrant_ui <- function(id) {
 
 
       shiny::column(6, shiny::div(class = "white-box",
-                                  shiny::h4("1. 宏观: 通路火山图"),
+                                  shiny::h4("1. Macro: Pathway Volcano"),
                                   shiny::div(
                                     style = "position: relative;",
                                     plotly::plotlyOutput(ns("volcano_pathway"), height = "450px"),
                                     shiny::div(
                                       style = "position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.9); padding: 5px 10px; border-radius: 4px; font-size: 11px; color: #666;",
-                                      "点击通路查看详情"
+                                      "Click pathway to view details"
                                     )
                                   ))),
 
 
       shiny::column(6, shiny::div(class = "white-box",
-                                  shiny::h4("2. 微观: 基因 Rank 分布"),
+                                  shiny::h4("2. Micro: Gene Rank Distribution"),
                                   plotly::plotlyOutput(ns("volcano_gene"), height = "450px")))
     ),
 
 
     shiny::fluidRow(
       shiny::column(6, shiny::div(class = "white-box",
-                                  shiny::h4("3. 差异表达火山图"),
+                                  shiny::h4("3. Differential Expression Volcano"),
                                   shiny::div(
                                     style = "position: absolute; top: 10px; right: 50%; z-index: 100;",
                                     shiny::actionButton(
@@ -42,7 +42,7 @@ mod_quadrant_ui <- function(id) {
                                       style = "background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px;",
                                       shiny::numericInput(
                                         ns("volcano_logfc_thresh"),
-                                        "logFC阈值:",
+                                        "logFC Threshold:",
                                         value = 1,
                                         min = 0,
                                         max = 22,
@@ -50,20 +50,20 @@ mod_quadrant_ui <- function(id) {
                                       ),
                                       shiny::numericInput(
                                         ns("volcano_pval_thresh"),
-                                        "P-value阈值:",
+                                        "P-value Threshold:",
                                         value = 0.05,
                                         min = 0.001,
                                         max = 1,
                                         step = 0.01
                                       ),
-                                      shiny::helpText("设置后点击火山图区域刷新")
+                                      shiny::helpText("Click volcano area to refresh after setting")
                                     )
                                   ),
                                   plotly::plotlyOutput(ns("de_volcano"), height = "450px"))),
 
 
       shiny::column(6, shiny::div(class = "white-box",
-                                  shiny::h4("4. 全量表达分布图"),
+                                  shiny::h4("4. Full Expression Distribution"),
                                   shiny::div(
                                     style = "position: relative;",
                                     # 添加切换控件
@@ -72,7 +72,7 @@ mod_quadrant_ui <- function(id) {
                                       # 添加 0 基准点切换
                                       shiny::checkboxInput(
                                         ns("zero_baseline"),
-                                        label = "以0为基准线",
+                                        label = "Use 0 as baseline",
                                         value = FALSE
                                       )
                                     ),
@@ -83,8 +83,8 @@ mod_quadrant_ui <- function(id) {
   )
 }
 
-#' @title 四重联动 Server（连续点击多选 + 排序根治版）
-#' @description 支持连续点击标记多个通路，Boxplot排序强制锁定
+#' @title Quadrant Linkage Server (Multi-select + Sort Fix)
+#' @description Supports continuous clicking to mark multiple pathways, Boxplot sorting forced lock
 #' @keywords internal
 
 mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
@@ -111,7 +111,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
 
       # 🔴 关键修复：当对比组切换时，重置排序为默认
       boxplot_order_ref("default")
-      message("🔄 [联动] 对比组已切换，排序已重置为默认")
+      message("🔄 [Linkage] Comparison group switched, sorting reset to default")
     })
 
     # 1. 通路火山图（连续点击多选）
@@ -205,11 +205,11 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
       if (clicked_id %in% current) {
         new_selection <- setdiff(current, clicked_id)
         selected_pathway_ids(new_selection)
-        message(sprintf("❌ 移除: %s (剩余%d个)", clicked_id, length(new_selection)))
+        message(sprintf("❌ Removed: %s (remaining %d)", clicked_id, length(new_selection)))
       } else {
         new_selection <- c(current, clicked_id)
         selected_pathway_ids(new_selection)
-        message(sprintf("✅ 添加: %s (共%d个)", clicked_id, length(new_selection)))
+        message(sprintf("✅ Added: %s (total %d)", clicked_id, length(new_selection)))
 
         data_list <- data_prep_data()
         if (!is.null(data_list)) {
@@ -259,8 +259,8 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
         showlegend = FALSE,
         title = list(
           text = ifelse(length(current_pws) > 0,
-                        sprintf("已选%d个通路 | 共%d个基因", length(current_pws), length(selected_pathway_genes())),
-                        "点击上方火山图标记通路"),
+                        sprintf("Selected %d pathways | %d genes total", length(current_pws), length(selected_pathway_genes())),
+                        "Click pathway in volcano above to mark"),
           font = list(size = 12)
         )
       )
@@ -278,7 +278,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
       de_df <- tryCatch({
         get_de_table(gsea_res, contrast_id)
       }, error = function(e) {
-        message(sprintf("DE表获取失败: %s", e$message))
+        message(sprintf("DE table retrieval failed: %s", e$message))
         return(NULL)
       })
 
@@ -521,7 +521,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
 
       if (is.null(gene_click) || is.null(gene_click$key)) {
         return(plotly::plot_ly() %>% plotly::layout(
-          title = list(text = "👈 请在左侧火山图点击基因", font = list(size = 14))
+          title = list(text = "👈 Please click gene in left volcano plot", font = list(size = 14))
         ))
       }
 
@@ -533,7 +533,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
         sample_meta <- get_sample_meta(gsea_res)
 
         if (is.null(expr_mat) || is.null(sample_meta)) {
-          return(plotly::plot_ly() %>% plotly::layout(title = "表达矩阵不可用"))
+          return(plotly::plot_ly() %>% plotly::layout(title = "Expression matrix not available"))
         }
 
 
@@ -586,7 +586,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
                 }
 
                 if (length(match_idx) > 0) {
-                  message(sprintf("✅ 通过 gene_meta$%s 映射: %s -> %s",
+                  message(sprintf("✅ Mapped via gene_meta$%s: %s -> %s",
                                   symbol_col, target_gene_upper, ensembl_ids[1]))
                 }
               }
@@ -617,7 +617,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
 
         if (length(match_idx) == 0 || is.na(match_idx)) {
           return(plotly::plot_ly() %>% plotly::layout(
-            title = sprintf("基因 '%s' 未找到（已尝试匹配 ID 和 SYMBOL）", target_gene_upper)
+            title = sprintf("Gene '%s' not found (tried matching ID and SYMBOL)", target_gene_upper)
           ))
         }
 
@@ -625,7 +625,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
         # 🎯 关键：保留原始点击的 SYMBOL 作为显示名称（而非 Ensembl ID）
         display_gene_name <- gene_click$key
 
-        message(sprintf("📊 箱线图数据: %s (匹配到行: %s)", display_gene_name, actual_gene))
+        message(sprintf("📊 Boxplot data: %s (matched to row: %s)", display_gene_name, actual_gene))
 
 
 
@@ -644,7 +644,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
 
         plot_data <- plot_data[!is.na(plot_data$Group), ]
         if (nrow(plot_data) == 0) {
-          return(plotly::plot_ly() %>% plotly::layout(title = "无有效分组数据"))
+          return(plotly::plot_ly() %>% plotly::layout(title = "No valid group data"))
         }
 
         # 解析排序（保持与原有逻辑完全一致）
@@ -742,9 +742,9 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
         return(ply)
 
       }, error = function(e) {
-        message(sprintf("❌ 箱线图错误: %s", e$message))
+        message(sprintf("❌ Boxplot error: %s", e$message))
         return(plotly::plot_ly() %>% plotly::layout(
-          title = sprintf("错误: %s", e$message)
+          title = sprintf("Error: %s", e$message)
         ))
       })
     })

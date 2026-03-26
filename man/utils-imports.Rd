@@ -2,8 +2,8 @@
 % Please edit documentation in R/utils-imports.R
 \name{utils-imports}
 \alias{utils-imports}
-\title{GSEAlens 全局导入}
+\title{GSEAlens Global Imports}
 \description{
-集中管理所有外部依赖导入，避免重复定义
+Centralized management of all external dependency imports to avoid redundant definitions
 }
 \keyword{internal}

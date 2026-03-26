@@ -2,13 +2,13 @@
 % Please edit documentation in R/05_extraction.R
 \name{inspect_gsea_res}
 \alias{inspect_gsea_res}
-\title{查看 GSEA 结果概览}
+\title{View GSEA Result Overview}
 \usage{
 inspect_gsea_res(gsea_res)
 }
 \arguments{
-\item{gsea_res}{GseaRes 对象}
+\item{gsea_res}{GseaRes object}
 }
 \description{
-在控制台打印 GseaRes 对象的详细摘要。
+Print detailed summary of GseaRes object to console.
 }

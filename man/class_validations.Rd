@@ -2,8 +2,8 @@
 % Please edit documentation in R/00_class_validations.R
 \name{class_validations}
 \alias{class_validations}
-\title{核心类定义与校验函数}
+\title{Core Class Definitions and Validation Functions}
 \description{
-定义 GseaEnv, GseaRes, GseaTask 结构，并提供内部校验逻辑。
+Define GseaEnv, GseaRes, GseaTask structures and provide internal validation logic.
 }
 \keyword{internal}

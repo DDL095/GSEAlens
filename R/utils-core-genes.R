@@ -1,13 +1,12 @@
+# Phase 0: Core Genes Extraction and Data Access Layer (Unified Interface for 03/04 Modules)
 
-# Phase 0: Core Genes 提取与数据访问层（为03/04模块提供统一接口）
 
-
-#' @title 提取通路的Core Genes（Leading Edge）
-#' @description 从GSEA结果中解析core_enrichment字段，提取基因列表。
-#'   这是03/04所有可视化模块的基础数据接口。
-#' @param gsea_res_obj GseaRes对象或单个GSEA结果（list(status=, data=, ...)）
-#' @param pathway_id 字符串，通路ID
-#' @return 字符向量，core genes（大写标准化）
+#' @title Extract Pathway Core Genes (Leading Edge)
+#' @description Parse the core_enrichment field from GSEA results to extract gene list.
+#'   This is the fundamental data interface for all visualization modules in 03/04.
+#' @param gsea_res_obj GseaRes object or single GSEA result (list(status=, data=, ...))
+#' @param pathway_id Character, pathway ID
+#' @return Character vector, core genes (uppercase normalized)
 #' @export
 
 #' @examples
@@ -18,7 +17,7 @@ get_core_genes_for_pathway <- function(gsea_res_obj, pathway_id) {
   # 统一处理输入：可能是GseaRes对象或已提取的task结果
   if (inherits(gsea_res_obj, "GseaRes")) {
     # 需要指定contrast_id，这里简化处理，假设传入的是单个对比结果
-    stop("对于GseaRes对象，请先使用extract_gsea_task提取特定对比组")
+    stop("For GseaRes object, please use extract_gsea_task to extract specific contrast first")
   }
 
   # 处理提取后的GseaTask对象或直接的结果列表
@@ -55,16 +54,16 @@ get_core_genes_for_pathway <- function(gsea_res_obj, pathway_id) {
   return(unique(genes))
 }
 
-#' @title 批量提取多个通路的Core Genes
-#' @description 为03模块的Network/UpSet/Chord提供批量数据准备
-#' @param gsea_task_obj GseaTask对象（单个对比组）
-#' @param pathway_ids 字符向量，通路ID列表
-#' @return 命名列表，names=pathway_id, values=core_genes向量
+#' @title Batch Extract Core Genes for Multiple Pathways
+#' @description Batch data preparation for 03 module Network/UpSet/Chord visualizations
+#' @param gsea_task_obj GseaTask object (single contrast)
+#' @param pathway_ids Character vector, pathway ID list
+#' @return Named list, names=pathway_id, values=core_genes vector
 #' @export
 
 get_core_genes_list <- function(gsea_task_obj, pathway_ids) {
   if (!inherits(gsea_task_obj, "GseaTask")) {
-    stop("必须传入GseaTask对象")
+    stop("Must pass a GseaTask object")
   }
 
   result <- lapply(pathway_ids, function(pid) {
@@ -74,12 +73,12 @@ get_core_genes_list <- function(gsea_task_obj, pathway_ids) {
   return(result)
 }
 
-#' @title 计算ORA Ratio（用于DotPlot）
-#' @description 计算通路基因与差异表达基因的 overlap ratio
-#' @param pathway_genes 通路的基因集（TERM2GENE定义）
-#' @param de_genes 差异表达基因（根据pvalue阈值筛选）
-#' @param ratio_mode 字符串，"ora"（交集/通路大小）或"leading"（交集/DE大小）
-#' @return 数值，ratio值
+#' @title Calculate ORA Ratio (for DotPlot)
+#' @description Calculate overlap ratio between pathway genes and differentially expressed genes
+#' @param pathway_genes Gene set of pathway (defined by TERM2GENE)
+#' @param de_genes Differentially expressed genes (filtered by pvalue threshold)
+#' @param ratio_mode Character, "ora" (intersection/pathway size) or "leading" (intersection/DE size)
+#' @return Numeric, ratio value
 #' @export
 
 calculate_overlap_ratio <- function(pathway_genes, de_genes, ratio_mode = c("ora", "leading")) {
@@ -99,11 +98,11 @@ calculate_overlap_ratio <- function(pathway_genes, de_genes, ratio_mode = c("ora
   }
 }
 
-#' @title 获取通路的完整基因集（TERM2GENE）
-#' @description 从geneset_info中提取通路定义的完整基因列表
-#' @param gsea_res GseaRes对象
-#' @param pathway_id 通路ID
-#' @return 字符向量
+#' @title Get Full Pathway Gene Set (TERM2GENE)
+#' @description Extract complete gene list for a pathway from geneset_info
+#' @param gsea_res GseaRes object
+#' @param pathway_id Pathway ID
+#' @return Character vector
 #' @export
 
 get_term_genes <- function(gsea_res, pathway_id) {
@@ -112,14 +111,14 @@ get_term_genes <- function(gsea_res, pathway_id) {
   return(toupper(unique(genes)))
 }
 
-#' @title 安全参数校验与回退（全局策略）
-#' @description 统一处理非法参数（如ncol<=0等），确保03/04模块稳定性
-#' @param value 输入值
-#' @param default 默认值
-#' @param min_val 最小值（含）
-#' @param max_val 最大值（含，可选）
-#' @param param_name 参数名（用于警告信息）
-#' @return 校验后的值
+#' @title Safe Parameter Validation with Fallback (Global Strategy)
+#' @description Unified handling of invalid parameters (e.g., ncol<=0) to ensure 03/04 module stability
+#' @param value Input value
+#' @param default Default value
+#' @param min_val Minimum value (inclusive)
+#' @param max_val Maximum value (inclusive, optional)
+#' @param param_name Parameter name (for warning messages)
+#' @return Validated value
 #' @export
 
 validate_param <- function(value, default, min_val = 1, max_val = NULL, param_name = "parameter") {

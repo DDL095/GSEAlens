@@ -2,11 +2,11 @@
 % Please edit documentation in R/13_shiny_mod_pathway_relation.R
 \name{mod_pathway_relation_ui}
 \alias{mod_pathway_relation_ui}
-\title{通路关系探索模块 UI}
+\title{Pathway Relationship Exploration Module UI}
 \usage{
 mod_pathway_relation_ui(id)
 }
 \description{
-包含DotPlot、Chord、Network、UpSet四个子Tab
+Contains four sub-tabs: DotPlot, Chord, Network, and UpSet
 }
 \keyword{internal}

@@ -2,18 +2,18 @@
 % Please edit documentation in R/utils-accessors.R
 \name{get_de_table}
 \alias{get_de_table}
-\title{获取差异分析表}
+\title{Get Differential Expression Table}
 \usage{
 get_de_table(obj, contrast_id)
 }
 \arguments{
-\item{obj}{GseaEnv 或 GseaRes 对象}
+\item{obj}{GseaEnv or GseaRes object}
 
-\item{contrast_id}{字符串。对比组 ID (如 "A_vs_B")。}
+\item{contrast_id}{Character. Contrast ID (e.g., "A_vs_B").}
 }
 \value{
-data.frame (包含 gene_symbol, logFC, stat, pvalue, padj)
+data.frame (containing gene_symbol, logFC, stat, pvalue, padj)
 }
 \description{
-从 de_store 中提取指定对比组的结果。
+Extract results for a specific contrast from de_store.
 }

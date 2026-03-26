@@ -2,20 +2,20 @@
 % Please edit documentation in R/11_shiny_mod_modal.R
 \name{mod_pathway_modal_server}
 \alias{mod_pathway_modal_server}
-\title{详情弹窗 Server - Phase 7 优化版}
+\title{Pathway Detail Modal Server - Phase 7 Optimized Version}
 \usage{
 mod_pathway_modal_server(id, data_prep, trigger_event, gsea_res)
 }
 \arguments{
-\item{id}{模块 ID}
+\item{id}{Module ID}
 
-\item{data_prep}{数据流}
+\item{data_prep}{Data pipeline}
 
-\item{trigger_event}{来自表格的点击事件 (reactive)}
+\item{trigger_event}{Click event from table (reactive)}
 
-\item{gsea_res}{GseaRes 对象}
+\item{gsea_res}{GseaRes object}
 }
 \description{
-修复 ComplexHeatmap 性能警告，使用 layer_fun 替代 cell_fun
+Fix ComplexHeatmap performance warnings, use layer_fun instead of cell_fun
 }
 \keyword{internal}

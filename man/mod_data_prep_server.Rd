@@ -2,11 +2,11 @@
 % Please edit documentation in R/08_shiny_mod_data_prep.R
 \name{mod_data_prep_server}
 \alias{mod_data_prep_server}
-\title{数据预处理模块 Server（联合画布参数传递版）}
+\title{Data Preprocessing Module Server (Joint Canvas Parameter Passing Version)}
 \usage{
 mod_data_prep_server(id, gsea_res)
 }
 \description{
-数据预处理模块 Server（联合画布参数传递版）
+Data Preprocessing Module Server (Joint Canvas Parameter Passing Version)
 }
 \keyword{internal}

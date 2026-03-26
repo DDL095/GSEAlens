@@ -2,10 +2,10 @@
 % Please edit documentation in R/utils-benchmark.R
 \name{print.GseaBenchmarkAligned}
 \alias{print.GseaBenchmarkAligned}
-\title{打印GSEA基准测试对齐结果}
+\title{Print GSEA Benchmark Alignment Results}
 \usage{
 \method{print}{GseaBenchmarkAligned}(x, ...)
 }
 \description{
-打印GSEA基准测试对齐结果
+Print GSEA Benchmark Alignment Results
 }

@@ -1,5 +1,5 @@
-#' @title GSEAlens 全局导入
-#' @description 集中管理所有外部依赖导入，避免重复定义
+#' @title GSEAlens Global Imports
+#' @description Centralized management of all external dependency imports to avoid redundant definitions
 #' @keywords internal
 #' @name utils-imports
 NULL

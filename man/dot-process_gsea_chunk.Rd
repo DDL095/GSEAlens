@@ -2,7 +2,7 @@
 % Please edit documentation in R/04_calculation.R
 \name{.process_gsea_chunk}
 \alias{.process_gsea_chunk}
-\title{处理单个 GSEA Chunk（独立函数，避免闭包捕获大对象）}
+\title{Process Single GSEA Chunk (Independent Function to Avoid Closure Capturing Large Objects)}
 \usage{
 .process_gsea_chunk(
   chunk_task_names,
@@ -16,27 +16,27 @@
 )
 }
 \arguments{
-\item{chunk_task_names}{字符向量，当前 chunk 的任务名称}
+\item{chunk_task_names}{Character vector, task names for current chunk}
 
-\item{task_metadata}{任务元数据列表}
+\item{task_metadata}{Task metadata list}
 
-\item{de_list}{DE 数据的 list 形式}
+\item{de_list}{DE data in list form}
 
-\item{term2gene}{基因集映射数据框}
+\item{term2gene}{Gene set mapping dataframe}
 
-\item{meta_dict}{元数据字典}
+\item{meta_dict}{Metadata dictionary}
 
-\item{minGSSize}{最小基因集大小}
+\item{minGSSize}{Minimum gene set size}
 
-\item{maxGSSize}{最大基因集大小}
+\item{maxGSSize}{Maximum gene set size}
 
-\item{pvalueCutoff}{P值阈值}
+\item{pvalueCutoff}{P-value threshold}
 }
 \value{
-当前 chunk 的结果列表
+Result list for current chunk
 }
 \description{
-这个函数独立于主函数，通过参数接收所有需要的数据，
-  避免 future 自动捕获外部环境的巨大对象。
+This function is independent from the main function and receives all required data
+  via parameters, avoiding future automatically capturing huge objects from the external environment.
 }
 \keyword{internal}

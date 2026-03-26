@@ -2,11 +2,11 @@
 % Please edit documentation in R/01_backends.R
 \name{.standardize_de_columns}
 \alias{.standardize_de_columns}
-\title{标准化差异分析表列名}
+\title{Standardize Differential Expression Table Column Names}
 \usage{
 .standardize_de_columns(df, backend)
 }
 \description{
-将不同后端的列名统一为: gene_symbol, logFC, stat, pvalue, padj
+Unify column names from different backends to: gene_symbol, logFC, stat, pvalue, padj
 }
 \keyword{internal}

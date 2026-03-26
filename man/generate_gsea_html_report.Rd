@@ -2,7 +2,7 @@
 % Please edit documentation in R/06_visualization.R
 \name{generate_gsea_html_report}
 \alias{generate_gsea_html_report}
-\title{生成 GSEA HTML 报告}
+\title{Generate GSEA HTML Report}
 \usage{
 generate_gsea_html_report(
   res_obj,
@@ -13,17 +13,18 @@ generate_gsea_html_report(
 )
 }
 \arguments{
-\item{res_obj}{GseaTask 对象}
+\item{res_obj}{GseaTask object}
 
-\item{output_base_dir}{输出文件夹路径。若留空(NULL)，将自动跟随计算胶囊的项目原址。}
+\item{output_base_dir}{Output folder path. If left empty (NULL), it will automatically follow the original project location of the calculation capsule.}
 
-\item{p_adjust_cutoff}{FDR 过滤阈值，默认 1}
+\item{p_adjust_cutoff}{FDR filtering threshold, default 1}
 
-\item{top_plots}{绘制详细子网页的通路数量，格式为 c(正向数量, 负向数量)}
+\item{top_plots}{Number of pathways to plot detailed sub-pages, format c(positive_count, negative_count)}
 
-\item{dpi}{GSEA 富集图的分辨率，默认 200}
+\item{dpi}{Resolution for GSEA enrichment plots, default 200}
 }
 \description{
-自动规避列名污染，智能抓取对象内的表达矩阵，输出带双P值展示的舒适网页报表与热图。
-使用 ComplexHeatmap 引擎绘制高质量热图，完美复刻 pheatmap 美学。
+Automatically avoids column name contamination, intelligently extracts expression matrices from objects,
+and outputs comfortable web reports with dual p-value display and heatmaps.
+Uses the ComplexHeatmap engine to draw high-quality heatmaps, perfectly replicating pheatmap aesthetics.
 }

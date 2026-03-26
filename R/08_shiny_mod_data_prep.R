@@ -1,4 +1,4 @@
-#' @title 数据预处理模块 UI（联合画布控制增强版）
+#' @title Data Preprocessing Module UI (Enhanced with Joint Canvas Control)
 #' @keywords internal
 
 mod_data_prep_ui <- function(id) {
@@ -6,57 +6,57 @@ mod_data_prep_ui <- function(id) {
   shiny::tagList(
     shiny::selectInput(
       ns("selected_contrast"),
-      label = "选择对比组 (Contrast)",
+      label = "Select Contrast",
       choices = NULL
     ),
-    shiny::h4("🎯 数据切片"),
+    shiny::h4("🎯 Data Slicing"),
     shiny::selectizeInput(
       ns("selected_collections"),
-      label = "选择基因集亚组:",
+      label = "Select Gene Set Subgroup:",
       choices = NULL,
       multiple = TRUE,
-      options = list(plugins = list("remove_button"), placeholder = "选择亚组或保留ALL")
+      options = list(plugins = list("remove_button"), placeholder = "Select subgroup or keep ALL")
     ),
     shiny::selectInput(
       ns("sort_by"),
-      label = "全局排序策略:",
+      label = "Global Sorting Strategy:",
       choices = c(
-        "按 NES 绝对值 (降序)" = "abs_nes_desc",
-        "按 NES (降序)" = "nes_desc",
-        "按 P-value (升序)" = "pval_asc"
+        "By NES Absolute Value (Desc)" = "abs_nes_desc",
+        "By NES (Desc)" = "nes_desc",
+        "By P-value (Asc)" = "pval_asc"
       ),
       selected = "abs_nes_desc"
     ),
     shiny::actionButton(
       ns("run_btn"),
-      label = "🚀 确认对比组与富集基因集",
+      label = "🚀 Confirm Contrast and Enrichment Gene Sets",
       class = "btn-success",
       style = "width: 100%; font-weight: bold; margin-top: 15px; font-size: 16px;"
     ),
 
     shiny::helpText(
       style = "margin-top: 10px; text-align: center; color: #28a745;",
-      "💡 修改设置后必须点击此按钮"
+      "💡 You must click this button after modifying settings"
     ),
 
     shiny::hr(),
 
     # 🔧 新增：联合GSEA画布控制（完全移入侧边栏）
-    shiny::h4("🖼️ 联合GSEA画布"),
+    shiny::h4("🖼️ Joint GSEA Canvas"),
     shiny::selectizeInput(
       ns("joint_contrasts"),
-      label = "选择对比组（多选，支持排列）:",
+      label = "Select Contrasts (Multi-select, supports permutations):",
       choices = NULL,
       multiple = TRUE,
       options = list(
         plugins = list("remove_button"),
-        placeholder = '选择对比组...',
+        placeholder = 'Select contrasts...',
         maxItems = 999
       )
     ),
     shiny::numericInput(
       ns("joint_ncol"),
-      "每行数量 (ncol):",
+      "Number per row (ncol):",
       value = 2,
       min = 1,
       max = 10,
@@ -64,23 +64,23 @@ mod_data_prep_ui <- function(id) {
     ),
     shiny::actionButton(
       ns("joint_generate"),
-      "🎨 生成/更新多通路画布",
+      "🎨 Generate/Update Multi-Pathway Canvas",
       class = "btn-success",
       style = "width: 100%; font-weight: bold; margin-top: 10px;"
     ) ,
     shiny::hr(),
 
-    shiny::h4("🎯 差异表达基因标记"),
+    shiny::h4("🎯 Differential Expression Gene Markers"),
     shiny::div(
       style = "background-color: #e8f4f8; padding: 10px; border-radius: 5px; border-left: 4px solid #17a2b8;",
       shiny::selectizeInput(
         ns("pending_genes"),
-        label = "选择感兴趣基因（支持多选）:",
+        label = "Select Genes of Interest (Multi-select supported):",
         choices = NULL,
         multiple = TRUE,
         options = list(
           plugins = list('remove_button'),
-          placeholder = '输入基因名（如 TP53）',
+          placeholder = 'Enter gene names (e.g., TP53)',
           maxItems = 50,
           closeAfterSelect = FALSE,
           selectOnTab = TRUE
@@ -88,21 +88,21 @@ mod_data_prep_ui <- function(id) {
       ),
       shiny::actionButton(
         ns("apply_genes_btn"),
-        label = "🎯 确认应用基因标记",
+        label = "🎯 Confirm and Apply Gene Markers",
         class = "btn-info",
         style = "width: 100%; margin-top: 10px; font-weight: bold;"
       ),
       shiny::helpText(
         style = "margin-top: 8px; color: #666;",
-        "选择基因后点击确认，避免实时刷新"
+        "Click confirm after selecting genes to avoid real-time refresh"
       )
     ),
 
     shiny::div(
       style = "background-color: #d4edda; padding: 10px; border-radius: 5px; margin-top: 10px;",
       shiny::HTML(
-        "<strong style='color: #155724;'>💾 已确认基因标记：</strong><br>
-    <small style='color: #666;'>切换对比组后仍然保留</small>"
+        "<strong style='color: #155724;'>💾 Confirmed Gene Markers:</strong><br>
+    <small style='color: #666;'>Retained after switching contrasts</small>"
       ),
       shiny::uiOutput(ns("confirmed_genes_display"))
     )
@@ -110,18 +110,18 @@ mod_data_prep_ui <- function(id) {
     shiny::uiOutput(ns("applied_genes_display")),
     shiny::hr(),
 
-    shiny::h4("🔄 选择组别显示顺序"),
+    shiny::h4("🔄 Group Display Order"),
     shiny::div(
       style = "background-color: #fff3cd; padding: 10px; border-radius: 5px; border-left: 4px solid #ffc107;",
       shiny::selectInput(
         ns("boxplot_order_pending"),
-        label = "组别排序选项:",
-        choices = c("默认顺序" = "default"),
+        label = "Group Ordering Options:",
+        choices = c("Default Order" = "default"),
         selected = "default"
       ),
       shiny::actionButton(
         ns("apply_order_btn"),
-        label = "✓ 确认排序（刷新箱线图）",
+        label = "✓ Confirm Order (Refresh Boxplot)",
         class = "btn-warning",
         style = "width: 100%; margin-top: 10px; font-weight: bold;"
       ),
@@ -129,38 +129,38 @@ mod_data_prep_ui <- function(id) {
       shiny::uiOutput(ns("order_status_display")),
       shiny::helpText(
         style = "margin-top: 8px; color: #666;",
-        "选择顺序后点击确认，箱线图将自动排序"
+        "Click confirm after selecting order, boxplot will auto-sort"
       )
     ),
     shiny::hr(),
 
-    shiny::h4("🎨 联合绘图控制"),
+    shiny::h4("🎨 Joint Plotting Control"),
     shiny::selectInput(
       ns("plot_subtype"),
-      label = "GSEAvis 样式:",
-      choices = c("1: 仅经典富集" = "1", "2: 富集+热图带" = "2", "3: 完整带Rank" = "3"),
+      label = "GSEAvis Style:",
+      choices = c("1: Classic Enrichment Only" = "1", "2: Enrichment + Heatmap Strip" = "2", "3: Full Strip with Rank" = "3"),
       selected = "3"
     ),
     shiny::textInput(
       ns("custom_colors"),
-      label = "多通路自定义颜色:",
+      label = "Multi-Pathway Custom Colors:",
       value = "#E41A1C, #377EB8, #4DAF4A, #984EA3",
-      placeholder = "例如: #FF0000, #00FF00"
+      placeholder = "e.g., #FF0000, #00FF00"
     ),
     shiny::hr(),
 
     # 🔧 修复：动态表达数据类型（根据后端更新）
-    shiny::h4("📊 表达量度量"),
+    shiny::h4("📊 Expression Metrics"),
     shiny::selectInput(
       ns("expression_type"),
-      label = "选择表达数据类型:",
+      label = "Select Expression Data Type:",
       choices = NULL,  # 动态填充
       selected = NULL
     )
   )
 }
 
-#' @title 数据预处理模块 Server（联合画布参数传递版）
+#' @title Data Preprocessing Module Server (Joint Canvas Parameter Passing Version)
 #' @keywords internal
 
 mod_data_prep_server <- function(id, gsea_res) {
@@ -188,24 +188,24 @@ mod_data_prep_server <- function(id, gsea_res) {
         # Limma-voom流程：支持CPM、log2CPM，不支持VST
         choices <- c(
           "log2(CPM)" = "logcpm",
-          "CPM (原始)" = "cpm",
+          "CPM (raw)" = "cpm",
           "log2(FPKM)" = "logfpkm",
-          "FPKM (原始)" = "fpkm"
+          "FPKM (raw)" = "fpkm"
         )
         selected <- "logcpm"
-        message("📊 检测到Limma-voom后端，加载对应表达类型")
+        message("📊 Detected Limma-voom backend, loading corresponding expression types")
       } else if (backend == "deseq2") {
         # DESeq2流程：支持VST、CPM等
         choices <- c(
           "log2(CPM)" = "logcpm",
-          "CPM (原始)" = "cpm",
-          "VST (方差稳定变换)" = "vst",
+          "CPM (raw)" = "cpm",
+          "VST (Variance Stabilizing Transform)" = "vst",
           "log2(Normalized Counts + 1)" = "lognorm"
         )
         selected <- "logcpm"
-        message("📊 检测到DESeq2后端，加载对应表达类型")
+        message("📊 Detected DESeq2 backend, loading corresponding expression types")
       } else {
-        choices <- c("log2(CPM)" = "logcpm", "CPM (原始)" = "cpm")
+        choices <- c("log2(CPM)" = "logcpm", "CPM (raw)" = "cpm")
         selected <- "logcpm"
       }
 
@@ -229,7 +229,7 @@ mod_data_prep_server <- function(id, gsea_res) {
         all_contrasts[[row$contrast_id]] <- paste(row$left_group, "vs", row$right_group)
         # 反向（排列）
         rev_id <- paste(row$right_group, row$left_group, sep = "_vs_")
-        rev_display <- paste(row$right_group, "vs", row$left_group, "(反向)")
+        rev_display <- paste(row$right_group, "vs", row$left_group, "(reversed)")
         all_contrasts[[rev_id]] <- rev_display
       }
 
@@ -261,7 +261,7 @@ mod_data_prep_server <- function(id, gsea_res) {
         return()
       }
 
-      message(sprintf("🔄 切换对比组: %s", contrast_id))
+      message(sprintf("🔄 Switching contrast: %s", contrast_id))
       current_contrast_cache(contrast_id)
 
       tryCatch({
@@ -295,21 +295,21 @@ mod_data_prep_server <- function(id, gsea_res) {
           pending_genes_internal(pending_selected)
 
           message(sprintf(
-            "✅ [对比切换] pending 已回填 applied（当前 choices 内 %d 个；applied 总数 %d 个）",
+            "✅ [Contrast Switch] pending refilled from applied (%d in current choices; %d total in applied)",
             length(pending_selected), length(current_applied)
           ))
 
-          message(sprintf("✅ 已确认的基因标记保持不变（%d个）", length(current_applied)))
+          message(sprintf("✅ Confirmed gene markers remain unchanged (%d genes)", length(current_applied)))
         }
       }, error = function(e) {
-        message("更新基因列表失败: ", e$message)
+        message("Failed to update gene list: ", e$message)
       })
     }, ignoreInit = FALSE)
 
     # 生成排列组合
     generate_all_permutations <- function(groups) {
       n <- length(groups)
-      if (n <= 1) return(list(default = "默认顺序"))
+      if (n <= 1) return(list(default = "Default Order"))
 
       perms <- list()
       permute <- function(arr, l, r) {
@@ -373,12 +373,12 @@ mod_data_prep_server <- function(id, gsea_res) {
 
       if (total_perms > 100) {
         perms <- generate_limited_perms(all_groups, max_perms = 100)
-        perms[["limited"]] <- "--- 仅显示前100种 ---"
+        perms[["limited"]] <- "--- Showing first 100 only ---"
       } else {
         perms <- generate_all_permutations(all_groups)
       }
 
-      perms <- c(list(default = "默认顺序"), perms)
+      perms <- c(list(default = "Default Order"), perms)
 
       shiny::updateSelectInput(
         session,
@@ -398,8 +398,8 @@ mod_data_prep_server <- function(id, gsea_res) {
     shiny::observeEvent(input$apply_genes_btn, {
       genes_to_apply <- pending_genes_internal()
       applied_genes(genes_to_apply)
-      message(sprintf("🎯 已确认基因标记: %d个", length(genes_to_apply)))
-      shiny::showNotification(sprintf("已标记 %d 个基因", length(genes_to_apply)), type = "message", duration = 3)
+      message(sprintf("🎯 Confirmed gene markers: %d genes", length(genes_to_apply)))
+      shiny::showNotification(sprintf("Marked %d genes", length(genes_to_apply)), type = "message", duration = 3)
     })
 
     # 排序确认按钮（关键修改）
@@ -408,12 +408,12 @@ mod_data_prep_server <- function(id, gsea_res) {
       applied_boxplot_order(order_to_apply)  # ✅ 更新 reactiveVal
 
       # 强制刷新四重联动模块（这是关键！）
-      message(sprintf("🔄 [排序确认] 用户选择了: %s | 四重联动模块已触发更新",
-                      if(order_to_apply == "default") "默认" else order_to_apply))
+      message(sprintf("🔄 [Order Confirm] User selected: %s | Quad-link module triggered update",
+                      if(order_to_apply == "default") "default" else order_to_apply))
 
       shiny::showNotification(
-        sprintf("✅ 排序已应用: %s | 箱线图已刷新",
-                if(order_to_apply == "default") "默认顺序" else gsub(",", " → ", order_to_apply)),
+        sprintf("✅ Order applied: %s | Boxplot refreshed",
+                if(order_to_apply == "default") "Default order" else gsub(",", " → ", order_to_apply)),
         type = "message",
         duration = 2
       )
@@ -436,13 +436,13 @@ mod_data_prep_server <- function(id, gsea_res) {
       confirmed <- applied_boxplot_order()
 
       status_text <- if (pending == "default") {
-        "📌 默认顺序"
+        "📌 Default Order"
       } else {
-        sprintf("📌 待应用: %s", gsub(",", " → ", pending))
+        sprintf("📌 Pending: %s", gsub(",", " → ", pending))
       }
 
       confirmed_text <- if (confirmed != "default" && !is.na(confirmed) && confirmed != "") {
-        sprintf("<br>✅ 已应用: %s", gsub(",", " → ", confirmed))
+        sprintf("<br>✅ Applied: %s", gsub(",", " → ", confirmed))
       } else {
         ""
       }
@@ -456,11 +456,11 @@ mod_data_prep_server <- function(id, gsea_res) {
     output$confirmed_genes_display <- shiny::renderUI({
       genes <- applied_genes()
       if (length(genes) == 0) {
-        shiny::span("（无）", style = "color: #999;")
+        shiny::span("(None)", style = "color: #999;")
       } else {
         shiny::div(
           style = "margin-top: 5px; padding: 8px; background: #f1f8f4; border-radius: 3px;",
-          shiny::strong(length(genes), "个基因：", style = "color: #28a745;"),
+          shiny::strong(length(genes), " genes:", style = "color: #28a745;"),
           shiny::br(),
           shiny::span(paste(genes, collapse = ", "), style = "font-size: 12px; color: #555;")
         )
@@ -485,7 +485,7 @@ mod_data_prep_server <- function(id, gsea_res) {
       task_obj <- tryCatch({
         extract_gsea_task(gsea_res, contrast_id, target_collection = collections)
       }, error = function(e) {
-        message(sprintf("提取任务失败: %s", e$message))
+        message(sprintf("Task extraction failed: %s", e$message))
         return(NULL)
       })
 
@@ -587,7 +587,7 @@ mod_data_prep_server <- function(id, gsea_res) {
         if (!is.null(auto_data)) {
           result_data(auto_data)
           has_initialized(TRUE)
-          shiny::showNotification(sprintf("已自动加载: %s", min_col), type = "default", duration = 3)
+          shiny::showNotification(sprintf("Auto-loaded: %s", min_col), type = "default", duration = 3)
         }
       })
     }, ignoreNULL = TRUE, ignoreInit = TRUE)
@@ -610,12 +610,12 @@ mod_data_prep_server <- function(id, gsea_res) {
       )
 
       if (is.null(manual_data)) {
-        shiny::showNotification("所选配置无数据", type = "error", duration = 5)
+        shiny::showNotification("No data for selected configuration", type = "error", duration = 5)
         return()
       }
 
       result_data(manual_data)
-      shiny::showNotification("✅ 工作台已更新", type = "message", duration = 3)
+      shiny::showNotification("✅ Workspace updated", type = "message", duration = 3)
     })
 
     # 🔧 新增：画布生成触发器（事件反应式）

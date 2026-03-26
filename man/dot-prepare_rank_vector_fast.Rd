@@ -2,11 +2,11 @@
 % Please edit documentation in R/04_calculation.R
 \name{.prepare_rank_vector_fast}
 \alias{.prepare_rank_vector_fast}
-\title{快速准备排序向量（优化版）}
+\title{Fast Rank Vector Preparation (Optimized Version)}
 \usage{
 .prepare_rank_vector_fast(de_table, flip = FALSE)
 }
 \description{
-使用 tidyverse 管道优化排序向量生成
+Uses tidyverse pipes to optimize rank vector generation
 }
 \keyword{internal}

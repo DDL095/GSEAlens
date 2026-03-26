@@ -2,11 +2,11 @@
 % Please edit documentation in R/14_shiny_mod_joint_canvas.R
 \name{mod_joint_canvas_ui}
 \alias{mod_joint_canvas_ui}
-\title{联合GSEA填充画布模块 UI（纯展示版）}
+\title{Joint GSEA Fill Canvas Module UI (Display-Only Version)}
 \usage{
 mod_joint_canvas_ui(id)
 }
 \description{
-所有控制已移至侧边栏，此处仅显示画布结果
+All controls have been moved to the sidebar; only canvas results are displayed here.
 }
 \keyword{internal}

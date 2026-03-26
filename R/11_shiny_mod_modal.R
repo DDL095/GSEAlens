@@ -1,16 +1,16 @@
-#' @title 详情弹窗 UI
+#' @title Pathway Detail Modal UI
 #' @keywords internal
 mod_pathway_modal_ui <- function(id) {
   ns <- shiny::NS(id)
-  NULL  # 弹窗通过 server 动态生成
+  NULL  # Modal dynamically generated in server
 }
 
-#' @title 详情弹窗 Server 旧版本
-#' @description ComplexHeatmap重构：Leading Edge间隙、动态排序、无高度限制、基因名颜色区分，与新版胶囊数据不适配。
-#' @param id 模块 ID
-#' @param data_prep 数据流
-#' @param trigger_event 来自表格的点击事件 (reactive)
-#' @param gsea_res GseaRes 对象 (用于获取表达矩阵)
+#' @title Pathway Detail Modal Server (Legacy Version)
+#' @description ComplexHeatmap reconstruction: Leading Edge gaps, dynamic sorting, no height limit, gene name color differentiation. Not compatible with new capsule data format.
+#' @param id Module ID
+#' @param data_prep Data pipeline
+#' @param trigger_event Click event from table (reactive)
+#' @param gsea_res GseaRes object (used to retrieve expression matrix)
 #' @keywords internal
 #' @noRd
 
@@ -63,10 +63,10 @@ mod_pathway_modal_server_OLD <- function(id, data_prep, trigger_event, gsea_res)
         easyClose = TRUE,
         shiny::fluidRow(
           shiny::column(5, shiny::div(class = "white-box",
-                                      shiny::h4("经典 GSEA 富集轮廓"),
+                                      shiny::h4("Classical GSEA Enrichment Profile"),
                                       shiny::plotOutput(ns("modal_gsea_plot"), height = "400px"))),
           shiny::column(7, shiny::div(class = "white-box",
-                                      shiny::h4("核心基因表达热图 (CPM)"),
+                                      shiny::h4("Core Gene Expression Heatmap (CPM)"),
                                       # 🔧 修复3：限制最大高度为600px，内部滚动
                                       shiny::div(
                                         style = "height: 600px; overflow-y: auto; overflow-x: auto; border: 1px solid #ddd;",
@@ -75,9 +75,9 @@ mod_pathway_modal_server_OLD <- function(id, data_prep, trigger_event, gsea_res)
         ),
         shiny::hr(),
         shiny::div(class = "white-box",
-                   shiny::h4("Leading Edge 基因统计表"),
+                   shiny::h4("Leading Edge Gene Statistics Table"),
                    DT::dataTableOutput(ns("modal_gene_table"))),
-        footer = shiny::modalButton("关闭")
+        footer = shiny::modalButton("Close")
       ))
     })
 
@@ -101,7 +101,7 @@ mod_pathway_modal_server_OLD <- function(id, data_prep, trigger_event, gsea_res)
         ))
       }, error = function(e) {
         graphics::plot(1, type = "n", axes = FALSE, xlab = "", ylab = "")
-        graphics::text(1, 1, sprintf("绘图失败: %s", e$message), col = "red")
+        graphics::text(1, 1, sprintf("Plotting failed: %s", e$message), col = "red")
       })
     })
 
@@ -336,18 +336,18 @@ mod_pathway_modal_server_OLD <- function(id, data_prep, trigger_event, gsea_res)
       gene_df <- gene_df[toupper(gene_df$Gene) %in% toupper(all_genes), ]
       gene_df$Is_Core <- ifelse(
         toupper(gene_df$Gene) %in% toupper(core_genes),
-        "✅ YES",
+        "YES",
         "—"
       )
 
       # 排序：Leading Edge在前，其次按统计量绝对值降序
       gene_df <- gene_df[order(
-        gene_df$Is_Core == "✅ YES",
+        gene_df$Is_Core == "YES",
         abs(gene_df$Rank_Metric),
         decreasing = TRUE
       ), ]
 
-      colnames(gene_df) <- c("基因", "排序统计量", "列表中的排名", "Leading Edge")
+      colnames(gene_df) <- c("Gene", "Rank Metric", "Rank in List", "Leading Edge")
 
       DT::datatable(
         gene_df,
@@ -363,9 +363,9 @@ mod_pathway_modal_server_OLD <- function(id, data_prep, trigger_event, gsea_res)
       ) %>%
         DT::formatStyle(
           columns = "Leading Edge",
-          backgroundColor = DT::styleEqual(c("✅ YES", "—"), c("#FF9800", "transparent")),
-          fontWeight = DT::styleEqual("✅ YES", "bold"),
-          color = DT::styleEqual("✅ YES", "white")
+          backgroundColor = DT::styleEqual(c("YES", "—"), c("#FF9800", "transparent")),
+          fontWeight = DT::styleEqual("YES", "bold"),
+          color = DT::styleEqual("YES", "white")
         )
     })
   })
@@ -373,12 +373,12 @@ mod_pathway_modal_server_OLD <- function(id, data_prep, trigger_event, gsea_res)
 
 
 
-#' @title 详情弹窗 Server - Phase 7 优化版
-#' @description 修复 ComplexHeatmap 性能警告，使用 layer_fun 替代 cell_fun
-#' @param id 模块 ID
-#' @param data_prep 数据流
-#' @param trigger_event 来自表格的点击事件 (reactive)
-#' @param gsea_res GseaRes 对象
+#' @title Pathway Detail Modal Server - Phase 7 Optimized Version
+#' @description Fix ComplexHeatmap performance warnings, use layer_fun instead of cell_fun
+#' @param id Module ID
+#' @param data_prep Data pipeline
+#' @param trigger_event Click event from table (reactive)
+#' @param gsea_res GseaRes object
 #' @keywords internal
 
 mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
@@ -431,12 +431,12 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
         shiny::fluidRow(
           shiny::column(5, shiny::div(
             class = "white-box",
-            shiny::h4("经典 GSEA 富集轮廓"),
+            shiny::h4("Classical GSEA Enrichment Profile"),
             shiny::plotOutput(ns("modal_gsea_plot"), height = "400px")
           )),
           shiny::column(7, shiny::div(
             class = "white-box",
-            shiny::h4("核心基因表达热图 (CPM)"),
+            shiny::h4("Core Gene Expression Heatmap (CPM)"),
             shiny::div(
               style = "height: 600px; overflow-y: auto; overflow-x: auto; border: 1px solid #ddd;",
               shiny::plotOutput(ns("modal_heatmap"), height = "auto", width = "100%")
@@ -446,10 +446,10 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
         shiny::hr(),
         shiny::div(
           class = "white-box",
-          shiny::h4("Leading Edge 基因统计表"),
+          shiny::h4("Leading Edge Gene Statistics Table"),
           DT::dataTableOutput(ns("modal_gene_table"))
         ),
-        footer = shiny::modalButton("关闭")
+        footer = shiny::modalButton("Close")
       ))
     })
 
@@ -473,7 +473,7 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
         ))
       }, error = function(e) {
         graphics::plot(1, type = "n", axes = FALSE, xlab = "", ylab = "")
-        graphics::text(1, 1, sprintf("绘图失败: %s", e$message), col = "red")
+        graphics::text(1, 1, sprintf("Plotting failed: %s", e$message), col = "red")
       })
     })
 
@@ -691,17 +691,17 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
       gene_df <- gene_df[toupper(gene_df$Gene) %in% toupper(all_genes), ]
       gene_df$Is_Core <- ifelse(
         toupper(gene_df$Gene) %in% toupper(core_genes),
-        "✅ YES",
+        "YES",
         "—"
       )
 
       gene_df <- gene_df[order(
-        gene_df$Is_Core == "✅ YES",
+        gene_df$Is_Core == "YES",
         abs(gene_df$Rank_Metric),
         decreasing = TRUE
       ), ]
 
-      colnames(gene_df) <- c("基因", "排序统计量", "列表中的排名", "Leading Edge")
+      colnames(gene_df) <- c("Gene", "Rank Metric", "Rank in List", "Leading Edge")
 
       DT::datatable(
         gene_df,
@@ -717,9 +717,9 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
       ) %>%
         DT::formatStyle(
           columns = "Leading Edge",
-          backgroundColor = DT::styleEqual(c("✅ YES", "—"), c("#FF9800", "transparent")),
-          fontWeight = DT::styleEqual("✅ YES", "bold"),
-          color = DT::styleEqual("✅ YES", "white")
+          backgroundColor = DT::styleEqual(c("YES", "—"), c("#FF9800", "transparent")),
+          fontWeight = DT::styleEqual("YES", "bold"),
+          color = DT::styleEqual("YES", "white")
         )
     })
   })

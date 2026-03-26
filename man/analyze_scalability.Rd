@@ -2,18 +2,18 @@
 % Please edit documentation in R/utils-benchmark.R
 \name{analyze_scalability}
 \alias{analyze_scalability}
-\title{生成扩展性分析报告（多核对比）}
+\title{Generate Scalability Analysis Report (Multi-core Comparison)}
 \usage{
 analyze_scalability(gsea_res_list, monitor_csv_list = NULL)
 }
 \arguments{
-\item{gsea_res_list}{多个GseaRes对象的列表（命名如 list("1_core" = res1, "4_core" = res4)）}
+\item{gsea_res_list}{A list of multiple GseaRes objects (named e.g., list("1_core" = res1, "4_core" = res4))}
 
-\item{monitor_csv_list}{对应的监控CSV路径列表（与gsea_res_list同名）}
+\item{monitor_csv_list}{Corresponding list of monitoring CSV paths (with same names as gsea_res_list)}
 }
 \value{
-对比数据框
+A comparison data frame
 }
 \description{
-对比不同核心数下的GSEA性能（用于发表文章）
+Compares GSEA performance across different core counts (for publication).
 }

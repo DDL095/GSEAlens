@@ -2,18 +2,18 @@
 % Please edit documentation in R/utils-benchmark.R
 \name{plot_gsea_memory}
 \alias{plot_gsea_memory}
-\title{绘制GSEA基准测试内存曲线}
+\title{Plot GSEA Benchmark Memory Curve}
 \usage{
 plot_gsea_memory(aligned_data, highlight_phases = TRUE)
 }
 \arguments{
-\item{aligned_data}{align_benchmark_data返回的对齐数据框}
+\item{aligned_data}{Aligned data frame returned by align_benchmark_data}
 
-\item{highlight_phases}{是否按阶段着色，默认TRUE}
+\item{highlight_phases}{Whether to color by phase, default TRUE}
 }
 \value{
-ggplot对象
+A ggplot object
 }
 \description{
-为发表文章生成标准内存使用曲线图
+Generates a standard memory usage curve plot for publication.
 }

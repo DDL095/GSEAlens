@@ -2,20 +2,20 @@
 % Please edit documentation in R/04_calculation.R
 \name{.enrich_gsea_result_old}
 \alias{.enrich_gsea_result_old}
-\title{GSEA 结果元数据注入（优化版 - 修复 Description.y 错误）}
+\title{GSEA Result Metadata Injection (Optimized Version - Fixed Description.y Error)}
 \usage{
 .enrich_gsea_result_old(result_df, meta_dict)
 }
 \arguments{
-\item{result_df}{GSEA 结果数据框（来自 clusterProfiler::GSEA 的 @result）}
+\item{result_df}{GSEA result dataframe (from clusterProfiler::GSEA's @result)}
 
-\item{meta_dict}{元数据字典，包含 ID, Collection, Combo_Name, URL, Description 等列}
+\item{meta_dict}{Metadata dictionary containing ID, Collection, Combo_Name, URL, Description, etc.}
 }
 \value{
-enriched 的数据框
+Enriched dataframe
 }
 \description{
-将 GSEA 结果与元数据字典合并，添加显示名称、链接等信息。
-  修复了原版本中假设 Description.y 列存在导致的错误。
+Merges GSEA results with metadata dictionary and adds display names, links, etc.
+  Fixed the error in the original version caused by assuming Description.y column exists.
 }
 \keyword{internal}

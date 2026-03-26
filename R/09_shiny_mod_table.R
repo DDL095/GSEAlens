@@ -1,4 +1,4 @@
-#' @title 主工作台表格 UI（Phase 11完整版 + Checkbox解耦）
+#' @title Master Workspace Table UI (Phase 11 Complete + Checkbox Decoupling)
 #' @keywords internal
 
 mod_master_table_ui <- function(id) {
@@ -33,7 +33,7 @@ mod_master_table_ui <- function(id) {
       style = "width: 100%; overflow-x: auto;",
       shiny::tags$div(
         style = "margin-bottom: 10px; color: #666; font-size: 12px;",
-        shiny::HTML("💡 拖拽列标题调整顺序 | 勾选\"联合展示\"列选择通路作图 | 点击\"Dashboard\"查看详情")
+        shiny::HTML("💡 Drag column headers to reorder | Check 'Joint Plot' column to select pathways | Click 'Dashboard' for details")
       ),
       DT::dataTableOutput(ns("table"))
     ),
@@ -45,12 +45,12 @@ mod_master_table_ui <- function(id) {
 }
 
 
-#' @title 主工作台表格 Server（Phase 11完整版：CSV集成 + Checkbox解耦修复）
-#' @description 功能：数据展示、CSV注释合并、BLANK列预留、列显示控制
-#'   【关键修复】使用 isolate() 解耦 checkbox 与表格渲染，通过 JavaScript 消息同步状态
-#' @param id 模块 ID
-#' @param data_prep 来自数据预处理模块的响应式数据
-#' @return 列表，包含 selected_pathways 和 show_modal
+#' @title Master Workspace Table Server (Phase 11 Complete: CSV Integration + Checkbox Decoupling Fix)
+#' @description Provides data display, CSV annotation merging, BLANK column reservation, and column display control.
+#'   Key Fix: Uses isolate() to decouple checkbox from table rendering, synchronizing state via JavaScript messages.
+#' @param id Module ID
+#' @param data_prep Reactive data from the data preprocessing module
+#' @return List containing selected_pathways and show_modal
 #' @keywords internal
 
 mod_master_table_server <- function(id, data_prep) {
@@ -81,7 +81,7 @@ mod_master_table_server <- function(id, data_prep) {
       }
 
       if (is.null(csv_path)) {
-        message("📄 未找到 pathway_annotations.csv，跳过注释加载")
+        message("📄 pathway_annotations.csv not found, skipping annotation loading")
         return(NULL)
       }
 
@@ -93,20 +93,20 @@ mod_master_table_server <- function(id, data_prep) {
                             encoding = "UTF-8")
 
         if (nrow(anno_df) == 0) {
-          message("📄 CSV文件为空")
+          message("📄 CSV file is empty")
           return(NULL)
         }
 
         # 🔧 Phase 11：检查必须有的ID列
         if (!"ID" %in% colnames(anno_df)) {
-          warning("CSV文件缺少ID列，无法合并")
+          warning("CSV file missing ID column, cannot merge")
           return(NULL)
         }
 
-        message(sprintf("📄 成功加载注释文件: %d行 x %d列", nrow(anno_df), ncol(anno_df)))
+        message(sprintf("📄 Successfully loaded annotation file: %d rows x %d columns", nrow(anno_df), ncol(anno_df)))
         return(anno_df)
       }, error = function(e) {
-        warning(sprintf("读取CSV注释文件失败: %s", e$message))
+        warning(sprintf("Failed to read CSV annotation file: %s", e$message))
         return(NULL)
       })
     })
@@ -136,8 +136,8 @@ mod_master_table_server <- function(id, data_prep) {
     # 🔧【核心修复】表格渲染 - 使用 isolate() 阻止 checkbox 状态触发刷新
     output$table <- DT::renderDataTable({
       data_list <- data_prep()
-      shiny::validate(shiny::need(data_list, "等待数据加载..."))
-      shiny::validate(shiny::need(nrow(data_list$df) > 0, "当前筛选条件下无数据"))
+      shiny::validate(shiny::need(data_list, "Waiting for data to load..."))
+      shiny::validate(shiny::need(nrow(data_list$df) > 0, "No data under current filter criteria"))
 
       df <- data_list$df
       left_grp <- data_list$left_group
@@ -200,7 +200,7 @@ mod_master_table_server <- function(id, data_prep) {
         if (sum(cols_to_keep) > 1) {
           anno_df_filtered <- anno_df[, cols_to_keep, drop = FALSE]
           df <- dplyr::left_join(df, anno_df_filtered, by = "ID")
-          message(sprintf("🔗 已合并注释列: %s",
+          message(sprintf("🔗 Merged annotation columns: %s",
                           paste(setdiff(colnames(anno_df_filtered), "ID"), collapse = ", ")))
         }
       }
@@ -237,7 +237,7 @@ mod_master_table_server <- function(id, data_prep) {
       # Phase 8：列名映射
       col_name_map <- c(
         "Rank" = "Rank",
-        "Select_for_Plot" = "联合展示",
+        "Select_for_Plot" = "Joint Plot",
         "Detail_Btn" = "Dashboard",
         "ID" = "Pathway",
         "Enriched_In" = "Enriched In",
@@ -373,8 +373,8 @@ mod_master_table_server <- function(id, data_prep) {
           ),
           scrollCollapse = TRUE,
           language = list(
-            emptyTable = "暂无数据",
-            zeroRecords = "未找到匹配记录"
+            emptyTable = "No data available",
+            zeroRecords = "No matching records found"
           )
         )
       )

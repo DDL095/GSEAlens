@@ -2,19 +2,19 @@
 % Please edit documentation in R/04_calculation.R
 \name{.prepare_rank_vector}
 \alias{.prepare_rank_vector}
-\title{准备排序向量_与旧版本配合}
+\title{Prepare Rank Vector (Compatible with Legacy Version)}
 \usage{
 .prepare_rank_vector(de_table, flip = FALSE)
 }
 \arguments{
-\item{de_table}{差异分析表 (必须包含 gene_symbol 和 stat 列)}
+\item{de_table}{Differential analysis table (must contain gene_symbol and stat columns)}
 
-\item{flip}{是否翻转符号 (用于反向对比)}
+\item{flip}{Whether to flip the sign (for reverse contrasts)}
 }
 \value{
-排序后的命名向量
+Sorted named vector
 }
 \description{
-从 DE 表中提取 stat 列，进行清洗和排序。
+Extracts and processes the stat column from DE table for ranking.
 }
 \keyword{internal}

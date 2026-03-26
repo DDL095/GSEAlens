@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils-core-genes.R
 \name{calculate_overlap_ratio}
 \alias{calculate_overlap_ratio}
-\title{计算ORA Ratio（用于DotPlot）}
+\title{Calculate ORA Ratio (for DotPlot)}
 \usage{
 calculate_overlap_ratio(
   pathway_genes,
@@ -11,15 +11,15 @@ calculate_overlap_ratio(
 )
 }
 \arguments{
-\item{pathway_genes}{通路的基因集（TERM2GENE定义）}
+\item{pathway_genes}{Gene set of pathway (defined by TERM2GENE)}
 
-\item{de_genes}{差异表达基因（根据pvalue阈值筛选）}
+\item{de_genes}{Differentially expressed genes (filtered by pvalue threshold)}
 
-\item{ratio_mode}{字符串，"ora"（交集/通路大小）或"leading"（交集/DE大小）}
+\item{ratio_mode}{Character, "ora" (intersection/pathway size) or "leading" (intersection/DE size)}
 }
 \value{
-数值，ratio值
+Numeric, ratio value
 }
 \description{
-计算通路基因与差异表达基因的 overlap ratio
+Calculate overlap ratio between pathway genes and differentially expressed genes
 }

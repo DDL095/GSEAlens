@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils-core-genes.R
 \name{validate_param}
 \alias{validate_param}
-\title{安全参数校验与回退（全局策略）}
+\title{Safe Parameter Validation with Fallback (Global Strategy)}
 \usage{
 validate_param(
   value,
@@ -13,19 +13,19 @@ validate_param(
 )
 }
 \arguments{
-\item{value}{输入值}
+\item{value}{Input value}
 
-\item{default}{默认值}
+\item{default}{Default value}
 
-\item{min_val}{最小值（含）}
+\item{min_val}{Minimum value (inclusive)}
 
-\item{max_val}{最大值（含，可选）}
+\item{max_val}{Maximum value (inclusive, optional)}
 
-\item{param_name}{参数名（用于警告信息）}
+\item{param_name}{Parameter name (for warning messages)}
 }
 \value{
-校验后的值
+Validated value
 }
 \description{
-统一处理非法参数（如ncol<=0等），确保03/04模块稳定性
+Unified handling of invalid parameters (e.g., ncol<=0) to ensure 03/04 module stability
 }

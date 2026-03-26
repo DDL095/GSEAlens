@@ -2,11 +2,11 @@
 % Please edit documentation in R/10_shiny_mod_quadrant.R
 \name{mod_quadrant_ui}
 \alias{mod_quadrant_ui}
-\title{四重联动 UI}
+\title{Quadrant Linkage UI}
 \usage{
 mod_quadrant_ui(id)
 }
 \description{
-四重联动 UI
+Quadrant Linkage UI
 }
 \keyword{internal}

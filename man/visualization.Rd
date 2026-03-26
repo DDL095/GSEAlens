@@ -2,7 +2,7 @@
 % Please edit documentation in R/06_visualization.R
 \name{visualization}
 \alias{visualization}
-\title{GSEA 可视化与报告生成}
+\title{GSEA Visualization and Report Generation}
 \description{
-提供静态绘图函数和交互式 HTML 报告生成功能。
+Provides static plotting functions and interactive HTML report generation capabilities.
 }

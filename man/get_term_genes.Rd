@@ -2,18 +2,18 @@
 % Please edit documentation in R/utils-core-genes.R
 \name{get_term_genes}
 \alias{get_term_genes}
-\title{获取通路的完整基因集（TERM2GENE）}
+\title{Get Full Pathway Gene Set (TERM2GENE)}
 \usage{
 get_term_genes(gsea_res, pathway_id)
 }
 \arguments{
-\item{gsea_res}{GseaRes对象}
+\item{gsea_res}{GseaRes object}
 
-\item{pathway_id}{通路ID}
+\item{pathway_id}{Pathway ID}
 }
 \value{
-字符向量
+Character vector
 }
 \description{
-从geneset_info中提取通路定义的完整基因列表
+Extract complete gene list for a pathway from geneset_info
 }

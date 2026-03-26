@@ -2,10 +2,10 @@
 % Please edit documentation in R/utils-accessors.R
 \name{get_contrast_registry}
 \alias{get_contrast_registry}
-\title{获取对比组注册表}
+\title{Get Contrast Registry}
 \usage{
 get_contrast_registry(obj)
 }
 \description{
-获取对比组注册表
+Get Contrast Registry
 }

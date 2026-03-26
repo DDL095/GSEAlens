@@ -1,5 +1,5 @@
-#' @title 通路关系探索模块 UI
-#' @description 包含DotPlot、Chord、Network、UpSet四个子Tab
+#' @title Pathway Relationship Exploration Module UI
+#' @description Contains four sub-tabs: DotPlot, Chord, Network, and UpSet
 #' @keywords internal
 
 mod_pathway_relation_ui <- function(id) {
@@ -9,30 +9,30 @@ mod_pathway_relation_ui <- function(id) {
       # 左侧控制面板
       shiny::column(3,
                     shiny::div(class = "well",
-                               shiny::h4("🎨 可视化控制"),
+                               shiny::h4("🎨 Visualization Controls"),
 
                                # DotPlot专用控制
                                shiny::conditionalPanel(
                                  condition = sprintf("input['%s'] == 'dotplot'", ns("active_tab")),
                                  shiny::selectInput(
                                    ns("ratio_source"),
-                                   "Ratio计算方式:",
-                                   choices = c("ORA (交集/通路基因)" = "ora",
-                                               "Leading Edge (交集/DE基因)" = "leading"),
+                                   "Ratio Calculation:",
+                                   choices = c("ORA (Intersection/Pathway Genes)" = "ora",
+                                               "Leading Edge (Intersection/DE Genes)" = "leading"),
                                    selected = "ora"
                                  ),          # DotPlot专用控制 - 优化版
                                  shiny::conditionalPanel(
                                    condition = sprintf("input['%s'] == 'dotplot'", ns("active_tab")),
                                    shiny::selectInput(
                                      ns("ratio_source"),
-                                     "Ratio计算方式:",
-                                     choices = c("ORA (交集/通路基因)" = "ora",
-                                                 "Leading Edge (交集/DE基因)" = "leading"),
+                                     "Ratio Calculation:",
+                                     choices = c("ORA (Intersection/Pathway Genes)" = "ora",
+                                                 "Leading Edge (Intersection/DE Genes)" = "leading"),
                                      selected = "ora"
                                    ),
                                    shiny::selectInput(
                                      ns("stat_color_mode"),
-                                     "颜色映射:",
+                                     "Color Mapping:",
                                      choices = c("-log10(P-value)" = "pval",
                                                  "-log10(FDR)" = "padj",
                                                  "NES" = "nes"),
@@ -40,38 +40,38 @@ mod_pathway_relation_ui <- function(id) {
                                    ),
                                    shiny::selectInput(
                                      ns("size_mode"),
-                                     "气泡大小:",
-                                     choices = c("Core Genes数" = "core_size",
+                                     "Bubble Size:",
+                                     choices = c("Core Genes Count" = "core_size",
                                                  "Set Size" = "setsize",
-                                                 "Ratio值" = "ratio"),
+                                                 "Ratio Value" = "ratio"),
                                      selected = "core_size"
                                    ),
                                    # 新增：大小范围控制
                                    shiny::sliderInput(
                                      ns("size_range"),
-                                     "气泡大小范围:",
+                                     "Bubble Size Range:",
                                      min = 1, max = 20, value = c(5, 15), step = 1
                                    ),
                                    # 新增：颜色范围控制（截断极端值）
                                    shiny::sliderInput(
                                      ns("color_cap"),
-                                     "颜色值上限 (-log10):",
+                                     "Color Value Cap (-log10):",
                                      min = 5, max = 50, value = 20, step = 1
                                    ),
                                    shiny::sliderInput(
                                      ns("dot_alpha"),
-                                     "透明度:",
+                                     "Transparency:",
                                      min = 0.1, max = 1, value = 0.8, step = 0.1
                                    ),
                                    # 新增：数据来源提示
                                    shiny::helpText(
                                      style = "color: #666; font-size: 11px;",
-                                     "数据来源：主工作台当前选中的通路集合"
+                                     "Data source: Pathway set currently selected in main workspace"
                                    )
                                  ),
                                  shiny::selectInput(
                                    ns("stat_color_mode"),
-                                   "颜色映射:",
+                                   "Color Mapping:",
                                    choices = c("-log10(P-value)" = "pval",
                                                "-log10(FDR)" = "padj",
                                                "NES" = "nes"),
@@ -79,15 +79,15 @@ mod_pathway_relation_ui <- function(id) {
                                  ),
                                  shiny::selectInput(
                                    ns("size_mode"),
-                                   "气泡大小:",
-                                   choices = c("Core Genes数" = "core_size",
+                                   "Bubble Size:",
+                                   choices = c("Core Genes Count" = "core_size",
                                                "Set Size" = "setsize",
-                                               "Ratio值" = "ratio"),
+                                               "Ratio Value" = "ratio"),
                                    selected = "core_size"
                                  ),
                                  shiny::sliderInput(
                                    ns("dot_alpha"),
-                                   "透明度:",
+                                   "Transparency:",
                                    min = 0.1, max = 1, value = 0.8, step = 0.1
                                  )
                                ),
@@ -97,13 +97,13 @@ mod_pathway_relation_ui <- function(id) {
                                  condition = sprintf("input['%s'] != 'dotplot'", ns("active_tab")),
                                  shiny::selectInput(
                                    ns("set_definition"),
-                                   "基因集合定义:",
+                                   "Gene Set Definition:",
                                    choices = c("Core Genes (Leading Edge)" = "core"),
                                    selected = "core"
                                  ),
                                  shiny::sliderInput(
                                    ns("min_shared"),
-                                   "最小共享基因数:",
+                                   "Minimum Shared Genes:",
                                    min = 1, max = 20, value = 3, step = 1
                                  )
                                ),
@@ -113,12 +113,12 @@ mod_pathway_relation_ui <- function(id) {
                                  condition = sprintf("input['%s'] == 'network'", ns("active_tab")),
                                  shiny::sliderInput(
                                    ns("max_nodes"),
-                                   "最大节点数:",
+                                   "Maximum Nodes:",
                                    min = 5, max = 50, value = 20, step = 1
                                  ),
                                  shiny::selectInput(
                                    ns("network_layout"),
-                                   "布局算法:",
+                                   "Layout Algorithm:",
                                    choices = c("Fruchterman-Reingold" = "fr",
                                                "Kamada-Kawai" = "kk",
                                                "Circular" = "circle"),
@@ -129,14 +129,14 @@ mod_pathway_relation_ui <- function(id) {
                                shiny::hr(),
                                shiny::actionButton(
                                  ns("refresh_plot"),
-                                 "🔄 更新图表",
+                                 "🔄 Update Plot",
                                  class = "btn-primary",
                                  style = "width: 100%;"
                                ),
 
                                shiny::helpText(
                                  style = "margin-top: 10px; color: #666;",
-                                 "基于主工作台选中的通路集合进行绘制"
+                                 "Plots based on pathway set selected in main workspace"
                                )
                     )
       ),
@@ -171,8 +171,8 @@ mod_pathway_relation_ui <- function(id) {
   )
 }
 
-#' @title 通路关系探索模块 Server
-#' @description 实现DotPlot、Chord、Network、UpSet逻辑，仅hover无click
+#' @title Pathway Relationship Exploration Module Server
+#' @description Implements DotPlot, Chord, Network, and UpSet logic with hover-only interactions (no click)
 #' @keywords internal
 
 mod_pathway_relation_server <- function(id, data_prep_list, gsea_res) {
@@ -222,7 +222,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res) {
       res_df <- res_df[res_df$ID %in% pathways, ]
 
       if (nrow(res_df) == 0) {
-        return(plotly::plot_ly() %>% plotly::layout(title = "无可用通路数据"))
+        return(plotly::plot_ly() %>% plotly::layout(title = "No pathway data available"))
       }
 
       # 获取DE基因（用于ORA计算）
@@ -498,7 +498,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res) {
       if (nrow(edge_list) == 0) {
         return(plotly::plot_ly() %>% plotly::layout(
           title = list(
-            text = "无足够连接的通路（请降低最小共享基因数）",
+            text = "Insufficient connected pathways (please reduce minimum shared genes)",
             font = list(size = 14)
           )
         ))

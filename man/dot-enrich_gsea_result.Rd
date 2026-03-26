@@ -2,20 +2,20 @@
 % Please edit documentation in R/04_calculation.R
 \name{.enrich_gsea_result}
 \alias{.enrich_gsea_result}
-\title{GSEA 结果元数据注入（安全版 - 保留行名）}
+\title{GSEA Result Metadata Injection (Safe Version - Preserving Row Names)}
 \usage{
 .enrich_gsea_result(result_df, meta_dict)
 }
 \arguments{
-\item{result_df}{GSEA 结果数据框（来自 clusterProfiler::GSEA 的 @result）}
+\item{result_df}{GSEA result dataframe (from clusterProfiler::GSEA's @result)}
 
-\item{meta_dict}{元数据字典，包含 ID, Collection, Combo_Name, URL, Description 等列}
+\item{meta_dict}{Metadata dictionary containing ID, Collection, Combo_Name, URL, Description, etc.}
 }
 \value{
-enriched 的数据框，保持原始行名和行数
+Enriched dataframe preserving original row names and row count
 }
 \description{
-将 GSEA 结果与元数据字典合并，添加显示名称、链接等信息。
-  此版本专门修复了行名丢失问题，确保 gseaResult 对象结构完整性。
+Merges GSEA results with metadata dictionary and adds display names, links, etc.
+  This version specifically fixes the row name loss issue to ensure gseaResult object structural integrity.
 }
 \keyword{internal}

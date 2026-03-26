@@ -2,18 +2,18 @@
 % Please edit documentation in R/utils-core-genes.R
 \name{get_core_genes_list}
 \alias{get_core_genes_list}
-\title{批量提取多个通路的Core Genes}
+\title{Batch Extract Core Genes for Multiple Pathways}
 \usage{
 get_core_genes_list(gsea_task_obj, pathway_ids)
 }
 \arguments{
-\item{gsea_task_obj}{GseaTask对象（单个对比组）}
+\item{gsea_task_obj}{GseaTask object (single contrast)}
 
-\item{pathway_ids}{字符向量，通路ID列表}
+\item{pathway_ids}{Character vector, pathway ID list}
 }
 \value{
-命名列表，names=pathway_id, values=core_genes向量
+Named list, names=pathway_id, values=core_genes vector
 }
 \description{
-为03模块的Network/UpSet/Chord提供批量数据准备
+Batch data preparation for 03 module Network/UpSet/Chord visualizations
 }

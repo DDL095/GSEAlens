@@ -2,10 +2,10 @@
 % Please edit documentation in R/utils-accessors.R
 \name{get_sample_meta}
 \alias{get_sample_meta}
-\title{获取样本元数据}
+\title{Get Sample Metadata}
 \usage{
 get_sample_meta(obj)
 }
 \description{
-修复DESeq2后端：统一分组列名为'group'，确保行名与表达矩阵匹配
+Fixes DESeq2 backend: unifies group column name to 'group', ensuring row names match expression matrix.
 }

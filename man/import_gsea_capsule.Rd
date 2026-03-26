@@ -2,22 +2,25 @@
 % Please edit documentation in R/05_extraction.R
 \name{import_gsea_capsule}
 \alias{import_gsea_capsule}
-\title{加载并智能归位 GSEA 计算胶囊}
+\title{Load and Smart-Relocate GSEA Computation Capsule}
 \usage{
 import_gsea_capsule(file_path, auto_relocate = TRUE, inspect = TRUE)
 }
 \arguments{
-\item{file_path}{字符型。胶囊 rds 文件的绝对或相对路径。}
+\item{file_path}{Character. Absolute or relative path to the capsule rds file.}
 
-\item{auto_relocate}{逻辑值。是否自动根据内置血统在当前目录下修复文件夹并归位？默认 TRUE。}
+\item{auto_relocate}{Logical. Whether to automatically fix the folder structure
+and relocate based on the built-in lineage in the current directory? Default TRUE.}
 
-\item{inspect}{逻辑值。加载后是否自动打印胶囊概览？默认 TRUE。}
+\item{inspect}{Logical. Whether to automatically print capsule overview after
+loading? Default TRUE.}
 }
 \value{
-返回解析后的 GseaRes 或 GseaEnv 胶囊对象。
+Returns the parsed GseaRes or GseaEnv capsule object.
 }
 \description{
-安全载入计算胶囊。若文件脱离原始项目路径（比如被拷贝到了桌面），
-引擎将自动在当前工作目录复原标准文件夹，并将胶囊护送归位。
-完全兼容 GseaEnv 和 GseaRes 对象。
+Safely load a computation capsule. If the file is moved from its
+original project path (e.g., copied to desktop), the engine will automatically
+restore the standard folder structure in the current working directory and
+relocate the capsule. Fully compatible with GseaEnv and GseaRes objects.
 }

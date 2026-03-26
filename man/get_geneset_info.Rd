@@ -2,10 +2,10 @@
 % Please edit documentation in R/utils-accessors.R
 \name{get_geneset_info}
 \alias{get_geneset_info}
-\title{获取基因集信息}
+\title{Get Gene Set Information}
 \usage{
 get_geneset_info(obj)
 }
 \description{
-获取基因集信息
+Get Gene Set Information
 }

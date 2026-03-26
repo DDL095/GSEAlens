@@ -1,5 +1,5 @@
-#' @title 数据访问器工具函数
-#' @description 提供统一的数据提取接口，隔离底层对象结构差异。修复DESeq2样本名匹配问题。
+#' @title Data Accessor Utilities
+#' @description Provides unified data extraction interface, isolating underlying object structure differences. Fixes DESeq2 sample name matching issues.
 #' @keywords internal
 #' @name utils-accessors
 NULL
@@ -8,12 +8,12 @@ NULL
 # 1. 表达矩阵访问器
 
 
-#' @title 获取表达矩阵
-#' @description 从 GseaEnv 或 GseaRes 中提取表达矩阵，支持多种标准化方式。
-#' @param obj GseaEnv 或 GseaRes 对象
-#' @param type 字符串。可选值："default" (默认展示), "raw", "cpm", "logcpm", "vst", "fpkm", "tpm"。
-#' @param ... 额外参数
-#' @return 表达矩阵 (基因 x 样本)
+#' @title Get Expression Matrix
+#' @description Extract expression matrix from GseaEnv or GseaRes, supporting multiple normalization methods.
+#' @param obj GseaEnv or GseaRes object
+#' @param type Character. Options: "default" (default display), "raw", "cpm", "logcpm", "vst", "fpkm", "tpm".
+#' @param ... Additional arguments
+#' @return Expression matrix (genes x samples)
 #' @export
 #'
 get_expr_matrix <- function(obj, type = "default", ...) {
@@ -32,8 +32,8 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
   .get_expr_internal(obj$expr_bundle, obj$backend_info, type, ...)
 }
 
-#' @title 内部表达矩阵提取逻辑
-#' @description 修复DESeq2后端表达矩阵与样本元数据匹配问题
+#' @title Internal Expression Matrix Extraction Logic
+#' @description Fixes DESeq2 backend expression matrix and sample metadata matching issues.
 #' @keywords internal
 
 
@@ -80,7 +80,7 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
   gene_lengths <- expr_bundle$gene_meta$length  # 假设有基因长度信息
 
   if (is.null(raw_counts)) {
-    warning("对象中未包含原始计数矩阵，无法动态计算表达量。")
+    warning("Raw count matrix not available in object; cannot compute expression values dynamically.")
     return(NULL)
   }
 
@@ -114,7 +114,7 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
                 # 🔧 FPKM计算（需要基因长度）
                 "fpkm" = {
                   if (is.null(gene_lengths)) {
-                    warning("FPKM计算需要基因长度信息(gene_meta$length)，回退到CPM。")
+                    warning("FPKM calculation requires gene length information (gene_meta$length); falling back to CPM.")
                     t(t(raw_counts) / colSums(raw_counts)) * 1e6
                   } else {
                     # FPKM = (counts / gene_length_kb) / (total_counts / 1e6)
@@ -126,7 +126,7 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
 
                 "logfpkm" = {
                   if (is.null(gene_lengths)) {
-                    warning("logFPKM计算需要基因长度信息，回退到logCPM。")
+                    warning("logFPKM calculation requires gene length information; falling back to logCPM.")
                     log2(t(t(raw_counts) / colSums(raw_counts)) * 1e6 + 1)
                   } else {
                     gene_lengths_kb <- gene_lengths / 1000
@@ -140,7 +140,7 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
                 "vst" = {
                   if (backend != "deseq2") {
                     # 🔧 关键修复：Limma流程中如果请求VST，给出明确警告并回退
-                    warning(sprintf("VST(方差稳定变换)是DESeq2专属方法，当前后端为'%s'，自动回退到logCPM。", backend))
+                    warning(sprintf("VST (variance stabilizing transformation) is a DESeq2-exclusive method; current backend is '%s', falling back to logCPM.", backend))
                     if (backend == "limma_voom" && !is.null(expr_bundle$dge_list)) {
                       edgeR::cpm(expr_bundle$dge_list, log = TRUE)
                     } else {
@@ -152,12 +152,12 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
                     tryCatch({
                       SummarizedExperiment::assay(DESeq2::vst(expr_bundle$dds_obj, blind = FALSE))
                     }, error = function(e) {
-                      warning("VST计算失败，回退到logCPM: ", e$message)
+                      warning("VST calculation failed, falling back to logCPM: ", e$message)
                       counts <- DESeq2::counts(expr_bundle$dds_obj, normalized = FALSE)
                       log2(t(t(counts) / colSums(counts)) * 1e6 + 1)
                     })
                   } else {
-                    stop("VST矩阵未预计算且无法从dds_obj计算。")
+                    stop("VST matrix was not pre-computed and cannot be computed from dds_obj.")
                   }
                 },
 
@@ -177,14 +177,14 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
                 },
 
                 # 未知类型
-                stop(sprintf("不支持的表达量类型: %s", type))
+                stop(sprintf("Unsupported expression value type: %s", type))
   )
 
   # 确保表达矩阵列名与sample_meta行名匹配
   if (!is.null(sample_meta) && !is.null(rownames(sample_meta))) {
     common_samples <- intersect(colnames(res), rownames(sample_meta))
     if (length(common_samples) == 0) {
-      warning("表达矩阵列名与样本元数据行名无匹配！请检查样本标识。")
+      warning("Expression matrix column names do not match sample metadata row names! Please check sample identifiers.")
     } else {
       res <- res[, common_samples, drop = FALSE]
     }
@@ -197,11 +197,11 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
 # 2. 差异分析表访问器
 
 
-#' @title 获取差异分析表
-#' @description 从 de_store 中提取指定对比组的结果。
-#' @param obj GseaEnv 或 GseaRes 对象
-#' @param contrast_id 字符串。对比组 ID (如 "A_vs_B")。
-#' @return data.frame (包含 gene_symbol, logFC, stat, pvalue, padj)
+#' @title Get Differential Expression Table
+#' @description Extract results for a specific contrast from de_store.
+#' @param obj GseaEnv or GseaRes object
+#' @param contrast_id Character. Contrast ID (e.g., "A_vs_B").
+#' @return data.frame (containing gene_symbol, logFC, stat, pvalue, padj)
 #' @export
 get_de_table <- function(obj, contrast_id) {
   UseMethod("get_de_table")
@@ -237,14 +237,14 @@ get_de_table.GseaRes <- function(obj, contrast_id) {
         de_df$t <- -de_df$t
       }
 
-      message(sprintf("🔄 自动映射反向对比: %s -> %s (已翻转logFC符号)",
+      message(sprintf("Auto-mapped reverse contrast: %s -> %s (logFC sign flipped)",
                       contrast_id, reverse_id))
       return(de_df)
     }
   }
 
   # 如果都找不到，报错
-  stop(sprintf("对比组 '%s' 及其反向 '%s' 都不存在于 de_store 中。可用: %s",
+  stop(sprintf("Contrast '%s' and its reverse '%s' not found in de_store. Available: %s",
                contrast_id,
                ifelse(length(parts)==2, paste(parts[2], parts[1], sep="_vs_"), "N/A"),
                paste(names(obj$de_store), collapse = ", ")))
@@ -254,8 +254,8 @@ get_de_table.GseaRes <- function(obj, contrast_id) {
 # 3. 元数据访问器（关键修复区域）
 
 
-#' @title 获取样本元数据
-#' @description 修复DESeq2后端：统一分组列名为'group'，确保行名与表达矩阵匹配
+#' @title Get Sample Metadata
+#' @description Fixes DESeq2 backend: unifies group column name to 'group', ensuring row names match expression matrix.
 #' @export
 get_sample_meta <- function(obj) {
   UseMethod("get_sample_meta")
@@ -273,8 +273,8 @@ get_sample_meta.GseaRes <- function(obj) {
   .process_sample_meta(obj$expr_bundle$sample_meta, obj$expr_bundle)
 }
 
-#' @title 内部样本元数据处理
-#' @description 统一处理样本元数据：修复行名、统一分组列名
+#' @title Internal Sample Metadata Processing
+#' @description Unified sample metadata processing: fixes row names, unifies group column names.
 #' @keywords internal
 
 .process_sample_meta <- function(sample_meta, expr_bundle) {
@@ -291,7 +291,7 @@ get_sample_meta.GseaRes <- function(obj) {
     if (!is.null(expr_bundle$raw_counts)) {
       if (ncol(expr_bundle$raw_counts) == nrow(sample_meta)) {
         rownames(sample_meta) <- colnames(expr_bundle$raw_counts)
-        message("[Accessor] 已从表达矩阵列名恢复样本元数据行名")
+        message("[Accessor] Sample metadata row names restored from expression matrix column names")
       }
     }
   }
@@ -311,13 +311,13 @@ get_sample_meta.GseaRes <- function(obj) {
 
     if (!is.null(found_name)) {
       sample_meta$group <- sample_meta[[found_name]]
-      message(sprintf("[Accessor] 已将分组列 '%s' 映射为 'group'", found_name))
+      message(sprintf("[Accessor] Mapped group column '%s' to 'group'", found_name))
     } else {
       # 如果没有找到，尝试推断第一个factor列作为分组
       factor_cols <- names(sample_meta)[sapply(sample_meta, is.factor)]
       if (length(factor_cols) > 0) {
         sample_meta$group <- sample_meta[[factor_cols[1]]]
-        warning(sprintf("[Accessor] 未找到标准分组列，使用 '%s' 作为分组", factor_cols[1]))
+        warning(sprintf("[Accessor] Standard group column not found; using '%s' as group", factor_cols[1]))
       }
     }
   }
@@ -330,7 +330,7 @@ get_sample_meta.GseaRes <- function(obj) {
   return(sample_meta)
 }
 
-#' @title 获取对比组注册表
+#' @title Get Contrast Registry
 #' @export
 get_contrast_registry <- function(obj) {
   UseMethod("get_contrast_registry")
@@ -348,7 +348,7 @@ get_contrast_registry.GseaRes <- function(obj) {
   obj$contrast_registry
 }
 
-#' @title 获取基因集信息
+#' @title Get Gene Set Information
 #' @export
 get_geneset_info <- function(obj) {
   UseMethod("get_geneset_info")
@@ -365,6 +365,3 @@ get_geneset_info.GseaRes <- function(obj) {
 get_geneset_info.GseaEnv <- function(obj) {
   obj$geneset
 }
-
-
-

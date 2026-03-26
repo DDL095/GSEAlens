@@ -2,7 +2,7 @@
 % Please edit documentation in R/04_calculation.R
 \name{batch_calc_gsea}
 \alias{batch_calc_gsea}
-\title{批量并行 GSEA 计算（优化版）}
+\title{Batch Parallel GSEA Calculation (Optimized Version)}
 \usage{
 batch_calc_gsea(
   gsea_env,
@@ -19,33 +19,33 @@ batch_calc_gsea(
 )
 }
 \arguments{
-\item{gsea_env}{GseaEnv 对象}
+\item{gsea_env}{GseaEnv object}
 
-\item{custom_series_name}{字符串。分析系列名称}
+\item{custom_series_name}{String. Analysis series name}
 
-\item{output_dir}{字符串。结果输出路径，默认 "./GSEA_Output"}
+\item{output_dir}{String. Output directory for results, default "./GSEA_Output"}
 
-\item{workers}{并行核心数。默认 4}
+\item{workers}{Number of parallel cores. Default 4}
 
-\item{bidirectional}{逻辑值。是否自动生成反向对比，默认 TRUE}
+\item{bidirectional}{Logical. Whether to automatically generate reverse contrasts, default TRUE}
 
-\item{minGSSize}{最小基因集大小，默认 10}
+\item{minGSSize}{Minimum gene set size, default 10}
 
-\item{maxGSSize}{最大基因集大小，默认 500}
+\item{maxGSSize}{Maximum gene set size, default 500}
 
-\item{pvalueCutoff}{P 值阈值，默认 1}
+\item{pvalueCutoff}{P-value threshold, default 1}
 
-\item{force}{逻辑值。是否强制重新计算，默认 FALSE}
+\item{force}{Logical. Whether to force recalculation, default FALSE}
 
-\item{use_progress}{逻辑值。是否显示进度条，默认 TRUE}
+\item{use_progress}{Logical. Whether to show progress bar, default TRUE}
 
-\item{chunk_size}{整数。每个worker一次处理的任务数，默认 NULL（自动）}
+\item{chunk_size}{Integer. Number of tasks per worker per chunk, default NULL (auto)}
 }
 \value{
-GseaRes 对象
+GseaRes object
 }
 \description{
-消费标准 GseaEnv 对象，执行高效并行 GSEA 计算。
+Consumes a standard GseaEnv object and performs efficient parallel GSEA calculation.
 
-消费标准 GseaEnv 对象，执行高效并行 GSEA 计算。
+Consumes a standard GseaEnv object and performs efficient parallel GSEA calculation.
 }
