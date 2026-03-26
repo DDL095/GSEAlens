@@ -92,22 +92,6 @@ mod_pathway_relation_ui <- function(id) {
                                  )
                                ),
 
-                               # Network/UpSet/Chord共享控制
-                               shiny::conditionalPanel(
-                                 condition = sprintf("input['%s'] != 'dotplot'", ns("active_tab")),
-                                 shiny::selectInput(
-                                   ns("set_definition"),
-                                   "Gene Set Definition:",
-                                   choices = c("Core Genes (Leading Edge)" = "core"),
-                                   selected = "core"
-                                 ),
-                                 shiny::sliderInput(
-                                   ns("min_shared"),
-                                   "Minimum Shared Genes:",
-                                   min = 1, max = 20, value = 3, step = 1
-                                 )
-                               ),
-
                                # Network专用
                                shiny::conditionalPanel(
                                  condition = sprintf("input['%s'] == 'network'", ns("active_tab")),

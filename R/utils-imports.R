@@ -19,7 +19,7 @@ NULL
 NULL
 
 # utils 包函数
-#' @importFrom utils head tail packageVersion data
+#' @importFrom utils head tail packageVersion data combn read.csv
 NULL
 
 
@@ -150,3 +150,15 @@ NULL
 
 #' @importFrom BiocParallel bplapply bpparam
 NULL
+
+#' @importFrom rlang .data
+NULL
+
+utils::globalVariables(c(
+  ".", "gene_symbol", "stat", "abs_stat", "ID", "NES", "Collection",
+  "Combo_Name", "Display_Collection", "Enriched_In", "Expression",
+  "Group", "Sample", "Subcollection", "URL", "Description", "Description.y",
+  "Detail_Page", "Pathway_Link", "Rank", "setSize", "pvalue", "gs_collection",
+  "gs_description", "gs_name", "gs_subcollection", "gs_url", "phase",
+  "read.csv", "relative_sec", "rss_mb", "x", "y"
+))

@@ -7,6 +7,6 @@
 .process_sample_meta(sample_meta, expr_bundle)
 }
 \description{
-Unified sample metadata processing: fixes row names, unifies group column names.
+Internal Sample Metadata Processing
 }
 \keyword{internal}
