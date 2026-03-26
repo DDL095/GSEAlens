@@ -1,5 +1,10 @@
 <!-- NEWS.md is maintained by https://cynkra.github.io/fledge, do not edit -->
 
+# GSEAlens 0.0.7
+
+- Translate to EN.
+
+
 # GSEAlens 0.0.6.9000
 
 - Update to the new parallel execution logic, and enable `progressr` as the progress bar.
