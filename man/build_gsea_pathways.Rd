@@ -2,20 +2,46 @@
 % Please edit documentation in R/03_pathways.R
 \name{build_gsea_pathways}
 \alias{build_gsea_pathways}
-\title{构建基因集数据库}
+\title{Build GSEA Pathway Database with Interactive Selection}
 \usage{
 build_gsea_pathways(species = "Homo sapiens", auto_select = NULL)
 }
 \arguments{
-\item{species}{物种名称，默认 "Homo sapiens"。}
+\item{species}{Character string specifying the species, default is "Homo sapiens".
+Supports all species available in msigdbr.}
 
-\item{auto_select}{可选。可以是序号向量 (如 c(1, 5)) 或名称向量 (如 c("H", "C2:CP:KEGG_LEGACY"))。
-若为 NULL，则启动交互式菜单。若为 "ALL"，则载入全库。}
+\item{auto_select}{Optional parameter for automated selection. Can be:
+\itemize{
+  \item NULL: Launch interactive menu (default)
+  \item "ALL": Load entire MSigDB database
+  \item Integer vector: Index numbers (e.g., c(17, 26))
+  \item Character vector: Collection names (e.g., c("H", "C2:CP:KEGG_LEGACY"))
+}}
 }
 \value{
-包含 TERM2GENE, meta_dict, SuperTag 的列表对象。
+A list object containing:
+  \itemize{
+    \item TERM2GENE: Data frame mapping pathway IDs to gene symbols
+    \item meta_dict: Metadata dictionary with descriptions, URLs, and collection info
+    \item SuperTag: Intelligent batch identifier for the selected collections
+    \item collections_used: Data frame of selected collection metadata
+  }
 }
 \description{
-基于 msigdbr 提供交互式或自动化的基因集选择，生成标准化的基因集对象。
-支持动态截断未知的新集合，并生成智能语义化标签。
+Provides an interactive or automated gene set selection interface
+  based on msigdbr, generating standardized pathway objects with intelligent
+  semantic tagging. Supports dynamic handling of unknown future collections
+  and includes C9 perturbation signature compatibility.
+}
+\examples{
+\dontrun{
+# Interactive mode
+pathways <- build_gsea_pathways()
+
+# Automated selection by name
+pathways <- build_gsea_pathways(auto_select = c("H", "C5:GO:BP"))
+
+# Load all collections
+pathways <- build_gsea_pathways(auto_select = "ALL")
+}
 }
