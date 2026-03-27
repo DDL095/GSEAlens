@@ -22,11 +22,11 @@
 #' }
 setup_gsea_env <- function(fit, pathway_obj, expr_data = NULL, target_factor = NULL) {
 
-  message("\n🚀 GSEAlens engine starting...")
+  message("\nStarting GSEAlens engine...")
 
   # 1. 校验基因集对象
   if (is.null(pathway_obj) || is.null(pathway_obj$TERM2GENE)) {
-    stop("❌ Invalid pathway_obj! Please use build_gsea_pathways() to generate a valid gene set object.")
+    stop("Invalid pathway_obj! Please use build_gsea_pathways() to generate a valid gene set object.")
   }
 
   # 2. 识别后端类型并分发提取
@@ -34,7 +34,7 @@ setup_gsea_env <- function(fit, pathway_obj, expr_data = NULL, target_factor = N
   backend_info <- NULL
 
   if (inherits(fit, "MArrayLM")) {
-    message("🔍 Detected input type: [Limma-Voom]")
+    message("Detected input type: [Limma-Voom]")
 
     # 调用 Limma 提取器
     backend_data <- .extract_limma_data(fit, expr_data)
@@ -47,7 +47,7 @@ setup_gsea_env <- function(fit, pathway_obj, expr_data = NULL, target_factor = N
     )
 
   } else if (inherits(fit, "DESeqDataSet")) {
-    message("🔍 Detected input type: [DESeq2]")
+    message("Detected input type: [DESeq2]")
 
     # 调用 DESeq2 提取器
     backend_data <- .extract_deseq2_data(fit, target_factor)
@@ -67,7 +67,7 @@ setup_gsea_env <- function(fit, pathway_obj, expr_data = NULL, target_factor = N
     )
 
   } else {
-    stop("❌ Unsupported input type! Please provide MArrayLM (limma) or DESeqDataSet (DESeq2) object.")
+    stop("Unsupported input type! Please provide MArrayLM (limma) or DESeqDataSet (DESeq2) object.")
   }
 
   # 3. 组装基因集信息
@@ -105,9 +105,9 @@ setup_gsea_env <- function(fit, pathway_obj, expr_data = NULL, target_factor = N
   # 5. 最终校验
   .check_gsea_env(env_obj)
 
-  message("✅ GseaEnv object built successfully!")
-  message(sprintf("   📦 Contains %d contrast groups", nrow(backend_data$contrast_registry)))
-  message(sprintf("   🧬 Contains %d pathways", nrow(pathway_obj$meta_dict)))
+  message("GseaEnv object built successfully!")
+  message(sprintf("   Contains %d contrast groups", nrow(backend_data$contrast_registry)))
+  message(sprintf("   Contains %d pathways", nrow(pathway_obj$meta_dict)))
 
   return(env_obj)
 }
@@ -132,20 +132,20 @@ inspect_gsea_env <- function(env_obj) {
 
   # 控制台输出
   cat("\n", rep("=", 60), "\n", sep = "")
-  cat("       🧬 GSEAlens Environment Summary\n")
+  cat("       GSEAlens Environment Summary\n")
   cat(rep("=", 60), "\n\n", sep = "")
 
   # 1. 后端信息
-  cat("⚙️  [1] Backend Information\n")
-  cat(sprintf("   • Type        : %s\n", bi$backend))
-  cat(sprintf("   • Input Class : %s\n", bi$input_class))
+  cat("[1] Backend Information\n")
+  cat(sprintf("   Type        : %s\n", bi$backend))
+  cat(sprintf("   Input Class : %s\n", bi$input_class))
   if (bi$backend == "deseq2") {
-    cat(sprintf("   • Target Factor: %s\n", bi$target_factor))
+    cat(sprintf("   Target Factor: %s\n", bi$target_factor))
   }
   cat("\n")
 
   # 2. 对比组注册表
-  cat("⚖️  [2] Contrast Registry (", nrow(reg), " comparisons)\n", sep = "")
+  cat("[2] Contrast Registry (", nrow(reg), " comparisons)\n", sep = "")
   if (nrow(reg) > 0) {
     # 打印前几个，防止刷屏
     print_head <- utils::head(reg[, c("contrast_id", "left_group", "right_group")], 5)
@@ -156,29 +156,29 @@ inspect_gsea_env <- function(env_obj) {
     }
     if (nrow(reg) > 5) cat("   ... (remaining omitted)\n")
   } else {
-    cat("   ⚠️ No contrasts detected!\n")
+    cat("   No contrasts detected!\n")
   }
   cat("\n")
 
   # 3. 基因集信息
-  cat("🧫 [3] Gene Set Database\n")
-  cat(sprintf("   • Name        : %s\n", gs$name))
-  cat(sprintf("   • Pathways    : %d\n", nrow(gs$meta_dict)))
+  cat("[3] Gene Set Database\n")
+  cat(sprintf("   Name        : %s\n", gs$name))
+  cat(sprintf("   Pathways    : %d\n", nrow(gs$meta_dict)))
   cat("\n")
 
   # 4. 表达数据状态
-  cat("📊 [4] Expression Data Status\n")
+  cat("[4] Expression Data Status\n")
   if (!is.null(expr$raw_counts)) {
-    cat(sprintf("   • Raw Counts  : %d genes x %d samples\n",
+    cat(sprintf("   Raw Counts  : %d genes x %d samples\n",
                 nrow(expr$raw_counts), ncol(expr$raw_counts)))
-    cat(sprintf("   • Display Mat : %s\n", ifelse(!is.null(expr$display_expr), "Ready", "Missing")))
+    cat(sprintf("   Display Mat : %s\n", ifelse(!is.null(expr$display_expr), "Ready", "Missing")))
   } else {
-    cat("   ⚠️ Expression matrix not included (heatmap functionality will be unavailable)\n")
+    cat("   Expression matrix not included (heatmap functionality will be unavailable)\n")
   }
   cat("\n")
 
   # 5. 下一步指引
-  cat("🚀 [5] Next Step\n")
+  cat("[5] Next Step\n")
   cat("   Please run the computation engine:\n")
   cat("   > res <- batch_calc_gsea(env_obj)\n")
   cat(rep("=", 60), "\n\n", sep = "")

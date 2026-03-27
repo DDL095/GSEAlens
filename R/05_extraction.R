@@ -167,11 +167,11 @@ extract_gsea_task <- function(gsea_res, contrast_id, target_collection = "ALL") 
 
     res_df <- res_df[match_idx, , drop = FALSE]
 
-    # 💥 关键：重算 FDR (消除全库背景的惩罚)
+    # 关键：重算 FDR (消除全库背景的惩罚)
     res_df$p.adjust <- p.adjust(res_df$pvalue, method = "BH")
     if ("qvalue" %in% colnames(res_df)) res_df$qvalue <- res_df$p.adjust
 
-    message(sprintf("[Smart Slice] Extracted %d pathways | FDR recalculated.", nrow(res_df)))
+    message(sprintf("[Smart Slice] Extracted %d pathways. FDR recalculated.", nrow(res_df)))
 
     # 更新 S4 对象
     gsea_obj@result <- res_df

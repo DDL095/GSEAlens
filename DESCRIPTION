@@ -23,6 +23,7 @@ Imports:
     plotly,
     ggplot2,
     rlang,
+    igraph,
     dplyr,
     tidyr,
     tibble,

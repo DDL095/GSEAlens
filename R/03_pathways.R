@@ -113,7 +113,6 @@ build_gsea_pathways <- function(species = "Homo sapiens", auto_select = NULL) {
 
   # 交互界面逻辑
   if (is.null(auto_select)) {
-    # 英文交互菜单
     message("\n", rep("=", 70))
     message(sprintf("Welcome to GSEAlens Pathway Wizard (%s)", species))
     message(rep("=", 70))

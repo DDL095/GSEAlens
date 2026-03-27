@@ -25,7 +25,7 @@ NULL
 plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
                                   main_title = "GSEA Plot", subPlot = 3,
                                   curveCol = NULL, add_pval = FALSE,
-                                  show_contrast_in_axis = FALSE,  # 🔧 新增参数
+                                  show_contrast_in_axis = FALSE,  # 新增参数
                                   ...) {
 
   # 1. 解析对象与提取基础数据
@@ -98,11 +98,11 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
     }
   }
 
-  # 5. 原生经典红蓝底部分布图（🔧 修改：条件显示对比组）
+  # 5. 原生经典红蓝底部分布图（条件显示对比组）
   if (subPlot == 3) {
     df_rank <- data.frame(x = seq_along(gList), y = as.numeric(gList))
 
-    # 🔧【关键修改】根据参数决定是否显示对比组信息
+    # 根据参数决定是否显示对比组信息
     if (isTRUE(show_contrast_in_axis)) {
       # 联合画布模式：显示对比组
       x_axis_label <- sprintf(
@@ -125,17 +125,15 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
                      axis.text = ggplot2::element_text(colour = "black"),
                      plot.margin = ggplot2::margin(t = -0.1, r = 0.2, b = 0.2, l = 0.2, unit = "cm")) +
       ggplot2::coord_cartesian(expand = 0) +
-      ggplot2::labs(x = x_axis_label, y = "Ranked List")  # 🔧 使用动态标签
+      ggplot2::labs(x = x_axis_label, y = "Ranked List")
 
-    # 🔧【新增】联合画布模式：加粗加大 X 轴标签
+    # 联合画布模式：加粗加大 X 轴标签
     if (isTRUE(show_contrast_in_axis)) {
       prank_classic <- prank_classic +
         ggplot2::theme(
           axis.title.x = ggplot2::element_text(
-            face = "bold",      # 加粗
-            size = 18#,          # 字号（默认base_size=14，这里加大到16）
-            #color = "#2c3e50",  # 深蓝灰色，更醒目
-            #margin = ggplot2::margin(t = 10)  # 与图形保持适当间距
+            face = "bold",
+            size = 18
           )
         )
     }
@@ -373,7 +371,7 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
             cell_fun = cell_fun,
             row_names_gp = grid::gpar(fontsize = 15),
             column_names_gp = grid::gpar(fontsize = 15, fontface = "bold"),
-            rect_gp = grid::gpar(col = "white", lwd = 1), # 白色网格线
+            rect_gp = grid::gpar(col = "white", lwd = 1),
             show_heatmap_legend = TRUE,
             width = NULL,
             height = NULL

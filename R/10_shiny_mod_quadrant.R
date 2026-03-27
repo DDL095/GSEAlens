@@ -381,7 +381,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
 
       # 构建标题
       title_text <- sprintf(
-        "%s vs %s<br><sup>↑ %d | ↓ %d | NS %d (logFC>|%.1f|, p<%.3f)</sup>",
+        "%s vs %s<br><sup>Up: %d | Down: %d | NS: %d (logFC>|%.1f|, p<%.3f)</sup>",
         left_group, right_group,
         n_up, n_down, n_not_sig,
         logfc_thresh, pval_thresh
@@ -586,7 +586,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
                 }
 
                 if (length(match_idx) > 0) {
-                  message(sprintf("✅ Mapped via gene_meta$%s: %s -> %s",
+                  message(sprintf("Mapped via gene_meta$%s: %s -> %s",
                                   symbol_col, target_gene_upper, ensembl_ids[1]))
                 }
               }

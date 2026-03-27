@@ -28,7 +28,7 @@ NULL
 
   if (!is_contrast_obj) {
     stop(
-      "\n❌ [Limma Input Error] Design matrix column names detected as group names (e.g., 'GroupA', 'GroupB') instead of contrasts (e.g., 'GroupA - GroupB').\n",
+      "\n[Limma Input Error] Design matrix column names detected as group names (e.g., 'GroupA', 'GroupB') instead of contrasts (e.g., 'GroupA - GroupB').\n",
       "GSEAlens requires a fit object with contrasts already defined.\n",
       "Please use makeContrasts and contrasts.fit to define your comparison groups."
     )
@@ -90,7 +90,7 @@ NULL
 
   if (is.null(target_factor)) {
     target_factor <- utils::tail(design_terms, 1)
-    message(sprintf("🔍 [DESeq2] target_factor not specified, automatically inferred as: '%s'", target_factor))
+    message(sprintf("[DESeq2] target_factor not specified, automatically inferred as: '%s'", target_factor))
   }
 
   # 校验 target_factor

@@ -9,7 +9,7 @@ mod_data_prep_ui <- function(id) {
       label = "Select Contrast",
       choices = NULL
     ),
-    shiny::h4("🎯 Data Slicing"),
+    shiny::h4("Data Slicing"),
     shiny::selectizeInput(
       ns("selected_collections"),
       label = "Select Gene Set Subgroup:",
@@ -29,20 +29,19 @@ mod_data_prep_ui <- function(id) {
     ),
     shiny::actionButton(
       ns("run_btn"),
-      label = "🚀 Confirm Contrast and Enrichment Gene Sets",
+      label = "Confirm Contrast and Gene Sets",
       class = "btn-success",
       style = "width: 100%; font-weight: bold; margin-top: 15px; font-size: 16px;"
     ),
 
     shiny::helpText(
       style = "margin-top: 10px; text-align: center; color: #28a745;",
-      "💡 You must click this button after modifying settings"
+      "Click this button after modifying settings"
     ),
 
     shiny::hr(),
 
-    # 🔧 新增：联合GSEA画布控制（完全移入侧边栏）
-    shiny::h4("🖼️ Joint GSEA Canvas"),
+    shiny::h4("Joint GSEA Canvas"),
     shiny::selectizeInput(
       ns("joint_contrasts"),
       label = "Select Contrasts (Multi-select, supports permutations):",
@@ -64,13 +63,13 @@ mod_data_prep_ui <- function(id) {
     ),
     shiny::actionButton(
       ns("joint_generate"),
-      "🎨 Generate/Update Multi-Pathway Canvas",
+      "Generate/Update Multi-Pathway Canvas",
       class = "btn-success",
       style = "width: 100%; font-weight: bold; margin-top: 10px;"
     ) ,
     shiny::hr(),
 
-    shiny::h4("🎯 Differential Expression Gene Markers"),
+    shiny::h4("Differential Expression Gene Markers"),
     shiny::div(
       style = "background-color: #e8f4f8; padding: 10px; border-radius: 5px; border-left: 4px solid #17a2b8;",
       shiny::selectizeInput(
@@ -88,7 +87,7 @@ mod_data_prep_ui <- function(id) {
       ),
       shiny::actionButton(
         ns("apply_genes_btn"),
-        label = "🎯 Confirm and Apply Gene Markers",
+        label = "Confirm and Apply Gene Markers",
         class = "btn-info",
         style = "width: 100%; margin-top: 10px; font-weight: bold;"
       ),
@@ -101,7 +100,7 @@ mod_data_prep_ui <- function(id) {
     shiny::div(
       style = "background-color: #d4edda; padding: 10px; border-radius: 5px; margin-top: 10px;",
       shiny::HTML(
-        "<strong style='color: #155724;'>💾 Confirmed Gene Markers:</strong><br>
+        "<strong style='color: #155724;'>Confirmed Gene Markers:</strong><br>
     <small style='color: #666;'>Retained after switching contrasts</small>"
       ),
       shiny::uiOutput(ns("confirmed_genes_display"))
@@ -110,7 +109,7 @@ mod_data_prep_ui <- function(id) {
     shiny::uiOutput(ns("applied_genes_display")),
     shiny::hr(),
 
-    shiny::h4("🔄 Group Display Order"),
+    shiny::h4("Group Display Order"),
     shiny::div(
       style = "background-color: #fff3cd; padding: 10px; border-radius: 5px; border-left: 4px solid #ffc107;",
       shiny::selectInput(
@@ -121,11 +120,10 @@ mod_data_prep_ui <- function(id) {
       ),
       shiny::actionButton(
         ns("apply_order_btn"),
-        label = "✓ Confirm Order (Refresh Boxplot)",
+        label = "Confirm Order (Refresh Boxplot)",
         class = "btn-warning",
         style = "width: 100%; margin-top: 10px; font-weight: bold;"
       ),
-      # ✅ 新增：实时排序状态显示
       shiny::uiOutput(ns("order_status_display")),
       shiny::helpText(
         style = "margin-top: 8px; color: #666;",
@@ -134,7 +132,7 @@ mod_data_prep_ui <- function(id) {
     ),
     shiny::hr(),
 
-    shiny::h4("🎨 Joint Plotting Control"),
+    shiny::h4("Joint Plotting Control"),
     shiny::selectInput(
       ns("plot_subtype"),
       label = "GSEAvis Style:",
@@ -149,12 +147,11 @@ mod_data_prep_ui <- function(id) {
     ),
     shiny::hr(),
 
-    # 🔧 修复：动态表达数据类型（根据后端更新）
-    shiny::h4("📊 Expression Metrics"),
+    shiny::h4("Expression Metrics"),
     shiny::selectInput(
       ns("expression_type"),
       label = "Select Expression Data Type:",
-      choices = NULL,  # 动态填充
+      choices = NULL,
       selected = NULL
     )
   )
@@ -173,19 +170,17 @@ mod_data_prep_server <- function(id, gsea_res) {
     applied_genes <- shiny::reactiveVal(character(0))
     applied_boxplot_order <- shiny::reactiveVal("default")
 
-    # 🔧 新增：联合画布参数缓存
     canvas_contrasts_val <- shiny::reactiveVal(character(0))
     canvas_ncol_val <- shiny::reactiveVal(3)
 
     current_contrast_cache <- shiny::reactiveVal(NULL)
     pending_genes_internal <- shiny::reactiveVal(character(0))
 
-    # 🔧 修复：根据后端类型动态设置表达数据类型选项
+    # 根据后端类型动态设置表达数据类型选项
     shiny::observe({
       backend <- gsea_res$backend_info$backend
 
       if (backend == "limma_voom") {
-        # Limma-voom流程：支持CPM、log2CPM，不支持VST
         choices <- c(
           "log2(CPM)" = "logcpm",
           "CPM (raw)" = "cpm",
@@ -193,9 +188,8 @@ mod_data_prep_server <- function(id, gsea_res) {
           "FPKM (raw)" = "fpkm"
         )
         selected <- "logcpm"
-        message("📊 Detected Limma-voom backend, loading corresponding expression types")
+        message("Detected Limma-voom backend, loading corresponding expression types")
       } else if (backend == "deseq2") {
-        # DESeq2流程：支持VST、CPM等
         choices <- c(
           "log2(CPM)" = "logcpm",
           "CPM (raw)" = "cpm",
@@ -203,7 +197,7 @@ mod_data_prep_server <- function(id, gsea_res) {
           "log2(Normalized Counts + 1)" = "lognorm"
         )
         selected <- "logcpm"
-        message("📊 Detected DESeq2 backend, loading corresponding expression types")
+        message("Detected DESeq2 backend, loading corresponding expression types")
       } else {
         choices <- c("log2(CPM)" = "logcpm", "CPM (raw)" = "cpm")
         selected <- "logcpm"
@@ -243,7 +237,7 @@ mod_data_prep_server <- function(id, gsea_res) {
         selected = registry$contrast_id[1]
       )
 
-      # 🔧 更新多选（联合画布）- 默认全选所有排列
+      # 更新多选（联合画布）- 默认全选所有排列
       shiny::updateSelectizeInput(
         session,
         "joint_contrasts",
@@ -261,7 +255,7 @@ mod_data_prep_server <- function(id, gsea_res) {
         return()
       }
 
-      message(sprintf("🔄 Switching contrast: %s", contrast_id))
+      message(sprintf("Switching contrast: %s", contrast_id))
       current_contrast_cache(contrast_id)
 
       tryCatch({
@@ -271,10 +265,8 @@ mod_data_prep_server <- function(id, gsea_res) {
           gene_choices <- gene_choices[!is.na(gene_choices)]
           gene_choices <- sort(unique(gene_choices))
 
-          # ✅ 关键：切换对比组时不清空 UI 勾选；把"已确认基因"回填到 pending_genes
-          current_applied <- applied_genes()  # 已确认基因（永不清空）
+          current_applied <- applied_genes()
 
-          # 由于当前对比组的 gene_choices 可能不包含全部 applied 基因，所以取交集（大小写不敏感）
           applied_upper <- toupper(current_applied)
           choices_upper <- toupper(gene_choices)
 
@@ -287,19 +279,18 @@ mod_data_prep_server <- function(id, gsea_res) {
             session,
             "pending_genes",
             choices = gene_choices,
-            selected = pending_selected,     # <- 不清空：允许用户在框里删改
+            selected = pending_selected,
             server = length(gene_choices) > 1000
           )
 
-          # pending 先跟 applied 同步，让用户删改后点确认才会真正刷新 applied
           pending_genes_internal(pending_selected)
 
           message(sprintf(
-            "✅ [Contrast Switch] pending refilled from applied (%d in current choices; %d total in applied)",
+            "pending refilled from applied (%d in current choices; %d total in applied)",
             length(pending_selected), length(current_applied)
           ))
 
-          message(sprintf("✅ Confirmed gene markers remain unchanged (%d genes)", length(current_applied)))
+          message(sprintf("Confirmed gene markers remain unchanged (%d genes)", length(current_applied)))
         }
       }, error = function(e) {
         message("Failed to update gene list: ", e$message)
@@ -315,7 +306,7 @@ mod_data_prep_server <- function(id, gsea_res) {
       permute <- function(arr, l, r) {
         if (l == r) {
           perm_str <- paste(arr, collapse = ",")
-          label_str <- paste(arr, collapse = "→")
+          label_str <- paste(arr, collapse = "->")
           perms[[perm_str]] <<- label_str
           return()
         }
@@ -334,15 +325,15 @@ mod_data_prep_server <- function(id, gsea_res) {
       n <- length(groups)
       count <- 0
 
-      perms[[paste(groups, collapse = ",")]] <- paste(groups, collapse = "→")
+      perms[[paste(groups, collapse = ",")]] <- paste(groups, collapse = "->")
       count <- count + 1
 
-      perms[[paste(rev(groups), collapse = ",")]] <- paste(rev(groups), collapse = "→")
+      perms[[paste(rev(groups), collapse = ",")]] <- paste(rev(groups), collapse = "->")
       count <- count + 1
 
       for (i in 2:min(n, max_perms/2)) {
         shifted <- groups[c(i:n, 1:(i-1))]
-        perms[[paste(shifted, collapse = ",")]] <- paste(shifted, collapse = "→")
+        perms[[paste(shifted, collapse = ",")]] <- paste(shifted, collapse = "->")
         count <- count + 1
         if (count >= max_perms) break
       }
@@ -353,7 +344,7 @@ mod_data_prep_server <- function(id, gsea_res) {
           shuffled <- sample(groups)
           perm_str <- paste(shuffled, collapse = ",")
           if (!(perm_str %in% names(perms))) {
-            perms[[perm_str]] <- paste(shuffled, collapse = "→")
+            perms[[perm_str]] <- paste(shuffled, collapse = "->")
           }
         }
       }
@@ -398,37 +389,25 @@ mod_data_prep_server <- function(id, gsea_res) {
     shiny::observeEvent(input$apply_genes_btn, {
       genes_to_apply <- pending_genes_internal()
       applied_genes(genes_to_apply)
-      message(sprintf("🎯 Confirmed gene markers: %d genes", length(genes_to_apply)))
+      message(sprintf("Confirmed gene markers: %d genes", length(genes_to_apply)))
       shiny::showNotification(sprintf("Marked %d genes", length(genes_to_apply)), type = "message", duration = 3)
     })
 
-    # 排序确认按钮（关键修改）
+    # 排序确认按钮
     shiny::observeEvent(input$apply_order_btn, {
       order_to_apply <- input$boxplot_order_pending
-      applied_boxplot_order(order_to_apply)  # ✅ 更新 reactiveVal
+      applied_boxplot_order(order_to_apply)
 
-      # 强制刷新四重联动模块（这是关键！）
-      message(sprintf("🔄 [Order Confirm] User selected: %s | Quad-link module triggered update",
+      message(sprintf("Order Confirm: User selected: %s | Quad-link module triggered update",
                       if(order_to_apply == "default") "default" else order_to_apply))
 
       shiny::showNotification(
-        sprintf("✅ Order applied: %s | Boxplot refreshed",
-                if(order_to_apply == "default") "Default order" else gsub(",", " → ", order_to_apply)),
+        sprintf("Order applied: %s | Boxplot refreshed",
+                if(order_to_apply == "default") "Default order" else gsub(",", " -> ", order_to_apply)),
         type = "message",
         duration = 2
       )
-    }, ignoreInit = TRUE)  # 👈 关键：添加 ignoreInit = TRUE
-    # 在 mod_data_prep_server 的关键处添加：
-    #shiny::observe({
-    #  applied <- applied_genes()
-    #  pending <- pending_genes_internal()
-    #  contrast <- current_contrast_cache()
-    #
-    #  message(sprintf(
-    #    "📊 [基因管理状态] 对比组=%s | 已确认=%d个 | 待选=%d个",
-    #    contrast, length(applied), length(pending)
-    #  ))
-    #})
+    }, ignoreInit = TRUE)
 
     # 显示实时排序状态
     output$order_status_display <- shiny::renderUI({
@@ -436,13 +415,13 @@ mod_data_prep_server <- function(id, gsea_res) {
       confirmed <- applied_boxplot_order()
 
       status_text <- if (pending == "default") {
-        "📌 Default Order"
+        "Default Order"
       } else {
-        sprintf("📌 Pending: %s", gsub(",", " → ", pending))
+        sprintf("Pending: %s", gsub(",", " -> ", pending))
       }
 
       confirmed_text <- if (confirmed != "default" && !is.na(confirmed) && confirmed != "") {
-        sprintf("<br>✅ Applied: %s", gsub(",", " → ", confirmed))
+        sprintf("<br>Applied: %s", gsub(",", " -> ", confirmed))
       } else {
         ""
       }
@@ -467,7 +446,7 @@ mod_data_prep_server <- function(id, gsea_res) {
       }
     })
 
-    # 🔧 新增：监听画布参数变化
+    # 监听画布参数变化
     shiny::observeEvent(input$canvas_contrasts, {
       canvas_contrasts_val(input$canvas_contrasts)
     }, ignoreNULL = FALSE)
@@ -537,7 +516,6 @@ mod_data_prep_server <- function(id, gsea_res) {
         custom_colors = colors,
         is_preview = is_auto,
         backend = gsea_res$backend_info$backend,
-        # 🔧 新增：传递画布参数
         joint_contrasts = canvas_contrasts_val(),
         joint_ncol = canvas_ncol_val()
       )
@@ -615,10 +593,10 @@ mod_data_prep_server <- function(id, gsea_res) {
       }
 
       result_data(manual_data)
-      shiny::showNotification("✅ Workspace updated", type = "message", duration = 3)
+      shiny::showNotification("Workspace updated", type = "message", duration = 3)
     })
 
-    # 🔧 新增：画布生成触发器（事件反应式）
+    # 画布生成触发器
     joint_generate_event <- shiny::eventReactive(input$joint_generate, {
       list(
         contrasts = input$joint_contrasts,
@@ -630,11 +608,10 @@ mod_data_prep_server <- function(id, gsea_res) {
     return(list(
       data = shiny::reactive({ result_data() }),
       highlight_genes = applied_genes,
-      boxplot_order = applied_boxplot_order,  # reactiveVal
-      # 🔧 新增：联合画布控制项（统一命名）
+      boxplot_order = applied_boxplot_order,
       joint_contrasts = shiny::reactive({ input$joint_contrasts }),
       joint_ncol = shiny::reactive({ input$joint_ncol }),
-      joint_generate = joint_generate_event  # 事件反应式
+      joint_generate = joint_generate_event
     ))
   })
 }

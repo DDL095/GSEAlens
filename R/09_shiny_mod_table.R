@@ -65,7 +65,6 @@ mod_master_table_server <- function(id, data_prep) {
 
     # 🔧 Phase 11 新增：动态加载CSV注释文件（鲁棒版）
     pathway_annotations <- shiny::reactive({
-      # 构建CSV路径（支持开发环境和安装后环境）
       possible_paths <- c(
         file.path("inst", "extdata", "pathway_annotations.csv"),
         file.path("extdata", "pathway_annotations.csv"),
@@ -89,7 +88,6 @@ mod_master_table_server <- function(id, data_prep) {
       tryCatch({
         # 使用read.csv，支持UTF-8和中文
         anno_df <- read.csv(csv_path, stringsAsFactors = FALSE,
-                            check.names = FALSE,  # 保持原始列名（包括中文）
                             encoding = "UTF-8")
 
         if (nrow(anno_df) == 0) {
