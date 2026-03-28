@@ -6,7 +6,14 @@
 \usage{
 mod_master_table_ui(id)
 }
+\arguments{
+\item{id}{Module ID}
+}
+\value{
+Shiny UI tagList
+}
 \description{
-Interactive data table module for displaying GSEA pathway results with checkbox selection and modal integration.
+Interactive data table module for displaying GSEA pathway results
+  with checkbox selection and modal integration.
 }
 \keyword{internal}

@@ -4,17 +4,22 @@
 \alias{mod_master_table_server}
 \title{Master Workspace Table Server}
 \usage{
-mod_master_table_server(id, data_prep)
+mod_master_table_server(id, data_prep, addition_data = NULL)
 }
 \arguments{
 \item{id}{Module ID}
 
 \item{data_prep}{Reactive data from the data preprocessing module}
+
+\item{addition_data}{Optional. A data frame with pathway annotations to merge.
+Must contain 'ID' column as primary key. Additional columns will be appended
+to the main table display.}
 }
 \value{
 List containing selected_pathways and show_modal
 }
 \description{
-Provides data display, CSV annotation merging, and column display control with decoupled checkbox state.
+Provides data display, column display control with decoupled checkbox state.
+  Supports merging addition_data columns into the main table.
 }
 \keyword{internal}

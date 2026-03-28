@@ -2,11 +2,17 @@
 % Please edit documentation in R/10_shiny_mod_quadrant.R
 \name{mod_quadrant_ui}
 \alias{mod_quadrant_ui}
-\title{Quadrant Linkage UI}
+\title{Quadrant Linkage Module}
 \usage{
 mod_quadrant_ui(id)
 }
+\arguments{
+\item{id}{Module ID}
+}
+\value{
+Shiny UI tagList
+}
 \description{
-Quadrant Linkage UI
+UI components for the four-quadrant interactive visualization
 }
 \keyword{internal}

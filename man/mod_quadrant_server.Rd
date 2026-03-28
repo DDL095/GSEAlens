@@ -2,11 +2,18 @@
 % Please edit documentation in R/10_shiny_mod_quadrant.R
 \name{mod_quadrant_server}
 \alias{mod_quadrant_server}
-\title{Quadrant Linkage Server (Multi-select + Sort Fix)}
+\title{Quadrant Linkage Server}
 \usage{
 mod_quadrant_server(id, data_prep_list, gsea_res)
 }
+\arguments{
+\item{id}{Module ID}
+
+\item{data_prep_list}{List from data prep module}
+
+\item{gsea_res}{GseaRes object}
+}
 \description{
-Supports continuous clicking to mark multiple pathways, Boxplot sorting forced lock
+Server logic with unified gene pool (applied_genes)
 }
 \keyword{internal}

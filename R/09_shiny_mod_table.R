@@ -1,7 +1,9 @@
 #' @title Master Workspace Table UI
-#' @description Interactive data table module for displaying GSEA pathway results with checkbox selection and modal integration.
+#' @description Interactive data table module for displaying GSEA pathway results
+#'   with checkbox selection and modal integration.
+#' @param id Module ID
+#' @return Shiny UI tagList
 #' @keywords internal
-
 mod_master_table_ui <- function(id) {
   ns <- shiny::NS(id)
   shiny::tagList(
@@ -40,13 +42,18 @@ mod_master_table_ui <- function(id) {
 
 
 #' @title Master Workspace Table Server
-#' @description Provides data display, CSV annotation merging, and column display control with decoupled checkbox state.
+#' @description Provides data display, column display control with decoupled checkbox state.
+#'   Supports merging addition_data columns into the main table.
 #' @param id Module ID
 #' @param data_prep Reactive data from the data preprocessing module
+#' @param addition_data Optional. A data frame with pathway annotations to merge.
+#'   Must contain 'ID' column as primary key. Additional columns will be appended
+#'   to the main table display.
 #' @return List containing selected_pathways and show_modal
 #' @keywords internal
+#' @importFrom dplyr left_join
+mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
-mod_master_table_server <- function(id, data_prep) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
@@ -56,51 +63,31 @@ mod_master_table_server <- function(id, data_prep) {
     to_safe <- function(x) gsub("'", "\\\\'", x, fixed = TRUE)
     to_original <- function(x) gsub("\\\\'", "'", x, fixed = TRUE)
 
-    # 动态加载CSV注释文件
-    pathway_annotations <- shiny::reactive({
-      possible_paths <- c(
-        file.path("inst", "extdata", "pathway_annotations.csv"),
-        file.path("extdata", "pathway_annotations.csv"),
-        system.file("extdata", "pathway_annotations.csv", package = "GSEAlens")
-      )
-
-      csv_path <- NULL
-      for (path in possible_paths) {
-        if (file.exists(path)) {
-          csv_path <- path
-          break
-        }
-      }
-
-      if (is.null(csv_path)) {
-        message("pathway_annotations.csv not found, skipping annotation loading")
+    # Validate and prepare addition_data
+    .validate_addition_data_internal <- function(add_data) {
+      if (is.null(add_data)) return(NULL)
+      if (!is.data.frame(add_data)) {
+        warning("[MasterTable] addition_data must be a data.frame, ignoring")
         return(NULL)
       }
-
-      tryCatch({
-        # 使用read.csv，支持UTF-8和中文
-        anno_df <- read.csv(csv_path, stringsAsFactors = FALSE,
-                            check.names = FALSE,
-                            encoding = "UTF-8")
-
-        if (nrow(anno_df) == 0) {
-          message("CSV file is empty")
-          return(NULL)
-        }
-
-        if (!"ID" %in% colnames(anno_df)) {
-          warning("CSV file missing ID column, cannot merge")
-          return(NULL)
-        }
-
-        message(sprintf("Successfully loaded annotation file: %d rows x %d columns", nrow(anno_df), ncol(anno_df)))
-        return(anno_df)
-      }, error = function(e) {
-        warning(sprintf("Failed to read CSV annotation file: %s", e$message))
+      if (!"ID" %in% colnames(add_data)) {
+        warning("[MasterTable] addition_data must contain 'ID' column, ignoring")
         return(NULL)
-      })
-    })
+      }
+      add_data$ID <- as.character(add_data$ID)
+      return(add_data)
+    }
 
+    addition_data_validated <- .validate_addition_data_internal(addition_data)
+
+    # p值格式化函数
+    format_pvalue <- function(x, threshold = 0.001) {
+      ifelse(x < threshold,
+             format(x, digits = 2, scientific = TRUE),
+             format(round(x, 3), nsmall = 3))
+    }
+
+    # Joint plot toggle event
     shiny::observeEvent(input$joint_plot_toggle, {
       has_interaction(TRUE)
       toggle <- input$joint_plot_toggle
@@ -114,16 +101,7 @@ mod_master_table_server <- function(id, data_prep) {
       }
     })
 
-
-    # p值格式化函数
-    format_pvalue <- function(x, threshold = 0.001) {
-      ifelse(x < threshold,
-             format(x, digits = 2, scientific = TRUE),
-             format(round(x, 3), nsmall = 3))
-    }
-
-
-    # 表格渲染 - 使用 isolate() 阻止 checkbox 状态触发刷新
+    # Table rendering
     output$table <- DT::renderDataTable({
       data_list <- data_prep()
       shiny::validate(shiny::need(data_list, "Waiting for data to load..."))
@@ -133,11 +111,11 @@ mod_master_table_server <- function(id, data_prep) {
       left_grp <- data_list$left_group
       right_grp <- data_list$right_group
 
-      # 计算 Enriched_In 列
+      # Calculate Enriched_In
       df$Enriched_In <- ifelse(df$NES > 0, left_grp, right_grp)
       df$Enriched_In <- factor(df$Enriched_In, levels = c(left_grp, right_grp))
 
-      # 合并 Description
+      # Merge Description
       if (!is.null(data_list$task_obj$meta$meta_dict)) {
         meta_dict <- data_list$task_obj$meta$meta_dict
         if ("Brief_Description" %in% colnames(meta_dict)) {
@@ -154,16 +132,23 @@ mod_master_table_server <- function(id, data_prep) {
       }
       df$Description[is.na(df$Description)] <- df$ID[is.na(df$Description)]
 
+      # Merge addition_data columns
+      if (!is.null(addition_data_validated)) {
+        add_cols <- setdiff(colnames(addition_data_validated), "ID")
+        df <- dplyr::left_join(df, addition_data_validated, by = "ID", suffix = c("", "_add"))
+        message(sprintf("[MasterTable] Merged %d addition_data columns: %s",
+                        length(add_cols), paste(add_cols, collapse = ", ")))
+      }
+
       df$NES_display <- round(df$NES, 2)
       df$pvalue_display <- format_pvalue(df$pvalue, threshold = 0.001)
       df$padj_display <- format_pvalue(df$p.adjust, threshold = 0.001)
 
-      # 这样勾选复选框时，表格不会重新渲染，保持滚动位置和搜索状态
       current_selection <- isolate(joint_selected())
 
-      # 交互列
+      # Interactive columns
       df$Select_for_Plot <- sprintf(
-        '<input type="checkbox" class="joint-plot-checkbox" data-id="%s" %s onclick="Shiny.setInputValue(&#39;%s&#39;, {id: &#39;%s&#39;, checked: this.checked}, {priority: &#39;event&#39;});"/>',
+        '<input type="checkbox" class="joint-plot-checkbox" data-id="%s" %s onclick="Shiny.setInputValue(\'%s\', {id: \'%s\', checked: this.checked}, {priority: \'event\'});"/>',
         df$Safe_ID,
         ifelse(df$Safe_ID %in% current_selection, 'checked="checked"', ''),
         ns("joint_plot_toggle"),
@@ -171,54 +156,27 @@ mod_master_table_server <- function(id, data_prep) {
       )
 
       df$Detail_Btn <- sprintf(
-        '<button class="btn btn-sm btn-success" onclick="Shiny.setInputValue(&#39;%s&#39;, &#39;%s&#39;, {priority: &#39;event&#39;})">Dashboard</button>',
+        '<button class="btn btn-sm btn-success" onclick="Shiny.setInputValue(\'%s\', \'%s\', {priority: \'event\'})">Dashboard</button>',
         ns("show_modal"),
         df$Safe_ID
       )
 
-      # 合并CSV注释数据
-      anno_df <- pathway_annotations()
-      if (!is.null(anno_df)) {
-        cols_to_keep <- sapply(anno_df, function(col) {
-          !all(is.na(col) | col == "" | col == "NA")
-        })
-        cols_to_keep["ID"] <- TRUE
-
-        if (sum(cols_to_keep) > 1) {
-          anno_df_filtered <- anno_df[, cols_to_keep, drop = FALSE]
-          df <- dplyr::left_join(df, anno_df_filtered, by = "ID")
-          message(sprintf("Merged annotation columns: %s",
-                          paste(setdiff(colnames(anno_df_filtered), "ID"), collapse = ", ")))
-        }
-      }
-
-      # 构建显示列
+      # Display columns
       base_cols <- c("Rank", "Select_for_Plot", "Detail_Btn", "ID", "Enriched_In",
                      "NES_display", "pvalue_display", "padj_display", "setSize", "Description")
 
-      if (!is.null(anno_df)) {
-        csv_cols <- setdiff(colnames(anno_df), "ID")
-        csv_cols_non_empty <- sapply(csv_cols, function(col) {
-          if (!col %in% colnames(df)) return(FALSE)
-          vals <- df[[col]]
-          !all(is.na(vals) | vals == "" | vals == "NA")
-        })
-        csv_cols_to_show <- csv_cols[csv_cols_non_empty]
-        base_cols <- c(base_cols, csv_cols_to_show)
-      }
-
-      # 预留BLANK1-10列
-      blank_cols <- paste0("BLANK", 1:10)
-      existing_blank <- blank_cols[blank_cols %in% colnames(df)]
-      if (length(existing_blank) > 0) {
-        blank_non_empty <- sapply(existing_blank, function(col) {
-          !all(is.na(df[[col]]) | df[[col]] == "")
-        })
-        base_cols <- c(base_cols, existing_blank[blank_non_empty])
+      # Add addition_data columns to display
+      if (!is.null(addition_data_validated)) {
+        add_cols_display <- setdiff(colnames(addition_data_validated), "ID")
+        # Filter out columns that are all NA
+        add_cols_valid <- add_cols_display[sapply(add_cols_display, function(col) {
+          !all(is.na(df[[col]]) | df[[col]] == "" | is.null(df[[col]]))
+        })]
+        base_cols <- c(base_cols, add_cols_valid)
       }
 
       display_cols <- intersect(base_cols, colnames(df))
-      dt_data <- df[, display_cols]
+      dt_data <- df[, display_cols, drop = FALSE]
 
       col_name_map <- c(
         "Rank" = "Rank",
@@ -233,7 +191,6 @@ mod_master_table_server <- function(id, data_prep) {
         "Description" = "Description"
       )
 
-      # 为CSV列和BLANK列保留原始名称
       for (col in display_cols) {
         if (!col %in% names(col_name_map)) {
           col_name_map[col] <- col
@@ -242,64 +199,50 @@ mod_master_table_server <- function(id, data_prep) {
 
       names(dt_data) <- col_name_map[display_cols]
 
-
+      # Column definitions
       col_defs <- list()
 
       if ("Select_for_Plot" %in% display_cols) {
         idx <- which(display_cols == "Select_for_Plot") - 1
         col_defs[[length(col_defs) + 1]] <- list(
-          width = '40px',
-          targets = idx,
-          className = 'dt-center',
-          orderable = FALSE
+          width = '40px', targets = idx, className = 'dt-center', orderable = FALSE
         )
       }
 
       if ("Detail_Btn" %in% display_cols) {
         idx <- which(display_cols == "Detail_Btn") - 1
         col_defs[[length(col_defs) + 1]] <- list(
-          width = '60px',
-          targets = idx,
-          className = 'dt-center',
-          orderable = FALSE
+          width = '60px', targets = idx, className = 'dt-center', orderable = FALSE
         )
       }
 
       if ("Rank" %in% display_cols) {
         idx <- which(display_cols == "Rank") - 1
         col_defs[[length(col_defs) + 1]] <- list(
-          width = '20px',
-          targets = idx,
-          className = 'dt-center'
+          width = '20px', targets = idx, className = 'dt-center'
         )
       }
 
       if ("ID" %in% display_cols) {
         idx <- which(display_cols == "ID") - 1
         col_defs[[length(col_defs) + 1]] <- list(
-          width = '200px',
-          targets = idx
+          width = '200px', targets = idx
         )
       }
 
       if ("Enriched_In" %in% display_cols) {
         idx <- which(display_cols == "Enriched_In") - 1
         col_defs[[length(col_defs) + 1]] <- list(
-          width = '80px',
-          targets = idx,
-          className = 'dt-center'
+          width = '80px', targets = idx, className = 'dt-center'
         )
       }
 
-      # 数值列设置较窄宽度
       numeric_cols <- c("NES_display", "pvalue_display", "padj_display", "setSize")
       for (numeric_col in numeric_cols) {
         if (numeric_col %in% display_cols) {
           idx <- which(display_cols == numeric_col) - 1
           col_defs[[length(col_defs) + 1]] <- list(
-            width = '60px',
-            targets = idx,
-            className = 'dt-center'
+            width = '60px', targets = idx, className = 'dt-center'
           )
         }
       }
@@ -307,27 +250,11 @@ mod_master_table_server <- function(id, data_prep) {
       if ("Description" %in% display_cols) {
         idx <- which(display_cols == "Description") - 1
         col_defs[[length(col_defs) + 1]] <- list(
-          width = '800px',
-          targets = idx,
-          className = 'description-cell'
+          width = '800px', targets = idx, className = 'description-cell'
         )
       }
 
-      csv_and_blank_cols <- setdiff(display_cols, c("Rank", "Select_for_Plot", "Detail_Btn", "ID",
-                                                    "Enriched_In", "NES_display", "pvalue_display",
-                                                    "padj_display", "setSize", "Description"))
-
-      for (col in csv_and_blank_cols) {
-        idx <- which(display_cols == col) - 1
-        col_defs[[length(col_defs) + 1]] <- list(
-          width = '800px',
-          targets = idx,
-          className = 'dt-csv-column'
-        )
-      }
-
-
-      # 关键修复：优化 DT::datatable 配置
+      # Render table
       dt <- DT::datatable(
         dt_data,
         escape = FALSE,
@@ -346,17 +273,11 @@ mod_master_table_server <- function(id, data_prep) {
           columnDefs = col_defs,
           order = list(list(0, 'asc')),
           autoWidth = TRUE,
-          fixedColumns = list(
-            leftColumns = 2
-          ),
+          fixedColumns = list(leftColumns = 2),
           scrollCollapse = TRUE,
-          language = list(
-            emptyTable = "No data available",
-            zeroRecords = "No matching records found"
-          )
+          language = list(emptyTable = "No data available", zeroRecords = "No matching records found")
         )
       )
-
 
       if ("Enriched In" %in% names(dt_data)) {
         dt <- dt %>% DT::formatStyle(
@@ -367,7 +288,6 @@ mod_master_table_server <- function(id, data_prep) {
         )
       }
 
-      # 2. NES 列方向着色（使用十六进制色值：负值蓝色，正值红色）
       if ("NES" %in% names(dt_data)) {
         dt <- dt %>% DT::formatStyle(
           columns = "NES",
@@ -376,11 +296,10 @@ mod_master_table_server <- function(id, data_prep) {
         )
       }
 
-      # 3. FDR 列分段着色（使用styleInterval：根据阈值设置不同颜色）
       if ("FDR" %in% names(dt_data)) {
         dt <- dt %>% DT::formatStyle(
           columns = "FDR",
-          backgroundColor = DT::styleInterval(c(0.01,0.05, 0.25), c('#fc9272',"#fdb9a2", '#fee0d2', 'transparent')),
+          backgroundColor = DT::styleInterval(c(0.01, 0.05, 0.25), c('#fc9272', "#fdb9a2", '#fee0d2', 'transparent')),
           fontWeight = DT::styleInterval(0.05, c('bold', 'normal'))
         )
       }
@@ -393,17 +312,14 @@ mod_master_table_server <- function(id, data_prep) {
         )
       }
 
-
       dt
     }, server = TRUE)
 
-    # 监听 joint_selected 变化，通过 JavaScript 同步复选框状态
+    # Sync checkbox state
     shiny::observe({
       sel <- joint_selected()
-      # 发送自定义消息到前端，更新复选框状态
       session$sendCustomMessage(type = ns("updateCheckbox"), message = list(
-        ids = sel,
-        ns = ns("")
+        ids = sel, ns = ns("")
       ))
     })
 

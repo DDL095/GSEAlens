@@ -95,7 +95,6 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
             directional_gsea_obj = task_obj,
             target_pathways = pathways,
             subPlot = as.numeric(plot_subtype),  # 使用主控制栏的subPlot
-            subPlot = as.numeric(plot_subtype),
             curveCol = colors,
             main_title = main_title,
             add_pval = FALSE,
@@ -153,6 +152,39 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
       shiny::incProgress(1.0, detail = "Done!")
     })
 
+
+
+
+
+
+
+
+    shiny::observeEvent(input$export_code_btn, {
+      shiny::showModal(shiny::modalDialog(
+        title = "Generated R Code",
+        size = "l",
+        easyClose = TRUE,
+        shiny::fluidRow(
+          shiny::column(12,
+                        shiny::div(
+                          style = "background: #f5f5f5; padding: 15px; border-radius: 5px; max-height: 500px; overflow: auto;",
+                          shiny::tags$pre(
+                            shiny::code(
+                              generate_joint_canvas_code(
+                                GSEAlens_res = gsea_res,
+                                contrast_ids = data_prep_list$joint_contrasts(),
+                                target_pathways = table_result$selected_pathways(),
+                                ncol = data_prep_list$joint_ncol()
+                              )
+                            ),
+                            style = "font-size: 11px; white-space: pre-wrap; word-break: break-all;"
+                          )
+                        )
+          )
+        ),
+        footer = shiny::modalButton("Close")
+      ))
+    })
     # 渲染画布
     output$canvas_plot <- shiny::renderPlot({
       shiny::req(canvas_result())

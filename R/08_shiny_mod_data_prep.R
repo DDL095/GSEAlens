@@ -246,6 +246,7 @@ mod_data_prep_server <- function(id, gsea_res) {
       )
     })
 
+
     # 基因列表更新（根治版：已确认基因独立维护）
     shiny::observeEvent(input$selected_contrast, {
       contrast_id <- input$selected_contrast
@@ -388,7 +389,9 @@ mod_data_prep_server <- function(id, gsea_res) {
 
     shiny::observeEvent(input$apply_genes_btn, {
       genes_to_apply <- pending_genes_internal()
-      applied_genes(genes_to_apply)
+      current_applied <- applied_genes()
+      new_applied <- union(toupper(current_applied), toupper(genes_to_apply))
+      applied_genes(new_applied)
       message(sprintf("Confirmed gene markers: %d genes", length(genes_to_apply)))
       shiny::showNotification(sprintf("Marked %d genes", length(genes_to_apply)), type = "message", duration = 3)
     })
