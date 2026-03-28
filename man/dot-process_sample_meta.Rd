@@ -2,11 +2,11 @@
 % Please edit documentation in R/utils-accessors.R
 \name{.process_sample_meta}
 \alias{.process_sample_meta}
-\title{Internal Sample Metadata Processing}
+\title{Internal Sample Metadata Processing (DESeq2 Target Factor Aware)}
 \usage{
 .process_sample_meta(sample_meta, expr_bundle)
 }
 \description{
-Internal Sample Metadata Processing
+Now automatically infers target_factor from dds_obj@design for DESeq2 workflows.
 }
 \keyword{internal}

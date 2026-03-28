@@ -264,7 +264,8 @@ get_sample_meta.GseaRes <- function(obj) {
   .process_sample_meta(obj$expr_bundle$sample_meta, obj$expr_bundle)
 }
 
-#' @title Internal Sample Metadata Processing
+#' @title Internal Sample Metadata Processing (DESeq2 Target Factor Aware)
+#' @description Now automatically infers target_factor from dds_obj@design for DESeq2 workflows.
 #' @keywords internal
 .process_sample_meta <- function(sample_meta, expr_bundle) {
   if (is.null(sample_meta)) {
@@ -274,14 +275,10 @@ get_sample_meta.GseaRes <- function(obj) {
 
   if (inherits(sample_meta, "DFrame") || inherits(sample_meta, "DataFrame")) {
     message("[SampleMeta] Converting DFrame to data.frame")
-    # 保存原始行名和维度信息
     original_rownames <- rownames(sample_meta)
     original_ncol <- ncol(sample_meta)
-
-    # 转换为 data.frame
     sample_meta <- as.data.frame(sample_meta, stringsAsFactors = FALSE)
 
-    # 如果行名丢失但原始有行名，恢复它们
     if ((is.null(rownames(sample_meta)) || all(rownames(sample_meta) == ""))
         && !is.null(original_rownames)) {
       rownames(sample_meta) <- original_rownames
@@ -289,32 +286,23 @@ get_sample_meta.GseaRes <- function(obj) {
                       length(original_rownames)))
     }
 
-    # 确保列数一致（DFrame 转换有时会出问题）
     if (ncol(sample_meta) != original_ncol) {
       warning(sprintf("[SampleMeta] Column count mismatch after conversion: %d vs %d",
                       ncol(sample_meta), original_ncol))
     }
   } else if (!is.data.frame(sample_meta)) {
-    # 其他非 data.frame 类型也转换
     sample_meta <- as.data.frame(sample_meta, stringsAsFactors = FALSE)
   }
-
-  # 确保有 rownames（样本ID）
   if (is.null(rownames(sample_meta)) || all(rownames(sample_meta) == "")) {
     message("[SampleMeta] Row names missing, attempting recovery...")
 
-    # 尝试从 raw_counts 恢复
     if (!is.null(expr_bundle$raw_counts)) {
       if (ncol(expr_bundle$raw_counts) == nrow(sample_meta)) {
         rownames(sample_meta) <- colnames(expr_bundle$raw_counts)
         message("[SampleMeta] Recovered rownames from raw_counts column names")
-      } else {
-        message(sprintf("[SampleMeta] Dimension mismatch: sample_meta (%d) vs raw_counts (%d)",
-                        nrow(sample_meta), ncol(expr_bundle$raw_counts)))
       }
     }
 
-    # 尝试从 dds_obj 恢复（DESeq2）
     if ((is.null(rownames(sample_meta)) || all(rownames(sample_meta) == ""))
         && !is.null(expr_bundle$dds_obj)) {
       dds_colnames <- colnames(expr_bundle$dds_obj)
@@ -325,16 +313,62 @@ get_sample_meta.GseaRes <- function(obj) {
     }
   }
 
-  # 统一分组列名
+  target_factor <- NULL
+
+  # 策略A: 从 dds_obj@design 推断（DESeq2 流程，最高优先级）
+  if (!is.null(expr_bundle$dds_obj)) {
+    tryCatch({
+      design_formula <- DESeq2::design(expr_bundle$dds_obj)
+      if (inherits(design_formula, "formula")) {
+        design_terms <- attr(terms(design_formula), "term.labels")
+        if (length(design_terms) > 0) {
+          # 取设计公式的最后一个变量（通常是目标分组变量）
+          inferred_factor <- tail(design_terms, 1)
+          # 验证该变量确实存在于 sample_meta 中
+          if (inferred_factor %in% colnames(sample_meta)) {
+            target_factor <- inferred_factor
+            message(sprintf("[SampleMeta] Inferred target_factor from dds_obj@design: '%s'",
+                            target_factor))
+          }
+        }
+      }
+    }, error = function(e) {
+      message(sprintf("[SampleMeta] Failed to infer from dds_obj@design: %s", e$message))
+    })
+  }
+
+  # 策略B: 从 expr_bundle$target_factor 读取（如果之前已存储）
+  if (is.null(target_factor) && !is.null(expr_bundle$target_factor)) {
+    if (expr_bundle$target_factor %in% colnames(sample_meta)) {
+      target_factor <- expr_bundle$target_factor
+      message(sprintf("[SampleMeta] Using stored target_factor: '%s'", target_factor))
+    }
+  }
+
+  # 策略C: 回退到原有逻辑（选择第一个有效因子）
+  if (is.null(target_factor)) {
+    warning("[SampleMeta] Could not determine target_factor from dds_obj, using first valid factor")
+    factor_cols <- names(sample_meta)[sapply(sample_meta, is.factor)]
+    valid_factors <- factor_cols[sapply(sample_meta[factor_cols], function(x) length(levels(x)) > 1)]
+    if (length(valid_factors) > 0) {
+      target_factor <- valid_factors[1]
+    }
+  }
+
   if (!"group" %in% colnames(sample_meta)) {
     alt_names <- c("group", "Group", "condition", "Condition",
                    "treatment", "Treatment", "grp")
     found_name <- NULL
 
-    for (name in alt_names) {
-      if (name %in% colnames(sample_meta)) {
-        found_name <- name
-        break
+    # 优先使用推断的 target_factor
+    if (!is.null(target_factor) && target_factor %in% colnames(sample_meta)) {
+      found_name <- target_factor
+    } else {
+      for (name in alt_names) {
+        if (name %in% colnames(sample_meta)) {
+          found_name <- name
+          break
+        }
       }
     }
 
@@ -342,25 +376,28 @@ get_sample_meta.GseaRes <- function(obj) {
       sample_meta$group <- sample_meta[[found_name]]
       message(sprintf("[SampleMeta] Mapped column '%s' to 'group'", found_name))
     } else {
-      # 尝试推断第一个因子列
-      factor_cols <- names(sample_meta)[sapply(sample_meta, is.factor)]
-      if (length(factor_cols) > 0) {
-        # 选择水平数大于1的因子
-        valid_factors <- factor_cols[sapply(sample_meta[factor_cols], function(x) length(levels(x)) > 1)]
-        if (length(valid_factors) > 0) {
-          sample_meta$group <- as.character(sample_meta[[valid_factors[1]]])
-          warning(sprintf("[SampleMeta] Using first valid factor '%s' as group", valid_factors[1]))
+      # 最终回退：使用推断的 target_factor（即使不在 alt_names 中）
+      if (!is.null(target_factor) && target_factor %in% colnames(sample_meta)) {
+        sample_meta$group <- sample_meta[[target_factor]]
+        message(sprintf("[SampleMeta] Using inferred factor '%s' as 'group'", target_factor))
+      } else {
+        factor_cols <- names(sample_meta)[sapply(sample_meta, is.factor)]
+        if (length(factor_cols) > 0) {
+          valid_factors <- factor_cols[sapply(sample_meta[factor_cols], function(x) length(levels(x)) > 1)]
+          if (length(valid_factors) > 0) {
+            sample_meta$group <- as.character(sample_meta[[valid_factors[1]]])
+            warning(sprintf("[SampleMeta] Using first valid factor '%s' as group", valid_factors[1]))
+          }
         }
       }
     }
   }
 
-  # 处理数值型分组编码
+
   if ("group" %in% colnames(sample_meta)) {
     if (is.numeric(sample_meta$group) || is.integer(sample_meta$group)) {
-      message("[SampleMeta] Converting numeric group codes to labels...")
+      message("[SampleMeta] Converting numeric group codes to character labels...")
 
-      # 尝试从 dds_obj 获取原始因子信息
       converted <- FALSE
       if (!is.null(expr_bundle$dds_obj)) {
         tryCatch({
@@ -370,7 +407,6 @@ get_sample_meta.GseaRes <- function(obj) {
           for (fc in factor_cols) {
             if (length(levels(original_colData[[fc]])) > 1) {
               group_levels <- levels(original_colData[[fc]])
-              # 匹配样本
               sample_match <- match(rownames(sample_meta), rownames(original_colData))
               if (any(!is.na(sample_match))) {
                 group_codes <- as.numeric(original_colData[[fc]])[sample_match]
@@ -389,111 +425,7 @@ get_sample_meta.GseaRes <- function(obj) {
         })
       }
 
-      if (!converted) {
-        warning("[SampleMeta] Could not convert numeric codes, converting to character as-is")
-        sample_meta$group <- as.character(sample_meta$group)
-      }
-    }
-
-    # 最终确保 group 是字符型
-    if (is.factor(sample_meta$group)) {
-      sample_meta$group <- as.character(sample_meta$group)
-    }
-  }
-
-  # 最终验证
-  if (is.null(rownames(sample_meta)) || all(rownames(sample_meta) == "")) {
-    warning("[SampleMeta] CRITICAL: Failed to recover rownames, sample matching will fail!")
-  } else {
-    message(sprintf("[SampleMeta] Final: %d samples, groups: %s",
-                    nrow(sample_meta),
-                    paste(unique(sample_meta$group), collapse = ", ")))
-  }
-
-  return(sample_meta)
-}
-
-#' @title .process_sample_meta_simple
-#' @description Unified sample metadata processing: fixes row names, unifies group column names,
-#'   and converts numeric group codes to character labels.
-#' @keywords internal
-
-.process_sample_meta_simple <- function(sample_meta, expr_bundle) {
-  if (is.null(sample_meta)) return(NULL)
-
-  # 转换为data.frame（如果是tibble或其他）
-  if (!is.data.frame(sample_meta)) {
-    sample_meta <- as.data.frame(sample_meta)
-  }
-
-  # 关键修复1：确保有rownames（来自原始colData的行名）
-  if (is.null(rownames(sample_meta))) {
-    if (!is.null(expr_bundle$raw_counts)) {
-      if (ncol(expr_bundle$raw_counts) == nrow(sample_meta)) {
-        rownames(sample_meta) <- colnames(expr_bundle$raw_counts)
-        message("[Accessor] Sample metadata row names restored from expression matrix column names")
-      }
-    }
-  }
-
-  # 关键修复2：统一分组列名（DESeq2使用"分组"，limma使用"group"）
-  if (!"group" %in% colnames(sample_meta)) {
-    alt_names <- c("group", "Group", "condition", "Condition", "treatment", "Treatment")
-    found_name <- NULL
-    for (name in alt_names) {
-      if (name %in% colnames(sample_meta)) {
-        found_name <- name
-        break
-      }
-    }
-
-    if (!is.null(found_name)) {
-      sample_meta$group <- sample_meta[[found_name]]
-      message(sprintf("[Accessor] Mapped group column '%s' to 'group'", found_name))
-    } else {
-      # 如果没有找到，尝试推断第一个factor列作为分组
-      factor_cols <- names(sample_meta)[sapply(sample_meta, is.factor)]
-      if (length(factor_cols) > 0) {
-        sample_meta$group <- sample_meta[[factor_cols[1]]]
-        warning(sprintf("[Accessor] Standard group column not found; using '%s' as group", factor_cols[1]))
-      }
-    }
-  }
-
-  if ("group" %in% colnames(sample_meta)) {
-    # 检查 group 列是否为数值型
-    if (is.numeric(sample_meta$group) || is.integer(sample_meta$group)) {
-      message("[Accessor] Detected numeric group codes, attempting to convert to character labels...")
-
-      # 尝试从原始 colData 中获取因子的 levels
-      # DESeq2 的 colData 中，分组通常是 factor 类型
-      if (!is.null(expr_bundle$dds_obj)) {
-        # 从 DDS 对象获取原始分组信息
-        original_colData <- as.data.frame(SummarizedExperiment::colData(expr_bundle$dds_obj))
-        # 查找可能的分组列（因子类型）
-        factor_cols_in_coldata <- names(original_colData)[sapply(original_colData, is.factor)]
-
-        if (length(factor_cols_in_coldata) > 0) {
-          # 使用第一个因子列作为分组
-          for (fc in factor_cols_in_coldata) {
-            if (length(levels(original_colData[[fc]])) > 1) {
-              # 获取因子 levels 并映射
-              group_levels <- levels(original_colData[[fc]])
-              group_codes <- as.numeric(original_colData[[fc]])
-              # 创建映射：数值编码 → 字符标签
-              mapped_groups <- group_levels[group_codes]
-              names(mapped_groups) <- rownames(original_colData)
-              # 应用到 sample_meta（按行名匹配）
-              sample_meta$group <- mapped_groups[rownames(sample_meta)]
-              message(sprintf("[Accessor] Successfully converted numeric codes to character labels using '%s'", fc))
-              break
-            }
-          }
-        }
-      }
-
-      # 如果上述方法失败，尝试从 dge_list 获取
-      if (is.numeric(sample_meta$group) && !is.null(expr_bundle$dge_list)) {
+      if (!converted && !is.null(expr_bundle$dge_list)) {
         original_samples <- expr_bundle$dge_list$samples
         if ("group" %in% colnames(original_samples) && is.factor(original_samples$group)) {
           group_levels <- levels(original_samples$group)
@@ -501,24 +433,36 @@ get_sample_meta.GseaRes <- function(obj) {
           mapped_groups <- group_levels[group_codes]
           names(mapped_groups) <- rownames(original_samples)
           sample_meta$group <- mapped_groups[rownames(sample_meta)]
-          message("[Accessor] Converted numeric codes using dge_list$group")
+          message("[SampleMeta] Converted using dge_list$group")
         }
       }
 
-      # 最终检查：如果仍然是数值，给出警告
       if (is.numeric(sample_meta$group)) {
-        warning("[Accessor] Could not convert numeric group codes to character labels. Please check your colData.")
+        warning("[SampleMeta] Could not convert numeric group codes to character labels.")
       }
     }
 
-    # 确保group列是factor类型
     if (!is.factor(sample_meta$group)) {
       sample_meta$group <- as.factor(sample_meta$group)
     }
   }
 
+
+  if (is.null(rownames(sample_meta)) || all(rownames(sample_meta) == "")) {
+    warning("[SampleMeta] CRITICAL: Failed to recover rownames, sample matching will fail!")
+  } else {
+    unique_groups <- if (!is.null(sample_meta$group)) {
+      paste(unique(sample_meta$group), collapse = ", ")
+    } else {
+      "N/A"
+    }
+    message(sprintf("[SampleMeta] Final: %d samples, groups: %s",
+                    nrow(sample_meta), unique_groups))
+  }
+
   return(sample_meta)
 }
+
 
 #' @title Get Contrast Registry
 #' @export
