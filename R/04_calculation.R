@@ -27,7 +27,7 @@ batch_calc_gsea <- function(gsea_env,
                             maxGSSize = 500,
                             pvalueCutoff = 1,
                             force = FALSE,
-                            use_progress = F,  # 控制是否显示进度
+                            use_progress = FALSE,  # 控制是否显示进度
                             chunk_size = NULL) {
 
 

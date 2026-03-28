@@ -53,4 +53,5 @@ Suggests: testthat (>= 3.0.0),
     knitr,
     rmarkdown,
     shinytest2
-Depends: R (>= 4.2.0)
+Depends: R (>= 4.5.0)
+VignetteBuilder: knitr
