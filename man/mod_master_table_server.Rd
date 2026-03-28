@@ -2,7 +2,7 @@
 % Please edit documentation in R/09_shiny_mod_table.R
 \name{mod_master_table_server}
 \alias{mod_master_table_server}
-\title{Master Workspace Table Server (Phase 11 Complete: CSV Integration + Checkbox Decoupling Fix)}
+\title{Master Workspace Table Server}
 \usage{
 mod_master_table_server(id, data_prep)
 }
@@ -15,7 +15,6 @@ mod_master_table_server(id, data_prep)
 List containing selected_pathways and show_modal
 }
 \description{
-Provides data display, CSV annotation merging, BLANK column reservation, and column display control.
-  Key Fix: Uses isolate() to decouple checkbox from table rendering, synchronizing state via JavaScript messages.
+Provides data display, CSV annotation merging, and column display control with decoupled checkbox state.
 }
 \keyword{internal}

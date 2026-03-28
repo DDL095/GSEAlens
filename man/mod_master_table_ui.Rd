@@ -2,11 +2,11 @@
 % Please edit documentation in R/09_shiny_mod_table.R
 \name{mod_master_table_ui}
 \alias{mod_master_table_ui}
-\title{Master Workspace Table UI (Phase 11 Complete + Checkbox Decoupling)}
+\title{Master Workspace Table UI}
 \usage{
 mod_master_table_ui(id)
 }
 \description{
-Master Workspace Table UI (Phase 11 Complete + Checkbox Decoupling)
+Interactive data table module for displaying GSEA pathway results with checkbox selection and modal integration.
 }
 \keyword{internal}

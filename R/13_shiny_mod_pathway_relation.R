@@ -9,7 +9,7 @@ mod_pathway_relation_ui <- function(id) {
       # 左侧控制面板
       shiny::column(3,
                     shiny::div(class = "well",
-                               shiny::h4("🎨 Visualization Controls"),
+                               shiny::h4("Visualization Controls"),
 
                                # DotPlot专用控制
                                shiny::conditionalPanel(
@@ -20,54 +20,6 @@ mod_pathway_relation_ui <- function(id) {
                                    choices = c("ORA (Intersection/Pathway Genes)" = "ora",
                                                "Leading Edge (Intersection/DE Genes)" = "leading"),
                                    selected = "ora"
-                                 ),          # DotPlot专用控制 - 优化版
-                                 shiny::conditionalPanel(
-                                   condition = sprintf("input['%s'] == 'dotplot'", ns("active_tab")),
-                                   shiny::selectInput(
-                                     ns("ratio_source"),
-                                     "Ratio Calculation:",
-                                     choices = c("ORA (Intersection/Pathway Genes)" = "ora",
-                                                 "Leading Edge (Intersection/DE Genes)" = "leading"),
-                                     selected = "ora"
-                                   ),
-                                   shiny::selectInput(
-                                     ns("stat_color_mode"),
-                                     "Color Mapping:",
-                                     choices = c("-log10(P-value)" = "pval",
-                                                 "-log10(FDR)" = "padj",
-                                                 "NES" = "nes"),
-                                     selected = "padj"
-                                   ),
-                                   shiny::selectInput(
-                                     ns("size_mode"),
-                                     "Bubble Size:",
-                                     choices = c("Core Genes Count" = "core_size",
-                                                 "Set Size" = "setsize",
-                                                 "Ratio Value" = "ratio"),
-                                     selected = "core_size"
-                                   ),
-                                   # 新增：大小范围控制
-                                   shiny::sliderInput(
-                                     ns("size_range"),
-                                     "Bubble Size Range:",
-                                     min = 1, max = 20, value = c(5, 15), step = 1
-                                   ),
-                                   # 新增：颜色范围控制（截断极端值）
-                                   shiny::sliderInput(
-                                     ns("color_cap"),
-                                     "Color Value Cap (-log10):",
-                                     min = 5, max = 50, value = 20, step = 1
-                                   ),
-                                   shiny::sliderInput(
-                                     ns("dot_alpha"),
-                                     "Transparency:",
-                                     min = 0.1, max = 1, value = 0.8, step = 0.1
-                                   ),
-                                   # 新增：数据来源提示
-                                   shiny::helpText(
-                                     style = "color: #666; font-size: 11px;",
-                                     "Data source: Pathway set currently selected in main workspace"
-                                   )
                                  ),
                                  shiny::selectInput(
                                    ns("stat_color_mode"),
@@ -86,9 +38,23 @@ mod_pathway_relation_ui <- function(id) {
                                    selected = "core_size"
                                  ),
                                  shiny::sliderInput(
+                                   ns("size_range"),
+                                   "Bubble Size Range:",
+                                   min = 1, max = 20, value = c(5, 15), step = 1
+                                 ),
+                                 shiny::sliderInput(
+                                   ns("color_cap"),
+                                   "Color Value Cap (-log10):",
+                                   min = 5, max = 50, value = 20, step = 1
+                                 ),
+                                 shiny::sliderInput(
                                    ns("dot_alpha"),
                                    "Transparency:",
                                    min = 0.1, max = 1, value = 0.8, step = 0.1
+                                 ),
+                                 shiny::helpText(
+                                   style = "color: #666; font-size: 11px;",
+                                   "Data source: Pathway set currently selected in main workspace"
                                  )
                                ),
 
@@ -113,7 +79,7 @@ mod_pathway_relation_ui <- function(id) {
                                shiny::hr(),
                                shiny::actionButton(
                                  ns("refresh_plot"),
-                                 "🔄 Update Plot",
+                                 "Update Plot",
                                  class = "btn-primary",
                                  style = "width: 100%;"
                                ),
@@ -131,18 +97,16 @@ mod_pathway_relation_ui <- function(id) {
                       id = ns("active_tab"),
                       type = "tabs",
 
-                      # Sub 1: DotPlot
                       shiny::tabPanel(
-                        title = shiny::HTML("🔴 DotPlot"),
+                        title = "DotPlot",
                         value = "dotplot",
                         shiny::div(class = "white-box", style = "margin-top: 15px;",
                                    plotly::plotlyOutput(ns("plot_dotplot"), height = "600px")
                         )
                       ),
 
-                      # Sub 3: Network
                       shiny::tabPanel(
-                        title = shiny::HTML("🕸️ Network"),
+                        title = "Network",
                         value = "network",
                         shiny::div(class = "white-box", style = "margin-top: 15px;",
                                    plotly::plotlyOutput(ns("plot_network"), height = "600px")
@@ -172,7 +136,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res) {
       # 这里假设data_list中有一个selected字段，或从上游模块传入
       # 实际实现中应通过shared reactive连接主表格的选择
       pathways <- data_list$df$ID[data_list$df$p.adjust < 0.05]
-      if (length(pathways) > 50) pathways <- pathways[1:50]  # 安全限制
+      if (length(pathways) > 50) pathways <- pathways[1:50]
       return(pathways)
     })
 
@@ -195,6 +159,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res) {
     })
 
     # 1. DotPlot实现（经典GSEA气泡图）- 带对数比例尺
+    # 1. DotPlot
     output$plot_dotplot <- plotly::renderPlotly({
       shiny::req(selected_pathways(), current_task())
       shiny::req(input$refresh_plot)
@@ -226,7 +191,6 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res) {
 
         # Core genes
         core_genes <- get_core_genes_for_pathway(task, pid)
-
         # Term genes（完整基因集）
         term_genes <- get_term_genes(gsea_res, pid)
 
@@ -256,9 +220,8 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res) {
                            length(core_genes))
 
         # 对数变换用于气泡大小（避免极端值导致比例失调）
-        log_size <- log10(raw_size + 1)  # +1避免log(0)
+        log_size <- log10(raw_size + 1)
 
-        # Color映射
         raw_color <- switch(input$stat_color_mode,
                             "pval" = -log10(row$pvalue),
                             "padj" = -log10(row$p.adjust),
@@ -589,7 +552,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res) {
 
       # 构建标题
       title_text <- sprintf(
-        "Pathway Network: %s → %s<br><sub>%d nodes, %d edges (min_shared=%d)</sub>",
+        "Pathway Network: %s vs %s<br><sub>%d nodes, %d edges (min_shared=%d)</sub>",
         left_group, right_group,
         nrow(node_df), nrow(edge_list), input$min_shared
       )

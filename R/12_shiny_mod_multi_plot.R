@@ -62,7 +62,7 @@ mod_multi_plot_server <- function(id, data_prep, table_controller) {
       n <- length(selected_ids())
       if (n == 0) {
         shiny::tags$div(style = "color: #856404; background-color: #fff3cd; padding: 10px;",
-                        "Please check the 'Combined Display' column in the pathway table")
+                        "Check the 'Combined Display' column in the pathway table to select pathways")
       } else {
         shiny::tags$div(style = "color: #155724; background-color: #d4edda; padding: 10px;",
                         sprintf("%d pathway(s) selected", n))

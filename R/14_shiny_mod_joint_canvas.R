@@ -5,7 +5,6 @@
 mod_joint_canvas_ui <- function(id) {
   ns <- shiny::NS(id)
   shiny::tagList(
-    # 🔧 Modification: Remove all control elements, keep only canvas display (full 12 columns)
     shiny::div(class = "white-box", style = "min-height: 900px;",
                shiny::h4("GSEA Joint Canvas"),
                shiny::uiOutput(ns("canvas_info")),
@@ -28,27 +27,23 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
     # 存储当前画布结果
     canvas_result <- shiny::reactiveVal(NULL)
 
-    # 🔧 Core: Monitor the generate button in sidebar (instead of local button)
     shiny::observeEvent(data_prep_list$joint_generate(), {
 
-      # 🔧 Get parameters from data_prep_list (instead of input)
       contrasts <- data_prep_list$joint_contrasts()
       ncol_val <- data_prep_list$joint_ncol()
 
       shiny::req(contrasts, ncol_val)
       if (length(contrasts) == 0) {
-        shiny::showNotification("Please select contrast groups (arrangement mode) in the left control panel first", type = "error")
+        shiny::showNotification("Please select contrast groups in the left control panel first", type = "error")
         return()
       }
 
-      # 🔧 Get plotting parameters from data_prep_list (consistent with multi_plot)
       data_list <- data_prep_list$data()
       shiny::req(data_list)
 
       plot_subtype <- data_list$plot_subtype
       custom_colors <- data_list$custom_colors
 
-      # 🔧 Pathways: share selection with multi_plot
       pathways <- table_result$selected_pathways()
       shiny::req(pathways)
       if (length(pathways) == 0) {
@@ -69,7 +64,6 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
 
       plot_list <- list()
 
-      # 🔧 Arrangement mode: strictly follow user-selected order (support both A_vs_B and B_vs_A coexisting)
       for (i in seq_along(contrasts)) {
         contrast_id <- contrasts[i]
 
@@ -90,7 +84,6 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
           next
         }
 
-        # 🔧 Aesthetic unification: consistent with multi_plot
         main_title <- sprintf(
           "%s [%d pathways]",
           gsub("_vs_", " vs ", contrast_id),
@@ -102,6 +95,7 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
             directional_gsea_obj = task_obj,
             target_pathways = pathways,
             subPlot = as.numeric(plot_subtype),  # 使用主控制栏的subPlot
+            subPlot = as.numeric(plot_subtype),
             curveCol = colors,
             main_title = main_title,
             add_pval = FALSE,
@@ -129,10 +123,8 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
       }
 
       n_plots <- length(plot_list)
-      # 🔧 Remove max row limit: auto-calculate
       actual_nrow <- ceiling(n_plots / ncol_val)
 
-      # 🔧 Aesthetic optimization: consistent with multi_plot
       combined_plot <- patchwork::wrap_plots(
         plot_list,
         ncol = ncol_val,
@@ -140,8 +132,8 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
         byrow = TRUE,
         guides = "collect"
       ) + patchwork::plot_annotation(
-        title = sprintf("Joint GSEA Canvas: %d contrast groups × %d pathways", n_plots, length(pathways)),
-        subtitle = sprintf("Arrangement: %s", paste(contrasts, collapse = " → ")),
+        title = sprintf("Joint GSEA Canvas: %d contrast groups x %d pathways", n_plots, length(pathways)),
+        subtitle = sprintf("Arrangement: %s", paste(contrasts, collapse = " -> ")),
         theme = ggplot2::theme(
           plot.title = ggplot2::element_text(size = 12, face = "bold", hjust = 0.5),
           plot.subtitle = ggplot2::element_text(size = 8, color = "gray50", hjust = 0.5),
@@ -168,7 +160,6 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
     }, height = function() {
       if (is.null(canvas_result())) return(900)
       nrow <- canvas_result()$nrow
-      # 🔧 400px per row, no upper limit
       return(max(900, nrow * 400))
     }, width = 1600, res = 72)
 
@@ -180,15 +171,13 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
       shiny::tags$div(
         style = "margin-bottom: 15px; padding: 10px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 8px;",
         shiny::HTML(sprintf(
-          "<strong>📊 Canvas Info:</strong> %d contrast groups | Layout: %d cols × %d rows | %d pathways<br>
+          "<strong>Canvas Info:</strong> %d contrast groups | Layout: %d cols x %d rows | %d pathways<br>
            <small>Arrangement order: %s</small>",
           info$n_plots, info$ncol, info$nrow, length(info$pathways),
-          paste(info$contrasts, collapse = " → ")
+          paste(info$contrasts, collapse = " -> ")
         ))
       )
     })
-
-    # 🔧 Deletion: Save canvas function has been removed (per user request)
 
   })
 }

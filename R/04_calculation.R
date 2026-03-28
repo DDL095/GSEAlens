@@ -48,7 +48,7 @@ batch_calc_gsea <- function(gsea_env,
   rds_path <- file.path(series_dir, rds_name)
 
   if (file.exists(rds_path) && !force) {
-    message(sprintf("✅ Cache hit! Existing GSEA capsule detected: %s", rds_name))
+    message(sprintf("Cache hit! Existing GSEA capsule detected: %s", rds_name))
     return(readRDS(rds_path))
   }
 
@@ -80,7 +80,7 @@ batch_calc_gsea <- function(gsea_env,
   }
 
   total_tasks <- length(task_metadata)
-  message(sprintf("🚀 Ready: %d contrast tasks pending calculation...", total_tasks))
+  message(sprintf("Ready: %d contrast tasks pending calculation...", total_tasks))
 
 
   # 第三步：并行设置（关键修复：progressr 处理器）
@@ -91,7 +91,7 @@ batch_calc_gsea <- function(gsea_env,
 
   total_cores <- parallel::detectCores(logical = TRUE)
   use_cores <- min(total_cores, max(1, workers))
-  message(sprintf("🖥️ Hardware scheduling: Using %d cores for parallel computation...", use_cores))
+  message(sprintf("Hardware scheduling: Using %d cores for parallel computation...", use_cores))
 
   if (is.null(chunk_size)) {
     chunk_size <- max(1, ceiling(total_tasks / (use_cores * 4)))
@@ -118,7 +118,7 @@ batch_calc_gsea <- function(gsea_env,
   task_names <- names(task_metadata)
   task_chunks <- split(task_names, ceiling(seq_along(task_names) / chunk_size))
 
-  message(sprintf("📦 Chunk strategy: %d chunks, up to %d tasks per chunk",
+  message(sprintf("Chunk strategy: %d chunks, up to %d tasks per chunk",
                   length(task_chunks), chunk_size))
 
 
@@ -311,7 +311,7 @@ batch_calc_gsea <- function(gsea_env,
 
   success_count <- final_obj$metadata$gsea_benchmark$successful_tasks
 
-  message(sprintf("\n✅ Calculation complete! Time elapsed: %.2f seconds",
+  message(sprintf("\nCalculation complete! Time elapsed: %.2f seconds",
                   final_obj$metadata$gsea_benchmark$duration_sec))
   message(sprintf("   Successfully analyzed: %d/%d contrasts", success_count, total_tasks))
   message(sprintf("   Results saved to: %s", rds_path))

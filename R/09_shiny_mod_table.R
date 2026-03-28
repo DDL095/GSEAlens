@@ -1,25 +1,19 @@
-#' @title Master Workspace Table UI (Phase 11 Complete + Checkbox Decoupling)
+#' @title Master Workspace Table UI
+#' @description Interactive data table module for displaying GSEA pathway results with checkbox selection and modal integration.
 #' @keywords internal
 
 mod_master_table_ui <- function(id) {
   ns <- shiny::NS(id)
   shiny::tagList(
-    # 🔧【新增】JavaScript 消息监听，用于同步复选框状态而不刷新表格
     shiny::tags$head(
       shiny::tags$script(shiny::HTML(sprintf("
-        // 监听来自 Shiny 的消息，更新复选框状态
         Shiny.addCustomMessageHandler('%s', function(message) {
           var ids = message.ids;
           var ns = message.ns;
-
-          // 获取所有复选框
           var checkboxes = document.querySelectorAll('.joint-plot-checkbox');
-
           checkboxes.forEach(function(cb) {
             var id = cb.getAttribute('data-id');
             var shouldBeChecked = ids.includes(id);
-
-            // 只有状态变化时才更新，避免不必要的DOM操作
             if (cb.checked !== shouldBeChecked) {
               cb.checked = shouldBeChecked;
             }
@@ -33,7 +27,7 @@ mod_master_table_ui <- function(id) {
       style = "width: 100%; overflow-x: auto;",
       shiny::tags$div(
         style = "margin-bottom: 10px; color: #666; font-size: 12px;",
-        shiny::HTML("💡 Drag column headers to reorder | Check 'Joint Plot' column to select pathways | Click 'Dashboard' for details")
+        shiny::HTML("Drag column headers to reorder | Check 'Joint Plot' column to select pathways | Click 'Dashboard' for details")
       ),
       DT::dataTableOutput(ns("table"))
     ),
@@ -45,9 +39,8 @@ mod_master_table_ui <- function(id) {
 }
 
 
-#' @title Master Workspace Table Server (Phase 11 Complete: CSV Integration + Checkbox Decoupling Fix)
-#' @description Provides data display, CSV annotation merging, BLANK column reservation, and column display control.
-#'   Key Fix: Uses isolate() to decouple checkbox from table rendering, synchronizing state via JavaScript messages.
+#' @title Master Workspace Table Server
+#' @description Provides data display, CSV annotation merging, and column display control with decoupled checkbox state.
 #' @param id Module ID
 #' @param data_prep Reactive data from the data preprocessing module
 #' @return List containing selected_pathways and show_modal
@@ -63,7 +56,7 @@ mod_master_table_server <- function(id, data_prep) {
     to_safe <- function(x) gsub("'", "\\\\'", x, fixed = TRUE)
     to_original <- function(x) gsub("\\\\'", "'", x, fixed = TRUE)
 
-    # 🔧 Phase 11 新增：动态加载CSV注释文件（鲁棒版）
+    # 动态加载CSV注释文件
     pathway_annotations <- shiny::reactive({
       possible_paths <- c(
         file.path("inst", "extdata", "pathway_annotations.csv"),
@@ -80,28 +73,27 @@ mod_master_table_server <- function(id, data_prep) {
       }
 
       if (is.null(csv_path)) {
-        message("📄 pathway_annotations.csv not found, skipping annotation loading")
+        message("pathway_annotations.csv not found, skipping annotation loading")
         return(NULL)
       }
 
-      # 🔧 Phase 11：鲁棒读取（UTF-8编码，自动检测列数）
       tryCatch({
         # 使用read.csv，支持UTF-8和中文
         anno_df <- read.csv(csv_path, stringsAsFactors = FALSE,
+                            check.names = FALSE,
                             encoding = "UTF-8")
 
         if (nrow(anno_df) == 0) {
-          message("📄 CSV file is empty")
+          message("CSV file is empty")
           return(NULL)
         }
 
-        # 🔧 Phase 11：检查必须有的ID列
         if (!"ID" %in% colnames(anno_df)) {
           warning("CSV file missing ID column, cannot merge")
           return(NULL)
         }
 
-        message(sprintf("📄 Successfully loaded annotation file: %d rows x %d columns", nrow(anno_df), ncol(anno_df)))
+        message(sprintf("Successfully loaded annotation file: %d rows x %d columns", nrow(anno_df), ncol(anno_df)))
         return(anno_df)
       }, error = function(e) {
         warning(sprintf("Failed to read CSV annotation file: %s", e$message))
@@ -123,7 +115,7 @@ mod_master_table_server <- function(id, data_prep) {
     })
 
 
-    # 🔧 Phase 8：p值格式化函数（可调阈值）
+    # p值格式化函数
     format_pvalue <- function(x, threshold = 0.001) {
       ifelse(x < threshold,
              format(x, digits = 2, scientific = TRUE),
@@ -131,7 +123,7 @@ mod_master_table_server <- function(id, data_prep) {
     }
 
 
-    # 🔧【核心修复】表格渲染 - 使用 isolate() 阻止 checkbox 状态触发刷新
+    # 表格渲染 - 使用 isolate() 阻止 checkbox 状态触发刷新
     output$table <- DT::renderDataTable({
       data_list <- data_prep()
       shiny::validate(shiny::need(data_list, "Waiting for data to load..."))
@@ -162,12 +154,10 @@ mod_master_table_server <- function(id, data_prep) {
       }
       df$Description[is.na(df$Description)] <- df$ID[is.na(df$Description)]
 
-      # Phase 8：格式化数值
       df$NES_display <- round(df$NES, 2)
       df$pvalue_display <- format_pvalue(df$pvalue, threshold = 0.001)
       df$padj_display <- format_pvalue(df$p.adjust, threshold = 0.001)
 
-      # 🔧【关键修改】使用 isolate() 阻止 joint_selected 触发表格刷新
       # 这样勾选复选框时，表格不会重新渲染，保持滚动位置和搜索状态
       current_selection <- isolate(joint_selected())
 
@@ -181,13 +171,12 @@ mod_master_table_server <- function(id, data_prep) {
       )
 
       df$Detail_Btn <- sprintf(
-        '<button class="btn btn-sm btn-success" onclick="Shiny.setInputValue(&#39;%s&#39;, &#39;%s&#39;, {priority: &#39;event&#39;})">🔍 %s</button>',
+        '<button class="btn btn-sm btn-success" onclick="Shiny.setInputValue(&#39;%s&#39;, &#39;%s&#39;, {priority: &#39;event&#39;})">Dashboard</button>',
         ns("show_modal"),
-        df$Safe_ID,
-        "Dashboard"
+        df$Safe_ID
       )
 
-      # Phase 11：合并CSV注释数据
+      # 合并CSV注释数据
       anno_df <- pathway_annotations()
       if (!is.null(anno_df)) {
         cols_to_keep <- sapply(anno_df, function(col) {
@@ -198,16 +187,15 @@ mod_master_table_server <- function(id, data_prep) {
         if (sum(cols_to_keep) > 1) {
           anno_df_filtered <- anno_df[, cols_to_keep, drop = FALSE]
           df <- dplyr::left_join(df, anno_df_filtered, by = "ID")
-          message(sprintf("🔗 Merged annotation columns: %s",
+          message(sprintf("Merged annotation columns: %s",
                           paste(setdiff(colnames(anno_df_filtered), "ID"), collapse = ", ")))
         }
       }
 
-      # Phase 8 & 11：构建显示列
+      # 构建显示列
       base_cols <- c("Rank", "Select_for_Plot", "Detail_Btn", "ID", "Enriched_In",
                      "NES_display", "pvalue_display", "padj_display", "setSize", "Description")
 
-      # 添加CSV中的注释列
       if (!is.null(anno_df)) {
         csv_cols <- setdiff(colnames(anno_df), "ID")
         csv_cols_non_empty <- sapply(csv_cols, function(col) {
@@ -232,7 +220,6 @@ mod_master_table_server <- function(id, data_prep) {
       display_cols <- intersect(base_cols, colnames(df))
       dt_data <- df[, display_cols]
 
-      # Phase 8：列名映射
       col_name_map <- c(
         "Rank" = "Rank",
         "Select_for_Plot" = "Joint Plot",
@@ -256,12 +243,8 @@ mod_master_table_server <- function(id, data_prep) {
       names(dt_data) <- col_name_map[display_cols]
 
 
-      # 关键修复：优化 columnDefs 配置
-
-
       col_defs <- list()
 
-      # 1. 为关键列设置合理的固定宽度（左侧核心列较窄，防止挤压）
       if ("Select_for_Plot" %in% display_cols) {
         idx <- which(display_cols == "Select_for_Plot") - 1
         col_defs[[length(col_defs) + 1]] <- list(
@@ -330,7 +313,6 @@ mod_master_table_server <- function(id, data_prep) {
         )
       }
 
-      # 2. 为CSV列和BLANK列设置合理的默认宽度
       csv_and_blank_cols <- setdiff(display_cols, c("Rank", "Select_for_Plot", "Detail_Btn", "ID",
                                                     "Enriched_In", "NES_display", "pvalue_display",
                                                     "padj_display", "setSize", "Description"))
@@ -346,8 +328,6 @@ mod_master_table_server <- function(id, data_prep) {
 
 
       # 关键修复：优化 DT::datatable 配置
-
-
       dt <- DT::datatable(
         dt_data,
         escape = FALSE,
@@ -378,10 +358,6 @@ mod_master_table_server <- function(id, data_prep) {
       )
 
 
-      # 关键修复：恢复美学样式（NES方向着色 + P值/FDR渐变色）
-
-
-      # 1. Enriched In 列美学（背景色 + 文字颜色 + 粗体）
       if ("Enriched In" %in% names(dt_data)) {
         dt <- dt %>% DT::formatStyle(
           columns = "Enriched In",
@@ -395,7 +371,7 @@ mod_master_table_server <- function(id, data_prep) {
       if ("NES" %in% names(dt_data)) {
         dt <- dt %>% DT::formatStyle(
           columns = "NES",
-          color = DT::styleInterval(0, c('#1052bd', '#cc212f')),  # 负值深蓝，正值深红
+          color = DT::styleInterval(0, c('#1052bd', '#cc212f')),
           fontWeight = 'bold'
         )
       }
@@ -408,7 +384,7 @@ mod_master_table_server <- function(id, data_prep) {
           fontWeight = DT::styleInterval(0.05, c('bold', 'normal'))
         )
       }
-      # 4. P-value 列渐变色（根据数值大小，越显著越红）
+
       if ("P-value" %in% names(dt_data)) {
         dt <- dt %>% DT::formatStyle(
           columns = "P-value",
@@ -421,8 +397,7 @@ mod_master_table_server <- function(id, data_prep) {
       dt
     }, server = TRUE)
 
-    # 🔧【新增】监听 joint_selected 变化，通过 JavaScript 同步复选框状态
-    # 这样表格不会刷新，但复选框的视觉状态会更新
+    # 监听 joint_selected 变化，通过 JavaScript 同步复选框状态
     shiny::observe({
       sel <- joint_selected()
       # 发送自定义消息到前端，更新复选框状态

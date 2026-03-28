@@ -110,13 +110,11 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
                   }
                 },
 
-                # 🔧 FPKM计算（需要基因长度）
                 "fpkm" = {
                   if (is.null(gene_lengths)) {
                     warning("FPKM calculation requires gene length information (gene_meta$length); falling back to CPM.")
                     t(t(raw_counts) / colSums(raw_counts)) * 1e6
                   } else {
-                    # FPKM = (counts / gene_length_kb) / (total_counts / 1e6)
                     gene_lengths_kb <- gene_lengths / 1000
                     rpm <- t(t(raw_counts) / colSums(raw_counts)) * 1e6
                     rpm / gene_lengths_kb
@@ -138,7 +136,6 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
                 # VST (DESeq2 专属，严格检查)
                 "vst" = {
                   if (backend != "deseq2") {
-                    # 🔧 关键修复：Limma流程中如果请求VST，给出明确警告并回退
                     warning(sprintf("VST (variance stabilizing transformation) is a DESeq2-exclusive method; current backend is '%s', falling back to logCPM.", backend))
                     if (backend == "limma_voom" && !is.null(expr_bundle$dge_list)) {
                       edgeR::cpm(expr_bundle$dge_list, log = TRUE)
@@ -207,7 +204,6 @@ get_de_table <- function(obj, contrast_id) {
 }
 #' @export
 get_de_table.GseaRes <- function(obj, contrast_id) {
-  # 🔧 修复3：检查是否为反向对比（如 PREA_vs_IBAA）
   # 如果是反向，找到正向对比并翻转logFC符号
 
   if (contrast_id %in% names(obj$de_store)) {
@@ -215,7 +211,6 @@ get_de_table.GseaRes <- function(obj, contrast_id) {
     return(obj$de_store[[contrast_id]])
   }
 
-  # 🔧 新增：尝试解析反向对比
   parts <- strsplit(contrast_id, "_vs_")[[1]]
   if (length(parts) == 2) {
     # 构建反向ID（交换左右）
@@ -225,7 +220,6 @@ get_de_table.GseaRes <- function(obj, contrast_id) {
       # 找到正向数据，翻转符号
       de_df <- obj$de_store[[reverse_id]]
 
-      # 🆕 新增：翻转logFC和stat符号（关键！）
       if ("logFC" %in% colnames(de_df)) {
         de_df$logFC <- -de_df$logFC
       }
@@ -250,7 +244,7 @@ get_de_table.GseaRes <- function(obj, contrast_id) {
 }
 
 
-# 3. 元数据访问器（关键修复区域）
+# 3. 元数据访问器
 
 
 #' @title Get Sample Metadata
@@ -278,7 +272,6 @@ get_sample_meta.GseaRes <- function(obj) {
     return(NULL)
   }
 
-  # 🔧 关键修复：处理 DFrame（DESeq2 的 colData 返回类型）
   if (inherits(sample_meta, "DFrame") || inherits(sample_meta, "DataFrame")) {
     message("[SampleMeta] Converting DFrame to data.frame")
     # 保存原始行名和维度信息
@@ -334,8 +327,8 @@ get_sample_meta.GseaRes <- function(obj) {
 
   # 统一分组列名
   if (!"group" %in% colnames(sample_meta)) {
-    alt_names <- c("分组", "Group", "condition", "Condition",
-                   "treatment", "Treatment", "group", "grp")
+    alt_names <- c("group", "Group", "condition", "Condition",
+                   "treatment", "Treatment", "grp")
     found_name <- NULL
 
     for (name in alt_names) {
@@ -419,6 +412,7 @@ get_sample_meta.GseaRes <- function(obj) {
 
   return(sample_meta)
 }
+
 #' @title .process_sample_meta_simple
 #' @description Unified sample metadata processing: fixes row names, unifies group column names,
 #'   and converts numeric group codes to character labels.
@@ -444,8 +438,7 @@ get_sample_meta.GseaRes <- function(obj) {
 
   # 关键修复2：统一分组列名（DESeq2使用"分组"，limma使用"group"）
   if (!"group" %in% colnames(sample_meta)) {
-    # 常见的中文分组列名
-    alt_names <- c("分组", "Group", "condition", "Condition", "treatment", "Treatment")
+    alt_names <- c("group", "Group", "condition", "Condition", "treatment", "Treatment")
     found_name <- NULL
     for (name in alt_names) {
       if (name %in% colnames(sample_meta)) {
@@ -467,9 +460,6 @@ get_sample_meta.GseaRes <- function(obj) {
     }
   }
 
-  # ═══════════════════════════════════════════════════════════════
-  # 🔧 新增：处理数值型分组编码 → 转换为字符标签
-  # ═══════════════════════════════════════════════════════════════
   if ("group" %in% colnames(sample_meta)) {
     # 检查 group 列是否为数值型
     if (is.numeric(sample_meta$group) || is.integer(sample_meta$group)) {
@@ -480,7 +470,6 @@ get_sample_meta.GseaRes <- function(obj) {
       if (!is.null(expr_bundle$dds_obj)) {
         # 从 DDS 对象获取原始分组信息
         original_colData <- as.data.frame(SummarizedExperiment::colData(expr_bundle$dds_obj))
-
         # 查找可能的分组列（因子类型）
         factor_cols_in_coldata <- names(original_colData)[sapply(original_colData, is.factor)]
 
@@ -491,14 +480,11 @@ get_sample_meta.GseaRes <- function(obj) {
               # 获取因子 levels 并映射
               group_levels <- levels(original_colData[[fc]])
               group_codes <- as.numeric(original_colData[[fc]])
-
               # 创建映射：数值编码 → 字符标签
               mapped_groups <- group_levels[group_codes]
               names(mapped_groups) <- rownames(original_colData)
-
               # 应用到 sample_meta（按行名匹配）
               sample_meta$group <- mapped_groups[rownames(sample_meta)]
-
               message(sprintf("[Accessor] Successfully converted numeric codes to character labels using '%s'", fc))
               break
             }

@@ -9,8 +9,7 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: false
 RoxygenNote: 7.3.3
-Imports: 
-    stats,
+Imports: stats,
     utils,
     enrichplot,
     grDevices,
@@ -48,10 +47,8 @@ Imports:
     clipr,
     progressr,
     BiocParallel
-Suggests:
-    testthat (>= 3.0.0),
+Suggests: testthat (>= 3.0.0),
     knitr,
     rmarkdown,
     shinytest2
-Depends: 
-    R (>= 4.2.0)
+Depends: R (>= 4.2.0)
