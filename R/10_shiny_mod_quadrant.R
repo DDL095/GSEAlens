@@ -32,7 +32,7 @@ mod_quadrant_ui <- function(id) {
                                     style = "position: absolute; top: 10px; right: 50%; z-index: 100;",
                                     shiny::actionButton(
                                       ns("toggle_volcano_settings"),
-                                      label = "⚙️",
+                                      label = "Settings",
                                       style = "padding: 2px 8px; font-size: 12px;"
                                     )
                                   ),
@@ -102,16 +102,15 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
     data_prep_data <- data_prep_list$data
     highlight_genes_reactive <- data_prep_list$highlight_genes
 
-    # 🔧 修复：直接持有reactiveVal引用，确保实时同步
     boxplot_order_ref <- data_prep_list$boxplot_order
 
     shiny::observeEvent(data_prep_data(), {
       selected_pathway_ids(character(0))
       selected_pathway_genes(character(0))
 
-      # 🔴 关键修复：当对比组切换时，重置排序为默认
+      # 对比组切换时，重置排序为默认
       boxplot_order_ref("default")
-      message("🔄 [Linkage] Comparison group switched, sorting reset to default")
+      message("Comparison group switched, sorting reset to default")
     })
 
     # 1. 通路火山图（连续点击多选）
@@ -205,11 +204,11 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
       if (clicked_id %in% current) {
         new_selection <- setdiff(current, clicked_id)
         selected_pathway_ids(new_selection)
-        message(sprintf("❌ Removed: %s (remaining %d)", clicked_id, length(new_selection)))
+        message(sprintf("Removed: %s (remaining %d)", clicked_id, length(new_selection)))
       } else {
         new_selection <- c(current, clicked_id)
         selected_pathway_ids(new_selection)
-        message(sprintf("✅ Added: %s (total %d)", clicked_id, length(new_selection)))
+        message(sprintf("Added: %s (total %d)", clicked_id, length(new_selection)))
 
         data_list <- data_prep_data()
         if (!is.null(data_list)) {
@@ -266,7 +265,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
       )
     })
 
-    # 3. 差异表达火山图（恢复美学 + 可调阈值 + 修复点击联动）
+    # 3. 差异表达火山图
     output$de_volcano <- plotly::renderPlotly({
       data_list <- data_prep_data()
       shiny::req(data_list)
@@ -342,6 +341,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
       COLOR_PATHWAY <- "#FF9800" # 橙色 - 通路基因
 
       # 设置基础颜色
+
       de_df$color <- dplyr::case_when(
         de_df$category == "user" ~ COLOR_USER,
         de_df$category == "pathway" ~ COLOR_PATHWAY,
@@ -521,7 +521,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
 
       if (is.null(gene_click) || is.null(gene_click$key)) {
         return(plotly::plot_ly() %>% plotly::layout(
-          title = list(text = "👈 Please click gene in left volcano plot", font = list(size = 14))
+          title = list(text = "Click gene in left volcano plot", font = list(size = 14))
         ))
       }
 
@@ -536,17 +536,9 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
           return(plotly::plot_ly() %>% plotly::layout(title = "Expression matrix not available"))
         }
 
-
-
-
-
         target_gene_upper <- gene_click$key
 
-
-        # 🧬 多策略基因匹配逻辑（SYMBOL ↔ Ensembl ID 双向匹配）
-
         match_idx <- integer(0)
-
         # 策略1: 直接匹配表达矩阵行名（可能是 SYMBOL 或 Ensembl ID）
         gene_names_upper <- toupper(rownames(expr_mat))
         match_idx <- which(gene_names_upper == target_gene_upper)
@@ -622,13 +614,9 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
         }
 
         actual_gene <- rownames(expr_mat)[match_idx]
-        # 🎯 关键：保留原始点击的 SYMBOL 作为显示名称（而非 Ensembl ID）
         display_gene_name <- gene_click$key
 
-        message(sprintf("📊 Boxplot data: %s (matched to row: %s)", display_gene_name, actual_gene))
-
-
-
+        message(sprintf("Boxplot data: %s (matched to row: %s)", display_gene_name, actual_gene))
 
         expr_values <- expr_mat[actual_gene, ]
 
@@ -652,7 +640,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
         x_categories <- NULL
 
         if (final_order_to_use != "default" && final_order_to_use != "" && !is.na(final_order_to_use)) {
-          sep <- if (grepl("→", final_order_to_use, fixed = TRUE)) "→" else ","
+          sep <- if (grepl("->", final_order_to_use, fixed = TRUE)) "->" else ","
           order_parts <- strsplit(final_order_to_use, sep)[[1]]
           order_parts <- trimws(order_parts)
           valid_parts <- order_parts[order_parts %in% actual_groups]
@@ -703,15 +691,13 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
                                    "<b>Sample:</b> %s<br><b>Group:</b> %s<br><b>Expression:</b> %.3f",
                                    Sample, Group, Expression
                                  )
-                               )
-          )+
+                               ))+
           ggplot2::scale_fill_manual(values = group_colors) +
           ggplot2::scale_x_discrete(limits = x_categories, drop = FALSE) +
           ggplot2::coord_cartesian(ylim = c(y_min, y_max)) +
           ggplot2::theme_bw(base_size = 12) +
           ggplot2::labs(
-            title = sprintf("%s",
-                            display_gene_name),
+            title = sprintf("%s", display_gene_name),
             y = data_list$expression_type,
             x = NULL
           ) +
@@ -728,7 +714,6 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
 
         # 转换为plotly并强制X轴顺序
         ply <- plotly::ggplotly(p, tooltip = "text")
-        #ply <- plotly::ggplotly(p, tooltip = c("x", "y", "Sample"))
 
         ply <- ply %>% plotly::layout(
           xaxis = list(
@@ -742,7 +727,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
         return(ply)
 
       }, error = function(e) {
-        message(sprintf("❌ Boxplot error: %s", e$message))
+        message(sprintf("Boxplot error: %s", e$message))
         return(plotly::plot_ly() %>% plotly::layout(
           title = sprintf("Error: %s", e$message)
         ))

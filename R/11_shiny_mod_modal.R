@@ -108,7 +108,7 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
       })
     })
 
-    # 🔧 修复版：通路核心基因热图绘制（支持跨物种大小写匹配与动态分组列）
+    # 通路核心基因热图绘制
     output$modal_heatmap <- shiny::renderPlot({
       pdata <- current_data()
       shiny::req(pdata)
@@ -127,7 +127,6 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
         sample_meta <- as.data.frame(sample_meta_raw, stringsAsFactors = FALSE)
       }
 
-      # 🔧 关键修复：动态获取分组列（使用 target_factor 或自动检测）
       group_col <- NULL
       if (!is.null(gsea_res$backend_info$target_factor)) {
         # 优先使用构建时记录的目标因子（如"分组"）
@@ -139,7 +138,7 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
 
       # 回退：检测常见分组列名
       if (is.null(group_col)) {
-        candidates <- c("分组", "group", "Group", "condition", "Condition",
+        candidates <- c("group", "Group", "condition", "Condition",
                         "treatment", "Treatment", "type", "Type")
         for (col in candidates) {
           if (col %in% colnames(sample_meta)) {
@@ -150,7 +149,7 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
       }
 
       if (is.null(group_col)) {
-        stop(sprintf("[Heatmap] 无法找到分组列。可用列名: %s",
+        stop(sprintf("Cannot find group column. Available columns: %s",
                      paste(colnames(sample_meta), collapse = ", ")))
       }
 
@@ -163,7 +162,7 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
 
       sample_idx <- which(sample_meta$group %in% c(left_grp, right_grp))
       if (length(sample_idx) == 0) {
-        stop(sprintf("[Heatmap] 未找到分组 '%s' 或 '%s' 的样本。可用分组: %s",
+        stop(sprintf("No samples found for groups '%s' or '%s'. Available groups: %s",
                      left_grp, right_grp,
                      paste(unique(sample_meta$group), collapse = ", ")))
       }
@@ -185,9 +184,10 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
             lib_sizes <- colSums(raw_counts)
             cpm_mat <- t(t(raw_counts) / lib_sizes) * 1e6
             target_samples <- common_samples  # 更新为实际可用的样本
+            target_samples <- common_samples
           }
         }, error = function(e) {
-          message("[Heatmap] DDS CPM 计算失败: ", e$message)
+          message("DDS CPM calculation failed: ", e$message)
         })
       }
 
@@ -203,10 +203,9 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
       }
 
       if (is.null(cpm_mat) || ncol(cpm_mat) == 0) {
-        stop("[Heatmap] 无法计算 CPM 矩阵，请检查表达数据")
+        stop("Cannot compute CPM matrix. Please check expression data")
       }
 
-      # ==================== 4. 🔧 关键修复：基因映射（支持跨物种大小写匹配） ====================
       pathway_genes <- pdata$pathway_genes
 
       # 获取基因标识符：优先使用 gene_meta 行名，否则使用 cpm_mat 行名
@@ -217,9 +216,8 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
 
       # 🔧 防御性检查：检测 Ensembl ID（禁止直接使用，必须转换为 SYMBOL）
       if (any(grepl("^ENS(MUS)?G[0-9]+", gene_identifiers, ignore.case = TRUE))) {
-        stop("[Heatmap] 检测到表达矩阵使用 Ensembl ID (如 ENSMUSG...) 作为行名。\n",
-             "热图绘制需要基因 SYMBOL。请确保 DESeq2 对象的行名为基因名（如 Cyp2e1），\n",
-             "或在构建 GseaEnv 时提供包含 SYMBOL 列的 gene_meta。")
+        stop("Detected Ensembl IDs (e.g., ENSMUSG...) as row names.\n",
+             "Heatmap requires gene symbols. Please ensure row names are gene symbols.")
       }
 
       # 🔧 跨物种匹配：统一转为大写进行匹配（处理人类/小鼠大小写差异，如 Cyp2e1 <-> CYP2E1）
@@ -229,19 +227,18 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
       matched_idx <- which(expr_genes_upper %in% pathway_genes_upper)
 
       if (length(matched_idx) < 2) {
-        stop(sprintf("[Heatmap] 基因匹配失败：在 %d 个通路基因中，仅找到 %d 个匹配基因。\n",
-                     length(pathway_genes), length(matched_idx)),
-             "可能原因：\n",
-             "1. 物种不匹配（如人类通路 vs 小鼠表达矩阵且基因名不同）\n",
-             "2. 表达矩阵行名不是 SYMBOL（请检查 rownames(dds_obj) 是否为基因名）\n",
-             "3. 基因名大小写问题（已尝试自动匹配，但仍失败）")
+        stop(sprintf("Gene matching failed: only %d/%d pathway genes matched.\n",
+                     length(matched_idx), length(pathway_genes)),
+             "Possible reasons:\n",
+             "1. Species mismatch\n",
+             "2. Row names are not gene symbols\n",
+             "3. Gene name case mismatch")
       }
 
-      message(sprintf("[Heatmap] 成功匹配 %d/%d 个通路基因", length(matched_idx), length(pathway_genes)))
+      message(sprintf("Successfully matched %d/%d pathway genes", length(matched_idx), length(pathway_genes)))
 
       # 提取表达矩阵（保留原始 CPM 值用于显示）
       plot_mat <- cpm_mat[matched_idx, , drop = FALSE]
-
       # 确保行名与通路基因一致（使用原始大小写中第一个匹配的）
       rownames(plot_mat) <- gene_identifiers[matched_idx]
 
@@ -250,7 +247,7 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
       gene_vars <- apply(plot_mat, 1, var, na.rm = TRUE)
       valid_genes <- gene_vars > 1e-6 & !is.na(gene_vars)
       if (sum(valid_genes) < 2) {
-        stop("[Heatmap] 过滤低方差基因后剩余基因不足 2 个")
+        stop("Insufficient genes with variance after filtering")
       }
       plot_mat <- plot_mat[valid_genes, , drop = FALSE]
 
@@ -268,7 +265,6 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
 
       # 计算每个基因的 Ranking Metric（用于排序）
       gene_metrics <- sapply(rownames(plot_mat), function(g) {
-        # 🔧 使用大写匹配查找 metric 值
         idx <- match(toupper(g), toupper(names(gene_list)))
         if (is.na(idx)) return(0)
         return(gene_list[idx])
@@ -433,7 +429,7 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
       gene_df$Is_Core <- ifelse(
         toupper(gene_df$Gene) %in% toupper(core_genes),
         "YES",
-        "—"
+        "-"
       )
 
       gene_df <- gene_df[order(
@@ -458,7 +454,7 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res) {
       ) %>%
         DT::formatStyle(
           columns = "Leading Edge",
-          backgroundColor = DT::styleEqual(c("YES", "—"), c("#FF9800", "transparent")),
+          backgroundColor = DT::styleEqual(c("YES", "-"), c("#FF9800", "transparent")),
           fontWeight = DT::styleEqual("YES", "bold"),
           color = DT::styleEqual("YES", "white")
         )
