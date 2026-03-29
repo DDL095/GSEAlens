@@ -16,13 +16,13 @@ generate_joint_canvas_code(
 
 \item{contrast_ids}{Character vector. Multiple contrast IDs}
 
-\item{target_pathways}{Character vector. Pathway IDs to plot}
+\item{target_pathways}{Character vector. Pathway IDs}
 
-\item{ncol}{Integer. Number of columns for layout}
+\item{ncol}{Integer. Number of columns}
 }
 \value{
 A character string containing executable R code
 }
 \description{
-Generate code for the Joint GSEA Canvas
+Generate Joint Canvas Code
 }
