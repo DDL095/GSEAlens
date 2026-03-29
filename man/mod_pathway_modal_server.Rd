@@ -2,12 +2,33 @@
 % Please edit documentation in R/11_shiny_mod_modal.R
 \name{mod_pathway_modal_server}
 \alias{mod_pathway_modal_server}
-\title{Pathway Detail Modal Server - Fixed for DESeq2 DFrame compatibility}
+\title{Pathway Detail Modal Server - Enhanced with Gene Selection}
 \usage{
-mod_pathway_modal_server(id, data_prep, trigger_event, gsea_res)
+mod_pathway_modal_server(
+  id,
+  data_prep,
+  trigger_event,
+  gsea_res,
+  pending_genes_reactive,
+  update_pending_genes
+)
+}
+\arguments{
+\item{id}{Module ID}
+
+\item{data_prep}{Reactive data from data prep module}
+
+\item{trigger_event}{Event that triggers modal opening}
+
+\item{gsea_res}{GseaRes object}
+
+\item{pending_genes_reactive}{Reactive expression returning current pending genes}
+
+\item{update_pending_genes}{Function to update pending genes list}
 }
 \description{
-Forces raw CPM usage, handles DFrame/DESeq2 colData properly,
-  ensures sample name matching between expression matrix and metadata
+Adds checkbox selection to Leading Edge Gene table with confirm button.
+  Selected genes are passed to sidebar pending list (not directly applied).
+  Buttons are fixed at the top of the table section using sticky positioning.
 }
 \keyword{internal}

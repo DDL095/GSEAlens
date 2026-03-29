@@ -80,24 +80,27 @@ mod_quadrant_ui <- function(id) {
 
 
 #' @title Quadrant Linkage Server
-#' @description Server logic with unified gene pool
+#' @description Server logic with unified gene pool and bidirectional table-volcano sync.
+#'   Now properly responds to table selection changes.
 #' @param id Module ID
 #' @param data_prep_list List from data prep module
 #' @param gsea_res GseaRes object
+#' @param table_controller Table controller with update_selection method
 #' @keywords internal
-mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
+mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
     # Color Definitions
-    COLOR_LEFT <- "#E41A1C"      # 红色 - 上调
-    COLOR_RIGHT <- "#377EB8"     # 蓝色 - 下调
-    COLOR_NS <- "#C0C0C0"        # 灰色 - 不显著
-    COLOR_USER <- "#4DAF4A"      # 绿色 - 仅用户基因
-    COLOR_PATHWAY <- "#FF9800"   # 橙色 - 仅通路基因
-    COLOR_BOTH <- "#9C27B0"      # 紫色 - 用户 ∩ 通路
+    COLOR_LEFT <- "#E41A1C"
+    COLOR_RIGHT <- "#377EB8"
+    COLOR_NS <- "#C0C0C0"
+    COLOR_USER <- "#4DAF4A"
+    COLOR_PATHWAY <- "#FF9800"
+    COLOR_BOTH <- "#9C27B0"
 
     # Reactive Values
+    # 注意：selected_pathway_ids 现在应该响应 table_controller$selected_pathways 的变化
     selected_pathway_ids <- shiny::reactiveVal(character(0))
     selected_pathway_genes <- shiny::reactiveVal(character(0))
     current_boxplot_gene <- shiny::reactiveVal(NULL)
@@ -106,6 +109,41 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
     data_prep_data <- data_prep_list$data
     highlight_genes_reactive <- data_prep_list$highlight_genes
     boxplot_order_ref <- data_prep_list$boxplot_order
+
+    # =========================================
+    # 关键：响应主Table勾选状态的变化
+    # =========================================
+    shiny::observe({
+      # 监听 table_controller$selected_pathways 的变化
+      table_selected <- table_controller$selected_pathways()
+
+      if (!is.null(table_selected) && length(table_selected) > 0) {
+        current <- selected_pathway_ids()
+        # 只有当与当前状态不同时才更新
+        if (!identical(sort(current), sort(table_selected))) {
+          selected_pathway_ids(table_selected)
+          message(sprintf("[Quad] Table selection changed: %s", paste(table_selected, collapse = ", ")))
+
+          # 更新pathway基因标记（使用最后一个选中的）
+          data_list <- data_prep_data()
+          if (!is.null(data_list)) {
+            last_id <- tail(table_selected, 1)
+            if (!is.null(data_list$gsea_res@geneSets[[last_id]])) {
+              pathway_genes <- data_list$gsea_res@geneSets[[last_id]]
+              selected_pathway_genes(toupper(pathway_genes))
+              message(sprintf("[Quad] Updated pathway genes from: %s (%d genes)", last_id, length(pathway_genes)))
+            }
+          }
+        }
+      } else {
+        # Table清空时同步清空
+        if (length(selected_pathway_ids()) > 0) {
+          selected_pathway_ids(character(0))
+          selected_pathway_genes(character(0))
+          message("[Quad] Table selection cleared")
+        }
+      }
+    })
 
     # Reset on Contrast Switch
     shiny::observeEvent(data_prep_data(), {
@@ -163,11 +201,20 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
       if (pathway_to_remove == "CLEAR_ALL") {
         selected_pathway_ids(character(0))
         selected_pathway_genes(character(0))
+        # 同步清空主table勾选
+        if (!is.null(table_controller$update_selection)) {
+          table_controller$update_selection("clear")
+        }
         message("[Pathway] Cleared all selected pathways")
       } else {
         current <- selected_pathway_ids()
         new_selection <- setdiff(current, pathway_to_remove)
         selected_pathway_ids(new_selection)
+
+        # 同步更新主table勾选
+        if (!is.null(table_controller$update_selection)) {
+          table_controller$update_selection("remove", pathway_to_remove)
+        }
 
         if (length(new_selection) > 0) {
           last_id <- tail(new_selection, 1)
@@ -202,7 +249,6 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
                            ifelse(df$ID %in% current_selections, 1.0, 0.35))
       df$linewidth <- ifelse(df$ID %in% current_selections, 3, 1)
 
-      # Pathway labels
       annotations_list <- list()
       if (length(current_selections) > 0) {
         selected_df <- df[df$ID %in% current_selections, ]
@@ -263,7 +309,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
         )
     })
 
-    # Pathway Volcano Click Event
+    # Pathway Volcano Click Event - 双向同步
     shiny::observeEvent(plotly::event_data("plotly_click", source = ns("pathway_volcano")), {
       click <- plotly::event_data("plotly_click", source = ns("pathway_volcano"))
       if (is.null(click) || is.null(click$key)) return()
@@ -273,8 +319,14 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
       data_list <- data_prep_data()
 
       if (clicked_id %in% current) {
+        # 点击已选中的 → 取消选中
         new_selection <- setdiff(current, clicked_id)
         selected_pathway_ids(new_selection)
+
+        # 同步更新主table勾选
+        if (!is.null(table_controller$update_selection)) {
+          table_controller$update_selection("remove", clicked_id)
+        }
 
         if (length(new_selection) > 0) {
           last_id <- tail(new_selection, 1)
@@ -285,14 +337,25 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
         } else {
           selected_pathway_genes(character(0))
         }
+
+        message(sprintf("[Pathway] Deselected: %s", clicked_id))
+
       } else {
+        # 点击未选中的 → 添加选中
         new_selection <- c(current, clicked_id)
         selected_pathway_ids(new_selection)
+
+        # 同步更新主table勾选
+        if (!is.null(table_controller$update_selection)) {
+          table_controller$update_selection("add", clicked_id)
+        }
 
         if (!is.null(data_list) && !is.null(data_list$gsea_res@geneSets[[clicked_id]])) {
           pathway_genes <- data_list$gsea_res@geneSets[[clicked_id]]
           selected_pathway_genes(toupper(pathway_genes))
         }
+
+        message(sprintf("[Pathway] Selected: %s", clicked_id))
       }
     })
 
@@ -390,9 +453,9 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
       n_down <- sum(de_df$is_significant & de_df$logFC < 0, na.rm = TRUE)
       n_not_sig <- sum(!de_df$is_significant, na.rm = TRUE)
       n_user <- sum(de_df$is_user, na.rm = TRUE)
+      n_pathway <- sum(de_df$is_pathway, na.rm = TRUE)
       n_both <- sum(de_df$is_user & de_df$is_pathway, na.rm = TRUE)
 
-      # Six-color logic
       de_df$color <- dplyr::case_when(
         de_df$is_user & de_df$is_pathway ~ COLOR_BOTH,
         de_df$is_user ~ COLOR_USER,
@@ -426,15 +489,21 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
       )
       de_df <- de_df[order(de_df$plot_order), ]
 
+      current_selected <- selected_pathway_ids()
+      pathway_label <- if (length(current_selected) > 0) {
+        sprintf(" | From: %s", tail(current_selected, 1))
+      } else {
+        ""
+      }
+
       title_text <- sprintf(
-        "%s vs %s<br><sup>Up %d | Down %d | NS %d | User %d | Both %d | logFC>|%.1f|, p<%.3f</sup>",
-        left_group, right_group, n_up, n_down, n_not_sig, n_user, n_both, logfc_thresh, pval_thresh
+        "%s vs %s<br><sup>Up %d | Down %d | NS %d | User %d | Pway %d | Both %d%s</sup>",
+        left_group, right_group, n_up, n_down, n_not_sig, n_user, n_pathway, n_both, pathway_label
       )
 
       annotations_list <- list()
       max_y_val <- max(de_df$y_axis, na.rm = TRUE)
 
-      # High in labels
       annotations_list[[1]] <- list(
         x = 0.99, y = 0.99, xref = "paper", yref = "paper",
         text = paste0("<b style='color:", COLOR_LEFT, ";'>High in ", left_group, "</b>"),
@@ -452,10 +521,9 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
         bordercolor = COLOR_RIGHT, borderwidth = 2, borderpad = 6
       )
 
-      # User gene labels
       user_genes_df <- de_df[de_df$is_user, ]
       if (nrow(user_genes_df) > 0) {
-        for (i in 1:nrow(user_genes_df)) {
+        for (i in 1:min(nrow(user_genes_df), 20)) {
           gene <- user_genes_df[i, ]
           gene_color <- if (gene$is_user && gene$is_pathway) COLOR_BOTH else COLOR_USER
           annotations_list[[length(annotations_list) + 1]] <- list(
@@ -477,16 +545,15 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
         }
       }
 
-      # Threshold line labels
       if (logfc_thresh > 0) {
         annotations_list[[length(annotations_list) + 1]] <- list(
           x = logfc_thresh, y = max_y_val * 0.95,
-          text = sprintf("logFC=%.1f", logfc_thresh),
+          text = sprintf("|logFC|=%.1f", logfc_thresh),
           showarrow = FALSE, font = list(size = 10, color = "gray")
         )
         annotations_list[[length(annotations_list) + 1]] <- list(
           x = -logfc_thresh, y = max_y_val * 0.95,
-          text = sprintf("-logFC=%.1f", logfc_thresh),
+          text = sprintf("|logFC|=%.1f", logfc_thresh),
           showarrow = FALSE, font = list(size = 10, color = "gray")
         )
       }

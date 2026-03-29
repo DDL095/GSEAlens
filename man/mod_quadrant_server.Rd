@@ -4,7 +4,7 @@
 \alias{mod_quadrant_server}
 \title{Quadrant Linkage Server}
 \usage{
-mod_quadrant_server(id, data_prep_list, gsea_res)
+mod_quadrant_server(id, data_prep_list, gsea_res, table_controller)
 }
 \arguments{
 \item{id}{Module ID}
@@ -12,8 +12,11 @@ mod_quadrant_server(id, data_prep_list, gsea_res)
 \item{data_prep_list}{List from data prep module}
 
 \item{gsea_res}{GseaRes object}
+
+\item{table_controller}{Table controller with update_selection method}
 }
 \description{
-Server logic with unified gene pool
+Server logic with unified gene pool and bidirectional table-volcano sync.
+  Now properly responds to table selection changes.
 }
 \keyword{internal}

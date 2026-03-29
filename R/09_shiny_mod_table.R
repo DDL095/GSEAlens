@@ -21,10 +21,44 @@ mod_master_table_ui <- function(id) {
             }
           });
         });
-      ", ns("updateCheckbox"))))
+      ", ns("updateCheckbox")))),
+      # 外部更新selection的消息处理器
+      shiny::tags$script(shiny::HTML(sprintf("
+        Shiny.addCustomMessageHandler('%s', function(message) {
+          var action = message.action;
+          var ids = message.ids || [];
+          var checkboxes = document.querySelectorAll('.joint-plot-checkbox');
+
+          if (action === 'set') {
+            checkboxes.forEach(function(cb) {
+              var id = cb.getAttribute('data-id');
+              cb.checked = ids.includes(id);
+            });
+          } else if (action === 'add') {
+            checkboxes.forEach(function(cb) {
+              var id = cb.getAttribute('data-id');
+              if (ids.includes(id)) {
+                cb.checked = true;
+              }
+            });
+          } else if (action === 'remove') {
+            checkboxes.forEach(function(cb) {
+              var id = cb.getAttribute('data-id');
+              if (ids.includes(id)) {
+                cb.checked = false;
+              }
+            });
+          } else if (action === 'clear') {
+            checkboxes.forEach(function(cb) {
+              cb.checked = false;
+            });
+          }
+        });
+      ", ns("externalUpdate"))))
     ),
 
     shiny::div(
+      id = ns("table-wrapper"),
       class = "master-table-container",
       style = "width: 100%; overflow-x: auto;",
       shiny::tags$div(
@@ -44,12 +78,11 @@ mod_master_table_ui <- function(id) {
 #' @title Master Workspace Table Server
 #' @description Provides data display, column display control with decoupled checkbox state.
 #'   Supports merging addition_data columns into the main table.
+#'   Includes external selection update capabilities for bidirectional sync.
 #' @param id Module ID
 #' @param data_prep Reactive data from the data preprocessing module
 #' @param addition_data Optional. A data frame with pathway annotations to merge.
-#'   Must contain 'ID' column as primary key. Additional columns will be appended
-#'   to the main table display.
-#' @return List containing selected_pathways and show_modal
+#' @return List containing selected_pathways, show_modal, and selection control functions
 #' @keywords internal
 #' @importFrom dplyr left_join
 mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
@@ -87,21 +120,84 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
              format(round(x, 3), nsmall = 3))
     }
 
-    # Joint plot toggle event
+    # =========================================
+    # 关键修复：Joint plot toggle event - 使用 identical() 判断布尔值
+    # =========================================
     shiny::observeEvent(input$joint_plot_toggle, {
-      has_interaction(TRUE)
       toggle <- input$joint_plot_toggle
       if (is.null(toggle) || !is.list(toggle)) return()
 
+      # 关键修复：JavaScript传递的是字符串"true"/"false"，需要转换
+      is_checked <- identical(toggle$checked, TRUE) || identical(toggle$checked, "true")
+
+      has_interaction(TRUE)  # 只要触发事件就标记为有交互
+
       current <- joint_selected()
-      if (isTRUE(toggle$checked)) {
-        if (!(toggle$id %in% current)) joint_selected(c(current, toggle$id))
+
+      if (is_checked) {
+        # 添加到选中列表
+        if (!(toggle$id %in% current)) {
+          joint_selected(c(current, toggle$id))
+          message(sprintf("[MasterTable] Added pathway: %s", toggle$id))
+        }
       } else {
-        joint_selected(setdiff(current, toggle$id))
+        # 从选中列表移除
+        new_sel <- setdiff(current, toggle$id)
+        joint_selected(new_sel)
+        message(sprintf("[MasterTable] Removed pathway: %s", toggle$id))
       }
     })
 
+    # 外部Selection更新接口（供其他模块调用）
+    update_selection <- function(action = c("set", "add", "remove", "clear"), ids = character(0)) {
+      action <- match.arg(action)
+      current <- joint_selected()
+
+      switch(action,
+             "set" = {
+               has_interaction(TRUE)
+               joint_selected(unique(ids))
+               session$sendCustomMessage(type = ns("externalUpdate"), message = list(
+                 action = "set",
+                 ids = to_safe(unique(ids))
+               ))
+               message("[MasterTable] Selection set to: ", paste(ids, collapse = ", "))
+             },
+             "add" = {
+               has_interaction(TRUE)
+               new_sel <- union(current, ids)
+               joint_selected(unique(new_sel))
+               session$sendCustomMessage(type = ns("externalUpdate"), message = list(
+                 action = "add",
+                 ids = to_safe(unique(ids))
+               ))
+               message("[MasterTable] Added to selection: ", paste(ids, collapse = ", "))
+             },
+             "remove" = {
+               has_interaction(TRUE)
+               new_sel <- setdiff(current, ids)
+               joint_selected(new_sel)
+               session$sendCustomMessage(type = ns("externalUpdate"), message = list(
+                 action = "remove",
+                 ids = to_safe(unique(ids))
+               ))
+               message("[MasterTable] Removed from selection: ", paste(ids, collapse = ", "))
+             },
+             "clear" = {
+               has_interaction(TRUE)
+               joint_selected(character(0))
+               session$sendCustomMessage(type = ns("externalUpdate"), message = list(
+                 action = "clear",
+                 ids = character(0)
+               ))
+               message("[MasterTable] Selection cleared")
+             }
+      )
+    }
+
+    # =========================================
     # Table rendering
+    # =========================================
     output$table <- DT::renderDataTable({
       data_list <- data_prep()
       shiny::validate(shiny::need(data_list, "Waiting for data to load..."))
@@ -136,14 +232,13 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
       if (!is.null(addition_data_validated)) {
         add_cols <- setdiff(colnames(addition_data_validated), "ID")
         df <- dplyr::left_join(df, addition_data_validated, by = "ID", suffix = c("", "_add"))
-        message(sprintf("[MasterTable] Merged %d addition_data columns: %s",
-                        length(add_cols), paste(add_cols, collapse = ", ")))
       }
 
       df$NES_display <- round(df$NES, 2)
       df$pvalue_display <- format_pvalue(df$pvalue, threshold = 0.001)
       df$padj_display <- format_pvalue(df$p.adjust, threshold = 0.001)
 
+      # 获取当前选择状态
       current_selection <- isolate(joint_selected())
 
       # Interactive columns
@@ -165,10 +260,8 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
       base_cols <- c("Rank", "Select_for_Plot", "Detail_Btn", "ID", "Enriched_In",
                      "NES_display", "pvalue_display", "padj_display", "setSize", "Description")
 
-      # Add addition_data columns to display
       if (!is.null(addition_data_validated)) {
         add_cols_display <- setdiff(colnames(addition_data_validated), "ID")
-        # Filter out columns that are all NA
         add_cols_valid <- add_cols_display[sapply(add_cols_display, function(col) {
           !all(is.na(df[[col]]) | df[[col]] == "" | is.null(df[[col]]))
         })]
@@ -258,7 +351,7 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
       dt <- DT::datatable(
         dt_data,
         escape = FALSE,
-        selection = "single",
+        selection = "none",
         rownames = FALSE,
         extensions = c('Buttons', 'Scroller', 'ColReorder', 'FixedColumns'),
         options = list(
@@ -323,8 +416,15 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
       ))
     })
 
+    # =========================================
+    # 关键修复：selected_pathways reactive - 确保返回checkbox状态
+    # =========================================
     selected_pathways <- shiny::reactive({
-      if (isTRUE(has_interaction())) return(to_original(joint_selected()))
+      # 优先返回checkbox交互后的状态
+      if (isTRUE(has_interaction())) {
+        return(to_original(joint_selected()))
+      }
+      # 回退到行点击
       data_list <- data_prep()
       if (is.null(data_list) || is.null(input$table_rows_selected)) return(character(0))
       return(data_list$df$ID[input$table_rows_selected])
@@ -346,11 +446,13 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
       joint_selected(character(0))
     }
 
+    # 返回所有接口
     return(list(
       selected_pathways = selected_pathways,
       show_modal = show_modal_trigger,
       remove_pathways = remove_pathways,
-      clear_selection = clear_selection
+      clear_selection = clear_selection,
+      update_selection = update_selection
     ))
   })
 }

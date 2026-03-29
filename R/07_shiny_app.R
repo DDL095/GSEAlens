@@ -149,7 +149,6 @@ launch_gsea_app <- function(gsea_res, addition_data = NULL) {
 #' @keywords internal
 .launch_gsea_shiny <- function(gsea_res, addition_data) {
 
-  # Dynamic UI generation
   ui <- shiny::fluidPage(
     shiny::tags$head(
       shiny::tags$style(shiny::HTML("
@@ -202,28 +201,32 @@ launch_gsea_app <- function(gsea_res, addition_data = NULL) {
         )
       )
     ),
-    # Hidden modal placeholder
     mod_pathway_modal_ui("pathway_modal")
   )
 
-  # Server logic
   server <- function(input, output, session) {
 
-    # 1. Data preprocessing module (returns list)
+    # 1. Data preprocessing module
     data_prep_list <- mod_data_prep_server("data_prep", gsea_res)
 
-    # 2. Master table module (pass data reactive)
-    # Pass addition_data to merge with main table
+    # 2. Master table module
     table_result <- mod_master_table_server("master_table", data_prep_list$data, addition_data)
 
     # 3. Combined plotting module
     mod_multi_plot_server("multi_plot", data_prep_list$data, table_result)
 
-    # 4. Quadrant linkage module
-    mod_quadrant_server("quadrant", data_prep_list, gsea_res)
+    # 4. Quadrant linkage module (传入table_controller用于双向同步)
+    mod_quadrant_server("quadrant", data_prep_list, gsea_res, table_controller = table_result)
 
     # 5. Detail modal module
-    mod_pathway_modal_server("pathway_modal", data_prep_list$data, table_result$show_modal, gsea_res)
+    mod_pathway_modal_server(
+      "pathway_modal",
+      data_prep_list$data,
+      table_result$show_modal,
+      gsea_res,
+      pending_genes_reactive = data_prep_list$get_pending_genes,
+      update_pending_genes = data_prep_list$update_pending_genes
+    )
 
     # 6. Pathway relation exploration module
     mod_pathway_relation_server("pathway_relation", data_prep_list, gsea_res)
@@ -235,9 +238,6 @@ launch_gsea_app <- function(gsea_res, addition_data = NULL) {
   message("GSEAlens started")
   message(sprintf("   Backend type: %s", gsea_res$backend_info$backend))
   message(sprintf("   Number of comparison groups: %d", nrow(gsea_res$contrast_registry)))
-  if (!is.null(addition_data)) {
-    message(sprintf("   Addition data: %d rows x %d columns", nrow(addition_data), ncol(addition_data)))
-  }
 
   shiny::shinyApp(ui, server)
 }

@@ -171,6 +171,7 @@ mod_data_prep_server <- function(id, gsea_res) {
 
     applied_genes <- shiny::reactiveVal(character(0))
     applied_boxplot_order <- shiny::reactiveVal("default")
+    pending_genes_internal <- shiny::reactiveVal(character(0))
 
     canvas_contrasts_val <- shiny::reactiveVal(character(0))
     canvas_ncol_val <- shiny::reactiveVal(3)
@@ -628,13 +629,41 @@ mod_data_prep_server <- function(id, gsea_res) {
       )
     }, ignoreNULL = TRUE)
 
+    # 新增：更新pending genes函数（供modal调用）
+    update_pending_genes <- function(new_pending_genes) {
+      if (is.null(new_pending_genes) || length(new_pending_genes) == 0) {
+        pending_genes_internal(character(0))
+      } else {
+        pending_genes_internal(unique(new_pending_genes))
+      }
+      # 刷新侧边栏 selectizeInput UI
+      contrast_id <- input$selected_contrast
+      gene_choices <- character(0)
+      if (!is.null(contrast_id)) {
+        de_df <- tryCatch(get_de_table(gsea_res, contrast_id), error = function(e) NULL)
+        if (!is.null(de_df) && "gene_symbol" %in% colnames(de_df)) {
+          gene_choices <- sort(unique(de_df$gene_symbol[!is.na(de_df$gene_symbol)]))
+        }
+      }
+      shiny::updateSelectizeInput(
+        session,
+        "pending_genes",
+        choices = gene_choices,
+        selected = pending_genes_internal(),
+        server = TRUE
+      )
+      message(sprintf("[DataPrep] Pending genes: %d", length(pending_genes_internal())))
+    }
     return(list(
       data = shiny::reactive({ result_data() }),
       highlight_genes = applied_genes,
       boxplot_order = applied_boxplot_order,
       joint_contrasts = shiny::reactive({ input$joint_contrasts }),
       joint_ncol = shiny::reactive({ input$joint_ncol }),
-      joint_generate = joint_generate_event
+      joint_generate = joint_generate_event,
+      # 新增接口
+      update_pending_genes = update_pending_genes,
+      get_pending_genes = function() { return(pending_genes_internal()) }
     ))
   })
 }
