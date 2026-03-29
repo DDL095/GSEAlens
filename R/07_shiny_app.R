@@ -224,8 +224,8 @@ launch_gsea_app <- function(gsea_res, addition_data = NULL) {
       data_prep_list$data,
       table_result$show_modal,
       gsea_res,
-      pending_genes_reactive = data_prep_list$get_pending_genes,
-      update_pending_genes = data_prep_list$update_pending_genes
+      pending_genes_reactive = data_prep_list$get_pending_genes,  # 确保传递的是函数
+      update_pending_genes = data_prep_list$update_pending_genes   # 确保传递的是函数
     )
 
     # 6. Pathway relation exploration module

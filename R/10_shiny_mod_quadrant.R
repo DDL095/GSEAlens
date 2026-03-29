@@ -56,8 +56,8 @@ mod_quadrant_ui <- function(id) {
                                    shiny::h4("Gene Expression Table (Click View to display boxplot | Click X to remove)"),
                                    shiny::div(
                                      style = "margin-bottom: 10px;",
-                                     shiny::actionButton(ns("clear_all_genes_btn_quadrant"), label = "Clear All", class = "btn-warning btn-sm"),
-                                     shiny::helpText("Click 'Clear All' to remove all genes from the table")
+                                     shiny::actionButton(ns("clear_all_genes_btn_quadrant"), label = "Clear Table", class = "btn-warning btn-sm"),
+                                     shiny::helpText("Click 'Clear Table' to remove all genes from the table")
                                    ),
                                    shiny::div(
                                      style = "margin-bottom: 10px; font-size: 12px; color: #666;",
@@ -497,7 +497,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       }
 
       title_text <- sprintf(
-        "%s vs %s<br><sup>Up %d | Down %d | NS %d | User %d | Pway %d | Both %d%s</sup>",
+        "%s vs %s<br><sup>Up %d | Down %d | NS %d | Selected %d | Pway %d | Both %d%s</sup>",
         left_group, right_group, n_up, n_down, n_not_sig, n_user, n_pathway, n_both, pathway_label
       )
 
@@ -558,25 +558,128 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
         )
       }
 
+
+      # ============================================================
+      # 分层渲染：拆分数据为多个子集（从底到顶）
+      # ============================================================
+
+      df_ns <- de_df[!de_df$is_significant, ]
+      df_up <- de_df[de_df$is_significant & de_df$logFC > 0, ]
+      df_down <- de_df[de_df$is_significant & de_df$logFC < 0, ]
+      df_pathway <- de_df[de_df$is_pathway & !de_df$is_user, ]
+      df_user <- de_df[de_df$is_user & !de_df$is_pathway, ]
+      df_both <- de_df[de_df$is_user & de_df$is_pathway, ]
+
+      # 初始化 plot_ly 时设置 source（点击事件需要）
       p <- plotly::plot_ly(
         data = de_df,
-        x = de_df$x_axis,
-        y = de_df$y_axis,
-        type = "scatter",
-        mode = "markers",
-        marker = list(
-          color = de_df$color,
-          size = de_df$size,
-          opacity = de_df$opacity,
-          line = list(color = "white", width = de_df$linewidth)
-        ),
-        text = ~sprintf("%s<br>logFC: %.2f<br>-log10(p): %.2f<br>FDR: %.2e",
-                        gene_symbol, logFC, y_axis, padj),
-        hoverinfo = "text",
-        key = de_df$gene_upper,
-        source = ns("deg_volcano"),
-        showlegend = FALSE
-      ) %>%
+        source = ns("deg_volcano")
+      )
+
+      # Layer 1: NS (灰色，最底层)
+      if (nrow(df_ns) > 0) {
+        p <- p %>% plotly::add_trace(
+          data = df_ns,
+          x = df_ns$x_axis,
+          y = df_ns$y_axis,
+          type = "scatter",
+          mode = "markers",
+          marker = list(color = COLOR_NS, size = 4, opacity = 0.5, line = list(color = "white", width = 0)),
+          text = sprintf("%s<br>logFC: %.2f<br>-log10(p): %.2f<br>FDR: %.2e", df_ns$gene_symbol, df_ns$logFC, df_ns$y_axis, df_ns$padj),
+          hoverinfo = "text",
+          key = df_ns$gene_upper,
+          showlegend = FALSE,
+          inherit = FALSE
+        )
+      }
+
+      # Layer 2: UP (红色)
+      if (nrow(df_up) > 0) {
+        p <- p %>% plotly::add_trace(
+          data = df_up,
+          x = df_up$x_axis,
+          y = df_up$y_axis,
+          type = "scatter",
+          mode = "markers",
+          marker = list(color = COLOR_LEFT, size = 9, opacity = 0.7, line = list(color = "white", width = 0)),
+          text = sprintf("%s<br>logFC: %.2f<br>-log10(p): %.2f<br>FDR: %.2e", df_up$gene_symbol, df_up$logFC, df_up$y_axis, df_up$padj),
+          hoverinfo = "text",
+          key = df_up$gene_upper,
+          showlegend = FALSE,
+          inherit = FALSE
+        )
+      }
+
+      # Layer 3: DOWN (蓝色)
+      if (nrow(df_down) > 0) {
+        p <- p %>% plotly::add_trace(
+          data = df_down,
+          x = df_down$x_axis,
+          y = df_down$y_axis,
+          type = "scatter",
+          mode = "markers",
+          marker = list(color = COLOR_RIGHT, size = 9, opacity = 0.7, line = list(color = "white", width = 0)),
+          text = sprintf("%s<br>logFC: %.2f<br>-log10(p): %.2f<br>FDR: %.2e", df_down$gene_symbol, df_down$logFC, df_down$y_axis, df_down$padj),
+          hoverinfo = "text",
+          key = df_down$gene_upper,
+          showlegend = FALSE,
+          inherit = FALSE
+        )
+      }
+
+      # Layer 4: 仅Pathway (橙色)
+      if (nrow(df_pathway) > 0) {
+        p <- p %>% plotly::add_trace(
+          data = df_pathway,
+          x = df_pathway$x_axis,
+          y = df_pathway$y_axis,
+          type = "scatter",
+          mode = "markers",
+          marker = list(color = COLOR_PATHWAY, size = 15, opacity = 1.0, line = list(color = "white", width = 1.5)),
+          text = sprintf("%s<br>logFC: %.2f<br>-log10(p): %.2f<br>FDR: %.2e<br>[Pathway]", df_pathway$gene_symbol, df_pathway$logFC, df_pathway$y_axis, df_pathway$padj),
+          hoverinfo = "text",
+          key = df_pathway$gene_upper,
+          showlegend = FALSE,
+          inherit = FALSE
+        )
+      }
+
+      # Layer 5: 仅User (绿色)
+      if (nrow(df_user) > 0) {
+        p <- p %>% plotly::add_trace(
+          data = df_user,
+          x = df_user$x_axis,
+          y = df_user$y_axis,
+          type = "scatter",
+          mode = "markers",
+          marker = list(color = COLOR_USER, size = 15, opacity = 1.0, line = list(color = "white", width = 1.5)),
+          text = sprintf("%s<br>logFC: %.2f<br>-log10(p): %.2f<br>FDR: %.2e<br>[Selected]", df_user$gene_symbol, df_user$logFC, df_user$y_axis, df_user$padj),
+          hoverinfo = "text",
+          key = df_user$gene_upper,
+          showlegend = FALSE,
+          inherit = FALSE
+        )
+      }
+
+      # Layer 6: Both (紫色，最顶层)
+      if (nrow(df_both) > 0) {
+        p <- p %>% plotly::add_trace(
+          data = df_both,
+          x = df_both$x_axis,
+          y = df_both$y_axis,
+          type = "scatter",
+          mode = "markers",
+          marker = list(color = COLOR_BOTH, size = 18, opacity = 1.0, line = list(color = "white", width = 2)),
+          text = sprintf("%s<br>logFC: %.2f<br>-log10(p): %.2f<br>FDR: %.2e<br>[Both]", df_both$gene_symbol, df_both$logFC, df_both$y_axis, df_both$padj),
+          hoverinfo = "text",
+          key = df_both$gene_upper,
+          showlegend = FALSE,
+          inherit = FALSE
+        )
+      }
+
+      # 布局设置
+      p <- p %>%
         plotly::layout(
           title = list(text = title_text, font = list(size = 14), x = 0.5, xanchor = "center"),
           xaxis = list(title = "logFC", zeroline = FALSE, showgrid = TRUE, gridcolor = "lightgray"),
@@ -623,6 +726,10 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       left_grp <- data_list$left_group
       right_grp <- data_list$right_group
 
+      # 获取 DE volcano 的阈值
+      pval_thresh <- input$volcano_pval_thresh %||% 0.05
+      logfc_thresh <- input$volcano_logfc_thresh %||% 1
+
       user_genes <- toupper(highlight_genes_reactive())
       pathway_genes <- selected_pathway_genes()
 
@@ -634,8 +741,6 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
         gene_upper <- toupper(g)
         is_user <- gene_upper %in% user_genes
         is_pathway <- gene_upper %in% pathway_genes
-
-        color <- if (is_user && is_pathway) COLOR_BOTH else if (is_user) COLOR_USER else COLOR_PATHWAY
 
         logfc <- NA_real_
         pval <- NA_real_
@@ -657,31 +762,38 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
         updown <- ifelse(is.na(logfc), "-", ifelse(logfc > 0, "UP", "DOWN"))
         high_in <- ifelse(is.na(logfc), "-", ifelse(logfc > 0, left_grp, right_grp))
 
-        pval_display <- ifelse(is.na(pval), "-", if(pval < 0.001) sprintf("%.2e", pval) else sprintf("%.4f", pval))
-        padj_display <- ifelse(is.na(padj_val), "-", if(padj_val < 0.001) sprintf("%.2e", padj_val) else sprintf("%.4f", padj_val))
+        # 保持数值为数值类型，不转字符串
+        pval_display <- ifelse(is.na(pval), NA_real_, pval)
+        padj_display <- ifelse(is.na(padj_val), NA_real_, padj_val)
+
+        # 使用 DE volcano 阈值的 Significant 判断
+        sig_label <- {
+          if (is.na(pval) || is.na(logfc)) "-"
+          else if (pval < pval_thresh && logfc > logfc_thresh) "upreg"
+          else if (pval < pval_thresh && logfc < -logfc_thresh) "downreg"
+          else "ns"
+        }
 
         delete_btn <- sprintf(
-          '<button class="btn btn-xs btn-danger" onclick="Shiny.setInputValue(\'%s\', \'%s\', {priority: \'event\'})">X</button>',
+          '<button class="btn btn-xs btn-danger" onclick="Shiny.setInputValue(\"%s\", \"%s\", {priority: \"event\"})">X</button>',
           ns("delete_gene_from_table"), g
         )
         view_btn <- sprintf(
-          '<button class="btn btn-xs btn-primary" onclick="Shiny.setInputValue(\'%s\', \'%s\', {priority: \'event\'})">View</button>',
+          '<button class="btn btn-xs btn-primary" onclick="Shiny.setInputValue(\"%s\", \"%s\", {priority: \"event\"})">View</button>',
           ns("view_boxplot_from_table"), g
         )
 
         data.frame(
           Gene = g,
-          Color = color,
           Log2FC = ifelse(is.na(logfc), "-", sprintf("%.3f", logfc)),
-          LinearFC = ifelse(is.na(logfc), "-", sprintf("%.2f", 2^logfc)),
           Pvalue = pval_display,
           Padjust = padj_display,
           UpDown = updown,
+          Significant = sig_label,
           HighIn = high_in,
           IsPathway = ifelse(is_pathway, "Yes", "No"),
           Delete = delete_btn,
           ViewBox = view_btn,
-          pval_raw = ifelse(is.na(pval), 1, pval),
           stringsAsFactors = FALSE,
           check.names = FALSE
         )
@@ -689,8 +801,18 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
       table_df <- do.call(rbind, table_data)
 
-      names(table_df) <- c("Gene", "Color", "Log2FC", "Linear FC", "P-value", "Adj P-value",
-                           "Up/Down", "High In", "In Pathway", "Remove", "Boxplot", "pval_sort")
+      # 按 P-value 升序排序
+      table_df <- table_df[order(table_df[["Pvalue"]], na.last = TRUE), ]
+
+      # JS 渲染函数：科学计数法
+      js_pval_render <- "
+        function(data, type) {
+          if (type === 'sort' || type === 'type') return data;
+          if (data === null || isNaN(data)) return '-';
+          if (Math.abs(data) < 0.001) return data.toExponential(2);
+          return data.toFixed(4);
+        }
+      "
 
       dt <- DT::datatable(
         table_df,
@@ -705,29 +827,60 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
           dom = "frtip",
           search = list(caseInsensitive = TRUE),
           columnDefs = list(
-            list(visible = FALSE, targets = c(1, 11)),
-            list(orderable = FALSE, targets = c(9, 10)),
-            list(className = "dt-center", targets = c(2, 3, 4, 5, 6, 7, 8))
+            list(orderable = FALSE, targets = c(7, 8)),
+            list(className = "dt-center", targets = c(0, 2, 3, 4, 5, 6)),
+            list(
+              targets = 2,
+              render = htmlwidgets::JS(js_pval_render)
+            ),
+            list(
+              targets = 3,
+              render = htmlwidgets::JS(js_pval_render)
+            )
           ),
-          order = list(list(11, "asc"))
+          order = list(list(2, "asc"))
         )
       )
 
+      # Up/Down 列样式
       dt <- dt %>% DT::formatStyle(
-        columns = "Up/Down",
+        columns = "UpDown",
         backgroundColor = DT::styleEqual(c("UP", "DOWN", "-"), c("#FFCDD2", "#BBDEFB", "transparent")),
         color = DT::styleEqual(c("UP", "DOWN", "-"), c(COLOR_LEFT, COLOR_RIGHT, "#666")),
         fontWeight = DT::styleEqual(c("UP", "DOWN"), c("bold", "bold"))
       )
 
+      # Significant 列样式
       dt <- dt %>% DT::formatStyle(
-        columns = "P-value",
+        columns = "Significant",
+        color = DT::styleEqual(c("upreg", "downreg", "ns"), c("#E41A1C", "#377EB8", "#999999")),
+        fontWeight = "bold"
+      )
+
+      # High In 列样式
+      dt <- dt %>% DT::formatStyle(
+        columns = "HighIn",
+        color = DT::styleEqual(c(left_grp, right_grp, "-"), c("#E41A1C", "#377EB8", "#999999"))
+      )
+
+      # In Pathway 列样式
+      dt <- dt %>% DT::formatStyle(
+        columns = "IsPathway",
+        backgroundColor = DT::styleEqual(c("Yes", "No"), c("#9C27B0", "transparent")),
+        color = DT::styleEqual(c("Yes", "No"), c("#FFFFFF", "#999999")),
+        fontWeight = DT::styleEqual(c("Yes", "No"), c("bold", "normal"))
+      )
+
+      # P-value 列样式
+      dt <- dt %>% DT::formatStyle(
+        columns = "Pvalue",
         color = DT::styleInterval(0.001, c("red", "black")),
         fontWeight = DT::styleInterval(0.05, c("bold", "normal"))
       )
 
+      # Adj P-value 列样式
       dt <- dt %>% DT::formatStyle(
-        columns = "Adj P-value",
+        columns = "Padjust",
         color = DT::styleInterval(0.001, c("red", "black")),
         fontWeight = DT::styleInterval(0.05, c("bold", "normal"))
       )

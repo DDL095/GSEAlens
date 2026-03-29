@@ -89,9 +89,10 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
-
     joint_selected <- shiny::reactiveVal(character(0))
     has_interaction <- shiny::reactiveVal(FALSE)
+
+
 
     to_safe <- function(x) gsub("'", "\\\\'", x, fixed = TRUE)
     to_original <- function(x) gsub("\\\\'", "'", x, fixed = TRUE)
@@ -113,12 +114,6 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
     addition_data_validated <- .validate_addition_data_internal(addition_data)
 
-    # p值格式化函数
-    format_pvalue <- function(x, threshold = 0.001) {
-      ifelse(x < threshold,
-             format(x, digits = 2, scientific = TRUE),
-             format(round(x, 3), nsmall = 3))
-    }
 
     # =========================================
     # 关键修复：Joint plot toggle event - 使用 identical() 判断布尔值
@@ -235,8 +230,6 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
       }
 
       df$NES_display <- round(df$NES, 2)
-      df$pvalue_display <- format_pvalue(df$pvalue, threshold = 0.001)
-      df$padj_display <- format_pvalue(df$p.adjust, threshold = 0.001)
 
       # 获取当前选择状态
       current_selection <- isolate(joint_selected())
@@ -258,7 +251,7 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
       # Display columns
       base_cols <- c("Rank", "Select_for_Plot", "Detail_Btn", "ID", "Enriched_In",
-                     "NES_display", "pvalue_display", "padj_display", "setSize", "Description")
+                     "NES_display", "pvalue", "p.adjust", "setSize", "Description")
 
       if (!is.null(addition_data_validated)) {
         add_cols_display <- setdiff(colnames(addition_data_validated), "ID")
@@ -278,8 +271,8 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
         "ID" = "Pathway",
         "Enriched_In" = "Enriched In",
         "NES_display" = "NES",
-        "pvalue_display" = "P-value",
-        "padj_display" = "FDR",
+        "pvalue" = "P-value",
+        "p.adjust" = "FDR",
         "setSize" = "Size",
         "Description" = "Description"
       )
@@ -330,7 +323,7 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
         )
       }
 
-      numeric_cols <- c("NES_display", "pvalue_display", "padj_display", "setSize")
+      numeric_cols <- c("NES_display", "pvalue", "p.adjust", "setSize")
       for (numeric_col in numeric_cols) {
         if (numeric_col %in% display_cols) {
           idx <- which(display_cols == numeric_col) - 1
@@ -346,6 +339,31 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
           width = '800px', targets = idx, className = 'description-cell'
         )
       }
+
+      # JS 渲染函数：科学计数法
+      js_pval_render <- "
+        function(data, type) {
+          if (type === 'sort' || type === 'type') return data;
+          if (data === null || isNaN(data)) return '-';
+          if (Math.abs(data) < 0.001) return data.toExponential(2);
+          return data.toFixed(4);
+        }
+      "
+
+      # 找到 P-value 和 FDR 列的索引
+      pval_idx <- which(display_cols == "pvalue") - 1
+      padj_idx <- which(display_cols == "p.adjust") - 1
+
+      # 添加 P-value 和 FDR 的 render 定义
+      col_defs[[length(col_defs) + 1]] <- list(
+        targets = pval_idx,
+        render = htmlwidgets::JS(js_pval_render)
+      )
+      col_defs[[length(col_defs) + 1]] <- list(
+        targets = padj_idx,
+        render = htmlwidgets::JS(js_pval_render)
+      )
+
 
       # Render table
       dt <- DT::datatable(
