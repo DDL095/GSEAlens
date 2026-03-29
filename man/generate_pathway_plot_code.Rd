@@ -9,23 +9,26 @@ generate_pathway_plot_code(
   contrast_id,
   target_pathways,
   user_genes = character(0),
+  pathway_genes = character(0),
   expr_type = "logcpm"
 )
 }
 \arguments{
 \item{GSEAlens_res}{GseaRes object}
 
-\item{contrast_id}{Character. Contrast ID for the analysis}
+\item{contrast_id}{Character. Contrast ID}
 
-\item{target_pathways}{Character vector. Pathway IDs to plot}
+\item{target_pathways}{Character vector. Pathway IDs}
 
-\item{user_genes}{Character vector. Genes of interest to highlight}
+\item{user_genes}{Character vector. Genes of interest}
 
-\item{expr_type}{Character. Expression value type}
+\item{pathway_genes}{Character vector. Pathway genes (for coloring)}
+
+\item{expr_type}{Character. Expression type}
 }
 \value{
 A character string containing executable R code
 }
 \description{
-Generate ready-to-run R code for GSEA pathway visualization.
+Generate Pathway Plotting Code
 }

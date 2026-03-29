@@ -19,7 +19,6 @@ mod_quadrant_ui <- function(id) {
                                       "Click pathway to highlight | Check 'Joint Plot' in table"
                                     )
                                   ),
-                                  # 【新增】Selected Pathways 显示区域
                                   shiny::uiOutput(ns("selected_pathways_display"))
       )),
       shiny::column(6, shiny::div(class = "white-box",
@@ -55,14 +54,9 @@ mod_quadrant_ui <- function(id) {
     shiny::fluidRow(
       shiny::column(12, shiny::div(class = "white-box",
                                    shiny::h4("Gene Expression Table (Click View to display boxplot | Click X to remove)"),
-                                   # 【新增】Clear All 按钮
                                    shiny::div(
                                      style = "margin-bottom: 10px;",
-                                     shiny::actionButton(
-                                       ns("clear_all_genes_btn_quadrant"),
-                                       label = "Clear All",
-                                       class = "btn-warning btn-sm"
-                                     ),
+                                     shiny::actionButton(ns("clear_all_genes_btn_quadrant"), label = "Clear All", class = "btn-warning btn-sm"),
                                      shiny::helpText("Click 'Clear All' to remove all genes from the table")
                                    ),
                                    shiny::div(
@@ -77,12 +71,7 @@ mod_quadrant_ui <- function(id) {
     shiny::fluidRow(
       shiny::column(12, shiny::div(class = "white-box",
                                    shiny::h4("Export Code"),
-                                   shiny::actionButton(
-                                     ns("export_code_btn"),
-                                     label = "Export Current Plot Code",
-                                     class = "btn-secondary",
-                                     style = "width: 100%;"
-                                   ),
+                                   shiny::actionButton(ns("export_code_btn"), label = "Export Current Plot Code", class = "btn-secondary", style = "width: 100%;"),
                                    shiny::helpText("Generate R code for the currently selected pathways")
       ))
     )
@@ -126,7 +115,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
       boxplot_order_ref("default")
     })
 
-    # 【新增】Selected Pathways 显示
+    # Selected Pathways Display
     output$selected_pathways_display <- shiny::renderUI({
       sel_ids <- selected_pathway_ids()
 
@@ -143,20 +132,17 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
             shiny::tags$button(
               class = "btn btn-xs",
               style = "margin-left: 5px; padding: 0 5px; background: rgba(255,255,255,0.3); border: none; color: white;",
-              onclick = sprintf("Shiny.setInputValue('%s', '%s', {priority: 'event'})",
-                                ns("remove_pathway"), pid),
-              "×"
+              onclick = sprintf("Shiny.setInputValue('%s', '%s', {priority: 'event'})", ns("remove_pathway"), pid),
+              "x"
             )
           )
         })
 
-        # Clear All 按钮
         tag_list <- c(tag_list, list(
           shiny::tags$button(
             class = "btn btn-sm btn-warning",
             style = "margin-left: 10px;",
-            onclick = sprintf("Shiny.setInputValue('%s', 'CLEAR_ALL', {priority: 'event'})",
-                              ns("remove_pathway")),
+            onclick = sprintf("Shiny.setInputValue('%s', 'CLEAR_ALL', {priority: 'event'})", ns("remove_pathway")),
             "Clear All"
           )
         ))
@@ -169,7 +155,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
       }
     })
 
-    # 【新增】移除通路事件
+    # Remove Pathway Event
     shiny::observeEvent(input$remove_pathway, {
       pathway_to_remove <- input$remove_pathway
       data_list <- data_prep_data()
@@ -183,7 +169,6 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
         new_selection <- setdiff(current, pathway_to_remove)
         selected_pathway_ids(new_selection)
 
-        # 更新 selected_pathway_genes 为最后一个通路的基因
         if (length(new_selection) > 0) {
           last_id <- tail(new_selection, 1)
           if (!is.null(data_list) && !is.null(data_list$gsea_res@geneSets[[last_id]])) {
@@ -197,7 +182,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
       }
     })
 
-    # 【新增】Clear All Genes 按钮（侧边栏和Table共用）
+    # Clear All Genes Button
     shiny::observeEvent(input$clear_all_genes_btn_quadrant, {
       highlight_genes_reactive(character(0))
       message("[Gene] Cleared all gene markers from quadrant")
@@ -209,13 +194,15 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
       shiny::req(data_list)
       df <- data_list$df
       current_selections <- selected_pathway_ids()
+
       df$color <- ifelse(df$ID %in% current_selections, COLOR_PATHWAY,
                          ifelse(df$NES > 0, COLOR_LEFT, COLOR_RIGHT))
       df$size <- ifelse(df$ID %in% current_selections, 18, 10)
       df$opacity <- ifelse(length(current_selections) == 0, 0.8,
                            ifelse(df$ID %in% current_selections, 1.0, 0.35))
       df$linewidth <- ifelse(df$ID %in% current_selections, 3, 1)
-      # 【新增】通路标签
+
+      # Pathway labels
       annotations_list <- list()
       if (length(current_selections) > 0) {
         selected_df <- df[df$ID %in% current_selections, ]
@@ -223,39 +210,60 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
           row <- selected_df[i, ]
           ax_offset <- ifelse(i %% 2 == 1, 0, 50)
           annotations_list[[i]] <- list(
-            x = row$NES, y = -log10(row$p.adjust),
+            x = row$NES,
+            y = -log10(row$p.adjust),
             text = row$ID,
-            showarrow = TRUE, arrowhead = 2, arrowsize = 1, arrowwidth = 2,
-            arrowcolor = COLOR_PATHWAY, ax = ax_offset, ay = -30,
+            showarrow = TRUE,
+            arrowhead = 2,
+            arrowsize = 1,
+            arrowwidth = 2,
+            arrowcolor = COLOR_PATHWAY,
+            ax = ax_offset,
+            ay = -30,
             font = list(size = 10, color = COLOR_PATHWAY),
-            bgcolor = "rgba(255,255,255,0.95)", bordercolor = COLOR_PATHWAY,
-            borderwidth = 2, borderpad = 4
+            bgcolor = "rgba(255,255,255,0.95)",
+            bordercolor = COLOR_PATHWAY,
+            borderwidth = 2,
+            borderpad = 4
           )
         }
       }
+
       plotly::plot_ly(
-        data = df, x = ~NES, y = ~-log10(p.adjust),
-        type = "scatter", mode = "markers",
-        marker = list(color = ~color, size = ~size, opacity = ~opacity,
-                      line = list(color = "white", width = ~linewidth)),
+        data = df,
+        x = ~NES,
+        y = ~-log10(p.adjust),
+        type = "scatter",
+        mode = "markers",
+        marker = list(
+          color = ~color,
+          size = ~size,
+          opacity = ~opacity,
+          line = list(color = "white", width = ~linewidth)
+        ),
         text = ~sprintf("%s<br>NES: %.2f<br>FDR: %.2e", ID, NES, p.adjust),
-        hoverinfo = "text", key = ~ID, source = ns("pathway_volcano")
+        hoverinfo = "text",
+        key = ~ID,
+        source = ns("pathway_volcano")
       ) %>%
         plotly::layout(
           title = list(
             text = sprintf("Pathway Volcano: %s vs %s<br><sub>%d pathways | %d selected | %d significant (FDR<0.25)</sub>",
                            data_list$left_group, data_list$right_group,
                            nrow(df), length(current_selections), sum(df$p.adjust < 0.25, na.rm = TRUE)),
-            font = list(size = 14), x = 0.5, xanchor = "center"
+            font = list(size = 14),
+            x = 0.5,
+            xanchor = "center"
           ),
           xaxis = list(title = "NES", zeroline = FALSE),
           yaxis = list(title = "-log10 (FDR)", zeroline = FALSE),
-          showlegend = FALSE, dragmode = "pan",
+          showlegend = FALSE,
+          dragmode = "pan",
           annotations = annotations_list
         )
     })
 
-    # 1. Pathway Volcano Click Event - 【修复】只更新 selected_pathway_genes
+    # Pathway Volcano Click Event
     shiny::observeEvent(plotly::event_data("plotly_click", source = ns("pathway_volcano")), {
       click <- plotly::event_data("plotly_click", source = ns("pathway_volcano"))
       if (is.null(click) || is.null(click$key)) return()
@@ -265,11 +273,9 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
       data_list <- data_prep_data()
 
       if (clicked_id %in% current) {
-        # 取消选中
         new_selection <- setdiff(current, clicked_id)
         selected_pathway_ids(new_selection)
 
-        # 更新 selected_pathway_genes
         if (length(new_selection) > 0) {
           last_id <- tail(new_selection, 1)
           if (!is.null(data_list) && !is.null(data_list$gsea_res@geneSets[[last_id]])) {
@@ -280,11 +286,9 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
           selected_pathway_genes(character(0))
         }
       } else {
-        # 新增选中
         new_selection <- c(current, clicked_id)
         selected_pathway_ids(new_selection)
 
-        # 只更新 selected_pathway_genes 为当前点击的通路基因
         if (!is.null(data_list) && !is.null(data_list$gsea_res@geneSets[[clicked_id]])) {
           pathway_genes <- data_list$gsea_res@geneSets[[clicked_id]]
           selected_pathway_genes(toupper(pathway_genes))
@@ -318,25 +322,29 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
       }
 
       plotly::plot_ly(
-        data = rank_df, x = ~Rank, y = ~Metric,
-        type = "scattergl", mode = "markers",
+        data = rank_df,
+        x = ~Rank,
+        y = ~Metric,
+        type = "scattergl",
+        mode = "markers",
         marker = list(color = ~Color, size = ~Size, opacity = 0.8, line = list(width = 0)),
-        text = ~Gene, hoverinfo = "text"
-      ) %>% plotly::layout(
-        xaxis = list(title = "Gene Rank"),
-        yaxis = list(title = "Ranking Metric (Stat)"),
-        showlegend = FALSE,
-        title = list(
-          text = ifelse(length(pathway_genes) > 0,
-                        sprintf("Selected: %d pathway genes highlighted",
-                                length(pathway_genes)),
-                        "Click pathway in volcano above to mark"),
-          font = list(size = 12)
+        text = ~Gene,
+        hoverinfo = "text"
+      ) %>%
+        plotly::layout(
+          xaxis = list(title = "Gene Rank"),
+          yaxis = list(title = "Ranking Metric (Stat)"),
+          showlegend = FALSE,
+          title = list(
+            text = ifelse(length(pathway_genes) > 0,
+                          sprintf("Selected: %d pathway genes highlighted", length(pathway_genes)),
+                          "Click pathway in volcano above to mark"),
+            font = list(size = 12)
+          )
         )
-      )
     })
 
-    # 3. DE Volcano Plot - 【修复】完整六色 + NS数量 + 阈值显示
+    # 3. DE Volcano Plot
     output$de_volcano <- plotly::renderPlotly({
       data_list <- data_prep_data()
       shiny::req(data_list)
@@ -351,7 +359,6 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
 
       shiny::req(de_df)
 
-      # 列名标准化
       if (!"logFC" %in% colnames(de_df)) de_df$logFC <- de_df$log2FoldChange
       if (!"pvalue" %in% colnames(de_df)) de_df$pvalue <- de_df$p.value
       if (!"padj" %in% colnames(de_df)) de_df$padj <- de_df$p.adjust
@@ -359,7 +366,6 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
       de_df <- de_df[!is.na(de_df$logFC) & !is.na(de_df$pvalue), ]
       if (nrow(de_df) == 0) return(NULL)
 
-      # 阈值设置
       logfc_thresh <- if (!is.null(input$volcano_logfc_thresh)) input$volcano_logfc_thresh else 1
       pval_thresh <- if (!is.null(input$volcano_pval_thresh)) input$volcano_pval_thresh else 0.05
 
@@ -372,25 +378,21 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
         de_df$y_axis[inf_y] <- max_y * 1.1
       }
 
-      # 获取基因状态
       user_genes <- toupper(highlight_genes_reactive())
       pathway_genes <- selected_pathway_genes()
       de_df$gene_upper <- toupper(de_df$gene_symbol)
 
-      # 分类基因
       de_df$is_user <- de_df$gene_upper %in% user_genes
       de_df$is_pathway <- de_df$gene_upper %in% pathway_genes
       de_df$is_significant <- abs(de_df$logFC) > logfc_thresh & de_df$pvalue < pval_thresh
 
-      # 统计
       n_up <- sum(de_df$is_significant & de_df$logFC > 0, na.rm = TRUE)
       n_down <- sum(de_df$is_significant & de_df$logFC < 0, na.rm = TRUE)
       n_not_sig <- sum(!de_df$is_significant, na.rm = TRUE)
       n_user <- sum(de_df$is_user, na.rm = TRUE)
-      n_pathway <- sum(de_df$is_pathway, na.rm = TRUE)
       n_both <- sum(de_df$is_user & de_df$is_pathway, na.rm = TRUE)
 
-      # 【修复】完整六色逻辑
+      # Six-color logic
       de_df$color <- dplyr::case_when(
         de_df$is_user & de_df$is_pathway ~ COLOR_BOTH,
         de_df$is_user ~ COLOR_USER,
@@ -400,27 +402,23 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
         TRUE ~ COLOR_NS
       )
 
-      # 大小
       de_df$size <- dplyr::case_when(
         de_df$is_user | de_df$is_pathway ~ 15,
         de_df$is_significant ~ 9,
         TRUE ~ 4
       )
 
-      # 透明度
       de_df$opacity <- dplyr::case_when(
         de_df$is_user | de_df$is_pathway ~ 1.0,
         de_df$is_significant ~ 0.7,
         TRUE ~ 0.5
       )
 
-      # 边框
       de_df$linewidth <- dplyr::case_when(
         de_df$is_user | de_df$is_pathway ~ 1.0,
         TRUE ~ 0
       )
 
-      # 绘制顺序
       de_df$plot_order <- dplyr::case_when(
         de_df$is_user | de_df$is_pathway ~ 3,
         de_df$is_significant ~ 2,
@@ -428,19 +426,15 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
       )
       de_df <- de_df[order(de_df$plot_order), ]
 
-      # 【修复】标题添加 NS 数量和阈值
       title_text <- sprintf(
-        "%s vs %s<br><sup>↑ %d | ↓ %d | NS %d | User: %d | Both: %d | logFC>|%.1f|, p<%.3f</sup>",
-        left_group, right_group,
-        n_up, n_down, n_not_sig,
-        n_user, n_both,
-        logfc_thresh, pval_thresh
+        "%s vs %s<br><sup>Up %d | Down %d | NS %d | User %d | Both %d | logFC>|%.1f|, p<%.3f</sup>",
+        left_group, right_group, n_up, n_down, n_not_sig, n_user, n_both, logfc_thresh, pval_thresh
       )
 
-      # 注释
       annotations_list <- list()
       max_y_val <- max(de_df$y_axis, na.rm = TRUE)
 
+      # High in labels
       annotations_list[[1]] <- list(
         x = 0.99, y = 0.99, xref = "paper", yref = "paper",
         text = paste0("<b style='color:", COLOR_LEFT, ";'>High in ", left_group, "</b>"),
@@ -458,25 +452,32 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
         bordercolor = COLOR_RIGHT, borderwidth = 2, borderpad = 6
       )
 
-      # 标签只显示 user 基因
+      # User gene labels
       user_genes_df <- de_df[de_df$is_user, ]
       if (nrow(user_genes_df) > 0) {
         for (i in 1:nrow(user_genes_df)) {
           gene <- user_genes_df[i, ]
           gene_color <- if (gene$is_user && gene$is_pathway) COLOR_BOTH else COLOR_USER
           annotations_list[[length(annotations_list) + 1]] <- list(
-            x = gene$x_axis, y = gene$y_axis,
+            x = gene$x_axis,
+            y = gene$y_axis,
             text = gene$gene_symbol,
-            showarrow = TRUE, arrowhead = 0, arrowsize = 1, arrowwidth = 2,
+            showarrow = TRUE,
+            arrowhead = 0,
+            arrowsize = 1,
+            arrowwidth = 2,
             arrowcolor = gene_color,
-            ax = ifelse(gene$logFC > 0, 50, -50), ay = -35,
-            bgcolor = "rgba(255,255,255,0.85)", bordercolor = gene_color,
-            borderwidth = 0.5, font = list(size = 12, color = gene_color)
+            ax = ifelse(gene$logFC > 0, 50, -50),
+            ay = -35,
+            bgcolor = "rgba(255,255,255,0.85)",
+            bordercolor = gene_color,
+            borderwidth = 0.5,
+            font = list(size = 12, color = gene_color)
           )
         }
       }
 
-      # 阈值线标签
+      # Threshold line labels
       if (logfc_thresh > 0) {
         annotations_list[[length(annotations_list) + 1]] <- list(
           x = logfc_thresh, y = max_y_val * 0.95,
@@ -490,7 +491,6 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
         )
       }
 
-      # 绘制
       p <- plotly::plot_ly(
         data = de_df,
         x = de_df$x_axis,
@@ -509,29 +509,31 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
         key = de_df$gene_upper,
         source = ns("deg_volcano"),
         showlegend = FALSE
-      ) %>% plotly::layout(
-        title = list(text = title_text, font = list(size = 14), x = 0.5, xanchor = "center"),
-        xaxis = list(title = "logFC", zeroline = FALSE, showgrid = TRUE, gridcolor = "lightgray"),
-        yaxis = list(title = "-log10 (P-value)", zeroline = FALSE, showgrid = TRUE, gridcolor = "lightgray"),
-        showlegend = FALSE, dragmode = "pan",
-        annotations = annotations_list,
-        shapes = list(
-          list(type = "line", x0 = logfc_thresh, x1 = logfc_thresh,
-               y0 = 0, y1 = max_y_val * 1.05,
-               line = list(color = "gray", dash = "dash", width = 1)),
-          list(type = "line", x0 = -logfc_thresh, x1 = -logfc_thresh,
-               y0 = 0, y1 = max_y_val * 1.05,
-               line = list(color = "gray", dash = "dash", width = 1)),
-          list(type = "line", x0 = min(de_df$x_axis) * 1.1, x1 = max(de_df$x_axis) * 1.1,
-               y0 = -log10(pval_thresh), y1 = -log10(pval_thresh),
-               line = list(color = "gray", dash = "dash", width = 1))
+      ) %>%
+        plotly::layout(
+          title = list(text = title_text, font = list(size = 14), x = 0.5, xanchor = "center"),
+          xaxis = list(title = "logFC", zeroline = FALSE, showgrid = TRUE, gridcolor = "lightgray"),
+          yaxis = list(title = "-log10 (P-value)", zeroline = FALSE, showgrid = TRUE, gridcolor = "lightgray"),
+          showlegend = FALSE,
+          dragmode = "pan",
+          annotations = annotations_list,
+          shapes = list(
+            list(type = "line", x0 = logfc_thresh, x1 = logfc_thresh,
+                 y0 = 0, y1 = max_y_val * 1.05,
+                 line = list(color = "gray", dash = "dash", width = 1)),
+            list(type = "line", x0 = -logfc_thresh, x1 = -logfc_thresh,
+                 y0 = 0, y1 = max_y_val * 1.05,
+                 line = list(color = "gray", dash = "dash", width = 1)),
+            list(type = "line", x0 = min(de_df$x_axis) * 1.1, x1 = max(de_df$x_axis) * 1.1,
+                 y0 = -log10(pval_thresh), y1 = -log10(pval_thresh),
+                 line = list(color = "gray", dash = "dash", width = 1))
+          )
         )
-      )
 
       p
     })
 
-    # 3. DE Volcano Click Event
+    # DE Volcano Click Event
     shiny::observeEvent(plotly::event_data("plotly_click", source = ns("deg_volcano")), {
       click <- plotly::event_data("plotly_click", source = ns("deg_volcano"))
       if (is.null(click) || is.null(click$key)) return()
@@ -543,7 +545,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
       highlight_genes_reactive(union(toupper(current_applied), toupper(clicked_gene)))
     })
 
-    # 4. Gene Expression Table - 【修复】删除Source列，添加P-value和Adj P-value，添加Search
+    # 4. Gene Expression Table
     output$gene_expr_table <- DT::renderDataTable({
       genes <- highlight_genes_reactive()
       shiny::req(length(genes) > 0)
@@ -561,10 +563,6 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
         get_de_table(gsea_res, data_list$contrast_id)
       }, error = function(e) NULL)
 
-      expr_mat <- tryCatch({
-        get_expr_matrix(gsea_res, type = data_list$expression_type)
-      }, error = function(e) NULL)
-
       table_data <- lapply(genes, function(g) {
         gene_upper <- toupper(g)
         is_user <- gene_upper %in% user_genes
@@ -572,7 +570,6 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
 
         color <- if (is_user && is_pathway) COLOR_BOTH else if (is_user) COLOR_USER else COLOR_PATHWAY
 
-        # Log2FC
         logfc <- NA_real_
         pval <- NA_real_
         padj_val <- NA_real_
@@ -593,7 +590,6 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
         updown <- ifelse(is.na(logfc), "-", ifelse(logfc > 0, "UP", "DOWN"))
         high_in <- ifelse(is.na(logfc), "-", ifelse(logfc > 0, left_grp, right_grp))
 
-        # P-value 格式化
         pval_display <- ifelse(is.na(pval), "-", if(pval < 0.001) sprintf("%.2e", pval) else sprintf("%.4f", pval))
         padj_display <- ifelse(is.na(padj_val), "-", if(padj_val < 0.001) sprintf("%.2e", padj_val) else sprintf("%.4f", padj_val))
 
@@ -618,8 +614,9 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
           IsPathway = ifelse(is_pathway, "Yes", "No"),
           Delete = delete_btn,
           ViewBox = view_btn,
-          pval_raw = ifelse(is.na(pval), 1, pval),  # 用于排序
-          stringsAsFactors = FALSE, check.names = FALSE
+          pval_raw = ifelse(is.na(pval), 1, pval),
+          stringsAsFactors = FALSE,
+          check.names = FALSE
         )
       })
 
@@ -629,22 +626,26 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
                            "Up/Down", "High In", "In Pathway", "Remove", "Boxplot", "pval_sort")
 
       dt <- DT::datatable(
-        table_df, escape = FALSE, rownames = FALSE, selection = "none",
+        table_df,
+        escape = FALSE,
+        rownames = FALSE,
+        selection = "none",
         extensions = c('Scroller'),
         options = list(
-          pageLength = 10, scrollY = "50vh", scroller = TRUE,
+          pageLength = 10,
+          scrollY = "50vh",
+          scroller = TRUE,
           dom = "frtip",
-          search = list(caseInsensitive = TRUE),  # 【新增】Search功能
+          search = list(caseInsensitive = TRUE),
           columnDefs = list(
-            list(visible = FALSE, targets = c(1, 11)),  # 隐藏Color和pval_sort
+            list(visible = FALSE, targets = c(1, 11)),
             list(orderable = FALSE, targets = c(9, 10)),
             list(className = "dt-center", targets = c(2, 3, 4, 5, 6, 7, 8))
           ),
-          order = list(list(11, "asc"))  # 按p-value排序
+          order = list(list(11, "asc"))
         )
       )
 
-      # UpDown 颜色
       dt <- dt %>% DT::formatStyle(
         columns = "Up/Down",
         backgroundColor = DT::styleEqual(c("UP", "DOWN", "-"), c("#FFCDD2", "#BBDEFB", "transparent")),
@@ -652,7 +653,6 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
         fontWeight = DT::styleEqual(c("UP", "DOWN"), c("bold", "bold"))
       )
 
-      # P-value 和 Adj P-value 显著性颜色
       dt <- dt %>% DT::formatStyle(
         columns = "P-value",
         color = DT::styleInterval(0.001, c("red", "black")),
@@ -838,7 +838,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
       })
     })
 
-    # Boxplot Order Status Display
+    # Boxplot Order Status
     output$boxplot_order_status <- shiny::renderUI({
       order_info <- boxplot_order_ref()
       if (is.null(order_info) || order_info == "default") {
@@ -849,13 +849,11 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
       }
     })
 
-    # 6. Code Export Button
-    # 2. 修复 export_code_btn 中的参数传递
+    # 6. Export Code Button
     shiny::observeEvent(input$export_code_btn, {
       data_list <- data_prep_data()
       shiny::req(data_list)
 
-      # 确保 target_pathways 不为空
       target_pw <- if (nrow(data_list$df) > 0) {
         data_list$df$ID[1:min(5, nrow(data_list$df))]
       } else {
@@ -877,6 +875,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res) {
                                 contrast_id = data_list$contrast_id,
                                 target_pathways = target_pw,
                                 user_genes = highlight_genes_reactive(),
+                                pathway_genes = selected_pathway_genes(),
                                 expr_type = data_list$expression_type
                               )
                             ),
