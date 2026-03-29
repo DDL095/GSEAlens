@@ -89,13 +89,13 @@ mod_data_prep_ui <- function(id) {
         ns("apply_genes_btn"),
         label = "Confirm and Apply Gene Markers",
         class = "btn-info",
-        style = "width: 48%; margin-top: 10px; font-weight: bold;"
+        style = "width: 100%; margin-top: 10px; font-weight: bold;"
       ),
       shiny::actionButton(
         ns("clear_all_genes_btn"),
         label = "Clear All",
         class = "btn-warning",
-        style = "width: 48%; margin-top: 10px; margin-left: 4%; font-weight: bold;"
+        style = "width: 100%; margin-top: 10px; font-weight: bold;"
       ),
 
     shiny::div(
@@ -407,6 +407,11 @@ mod_data_prep_server <- function(id, gsea_res) {
     shiny::observeEvent(input$clear_all_genes_btn, {
       applied_genes(character(0))
       pending_genes_internal(character(0))
+      shiny::updateSelectizeInput(
+        session,
+        "pending_genes",
+        selected = character(0)
+      )
       message("Cleared all applied genes")
       shiny::showNotification("Cleared all gene markers", type = "message", duration = 2)
     })

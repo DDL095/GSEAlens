@@ -1,5 +1,3 @@
-
-
 #' @title Generate Pathway Plotting Code
 #' @param GSEAlens_res GseaRes object
 #' @param contrast_id Character. Contrast ID
