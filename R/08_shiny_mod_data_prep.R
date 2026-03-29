@@ -384,10 +384,47 @@ mod_data_prep_server <- function(id, gsea_res) {
     })
 
     # 基因确认按钮
+    # 关键修复：input$pending_genes observer应该追加而非覆盖
+    # 当用户在输入框手动输入时，只更新pending_genes_internal
+    # 不再无条件覆盖Modal添加的基因
     shiny::observeEvent(input$pending_genes, {
       genes <- input$pending_genes
       if (is.null(genes)) genes <- character(0)
-      pending_genes_internal(genes)
+
+      # 清理基因名
+      genes_clean <- toupper(trimws(genes))
+      genes_clean <- genes_clean[genes_clean != ""]
+
+      # 获取当前pending
+      current_pending <- pending_genes_internal()
+
+      # 判断：是追加还是覆盖？
+      # 如果用户输入的基因不在当前pending中，认为是手动追加
+      # 如果用户输入的基因与当前pending完全不同（通过手动清空后输入），认为是覆盖
+      if (length(genes_clean) == 0) {
+        # 用户清空了输入框，保持pending不变
+        pending_genes_internal(current_pending)
+      } else if (length(current_pending) == 0) {
+        # 当前pending为空，直接设置
+        pending_genes_internal(genes_clean)
+      } else {
+        # 当前pending有值，比较差异
+        # 如果输入的内容比pending多很多，认为是手动输入（覆盖）
+        # 否则认为是追加
+        genes_not_in_pending <- setdiff(genes_clean, current_pending)
+        pending_not_in_genes <- setdiff(current_pending, genes_clean)
+
+        # 如果大部分pending都在输入中，且输入中有新基因，认为是追加
+        if (length(pending_not_in_genes) < length(current_pending) * 0.5 && length(genes_not_in_pending) > 0) {
+          # 追加模式：保留原有 + 添加新的
+          pending_genes_internal(unique(c(current_pending, genes_clean)))
+        } else {
+          # 覆盖模式：直接替换
+          pending_genes_internal(genes_clean)
+        }
+      }
+
+      message(sprintf("[PendingInput] User input updated: %d genes", length(genes_clean)))
     }, ignoreNULL = FALSE, ignoreInit = TRUE)
 
     shiny::observeEvent(input$apply_genes_btn, {
@@ -629,31 +666,87 @@ mod_data_prep_server <- function(id, gsea_res) {
       )
     }, ignoreNULL = TRUE)
 
-    # 新增：更新pending genes函数（供modal调用）
-    update_pending_genes <- function(new_pending_genes) {
-      if (is.null(new_pending_genes) || length(new_pending_genes) == 0) {
-        pending_genes_internal(character(0))
-      } else {
-        pending_genes_internal(unique(new_pending_genes))
+    # Modal传递基因接口（追加模式）- 完全重写
+    update_pending_genes <- function(new_genes_from_modal) {
+      # 防御性检查
+      if (is.null(new_genes_from_modal) || length(new_genes_from_modal) == 0) {
+        message("[UpdatePending] No new genes from modal, skipping")
+        return(invisible(NULL))
       }
-      # 刷新侧边栏 selectizeInput UI
-      contrast_id <- input$selected_contrast
-      gene_choices <- character(0)
-      if (!is.null(contrast_id)) {
-        de_df <- tryCatch(get_de_table(gsea_res, contrast_id), error = function(e) NULL)
-        if (!is.null(de_df) && "gene_symbol" %in% colnames(de_df)) {
-          gene_choices <- sort(unique(de_df$gene_symbol[!is.na(de_df$gene_symbol)]))
+
+      # 清理基因名：去除空白 + 转大写
+      new_genes_clean <- toupper(trimws(as.character(new_genes_from_modal)))
+      new_genes_clean <- new_genes_clean[!is.na(new_genes_clean)]
+      new_genes_clean <- new_genes_clean[new_genes_clean != ""]
+      new_genes_clean <- unique(new_genes_clean)
+
+      # 直接获取当前pending_genes_internal的值
+      current_pending <- tryCatch({
+        shiny::isolate(pending_genes_internal())
+      }, error = function(e) {
+        message("[UpdatePending] Error: ", e$message)
+        character(0)
+      })
+
+      # 追加合并（不是替换）
+      updated_pending <- unique(c(current_pending, new_genes_clean))
+
+      # 更新reactive值
+      pending_genes_internal(updated_pending)
+
+      message(sprintf("[UpdatePending] Merged: %d existing + %d new = %d total (pending)",
+                      length(current_pending), length(new_genes_clean), length(updated_pending)))
+
+      # 获取当前contrast的基因choices
+      gene_choices_upper <- character(0)
+
+      tryCatch({
+        contrast_id <- shiny::isolate(input$selected_contrast)
+        if (!is.null(contrast_id) && contrast_id != "") {
+          de_df <- get_de_table(gsea_res, contrast_id)
+          if (!is.null(de_df) && "gene_symbol" %in% colnames(de_df)) {
+            gene_choices <- de_df$gene_symbol
+            gene_choices <- gene_choices[!is.na(gene_choices)]
+            gene_choices <- trimws(gene_choices)
+            gene_choices <- gene_choices[gene_choices != ""]
+            gene_choices_upper <- toupper(sort(unique(gene_choices)))
+          }
         }
+      }, error = function(e) {
+        message("[UpdatePending] Error getting gene choices: ", e$message)
+      })
+
+      # 如果没有choices，使用pending作为choices
+      if (length(gene_choices_upper) == 0) {
+        gene_choices_upper <- updated_pending
       }
-      shiny::updateSelectizeInput(
-        session,
-        "pending_genes",
-        choices = gene_choices,
-        selected = pending_genes_internal(),
-        server = TRUE
-      )
-      message(sprintf("[DataPrep] Pending genes: %d", length(pending_genes_internal())))
+
+      # 刷新selectizeInput
+      tryCatch({
+        shiny::updateSelectizeInput(
+          session,
+          "pending_genes",
+          choices = gene_choices_upper,
+          selected = updated_pending,
+          options = list(
+            plugins = list('remove_button'),
+            placeholder = 'Enter gene names (e.g., TP53)',
+            maxItems = 999,
+            closeAfterSelect = FALSE,
+            selectOnTab = TRUE
+          ),
+          server = FALSE
+        )
+        message("[UpdatePending] UI refreshed")
+      }, error = function(e) {
+        message("[UpdatePending] UI update error: ", e$message)
+      })
+
+      invisible(NULL)
     }
+
+
+
     return(list(
       data = shiny::reactive({ result_data() }),
       highlight_genes = applied_genes,
@@ -661,9 +754,8 @@ mod_data_prep_server <- function(id, gsea_res) {
       joint_contrasts = shiny::reactive({ input$joint_contrasts }),
       joint_ncol = shiny::reactive({ input$joint_ncol }),
       joint_generate = joint_generate_event,
-      # 新增接口
       update_pending_genes = update_pending_genes,
-      get_pending_genes = function() { return(pending_genes_internal()) }
+      get_pending_genes = function() { shiny::isolate(pending_genes_internal()) }
     ))
   })
 }

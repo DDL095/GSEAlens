@@ -2,7 +2,7 @@
 % Please edit documentation in R/11_shiny_mod_modal.R
 \name{mod_pathway_modal_server}
 \alias{mod_pathway_modal_server}
-\title{Pathway Detail Modal Server - Enhanced with Gene Selection}
+\title{Pathway Detail Modal Server}
 \usage{
 mod_pathway_modal_server(
   id,
@@ -22,13 +22,11 @@ mod_pathway_modal_server(
 
 \item{gsea_res}{GseaRes object}
 
-\item{pending_genes_reactive}{Reactive expression returning current pending genes}
+\item{pending_genes_reactive}{Function to get current pending genes}
 
 \item{update_pending_genes}{Function to update pending genes list}
 }
 \description{
-Adds checkbox selection to Leading Edge Gene table with confirm button.
-  Selected genes are passed to sidebar pending list (not directly applied).
-  Buttons are fixed at the top of the table section using sticky positioning.
+Modal with checkbox selection using standard DT approach.
 }
 \keyword{internal}
