@@ -258,7 +258,7 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
       dt <- DT::datatable(
         dt_data,
         escape = FALSE,
-        selection = "multiple",
+        selection = "single",
         rownames = FALSE,
         extensions = c('Buttons', 'Scroller', 'ColReorder', 'FixedColumns'),
         options = list(
