@@ -1,5 +1,10 @@
 <!-- NEWS.md is maintained by https://cynkra.github.io/fledge, do not edit -->
 
+# GSEAlens 0.0.9
+
+- Gene expression and plot code.
+
+
 # GSEAlens 0.0.8
 
 - Repair data source of Heatmap in Limma-voom
