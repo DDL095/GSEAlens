@@ -21,25 +21,11 @@ generate_pathway_plot_code(
 
 \item{user_genes}{Character vector. Genes of interest to highlight}
 
-\item{expr_type}{Character. Expression value type (e.g., "logcpm", "vst")}
+\item{expr_type}{Character. Expression value type}
 }
 \value{
 A character string containing executable R code
 }
 \description{
 Generate ready-to-run R code for GSEA pathway visualization.
-  The generated code includes pathway volcano plot, combined GSEA enrichment
-  plot, DE volcano plot, and expression boxplot.
-}
-\examples{
-\dontrun{
-code <- generate_pathway_plot_code(
-  GSEAlens_res = my_gsea_res,
-  contrast_id = "A_vs_B",
-  target_pathways = c("HALLMARK_TNFA_SIGNALING", "REACTOME_APOPTOSIS"),
-  user_genes = c("TP53", "BCL2", "BAX"),
-  expr_type = "logcpm"
-)
-cat(code)
-}
 }

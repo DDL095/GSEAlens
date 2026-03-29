@@ -9,8 +9,25 @@ mod_joint_canvas_ui <- function(id) {
                shiny::h4("GSEA Joint Canvas"),
                shiny::uiOutput(ns("canvas_info")),
                shiny::plotOutput(ns("canvas_plot"), height = "auto", width = "100%")
+    ),
+
+    shiny::hr(),
+    shiny::fluidRow(
+      shiny::column(12, shiny::div(class = "white-box",
+                                   shiny::h4("Export Code"),
+                                   shiny::actionButton(
+                                     ns("export_code_btn"),
+                                     label = "Export Joint Canvas Code",
+                                     class = "btn-secondary",
+                                     style = "width: 100%;"
+                                   ),
+                                   shiny::helpText("Generate R code for the joint canvas")
+      ))
+
+
     )
   )
+
 }
 
 #' @title Joint GSEA Fill Canvas Module Server (Sidebar Control Version)
@@ -154,11 +171,7 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
 
 
 
-
-
-
-
-
+    # Export Code Button
     shiny::observeEvent(input$export_code_btn, {
       shiny::showModal(shiny::modalDialog(
         title = "Generated R Code",
@@ -185,6 +198,13 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
         footer = shiny::modalButton("Close")
       ))
     })
+
+
+
+
+
+
+
     # 渲染画布
     output$canvas_plot <- shiny::renderPlot({
       shiny::req(canvas_result())

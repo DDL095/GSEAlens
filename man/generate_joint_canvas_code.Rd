@@ -24,5 +24,5 @@ generate_joint_canvas_code(
 A character string containing executable R code
 }
 \description{
-Generate code for the Joint GSEA Canvas (Tab 4)
+Generate code for the Joint GSEA Canvas
 }

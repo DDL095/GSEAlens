@@ -14,6 +14,6 @@ mod_quadrant_server(id, data_prep_list, gsea_res)
 \item{gsea_res}{GseaRes object}
 }
 \description{
-Server logic with unified gene pool (applied_genes)
+Server logic with unified gene pool
 }
 \keyword{internal}

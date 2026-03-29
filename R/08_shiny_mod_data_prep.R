@@ -80,7 +80,7 @@ mod_data_prep_ui <- function(id) {
         options = list(
           plugins = list('remove_button'),
           placeholder = 'Enter gene names (e.g., TP53)',
-          maxItems = 50,
+          maxItems = 999,
           closeAfterSelect = FALSE,
           selectOnTab = TRUE
         )
@@ -89,13 +89,14 @@ mod_data_prep_ui <- function(id) {
         ns("apply_genes_btn"),
         label = "Confirm and Apply Gene Markers",
         class = "btn-info",
-        style = "width: 100%; margin-top: 10px; font-weight: bold;"
+        style = "width: 48%; margin-top: 10px; font-weight: bold;"
       ),
-      shiny::helpText(
-        style = "margin-top: 8px; color: #666;",
-        "Click confirm after selecting genes to avoid real-time refresh"
-      )
-    ),
+      shiny::actionButton(
+        ns("clear_all_genes_btn"),
+        label = "Clear All",
+        class = "btn-warning",
+        style = "width: 48%; margin-top: 10px; margin-left: 4%; font-weight: bold;"
+      ),
 
     shiny::div(
       style = "background-color: #d4edda; padding: 10px; border-radius: 5px; margin-top: 10px;",
@@ -155,7 +156,8 @@ mod_data_prep_ui <- function(id) {
       selected = NULL
     )
   )
-}
+)}
+
 
 #' @title Data Preprocessing Module Server (Joint Canvas Parameter Passing Version)
 #' @keywords internal
@@ -389,11 +391,24 @@ mod_data_prep_server <- function(id, gsea_res) {
 
     shiny::observeEvent(input$apply_genes_btn, {
       genes_to_apply <- pending_genes_internal()
+
+      # 合并：已有的 + 新输入的
       current_applied <- applied_genes()
       new_applied <- union(toupper(current_applied), toupper(genes_to_apply))
       applied_genes(new_applied)
-      message(sprintf("Confirmed gene markers: %d genes", length(genes_to_apply)))
-      shiny::showNotification(sprintf("Marked %d genes", length(genes_to_apply)), type = "message", duration = 3)
+
+      message(sprintf("Applied genes: %d (merged: %d existing + %d new)",
+                      length(new_applied), length(current_applied), length(genes_to_apply)))
+      shiny::showNotification(sprintf("Applied genes: %d (merged)", length(new_applied)),
+                              type = "message", duration = 3)
+    })
+
+    # 【新增】Clear All 按钮
+    shiny::observeEvent(input$clear_all_genes_btn, {
+      applied_genes(character(0))
+      pending_genes_internal(character(0))
+      message("Cleared all applied genes")
+      shiny::showNotification("Cleared all gene markers", type = "message", duration = 2)
     })
 
     # 排序确认按钮

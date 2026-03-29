@@ -1,25 +1,16 @@
+# =============================================================================
+# GSEAlens Plotting Code Generator
+# =============================================================================
+
 #' @title Generate Pathway Plotting Code
 #' @description Generate ready-to-run R code for GSEA pathway visualization.
-#'   The generated code includes pathway volcano plot, combined GSEA enrichment
-#'   plot, DE volcano plot, and expression boxplot.
 #' @param GSEAlens_res GseaRes object
 #' @param contrast_id Character. Contrast ID for the analysis
 #' @param target_pathways Character vector. Pathway IDs to plot
 #' @param user_genes Character vector. Genes of interest to highlight
-#' @param expr_type Character. Expression value type (e.g., "logcpm", "vst")
+#' @param expr_type Character. Expression value type
 #' @return A character string containing executable R code
 #' @export
-#' @examples
-#' \dontrun{
-#' code <- generate_pathway_plot_code(
-#'   GSEAlens_res = my_gsea_res,
-#'   contrast_id = "A_vs_B",
-#'   target_pathways = c("HALLMARK_TNFA_SIGNALING", "REACTOME_APOPTOSIS"),
-#'   user_genes = c("TP53", "BCL2", "BAX"),
-#'   expr_type = "logcpm"
-#' )
-#' cat(code)
-#' }
 generate_pathway_plot_code <- function(GSEAlens_res,
                                        contrast_id,
                                        target_pathways,
@@ -59,7 +50,6 @@ generate_pathway_plot_code <- function(GSEAlens_res,
 # =============================================================================
 
 # Step 1: Load your GseaRes object
-# Replace "YOUR_GSEA_RES_OBJECT" with your actual variable name
 GSEAlens_res <- YOUR_GSEA_RES_OBJECT
 
 # Step 2: Extract task for the specified contrast
@@ -96,33 +86,50 @@ GSEAlens_combined_plot <- plot_directional_gsea(
 print(GSEAlens_combined_plot)
 
 # -----------------------------------------------------------------------------
-# 5.2 DE Volcano Plot with ggrepel Labels
+# 5.2 DE Volcano Plot with ggrepel Labels (Six-Color Aesthetics)
 # -----------------------------------------------------------------------------
 GSEAlens_de_df <- get_de_table(GSEAlens_res, contrast_id = "%s")
 
 # Prepare data for plotting
-GSEAlens_de_df$GSEAlens_category <- "other"
-GSEAlens_user_upper <- toupper(GSEAlens_genes)
-GSEAlens_de_df$GSEAlens_category[toupper(GSEAlens_de_df$gene_symbol) %%in%% GSEAlens_user_upper] <- "user"
-
 GSEAlens_logfc_thresh <- 1
 GSEAlens_pval_thresh <- 0.05
-GSEAlens_de_df$GSEAlens_significant <- abs(GSEAlens_de_df$logFC) > GSEAlens_logfc_thresh & GSEAlens_de_df$pvalue < GSEAlens_pval_thresh
 
 # Define colors
 GSEAlens_color_map <- c(
-  "user" = "#4DAF4A",
-  "up" = "#E41A1C",
-  "down" = "#377EB8",
-  "other" = "#C0C0C0"
+  "both" = "#9C27B0",    # 紫色: User ∩ Pathway
+  "user" = "#4DAF4A",    # 绿色: 仅 User
+  "pathway" = "#FF9800", # 橙色: 仅 Pathway
+  "up" = "#E41A1C",      # 红色: 上调
+  "down" = "#377EB8",    # 蓝色: 下调
+  "ns" = "#C0C0C0"       # 灰色: 不显著
 )
+
+# Classify genes
+GSEAlens_user_upper <- toupper(GSEAlens_genes)
+GSEAlens_de_df$GSEAlens_is_user <- toupper(GSEAlens_de_df$gene_symbol) %%in%% GSEAlens_user_upper
+GSEAlens_de_df$GSEAlens_is_pathway <- FALSE  # Pathway genes not available in standalone code
+GSEAlens_de_df$GSEAlens_is_significant <- abs(GSEAlens_de_df$logFC) > GSEAlens_logfc_thresh & GSEAlens_de_df$pvalue < GSEAlens_pval_thresh
+
+# Assign colors
+GSEAlens_de_df$GSEAlens_category <- dplyr::case_when(
+  GSEAlens_de_df$GSEAlens_is_user ~ "user",
+  GSEAlens_de_df$GSEAlens_is_significant & GSEAlens_de_df$logFC > 0 ~ "up",
+  GSEAlens_de_df$GSEAlens_is_significant & GSEAlens_de_df$logFC < 0 ~ "down",
+  TRUE ~ "ns"
+)
+
+# Statistics
+GSEAlens_n_up <- sum(GSEAlens_de_df$GSEAlens_is_significant & GSEAlens_de_df$logFC > 0, na.rm = TRUE)
+GSEAlens_n_down <- sum(GSEAlens_de_df$GSEAlens_is_significant & GSEAlens_de_df$logFC < 0, na.rm = TRUE)
+GSEAlens_n_ns <- sum(!GSEAlens_de_df$GSEAlens_is_significant, na.rm = TRUE)
+GSEAlens_n_user <- sum(GSEAlens_de_df$GSEAlens_is_user, na.rm = TRUE)
 
 # Create volcano plot with ggrepel labels (only for user genes)
 GSEAlens_volcano_plot <- ggplot(GSEAlens_de_df, aes(x = logFC, y = -log10(pvalue))) +
   geom_point(aes(color = GSEAlens_category), alpha = 0.6, size = 3) +
   # Add ggrepel labels only for user genes
   ggrepel::geom_text_repel(
-    data = GSEAlens_de_df[GSEAlens_de_df$GSEAlens_category == "user", ],
+    data = GSEAlens_de_df[GSEAlens_de_df$GSEAlens_is_user, ],
     aes(label = gene_symbol),
     size = 3,
     max.overlaps = 50,
@@ -135,16 +142,15 @@ GSEAlens_volcano_plot <- ggplot(GSEAlens_de_df, aes(x = logFC, y = -log10(pvalue
   ) +
   scale_color_manual(
     values = GSEAlens_color_map,
-    breaks = c("user", "up", "down", "other"),
+    breaks = c("user", "up", "down", "ns"),
     labels = c("User Genes", "Up-regulated", "Down-regulated", "Not Significant")
   ) +
   labs(
     title = sprintf("%%s vs %%s - DE Volcano", GSEAlens_left_group, GSEAlens_right_group),
     subtitle = sprintf(
-      "User genes: %%d | Up: %%d | Down: %%d",
-      sum(GSEAlens_de_df$GSEAlens_category == "user"),
-      sum(GSEAlens_de_df$GSEAlens_significant & GSEAlens_de_df$logFC > 0),
-      sum(GSEAlens_de_df$GSEAlens_significant & GSEAlens_de_df$logFC < 0)
+      "User genes: %%d | Up: %%d | Down: %%d | NS: %%d | logFC>|%.1f|, p<%.3f",
+      GSEAlens_n_user, GSEAlens_n_up, GSEAlens_n_down, GSEAlens_n_ns,
+      GSEAlens_logfc_thresh, GSEAlens_pval_thresh
     ),
     x = "log2 Fold Change",
     y = "-log10(P-value)"
@@ -184,7 +190,7 @@ return(code)
 
 
 #' @title Generate Joint Canvas Code
-#' @description Generate code for the Joint GSEA Canvas (Tab 4)
+#' @description Generate code for the Joint GSEA Canvas
 #' @param GSEAlens_res GseaRes object
 #' @param contrast_ids Character vector. Multiple contrast IDs
 #' @param target_pathways Character vector. Pathway IDs to plot
@@ -214,7 +220,6 @@ generate_joint_canvas_code <- function(GSEAlens_res,
 # =============================================================================
 
 # Step 1: Load your GseaRes object
-# Replace "YOUR_GSEA_RES_OBJECT" with your actual variable name
 GSEAlens_res <- YOUR_GSEA_RES_OBJECT
 
 # Step 2: Define parameters
@@ -249,8 +254,8 @@ for (GSEAlens_i in seq_along(GSEAlens_contrasts)) {
     subPlot = 3,
     curveCol = c("%s"),
     main_title = sprintf("%%s [%%d pathways]",
-                         GSEAlens_contrast_id,
-                         length(GSEAlens_pathways)),
+                       GSEAlens_contrast_id,
+                       length(GSEAlens_pathways)),
     add_pval = FALSE,
     show_contrast_in_axis = TRUE
   )
