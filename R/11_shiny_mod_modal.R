@@ -26,6 +26,7 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
     # Modal内部checkbox勾选状态
     modal_checked_genes <- shiny::reactiveVal(character(0))
+
     # ============================================================
     # 【新增】JS同步层 - 监听modal_checked_genes变化并更新checkbox显示
     # ============================================================
@@ -36,6 +37,7 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
         message = list(ids = current_selection)
       )
     })
+
     # 监听弹窗触发
     shiny::observeEvent(trigger_event(), {
       pathway_id <- trigger_event()
@@ -559,6 +561,7 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
           deferRender = TRUE,
           pageLength = -1,
           dom = 'frtip',
+
           columnDefs = list(
             list(width = '50px', targets = 0, orderable = FALSE, className = 'dt-center'),
             list(width = '100px', targets = 1, className = 'dt-center'),
