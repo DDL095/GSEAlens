@@ -155,7 +155,7 @@ validate_param <- function(value, default, min_val = 1, max_val = NULL, param_na
 #'   similarity of core genes. Includes defensive checks for edge cases.
 #' @param core_genes_list Named list: pathway_id -> core_gene_vector
 #' @param min_shared_genes Minimum number of shared genes between pathways to form an edge
-#' @return Data frame with columns: from, to, shared, weight (Jaccard index)
+#' @return Data frame with columns: from, to, shared, weight (Jaccard index), shared_genes
 #' @export
 build_edge_list_safely <- function(core_genes_list, min_shared_genes = 2) {
 
@@ -226,12 +226,16 @@ build_edge_list_safely <- function(core_genes_list, min_shared_genes = 2) {
       union_count <- length(union(genes1_upper, genes2_upper))
       jaccard <- if (union_count > 0) shared_count / union_count else 0
 
+      # 获取共享基因列表
+      shared_genes_list <- intersect(genes1_upper, genes2_upper)
+
       edge_count <- edge_count + 1
       edges_list[[edge_count]] <- data.frame(
         from = p1,
         to = p2,
         shared = shared_count,
         weight = jaccard,
+        shared_genes = I(list(shared_genes_list)),  # 列表列
         stringsAsFactors = FALSE
       )
     }
