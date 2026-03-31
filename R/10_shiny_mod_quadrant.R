@@ -774,13 +774,15 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
           else "ns"
         }
 
+        # ✅ 修复后的Delete和View按钮生成
         delete_btn <- sprintf(
-          '<button class="btn btn-xs btn-danger" onclick="Shiny.setInputValue(\"%s\", \"%s\", {priority: \"event\"})">X</button>',
-          ns("delete_gene_from_table"), g
+          '<button class="btn btn-xs btn-danger" onclick="Shiny.setInputValue(\'%s\', {gene_to_remove: \'%s\', time: Date.now()}, {priority: \'event\'});" style="margin-right: 5px;">X</button>',
+          ns("delete_gene_action"), g
         )
+
         view_btn <- sprintf(
-          '<button class="btn btn-xs btn-primary" onclick="Shiny.setInputValue(\"%s\", \"%s\", {priority: \"event\"})">View</button>',
-          ns("view_boxplot_from_table"), g
+          '<button class="btn btn-xs btn-primary" onclick="Shiny.setInputValue(\'%s\', {gene_to_view: \'%s\', time: Date.now()}, {priority: \'event\'});">View</button>',
+          ns("view_boxplot_action"), g
         )
 
         data.frame(
@@ -888,26 +890,36 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       dt
     })
 
-    # Delete Gene from Table
-    shiny::observeEvent(input$delete_gene_from_table, {
-      gene_to_remove <- input$delete_gene_from_table
-      if (is.null(gene_to_remove)) return()
+    # ✅ 修复Delete基因事件监听
+    shiny::observeEvent(input$delete_gene_action, {
+      action_data <- input$delete_gene_action
+      if (is.null(action_data) || is.null(action_data$gene_to_remove)) return()
 
+      gene_to_remove <- action_data$gene_to_remove
       current_applied <- highlight_genes_reactive()
       new_applied <- setdiff(toupper(current_applied), toupper(gene_to_remove))
       highlight_genes_reactive(new_applied)
 
+      # 同时清除对应的箱线图
       if (!is.null(current_boxplot_gene()) && toupper(current_boxplot_gene()) == toupper(gene_to_remove)) {
         current_boxplot_gene(NULL)
       }
-    })
 
-    # View Boxplot from Table
-    shiny::observeEvent(input$view_boxplot_from_table, {
-      gene_name <- input$view_boxplot_from_table
-      if (is.null(gene_name)) return()
+      message(sprintf("[Gene] Removed from table: %s", gene_to_remove))
+      shiny::showNotification(sprintf("Gene removed: %s", gene_to_remove), type = "message", duration = 2)
+    }, ignoreNULL = TRUE)
+
+    # ✅ 修复View箱线图事件监听
+    shiny::observeEvent(input$view_boxplot_action, {
+      action_data <- input$view_boxplot_action
+      if (is.null(action_data) || is.null(action_data$gene_to_view)) return()
+
+      gene_name <- action_data$gene_to_view
       current_boxplot_gene(gene_name)
-    })
+
+      message(sprintf("[Boxplot] Displaying: %s", gene_name))
+      shiny::showNotification(sprintf("Showing boxplot for: %s", gene_name), type = "message", duration = 2)
+    }, ignoreNULL = TRUE)
 
     # 5. Expression Boxplot
     output$gene_expr_box <- plotly::renderPlotly({
