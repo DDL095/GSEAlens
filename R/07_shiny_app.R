@@ -231,6 +231,9 @@ launch_gsea_app <- function(gsea_res, addition_data = NULL) {
     # 6. Pathway relation exploration module
     mod_pathway_relation_server("pathway_relation", data_prep_list, gsea_res, table_result)
 
+    # 6b. Network edge detail modal module
+    mod_network_edge_detail_server("edge_detail", session)
+
     # 7. Joint GSEA canvas module
     mod_joint_canvas_server("joint_canvas", gsea_res, data_prep_list, table_result)
   }

@@ -42,7 +42,6 @@ mod_pathway_relation_ui <- function(id) {
           ),
 
           # 最小共享基因数
-
           shiny::numericInput(
             ns("min_shared"),
             label = "Min Shared Core Genes:",
@@ -457,9 +456,9 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
                            -log10(plot_df$p.adjust))
 
       color_title <- switch(color_mode,
-                            "padj" = "-log10(FDR)",
-                            "pval" = "-log10(P-value)",
-                            "nes" = "|NES|")
+                           "padj" = "-log10(FDR)",
+                           "pval" = "-log10(P-value)",
+                           "nes" = "|NES|")
 
       # 大小映射
       size_mode <- input$dotplot_size_mode
@@ -539,6 +538,11 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
     # 8. Network 绘图函数（5 阶段防御性渲染）
     # ============================================================
 
+    # 创建全局变量用于边点击事件
+    edge_list <<- NULL
+    node_df <<- NULL
+    core_list <<- NULL
+
     output$plot_network <- plotly::renderPlotly({
 
       # ---- Phase 1: 数据获取与验证 ----
@@ -573,7 +577,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
 
       # ---- Phase 2: 获取核心基因列表 ----
 
-      core_list <- tryCatch({
+      core_list <<- tryCatch({
         get_core_genes_list(task, pathways)
       }, error = function(e) {
         message(sprintf("[Network] Error extracting core genes: %s", e$message))
@@ -611,7 +615,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       min_shared <- input$min_shared
       if (is.null(min_shared)) min_shared <- 3
 
-      edge_list <- tryCatch({
+      edge_list <<- tryCatch({
         build_edge_list_safely(core_list[valid_pathways], min_shared_genes = min_shared)
       }, error = function(e) {
         message(sprintf("[Network] Edge building failed: %s", e$message))
@@ -693,7 +697,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
 
       # ---- Phase 6: Plotly 绘制 ----
 
-      node_df <- data.frame(
+      node_df <<- data.frame(
         name = igraph::V(g)$name,
         x = layout_coords[, 1],
         y = layout_coords[, 2],
@@ -710,14 +714,23 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       })
       node_df$color_val <- ifelse(is.na(node_df$NES), 0, node_df$NES)
 
-      # 构建 hover 文本
-      hover_text <- sprintf(
+      # 构建节点 hover 文本
+      node_hover_text <- sprintf(
         "<b>%s</b><br>NES: %.2f<br>FDR: %.2e<br>Core Genes: %d",
         node_df$name,
         node_df$NES,
         node_df$FDR,
         node_df$CoreCount
       )
+
+      # 构建边 hover 文本
+      edge_hover_text_list <- lapply(seq_len(nrow(edge_list)), function(i) {
+        sprintf(
+          "<b>%s &harr; %s</b><br>Shared: %d genes<br>Jaccard: %.3f<br><i style='color:#666;'>Click edge for details</i>",
+          edge_list$from[i], edge_list$to[i],
+          edge_list$shared[i], edge_list$weight[i]
+        )
+      })
 
       title_text <- sprintf(
         "Pathway Network: %s vs %s<br><sub>%d nodes, %d edges | min_shared=%d | seed=%d</sub>",
@@ -726,43 +739,42 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
         min_shared, seed_val
       )
 
-      p <- plotly::plot_ly()
+      # ============================================================
+      # 使用 add_trace 构建图形（更好的 hover 控制）
+      # ============================================================
 
-      # 添加边
+      # 初始化 plotly 对象
+      p <- plotly::plot_ly(source = ns("network_plot"))
+
+      # ---- 添加边 (trace 0 到 n-1) ----
       for (i in seq_len(nrow(edge_list))) {
         from_node <- node_df[node_df$name == edge_list$from[i], ]
         to_node <- node_df[node_df$name == edge_list$to[i], ]
 
-        edge_hover <- sprintf(
-          "Shared: %d genes<br>Jaccard: %.3f",
-          edge_list$shared[i], edge_list$weight[i]
-        )
-
-        p <- p %>% plotly::add_segments(
-          x = from_node$x,
-          y = from_node$y,
-          xend = to_node$x,
-          yend = to_node$y,
+        p <- p %>% plotly::add_trace(
+          type = "scatter",
+          mode = "lines",
+          x = c(from_node$x, to_node$x, NA),
+          y = c(from_node$y, to_node$y, NA),
           line = list(
-            color = "rgba(128, 128, 128, 0.5)",
-            width = 1 + edge_list$weight[i] * 4
+            color = "rgba(100, 100, 100, 0.6)",
+            width = 3 + edge_list$weight[i] * 8
           ),
           hoverinfo = "text",
-          text = edge_hover,
+          text = edge_hover_text_list[[i]],
           showlegend = FALSE,
-          inherit = FALSE
+          inherit = TRUE
         )
       }
 
-      # 添加节点
-      p <- p %>% plotly::add_markers(
-        data = node_df,
-        x = ~x,
-        y = ~y,
+      # ---- 添加节点 (trace n) ----
+      p <- p %>% plotly::add_trace(
         type = "scatter",
         mode = "markers",
+        x = node_df$x,
+        y = node_df$y,
         marker = list(
-          size = 15,
+          size = 18,
           color = node_df$color_val,
           colorscale = list(
             list(0, "#377EB8"),
@@ -779,33 +791,34 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
             len = 0.5,
             y = 0.5
           ),
-          line = list(color = "black", width = 1.5)
+          line = list(color = "black", width = 2)
         ),
         text = node_df$name,
-        hovertemplate = paste(hover_text, "<extra></extra>"),
-        showlegend = FALSE
+        hovertemplate = paste(node_hover_text, "<extra></extra>"),
+        showlegend = FALSE,
+        key = node_df$name,
+        inherit = TRUE
       )
 
-      # 添加节点标签
-      p <- p %>% plotly::add_text(
-        data = node_df,
-        x = node_df$x,
-        y = node_df$y + 0.08,
+      # ---- 添加节点标签 (trace n+1) ----
+      p <- p %>% plotly::add_trace(
         type = "scatter",
         mode = "text",
+        x = node_df$x,
+        y = node_df$y + 0.12,
         text = node_df$name,
         textposition = "top center",
-        textfont = list(size = 9, color = "black"),
+        textfont = list(size = 10, color = "#333"),
         hoverinfo = "skip",
         showlegend = FALSE,
-        inherit = FALSE
+        inherit = TRUE
       )
 
-      # 布局设置
-      x_range <- c(min(layout_coords[, 1]) - 0.3, max(layout_coords[, 1]) + 0.3)
-      y_range <- c(min(layout_coords[, 2]) - 0.3, max(layout_coords[, 2]) + 0.3)
+      # ---- 布局设置 ----
+      x_range <- c(min(layout_coords[, 1]) - 0.5, max(layout_coords[, 1]) + 0.5)
+      y_range <- c(min(layout_coords[, 2]) - 0.5, max(layout_coords[, 2]) + 0.5)
 
-      p %>% plotly::layout(
+      p <- p %>% plotly::layout(
         title = list(
           text = title_text,
           font = list(size = 12),
@@ -837,10 +850,56 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
         displaylogo = FALSE,
         modeBarButtonsToRemove = c("lasso2d", "select2d")
       )
+
+
     })
 
     # ============================================================
-    # 9. 返回值
+    # 9. 边点击事件监听
+    # ============================================================
+
+    shiny::observeEvent(plotly::event_data("plotly_click", source = ns("network_plot")), {
+      click_data <- plotly::event_data("plotly_click", source = ns("network_plot"))
+
+      if (is.null(click_data) || is.null(click_data$curveNumber)) {
+        return()
+      }
+
+      n_edges <- nrow(edge_list)
+
+      # curveNumber: 0 到 n-1 = 边, n = 节点, n+1 = 标签
+      if (click_data$curveNumber < n_edges) {
+        edge_idx <- click_data$curveNumber + 1
+
+        from_pw <- as.character(edge_list$from[edge_idx])
+        to_pw <- as.character(edge_list$to[edge_idx])
+        shared_count <- edge_list$shared[edge_idx]
+        jaccard <- edge_list$weight[edge_idx]
+        shared_genes <- unlist(edge_list$shared_genes[[edge_idx]])
+
+        pathway_a_genes <- core_list[[from_pw]]
+        pathway_b_genes <- core_list[[to_pw]]
+
+        session$sendCustomMessage(
+          type = "network_edge_clicked",
+          message = list(
+            from = from_pw,
+            to = to_pw,
+            shared = shared_count,
+            jaccard = jaccard,
+            shared_genes = shared_genes,
+            pathway_a_genes = pathway_a_genes,
+            pathway_b_genes = pathway_b_genes
+          )
+        )
+
+        message(sprintf("[Network] Edge clicked: %s <-> %s (shared=%d)",
+                        from_pw, to_pw, shared_count))
+      }
+    })
+
+    # ============================================================
+    # 10. 返回值
     # ============================================================
 
     return(list(

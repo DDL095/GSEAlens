@@ -12,7 +12,7 @@ build_edge_list_safely(core_genes_list, min_shared_genes = 2)
 \item{min_shared_genes}{Minimum number of shared genes between pathways to form an edge}
 }
 \value{
-Data frame with columns: from, to, shared, weight (Jaccard index)
+Data frame with columns: from, to, shared, weight (Jaccard index), shared_genes
 }
 \description{
 Safely construct edge list for pathway network based on Jaccard
