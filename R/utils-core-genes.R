@@ -148,3 +148,109 @@ validate_param <- function(value, default, min_val = 1, max_val = NULL, param_na
 
   return(as.integer(val))
 }
+
+
+#' @title Build Pathway Similarity Network Edges (Safe Version)
+#' @description Safely construct edge list for pathway network based on Jaccard
+#'   similarity of core genes. Includes defensive checks for edge cases.
+#' @param core_genes_list Named list: pathway_id -> core_gene_vector
+#' @param min_shared_genes Minimum number of shared genes between pathways to form an edge
+#' @return Data frame with columns: from, to, shared, weight (Jaccard index)
+#' @export
+build_edge_list_safely <- function(core_genes_list, min_shared_genes = 2) {
+
+  # ==== 防御性检查 ====
+
+  # 防御1：检查输入是否为 NULL 或空列表
+  if (is.null(core_genes_list) || length(core_genes_list) == 0) {
+    message("[build_edge_list_safely] Input core_genes_list is NULL or empty")
+    return(NULL)
+  }
+
+  # 防御2：移除空的核心基因向量
+  valid_idx <- which(sapply(core_genes_list, function(x) {
+    length(x) > 0 && !all(is.na(x))
+  }))
+
+  if (length(valid_idx) == 0) {
+    message("[build_edge_list_safely] All pathways have empty core genes")
+    return(NULL)
+  }
+
+  core_genes_list <- core_genes_list[valid_idx]
+
+  pathway_ids <- names(core_genes_list)
+  n <- length(pathway_ids)
+
+  # 防御3：如果只有 0 或 1 个 pathway，无法形成边
+  if (n <= 1) {
+    message(sprintf("[build_edge_list_safely] Only %d pathway(s), cannot form edges", n))
+    return(NULL)
+  }
+
+  # 防御4：如果 min_shared_genes <= 0，设置默认值
+  if (is.null(min_shared_genes) || min_shared_genes < 1) {
+    message("[build_edge_list_safely] min_shared_genes must be >= 1, using default 2")
+    min_shared_genes <- 2
+  }
+
+  # ==== 边构建 ====
+
+  # 预分配边存储（使用列表避免动态扩展）
+  edges_list <- vector("list", length = n * (n - 1) / 2)
+  edge_count <- 0
+
+  # 双层循环计算 Jaccard 相似度
+  for (i in 1:(n - 1)) {
+    for (j in (i + 1):n) {
+      p1 <- pathway_ids[i]
+      p2 <- pathway_ids[j]
+
+      genes1 <- core_genes_list[[p1]]
+      genes2 <- core_genes_list[[p2]]
+
+      # 跳过任何包含 NA 的基因向量
+      if (any(is.na(genes1)) || any(is.na(genes2))) next
+
+      # 大小写不敏感的交集/并集计算
+      genes1_upper <- toupper(as.character(genes1))
+      genes2_upper <- toupper(as.character(genes2))
+
+      # 计算共享基因数
+      shared_count <- length(intersect(genes1_upper, genes2_upper))
+
+      # 检查是否满足最小共享阈值
+      if (shared_count < min_shared_genes) next
+
+      # 计算 Jaccard 相似度
+      union_count <- length(union(genes1_upper, genes2_upper))
+      jaccard <- if (union_count > 0) shared_count / union_count else 0
+
+      edge_count <- edge_count + 1
+      edges_list[[edge_count]] <- data.frame(
+        from = p1,
+        to = p2,
+        shared = shared_count,
+        weight = jaccard,
+        stringsAsFactors = FALSE
+      )
+    }
+  }
+
+  # ==== 返回结果 ====
+
+  if (edge_count == 0) {
+    message("[build_edge_list_safely] No edges formed with current threshold (min_shared=",
+            min_shared_genes, ")")
+    return(NULL)
+  }
+
+  # 合并边列表
+  edge_df <- do.call(rbind, edges_list[1:edge_count])
+  rownames(edge_df) <- NULL
+
+  message(sprintf("[build_edge_list_safely] Built %d edges from %d pathways",
+                  nrow(edge_df), n))
+
+  return(edge_df)
+}

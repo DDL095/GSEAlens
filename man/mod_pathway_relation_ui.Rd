@@ -7,6 +7,6 @@
 mod_pathway_relation_ui(id)
 }
 \description{
-Contains four sub-tabs: DotPlot, Chord, Network, and UpSet
+Network visualization module with dual-mode pathway selection
 }
 \keyword{internal}

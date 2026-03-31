@@ -4,9 +4,9 @@
 \alias{mod_pathway_relation_server}
 \title{Pathway Relationship Exploration Module Server}
 \usage{
-mod_pathway_relation_server(id, data_prep_list, gsea_res)
+mod_pathway_relation_server(id, data_prep_list, gsea_res, table_result = NULL)
 }
 \description{
-Implements DotPlot, Chord, Network, and UpSet logic with hover-only interactions (no click)
+Dual-mode pathway network visualization with defensive rendering
 }
 \keyword{internal}
