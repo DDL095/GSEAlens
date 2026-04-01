@@ -224,6 +224,12 @@ launch_gsea_app <- function(gsea_res, addition_data = NULL) {
             mod_pathway_relation_ui("pathway_relation")
           ),
           shiny::tabPanel(
+            title = "HubGene Network",
+            value = "hubgene",
+            shiny::br(),
+            mod_hubgene_ui("hubgene")
+          ),
+          shiny::tabPanel(
             title = "Joint GSEA Canvas",
             shiny::br(),
             mod_joint_canvas_ui("joint_canvas")
@@ -264,7 +270,11 @@ launch_gsea_app <- function(gsea_res, addition_data = NULL) {
     # 6. Pathway relation exploration module
     mod_pathway_relation_server("pathway_relation", data_prep_list, gsea_res, table_result)
 
-    # 7. Joint GSEA canvas module
+
+    # 7.HubGene Network 模块
+    mod_hubgene_server("hubgene", data_prep_list, table_result)
+
+    # 8. Joint GSEA canvas module
     mod_joint_canvas_server("joint_canvas", gsea_res, data_prep_list, table_result)
   }
 
