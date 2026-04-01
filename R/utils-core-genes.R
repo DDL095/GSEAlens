@@ -153,10 +153,14 @@ validate_param <- function(value, default, min_val = 1, max_val = NULL, param_na
 #' @title Build Pathway Similarity Network Edges (Safe Version)
 #' @description Safely construct edge list for pathway network based on Jaccard
 #'   similarity of core genes. Includes defensive checks for edge cases.
+#'   Now includes Overlap Coefficient and Dice Coefficient for comprehensive
+#'   similarity assessment.
 #' @param core_genes_list Named list: pathway_id -> core_gene_vector
 #' @param min_shared_genes Minimum number of shared genes between pathways to form an edge
-#' @return Data frame with columns: from, to, shared, weight (Jaccard index), shared_genes
+#' @return Data frame with columns: from, to, shared, weight (Jaccard index),
+#'         overlap_coef, dice_coef, shared_genes
 #' @export
+
 build_edge_list_safely <- function(core_genes_list, min_shared_genes = 2) {
 
   # ==== 防御性检查 ====
@@ -226,6 +230,18 @@ build_edge_list_safely <- function(core_genes_list, min_shared_genes = 2) {
       union_count <- length(union(genes1_upper, genes2_upper))
       jaccard <- if (union_count > 0) shared_count / union_count else 0
 
+      # 计算 Overlap Coefficient (Simpson Index)
+      # 公式：|A∩B| / min(|A|, |B|)
+      # 适合检测子集关系
+      min_size <- min(length(genes1_upper), length(genes2_upper))
+      overlap_coef <- if (min_size > 0) shared_count / min_size else 0
+
+      # 计算 Dice Coefficient
+      # 公式：2|A∩B| / (|A| + |B|)
+      # 对交集更敏感，范围 [0, 1]
+      sum_size <- length(genes1_upper) + length(genes2_upper)
+      dice_coef <- if (sum_size > 0) (2 * shared_count) / sum_size else 0
+
       # 获取共享基因列表
       shared_genes_list <- intersect(genes1_upper, genes2_upper)
 
@@ -234,8 +250,10 @@ build_edge_list_safely <- function(core_genes_list, min_shared_genes = 2) {
         from = p1,
         to = p2,
         shared = shared_count,
-        weight = jaccard,
-        shared_genes = I(list(shared_genes_list)),  # 列表列
+        weight = jaccard,          # Jaccard index (主权重)
+        overlap_coef = overlap_coef, # Overlap coefficient
+        dice_coef = dice_coef,       # Dice coefficient
+        shared_genes = I(list(shared_genes_list)),
         stringsAsFactors = FALSE
       )
     }

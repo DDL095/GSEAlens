@@ -12,9 +12,12 @@ build_edge_list_safely(core_genes_list, min_shared_genes = 2)
 \item{min_shared_genes}{Minimum number of shared genes between pathways to form an edge}
 }
 \value{
-Data frame with columns: from, to, shared, weight (Jaccard index), shared_genes
+Data frame with columns: from, to, shared, weight (Jaccard index),
+        overlap_coef, dice_coef, shared_genes
 }
 \description{
 Safely construct edge list for pathway network based on Jaccard
   similarity of core genes. Includes defensive checks for edge cases.
+  Now includes Overlap Coefficient and Dice Coefficient for comprehensive
+  similarity assessment.
 }

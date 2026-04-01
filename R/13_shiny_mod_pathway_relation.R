@@ -8,7 +8,7 @@ mod_pathway_relation_ui <- function(id) {
     shiny::fluidRow(
       # ===== 左侧控制面板 =====
       shiny::column(
-        3,
+        2,
         shiny::div(
           class = "well",
           style = "padding: 15px;",
@@ -85,6 +85,25 @@ mod_pathway_relation_ui <- function(id) {
 
           shiny::hr(),
 
+          # ---- Hover 显示参数 ----
+          shiny::h4("Hover Display Settings"),
+
+          shiny::sliderInput(
+            ns("hover_max_genes"),
+            label = "Max Genes in Hover:",
+            min = 3,
+            max = 30,
+            value = 5,
+            step = 1
+          ),
+
+          shiny::helpText(
+            style = "color: #666; font-size: 11px;",
+            "Number of shared genes to display in edge hover tooltip"
+          ),
+
+          shiny::hr(),
+
           shiny::conditionalPanel(
             condition = sprintf("input['%s'] == 'mode_topN'", ns("network_mode")),
             shiny::div(
@@ -122,7 +141,7 @@ mod_pathway_relation_ui <- function(id) {
 
       # ===== 右侧面板 =====
       shiny::column(
-        9,
+        10,
         shiny::tabsetPanel(
           id = ns("active_tab"),
           type = "tabs",
@@ -153,7 +172,7 @@ mod_pathway_relation_ui <- function(id) {
                 ),
                 selected = "core_size"
               ),
-              plotly::plotlyOutput(ns("plot_dotplot"), height = "600px") %>%
+              plotly::plotlyOutput(ns("plot_dotplot"), height = "800px") %>%
                 shinycssloaders::withSpinner(type = 6, color = "#28a745")
             )
           ),
@@ -200,7 +219,7 @@ mod_pathway_relation_ui <- function(id) {
                 )
               ),
 
-              plotly::plotlyOutput(ns("plot_network"), height = "650px") %>%
+              plotly::plotlyOutput(ns("plot_network"), height = "1200px") %>%
                 shinycssloaders::withSpinner(type = 6, color = "#28a745")
             )
           )
@@ -510,22 +529,27 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       i <- edge_idx[1]
       shared_count <- edge_list$shared[i]
       jaccard <- edge_list$weight[i]
+      overlap_coef <- edge_list$overlap_coef[i]
+      dice_coef <- edge_list$dice_coef[i]
       shared_genes <- unlist(edge_list$shared_genes[[i]])
+
       pathway_a_genes <- core_list[[from_pw]]
       pathway_b_genes <- core_list[[to_pw]]
 
-      genes_a <- toupper(pathway_a_genes)
-      genes_b <- toupper(pathway_b_genes)
-      overlap_coef <- shared_count / min(length(genes_a), length(genes_b))
-      dice_coef <- (2 * shared_count) / (length(genes_a) + length(genes_b))
+      # ============ 修改开始：showdetail 中显示所有基因 ============
+      # 在 showdetail 中不限制基因数量，显示所有共享基因
+      # 使用逗号和空格隔离基因
 
-      # 构建基因显示
-      gene_buttons <- paste0(
-        "<span style='display:inline-block;background:#e3f2fd;padding:4px 8px;margin:2px;border-radius:4px;font-size:12px;'>",
-        shared_genes,
-        "</span>"
-      )
-      gene_display <- paste(gene_buttons, collapse = "")
+      # 对所有基因进行格式化显示
+      gene_buttons <- sapply(shared_genes, function(g) {
+        sprintf(
+          '<span style="display:inline-block;background:#e3f2fd;padding:4px 8px;margin:2px;border-radius:4px;font-size:12px;">%s</span>',
+          g
+        )
+      })
+
+      # 不再显示"+N more"提示
+      gene_display <- paste(gene_buttons, collapse = ",")
 
       # Modal UI
       shiny::showModal(shiny::modalDialog(
@@ -556,9 +580,9 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
     # 9. Network 绘图函数
     # ============================================================
 
-    edge_list <<- NULL
-    node_df <<- NULL
-    core_list <<- NULL
+    edge_list <- NULL
+    node_df <- NULL
+    core_list <- NULL
 
     output$plot_network <- plotly::renderPlotly({
       pathways <- final_pathways()
@@ -604,7 +628,14 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       min_shared <- input$min_shared
       if (is.null(min_shared)) min_shared <- 3
 
-      edge_list <<- tryCatch({build_edge_list_safely(core_list[valid_pathways], min_shared_genes = min_shared)}, error = function(e) NULL)
+      # 获取 hover 显示基因数上限
+      hover_max_genes <- input$hover_max_genes
+      if (is.null(hover_max_genes)) hover_max_genes <- 10
+
+      # 构建边列表（现在包含 jaccard, overlap_coef, dice_coef）
+      edge_list <<- tryCatch({
+        build_edge_list_safely(core_list[valid_pathways], min_shared_genes = min_shared)
+      }, error = function(e) NULL)
 
       if (is.null(edge_list) || nrow(edge_list) == 0) {
         return(plotly::plot_ly() %>% plotly::layout(
@@ -614,6 +645,33 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
         ))
       }
 
+      # ============================================================
+      # 关键改进：基于 Jaccard 排名映射边缘粗细到 1-5 像素
+      # ============================================================
+
+      # 按 Jaccard (weight) 降序排列
+      edge_list <- edge_list[order(edge_list$weight, decreasing = TRUE), ]
+
+      # 计算粗细等级
+      n_edges <- nrow(edge_list)
+      edge_width_mapping <- function(rank, n) {
+        # 根据排名分配 1-5 像素
+        # rank 1 -> 5px, rank n -> 1px
+        width <- 5 - (rank - 1) * (4 / max(1, n - 1))
+        return(max(1, min(5, round(width))))
+      }
+
+      edge_list$width_rank <- sapply(seq_len(n_edges), function(i) {
+        edge_width_mapping(i, n_edges)
+      })
+
+      # 普通边粗细范围：1-5 像素
+      edge_list$edge_width_normal <- edge_list$width_rank
+
+      # 选中边固定粗细：比普通最粗大 7-8 像素 (5 + 8 = 13)
+      edge_list$edge_width_selected <- 13
+
+      # 构建 igraph 对象
       g <- tryCatch({
         igraph::graph_from_data_frame(edge_list, directed = FALSE, vertices = valid_pathways)
       }, error = function(e) NULL)
@@ -669,25 +727,30 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       )
 
       title_text <- sprintf(
-        "Pathway Network: %s vs %s<br><sub>%d nodes, %d edges</sub>",
+        "Pathway Network: %s vs %s<br><sub>%d nodes, %d edges | Width: Jaccard rank (1-5px)</sub>",
         task$meta$left_group, task$meta$right_group,
         igraph::vcount(g), igraph::ecount(g)
       )
 
       p <- plotly::plot_ly(source = ns("network_plot"))
 
-      # 添加边
+      # ============================================================
+      # 添加边（使用 Jaccard 排名映射的粗细）
+      # ============================================================
+
       for (i in seq_len(nrow(edge_list))) {
         from_node <- node_df[node_df$name == edge_list$from[i], ]
         to_node <- node_df[node_df$name == edge_list$to[i], ]
         is_selected <- (edge_list$from[i] %in% sel_nodes) && (edge_list$to[i] %in% sel_nodes)
 
         if (is_selected) {
+          # 选中边：橙色 + 固定粗细 13px
           edge_color <- "#FF6600"
-          edge_width <- 5 + edge_list$weight[i] * 6
+          edge_width <- edge_list$edge_width_selected[i]
         } else {
-          edge_color <- "rgba(150, 150, 150, 0.4)"
-          edge_width <- 1 + edge_list$weight[i] * 2
+          # 普通边：灰色 + Jaccard 排名粗细 1-5px
+          edge_color <- "rgba(150, 150, 150, 0.5)"
+          edge_width <- edge_list$edge_width_normal[i]
         }
 
         p <- p %>% plotly::add_trace(
@@ -699,25 +762,66 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
         )
       }
 
-      # 添加边 hover
+      # ============================================================
+      # 添加边 hover（增强版：显示共享基因列表）
+      # ============================================================
+
       for (i in seq_len(nrow(edge_list))) {
+
         from_node <- node_df[node_df$name == edge_list$from[i], ]
-        to_node <- node_df[node_df$name == edge_list$to[i], ]
+        to_node   <- node_df[node_df$name == edge_list$to[i], ]
+
+        is_selected <- (edge_list$from[i] %in% sel_nodes) && (edge_list$to[i] %in% sel_nodes)
+
+        shared_genes_vec <- edge_list$shared_genes[[i]]
+        shared_count <- edge_list$shared[i]
+
+        if (length(shared_genes_vec) > 0) {
+          display_genes <- shared_genes_vec[1:min(length(shared_genes_vec), hover_max_genes)]
+          genes_display <- paste(display_genes, collapse = ", ")
+          if (length(shared_genes_vec) > hover_max_genes) {
+            remaining <- length(shared_genes_vec) - hover_max_genes
+            genes_display <- paste0(
+              genes_display,
+              sprintf(" <span style='color:#ccc;'>(+%d more)</span>", remaining)
+            )
+          }
+        } else {
+          genes_display <- "(none)"
+        }
+
+        # 简化格式，减少换行
         edge_hover <- sprintf(
-          "<b>%s with %s</b><br>Shared: %d genes<br>Jaccard: %.3f",
-          edge_list$from[i], edge_list$to[i], edge_list$shared[i], edge_list$weight[i]
+          "<b>%s with %s</b><br>Shared Genes (%d): %s<br>Jaccard: %.4f | Overlap: %.4f | Dice: %.4f",
+          edge_list$from[i], edge_list$to[i], shared_count,
+          genes_display,
+          edge_list$weight[i], edge_list$overlap_coef[i], edge_list$dice_coef[i]
         )
+
+        hover_bg <- if (is_selected) "#FF8C00" else "#333"
+
         p <- p %>% plotly::add_trace(
           type = "scatter", mode = "markers",
           x = c(mean(c(from_node$x, to_node$x))),
           y = c(mean(c(from_node$y, to_node$y))),
           marker = list(size = 12, opacity = 0, color = "transparent"),
-          text = edge_hover, hoverinfo = "text",
-          showlegend = FALSE, inherit = TRUE
+          text = edge_hover,
+          hoverinfo = "text",
+          hoverlabel = list(
+            bgcolor = hover_bg,
+            font = list(color = "white", size = 12),
+            align = "left",     # ← 左对齐
+            bordercolor = hover_bg
+          ),
+          showlegend = FALSE,
+          inherit = TRUE
         )
       }
 
+      # ============================================================
       # 添加节点
+      # ============================================================
+
       node_colors <- ifelse(node_df$name %in% sel_nodes, "#FFD700", node_df$color_val)
       node_sizes <- ifelse(node_df$name %in% sel_nodes, 25, 15)
       node_border <- ifelse(node_df$name %in% sel_nodes, 4, 1.5)
@@ -738,8 +842,11 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
         showlegend = FALSE, key = node_df$name, inherit = TRUE
       )
 
-      # 添加标签
-      label_size <- ifelse(node_df$name %in% sel_nodes, 12, 9)
+      # ============================================================
+      # 添加标签（选中节点更大更粗）
+      # ============================================================
+
+      label_size <- ifelse(node_df$name %in% sel_nodes, 16, 9)  # 从 12/9 改为 16/9
       label_color <- ifelse(node_df$name %in% sel_nodes, "#FF6600", "#333")
       label_bold <- ifelse(node_df$name %in% sel_nodes, "bold", "normal")
 
@@ -757,13 +864,36 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
 
       p %>% plotly::layout(
         title = list(text = title_text, font = list(size = 12), x = 0.5, xanchor = "center"),
-        xaxis = list(title = "", showgrid = FALSE, showticklabels = FALSE, zeroline = FALSE, range = x_range),
-        yaxis = list(title = "", showgrid = FALSE, showticklabels = FALSE, zeroline = FALSE, range = y_range, scaleanchor = "x", scaleratio = 1),
-        hovermode = "closest", dragmode = "pan", showlegend = FALSE,
-        margin = list(l = 50, r = 50, t = 80, b = 50)
+        xaxis = list(
+          title = "",
+          showgrid = FALSE,
+          showticklabels = FALSE,
+          zeroline = FALSE,
+          range = x_range,
+          scaleanchor = "x",      # 保持宽高比
+          scaleratio = 1
+        ),
+        yaxis = list(
+          title = "",
+          showgrid = FALSE,
+          showticklabels = FALSE,
+          zeroline = FALSE,
+          range = y_range,
+          scaleanchor = "x",      # 保持宽高比
+          scaleratio = 1
+        ),
+        hovermode = "closest",
+        dragmode = "pan",
+        showlegend = FALSE,
+        margin = list(l = 50, r = 50, t = 80, b = 50),
+        paper_bgcolor = 'rgba(0,0,0,0)',   # 透明背景
+        plot_bgcolor = 'rgba(0,0,0,0)',    # 透明画布
+        autosize = TRUE                    # ← 关键：自动调整大小
       ) %>% plotly::config(
-        displayModeBar = TRUE, displaylogo = FALSE,
-        modeBarButtonsToRemove = c("lasso2d", "select2d")
+        displayModeBar = TRUE,
+        displaylogo = FALSE,
+        modeBarButtonsToRemove = c("lasso2d", "select2d"),
+        responsive = TRUE                  # ← 关键：响应式
       )
     })
 
