@@ -1,13 +1,11 @@
-# =============================================================================
-# HubGene Network Utility Functions
-# =============================================================================
 #' @title Extract Hub Genes from Selected Pathways
 #' @description Extract hub genes that appear in multiple selected pathways,
 #'   with their connection information and direction data.
+#'   Only genes with valid stat values in the DE table are included.
 #' @param gsea_task GseaTask object
 #' @param pathway_ids Character vector of pathway IDs to analyze
 #' @param min_degree Minimum number of pathways a gene must appear in (default: 2)
-#' @param de_df Optional differential expression data frame with logFC
+#' @param de_df Optional differential expression data frame with stat column
 #' @return data.frame with columns: gene, degree, pathways, is_hub, log2FC
 #' @export
 #' @examples
@@ -27,6 +25,55 @@ extract_hub_genes <- function(gsea_task, pathway_ids, min_degree = 2, de_df = NU
   if (length(gene_sets) == 0) {
     return(NULL)
   }
+
+  # ===========================================
+  # 源头过滤：只保留在样本中表达的基因
+  # ===========================================
+
+  # 确定有效基因列表的来源（优先级：DE表 > geneList）
+  valid_genes <- NULL
+
+  if (!is.null(de_df)) {
+    # 优先使用 DE 表中有 stat 值的基因
+    if ("gene_symbol" %in% colnames(de_df) && "stat" %in% colnames(de_df)) {
+      valid_genes <- de_df$gene_symbol[!is.na(de_df$stat)]
+      valid_genes <- toupper(trimws(as.character(valid_genes)))
+      valid_genes <- valid_genes[!is.na(valid_genes) & valid_genes != ""]
+      valid_genes <- unique(valid_genes)
+    }
+  }
+
+  # 如果 DE 表无法提供，回退到 geneList
+  if (is.null(valid_genes) || length(valid_genes) == 0) {
+    if (!is.null(gsea_task$gsea_res@geneList)) {
+      valid_genes <- toupper(names(gsea_task$gsea_res@geneList))
+      valid_genes <- unique(valid_genes)
+    }
+  }
+
+  # 如果仍然无法获取有效基因列表，返回 NULL
+  if (is.null(valid_genes) || length(valid_genes) == 0) {
+    warning("[extract_hub_genes] Cannot determine valid genes, returning NULL")
+    return(NULL)
+  }
+
+  # 过滤 gene_sets，只保留有效基因
+  gene_sets <- lapply(gene_sets, function(genes) {
+    genes_upper <- toupper(trimws(as.character(genes)))
+    genes_upper <- genes_upper[!is.na(genes_upper) & genes_upper != ""]
+    intersect(genes_upper, valid_genes)
+  })
+
+  # 移除空基因集
+  gene_sets <- gene_sets[sapply(gene_sets, length) > 0]
+
+  if (length(gene_sets) == 0) {
+    return(NULL)
+  }
+
+  # ===========================================
+  # 后续逻辑不变
+  # ===========================================
 
   # Count gene occurrences across pathways
   all_genes <- unlist(gene_sets)

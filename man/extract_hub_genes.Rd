@@ -13,7 +13,7 @@ extract_hub_genes(gsea_task, pathway_ids, min_degree = 2, de_df = NULL)
 
 \item{min_degree}{Minimum number of pathways a gene must appear in (default: 2)}
 
-\item{de_df}{Optional differential expression data frame with logFC}
+\item{de_df}{Optional differential expression data frame with stat column}
 }
 \value{
 data.frame with columns: gene, degree, pathways, is_hub, log2FC
@@ -21,6 +21,7 @@ data.frame with columns: gene, degree, pathways, is_hub, log2FC
 \description{
 Extract hub genes that appear in multiple selected pathways,
   with their connection information and direction data.
+  Only genes with valid stat values in the DE table are included.
 }
 \examples{
 \dontrun{
