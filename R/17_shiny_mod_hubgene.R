@@ -1,6 +1,7 @@
 # =============================================================================
-# HubGene Network Module
+# HubGene Network Module (完全模仿 Pathway Relationship Exploration 设计)
 # =============================================================================
+
 #' @title HubGene Network Module UI
 #' @description User interface for HubGene Network visualization
 #' @param id Module ID
@@ -19,28 +20,72 @@ mod_hubgene_ui <- function(id) {
           class = "well",
           style = "padding: 15px;",
 
-          # 通路数量设置
-          shiny::h4("Pathway Settings"),
-          shiny::numericInput(
-            ns("default_n_pathways"),
-            label = "Number of pathways:",
-            value = 5,
-            min = 3,
-            max = 999,
-            step = 1
-          ),
-          shiny::helpText(
-            style = "color: #666; font-size: 11px;",
-            "Top N pathways by |NES| to display"
-          ),
-          shiny::div(
-            style = "background: #e8f4fd; padding: 10px; border-radius: 5px; margin-top: 10px;",
-            shiny::textOutput(ns("selection_summary"), inline = TRUE)
+          # ---- Mode 选择器 ----
+          shiny::h4("Pathway Source Mode"),
+          shiny::radioButtons(
+            ns("hubgene_mode"),
+            label = NULL,
+            choices = c(
+              "Top N from Current Set" = "mode_topN",
+              "Selected from Main Table" = "mode_select"
+            ),
+            selected = "mode_topN",
+            width = "100%"
           ),
 
           shiny::hr(),
 
-          # Hub 基因阈值
+          # ---- 共享参数面板 ----
+          shiny::h4("Shared Parameters"),
+
+          shiny::numericInput(
+            ns("fdr_threshold"),
+            label = "FDR Threshold:",
+            min = 0,
+            max = 1.0,
+            value = 0.25,
+            step = 0.01
+          ),
+
+          shiny::hr(),
+
+          # ---- Top N 模式专属参数 ----
+          shiny::conditionalPanel(
+            condition = sprintf("input['%s'] == 'mode_topN'", ns("hubgene_mode")),
+            shiny::div(
+              style = "background: #e3f2fd; padding: 10px; border-radius: 5px;",
+              shiny::h5("Top N Configuration"),
+              shiny::numericInput(
+                ns("default_n_pathways"),
+                label = "Top N Count:",
+                value = 5,
+                min = 3,
+                max = 999,
+                step = 1
+              ),
+              shiny::helpText(
+                style = "color: #666; font-size: 11px;",
+                "Display top N pathways by |NES|"
+              )
+            )
+          ),
+
+          # ---- Select 模式专属提示 ----
+          shiny::conditionalPanel(
+            condition = sprintf("input['%s'] == 'mode_select'", ns("hubgene_mode")),
+            shiny::div(
+              style = "background: #f3e5f5; padding: 10px; border-radius: 5px;",
+              shiny::h5("Main Table Selection"),
+              shiny::helpText(
+                style = "color: #6a1b9a; font-size: 11px;",
+                "Check pathways in the main table 'Joint Plot' column"
+              )
+            )
+          ),
+
+          shiny::hr(),
+
+          # ---- Hub 基因阈值 ----
           shiny::h4("Hub Gene Filter"),
           shiny::numericInput(
             ns("min_hub_degree"),
@@ -57,7 +102,7 @@ mod_hubgene_ui <- function(id) {
 
           shiny::hr(),
 
-          # 节点大小
+          # ---- 节点大小 ----
           shiny::h4("Node Size"),
           shiny::selectInput(
             ns("size_mode"),
@@ -71,7 +116,7 @@ mod_hubgene_ui <- function(id) {
 
           shiny::hr(),
 
-          # 布局算法
+          # ---- 布局算法 ----
           shiny::h4("Layout"),
           shiny::selectInput(
             ns("layout_algo"),
@@ -94,7 +139,7 @@ mod_hubgene_ui <- function(id) {
 
           shiny::hr(),
 
-          # 显示选项
+          # ---- 显示选项 ----
           shiny::h4("Display"),
           shiny::checkboxInput(
             ns("show_gene_labels"),
@@ -109,9 +154,15 @@ mod_hubgene_ui <- function(id) {
 
           shiny::hr(),
 
-          # 统计信息
+          # ---- 统计信息 ----
           shiny::h4("Statistics"),
-          shiny::verbatimTextOutput(ns("network_stats"))
+          shiny::verbatimTextOutput(ns("network_stats")),
+
+          shiny::hr(),
+
+          # ---- 当前通路列表预览 ----
+          shiny::h4("Pathways to Plot"),
+          shiny::uiOutput(ns("pathway_preview_list"))
         )
       ),
 
@@ -153,9 +204,6 @@ mod_hubgene_ui <- function(id) {
               )
             )
           ),
-          # 在 mod_hubgene_ui 函数的图例区域添加以下内容
-
-          # 在原来的图例后添加:
 
           # Leading Edge 图例
           shiny::div(
@@ -187,8 +235,14 @@ mod_hubgene_ui <- function(id) {
                 shiny::span(" Node Dimmed")
               )
             )
-          )
-          ,
+          ),
+
+          # 状态信息
+          shiny::div(
+            id = ns("mode_status"),
+            style = "background: #d4edda; padding: 10px; border-radius: 5px; margin-bottom: 15px;",
+            shiny::uiOutput(ns("selection_summary"))
+          ),
 
           # 绘图
           plotly::plotlyOutput(
@@ -203,8 +257,8 @@ mod_hubgene_ui <- function(id) {
 }
 
 
-#' @title HubGene Network Module Server
-#' @description Server logic for HubGene Network
+#' @title HubGene Network Module Server (完全模仿 Pathway Relationship Exploration 设计)
+#' @description Server logic for HubGene Network with dual-mode pathway selection
 #' @param id Module ID
 #' @param data_prep_list Reactive data from data prep module
 #' @param table_controller Table controller with selected_pathways
@@ -214,36 +268,212 @@ mod_hubgene_server <- function(id, data_prep_list, table_controller) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
-    # ─── Reactive: 获取通路列表 ───
-    selected_pathways <- shiny::reactive({
-      sel <- table_controller$selected_pathways()
+    # ============================================================
+    # 1. 模式状态管理
+    # ============================================================
 
-      if (!is.null(sel) && length(sel) > 0) {
-        return(sel)
+    hubgene_mode <- shiny::reactiveVal("mode_topN")
+
+    shiny::observeEvent(input$hubgene_mode, {
+      new_mode <- input$hubgene_mode
+      if (!is.null(new_mode) && new_mode != hubgene_mode()) {
+        hubgene_mode(new_mode)
+        message(sprintf("[HubGene] Mode changed to: %s", new_mode))
+      }
+    })
+
+    # ============================================================
+    # 2. 数据源 reactive
+    # ============================================================
+
+    # Top N 候选通路
+    topN_candidates <- shiny::reactive({
+      if (hubgene_mode() != "mode_topN") return(character(0))
+      data_list <- data_prep_list$data()
+      shiny::req(data_list)
+      df <- data_list$df
+      shiny::req(nrow(df) > 0)
+      top_n <- input$default_n_pathways
+      if (is.null(top_n)) top_n <- 20
+      top_n <- max(3, min(top_n, nrow(df)))
+      df[1:top_n, "ID"]
+    })
+
+    # 主表选择候选通路
+    select_candidates <- shiny::reactive({
+      if (hubgene_mode() != "mode_select") return(character(0))
+      sel <- table_controller$selected_pathways()
+      if (is.null(sel) || length(sel) == 0) {
+        return(character(0))
+      }
+      return(sel)
+    })
+
+    # 原始候选通路（根据模式选择）
+    candidate_raw <- shiny::reactive({
+      switch(hubgene_mode(),
+             "mode_topN" = topN_candidates(),
+             "mode_select" = select_candidates(),
+             character(0))
+    })
+
+    # FDR 过滤后的候选通路
+    candidate_filtered <- shiny::reactive({
+      pathways <- candidate_raw()
+      if (length(pathways) == 0) return(character(0))
+
+      fdr_thresh <- input$fdr_threshold
+      if (is.null(fdr_thresh)) fdr_thresh <- 0.25
+
+      data_list <- data_prep_list$data()
+      shiny::req(data_list)
+      df <- data_list$df
+
+      fdr_vec <- df$p.adjust[match(pathways, df$ID)]
+      names(fdr_vec) <- pathways
+      filtered <- pathways[!is.na(fdr_vec) & fdr_vec < fdr_thresh]
+      return(filtered)
+    })
+
+    # ============================================================
+    # 3. 最终通路列表管理
+    # ============================================================
+
+    final_pathways <- shiny::reactiveVal(character(0))
+
+    shiny::observeEvent(candidate_filtered(), {
+      new_candidates <- candidate_filtered()
+      if (length(new_candidates) > 0) {
+        final_pathways(new_candidates)
+        message(sprintf("[HubGene] Final pathways updated: %d", length(new_candidates)))
+      } else {
+        final_pathways(character(0))
+      }
+    })
+
+    # ============================================================
+    # 4. 模式状态显示
+    # ============================================================
+
+    output$selection_summary <- shiny::renderUI({
+      mode <- hubgene_mode()
+      pathways <- final_pathways()
+
+      if (mode == "mode_topN") {
+        mode_label <- "Top N Mode"
+        mode_style <- "background: #e3f2fd; padding: 10px; border-radius: 5px;"
+        mode_color <- "#004085"
+        top_n <- input$default_n_pathways %||% 20
+        if (length(pathways) == 0) {
+          detail <- sprintf("No pathways passed FDR < %.2f filter", input$fdr_threshold %||% 0.25)
+        } else {
+          detail <- sprintf("Showing top %d pathways by |NES|, filtered by FDR < %.2f", top_n, input$fdr_threshold %||% 0.25)
+        }
+      } else {
+        mode_label <- "Select Mode"
+        mode_style <- "background: #f3e5f5; padding: 10px; border-radius: 5px;"
+        mode_color <- "#6a1b9a"
+        sel <- table_controller$selected_pathways()
+        if (is.null(sel) || length(sel) == 0) {
+          detail <- "No pathways selected in main table. Please check 'Joint Plot' column."
+        } else {
+          detail <- sprintf("%d pathways selected from main table, filtered by FDR < %.2f", length(pathways), input$fdr_threshold %||% 0.25)
+        }
+      }
+
+      shiny::div(
+        style = mode_style,
+        shiny::HTML(sprintf(
+          "<strong style='color: %s;'>[%s]</strong> | %s",
+          mode_color, mode_label, detail
+        ))
+      )
+    })
+
+    # ============================================================
+    # 5. 通路预览列表 UI
+    # ============================================================
+
+    output$pathway_preview_list <- shiny::renderUI({
+      pathways <- final_pathways()
+      if (length(pathways) == 0) {
+        return(shiny::div(
+          style = "background: #fff3cd; padding: 10px; border-radius: 5px; color: #856404;",
+          shiny::strong("No pathways available"),
+          shiny::br(),
+          shiny::small("Adjust parameters or select pathways in Main Table")
+        ))
       }
 
       data_list <- data_prep_list$data()
-      shiny::req(!is.null(data_list))
+      df <- data_list$df
 
-      n <- input$default_n_pathways %||% 12
-      n <- max(3, min(n, nrow(data_list$df)))
+      pathway_info <- lapply(pathways, function(pid) {
+        row_idx <- which(df$ID == pid)
+        if (length(row_idx) == 0) return(NULL)
+        row <- df[row_idx[1], ]
+        fdr <- row$p.adjust
+        nes <- row$NES
+        fdr_str <- if (!is.na(fdr)) sprintf("%.2e", fdr) else "N/A"
+        nes_str <- if (!is.na(nes)) sprintf("%.2f", nes) else "N/A"
 
-      return(data_list$df$ID[1:n])
+        shiny::div(
+          style = "background: #f8f9fa; padding: 8px; margin-bottom: 5px; border-radius: 4px; border-left: 3px solid #007bff;",
+          shiny::div(
+            style = "font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;",
+            shiny::strong(pid)
+          ),
+          shiny::div(
+            style = "font-size: 11px; color: #666;",
+            sprintf("FDR: %s | NES: %s", fdr_str, nes_str)
+          )
+        )
+      })
+
+      shiny::tagList(pathway_info)
     })
 
-    # ─── Reactive: 构建网络数据 ───
-    # 在 mod_hubgene_server 函数中，找到 network_data reactive，修改如下:
+    # ============================================================
+    # 6. 网络统计信息
+    # ============================================================
+
+    output$network_stats <- shiny::renderPrint({
+      pathways <- final_pathways()
+      if (length(pathways) == 0) {
+        cat("No pathways to display\n")
+        return()
+      }
+
+      cat("HubGene Network\n")
+      cat(paste(rep("-", 25), collapse = ""), "\n")
+      cat(sprintf("Pathways: %d\n", length(pathways)))
+      cat(sprintf("Mode: %s\n", ifelse(hubgene_mode() == "mode_topN", "Top N", "Select")))
+      cat(sprintf("FDR < %.2f\n", input$fdr_threshold %||% 0.25))
+      cat(sprintf("Min Hub Degree: %d\n", input$min_hub_degree %||% 2))
+    })
+
+    # ============================================================
+    # 7. Reactive: 获取通路列表（兼容旧接口）
+    # ============================================================
+
+    selected_pathways <- shiny::reactive({
+      return(final_pathways())
+    })
+
+    # ============================================================
+    # 8. Reactive: 构建网络数据
+    # ============================================================
 
     network_data <- shiny::reactive({
       data_list <- data_prep_list$data()
       shiny::req(!is.null(data_list))
 
-      pathway_ids <- selected_pathways()
+      pathway_ids <- final_pathways()
       shiny::req(length(pathway_ids) > 0)
 
-      # 关键修复: 正确获取 de_df
+      # 获取 DE 表
       de_df <- tryCatch({
-        get_de_table(data_list$gsea_res, data_list$contrast_id)
+        get_de_table(data_prep_list$gsea_res, data_list$contrast_id)
       }, error = function(e) {
         warning("[HubGene] Failed to get DE table: ", e$message)
         NULL
@@ -251,7 +481,7 @@ mod_hubgene_server <- function(id, data_prep_list, table_controller) {
 
       res_df <- data_list$df
 
-      # 关键修复: 传递 de_df 参数
+      # 构建网络
       net <- build_hubgene_network(
         gsea_task = list(
           gsea_res = data_list$gsea_res,
@@ -262,14 +492,17 @@ mod_hubgene_server <- function(id, data_prep_list, table_controller) {
         ),
         pathway_ids = pathway_ids,
         min_hub_degree = input$min_hub_degree %||% 2,
-        de_df = de_df,  # 关键: 传递 de_df
+        de_df = de_df,
         res_df = res_df
       )
 
       return(net)
     })
 
-    # ─── Reactive: 准备节点数据 ───
+    # ============================================================
+    # 9. Reactive: 准备节点数据
+    # ============================================================
+
     node_data <- shiny::reactive({
       net <- network_data()
       shiny::req(!is.null(net))
@@ -283,7 +516,6 @@ mod_hubgene_server <- function(id, data_prep_list, table_controller) {
       shiny::req(!is.null(node_pos))
 
       size_mode <- input$size_mode %||% "degree"
-
       data_list <- data_prep_list$data()
       left_group <- data_list$left_group
       right_group <- data_list$right_group
@@ -291,24 +523,24 @@ mod_hubgene_server <- function(id, data_prep_list, table_controller) {
       pathway_nodes <- node_pos$pathway
       gene_nodes <- node_pos$gene
 
-      # ─── 通路着色（NES必然非零）───
+      # 通路着色（NES必然非零）
       pathway_nodes$color <- ifelse(pathway_nodes$NES > 0, "#E41A1C", "#377EB8")
 
-      # ─── 基因着色（log2FC可能为零）───
+      # 基因着色（log2FC可能为零）
       gene_nodes$color <- ifelse(
         is.na(gene_nodes$stat), "#999999",
         ifelse(gene_nodes$stat > 0, "#E41A1C",
                ifelse(gene_nodes$stat < 0, "#377EB8", "#999999"))
       )
 
-      # ─── 通路节点大小 ───
+      # 通路节点大小
       if (size_mode == "fdr") {
         pathway_nodes$size <- pmin(pmax(-log10(pathway_nodes$FDR + 1e-100) * 5 + 18, 18), 45)
       } else {
         pathway_nodes$size <- pmin(pmax(-log10(pathway_nodes$FDR + 1e-100) * 5 + 18, 18), 45)
       }
 
-      # ─── 基因节点大小（按度数）───
+      # 基因节点大小（按度数）
       if (nrow(gene_nodes) > 0) {
         gene_nodes$size <- pmin(pmax(gene_nodes$degree * 3 + 8, 8), 30)
       }
@@ -319,53 +551,9 @@ mod_hubgene_server <- function(id, data_prep_list, table_controller) {
       ))
     })
 
-    # ─── 输出: 选区摘要 ───
-    output$selection_summary <- shiny::renderText({
-      n <- length(selected_pathways())
-      sel <- table_controller$selected_pathways()
-      if (!is.null(sel) && length(sel) > 0) {
-        return(sprintf("%d from Main Table", n))
-      }
-      return(sprintf("Top %d by |NES|", n))
-    })
-
-    # ─── 输出: 网络统计 ───
-    output$network_stats <- shiny::renderPrint({
-      net <- network_data()
-
-      if (is.null(net) || is.null(net$edges)) {
-        cat("No data\n")
-        return()
-      }
-
-      cat("HubGene Network\n")
-      cat(paste(rep("-", 25), collapse = ""), "\n")
-      cat(sprintf("Pathways: %d\n", nrow(net$nodes$pathway)))
-      cat(sprintf("Genes: %d\n", nrow(net$nodes$gene)))
-      cat(sprintf("Edges: %d\n", nrow(net$edges)))
-
-      if (!is.null(net$hub_df) && nrow(net$hub_df) > 0) {
-        hub_only <- net$hub_df[net$hub_df$is_hub, ]
-        if (nrow(hub_only) > 0) {
-          cat(sprintf("Hub degree: %d-%d\n", min(hub_only$degree), max(hub_only$degree)))
-        }
-      }
-    })
-
-    # ─── 输出: 主绘图 ───
-    # ==============================================================================
-    # 文件: R/17_shiny_mod_hubgene.R
-    # 修复内容: 修改 mod_hubgene_server 中的可视化逻辑
-    # ==============================================================================
-
-    # ------------------------------------------------------------------------------
-    # 修改: mod_hubgene_server 中的节点和边渲染逻辑
-    # ------------------------------------------------------------------------------
-
-    # 在 mod_hubgene_server 函数中，找到 output$hubgene_network 的渲染逻辑，
-    # 替换为以下增强版本
-
-    # === 替换 output$hubgene_network 的渲染逻辑 ===
+    # ============================================================
+    # 10. 输出: 主绘图
+    # ============================================================
 
     output$hubgene_network <- plotly::renderPlotly({
       data_list <- data_prep_list$data()
@@ -382,30 +570,27 @@ mod_hubgene_server <- function(id, data_prep_list, table_controller) {
 
       if (nrow(edges) == 0) {
         return(plotly::plot_ly() %>%
-                 plotly::layout(title = "No connections"))
+                 plotly::layout(title = list(
+                   text = "No connections to display. Try adjusting parameters.",
+                   font = list(size = 14)
+                 )))
       }
 
       left_group <- data_list$left_group
       right_group <- data_list$right_group
 
-      # ===========================================
       # 颜色定义
-      # ===========================================
-      color_up <- "#E41A1C"      # 红色 - 上调
-      color_down <- "#377EB8"   # 蓝色 - 下调
-      color_neutral <- "#999999" # 灰色 - 中性（备用）
+      color_up <- "#E41A1C"
+      color_down <- "#377EB8"
+      color_neutral <- "#999999"
 
-      # ===========================================
       # 预计算通路颜色映射
-      # ===========================================
       pathway_color_map <- setNames(
         ifelse(pathway_nodes$NES > 0, color_up, color_down),
         pathway_nodes$id
       )
 
-      # ===========================================
       # 预计算基因颜色
-      # ===========================================
       gene_color_map <- setNames(
         ifelse(gene_nodes$stat > 0, color_up, color_down),
         gene_nodes$id
@@ -413,10 +598,7 @@ mod_hubgene_server <- function(id, data_prep_list, table_controller) {
 
       p <- plotly::plot_ly(source = ns("hubgene_source"))
 
-      # ===========================================
-      # 添加边 - 根据 gene 和 pathway 的方向关系确定颜色
-      # ===========================================
-
+      # 添加边
       for (i in seq_len(nrow(edges))) {
         edge <- edges[i, ]
 
@@ -430,38 +612,28 @@ mod_hubgene_server <- function(id, data_prep_list, table_controller) {
         x1 <- pw_row$x
         y1 <- pw_row$y
 
-        # ===========================================
-        # 边的颜色: 基于基因和通路的 stat/NES 方向
-        # ===========================================
-        gene_dir <- gene_row$stat > 0  # TRUE = up, FALSE = down
-        pw_dir <- pw_row$NES > 0       # TRUE = up, FALSE = down
+        # 边的颜色: 基于基因和通路的方向关系
+        gene_dir <- gene_row$stat > 0
+        pw_dir <- pw_row$NES > 0
 
-        # 混合颜色逻辑:
-        # - 方向一致 (both up or both down): 使用基因的颜色（更直观）
-        # - 方向相反: 使用蓝色 (混合色)
         if (gene_dir == pw_dir) {
-          # 方向一致，用基因的颜色
           if (gene_row$stat > 0) {
             edge_color <- color_up
           } else {
             edge_color <- color_down
           }
         } else {
-          # 方向相反，用蓝色表示对比
-          edge_color <- "#6B8E9F"  # 蓝灰色，表示冲突/对比
+          edge_color <- "#6B8E9F"
         }
 
-        # 边的透明度/粗细
         edge_width <- ifelse(edge$is_leading_edge, 3, 1)
         edge_opacity <- ifelse(edge$is_leading_edge, 0.9, 0.5)
 
-        # 边的 hover 信息
         edge_hover <- sprintf(
-          "<b>Gene:</b> %s<br><b>Pathway:</b> %s<br><b>Leading Edge:</b> %s<br><b>Edge Width:</b> %dpx",
+          "<b>Gene:</b> %s<br><b>Pathway:</b> %s<br><b>Leading Edge:</b> %s",
           edge$source,
           edge$target,
-          ifelse(edge$is_leading_edge, "YES", "NO"),
-          edge_width
+          ifelse(edge$is_leading_edge, "YES", "NO")
         )
 
         p <- p %>% plotly::add_trace(
@@ -469,10 +641,7 @@ mod_hubgene_server <- function(id, data_prep_list, table_controller) {
           mode = "lines",
           x = c(x0, x1, NA),
           y = c(y0, y1, NA),
-          line = list(
-            color = edge_color,
-            width = edge_width
-          ),
+          line = list(color = edge_color, width = edge_width),
           opacity = edge_opacity,
           hoverinfo = "text",
           text = edge_hover,
@@ -481,10 +650,7 @@ mod_hubgene_server <- function(id, data_prep_list, table_controller) {
         )
       }
 
-      # ===========================================
       # 添加通路节点
-      # ===========================================
-
       pathway_hover <- sapply(seq_len(nrow(pathway_nodes)), function(i) {
         row <- pathway_nodes[i, ]
         nes <- as.numeric(row$NES)
@@ -520,25 +686,20 @@ mod_hubgene_server <- function(id, data_prep_list, table_controller) {
         inherit = FALSE
       )
 
-      # ===========================================
-      # 添加基因节点 - 根据 is_leading_edge 设置透明度
-      # ===========================================
-
+      # 添加基因节点
       if (nrow(gene_nodes) > 0) {
-        # 获取每个基因是否为任何通路的 leading edge
         gene_leading_status <- sapply(gene_nodes$id, function(g) {
           gene_edges <- edges[edges$source == g, ]
           any(gene_edges$is_leading_edge)
         })
 
-        # 设置透明度: leading edge = 1.0, 非-leading edge = 0.5
         gene_opacity <- ifelse(gene_leading_status, 1.0, 0.5)
 
         gene_hover <- sapply(seq_len(nrow(gene_nodes)), function(i) {
           row <- gene_nodes[i, ]
           stat_val <- as.numeric(row$stat)
           degree <- as.integer(row$degree)
-          pathways <- as.character(row$pathways)
+          pathways_str <- as.character(row$pathways)
           color <- as.character(gene_color_map[row$id])
           is_leading <- gene_leading_status[i]
 
@@ -556,7 +717,7 @@ mod_hubgene_server <- function(id, data_prep_list, table_controller) {
               <span style='font-size:10px; word-break:break-all;'>%s</span>",
                   color, row$id, stat_val, direction, degree,
                   ifelse(is_leading, "YES", "NO"),
-                  pathways)
+                  pathways_str)
         })
 
         p <- p %>% plotly::add_trace(
@@ -568,7 +729,7 @@ mod_hubgene_server <- function(id, data_prep_list, table_controller) {
             size = gene_nodes$size,
             color = gene_nodes$color,
             symbol = "circle",
-            opacity = gene_opacity,  # 关键修复: 非-leading edge 基因降低透明度
+            opacity = gene_opacity,
             line = list(color = "white", width = 0.5)
           ),
           text = gene_hover,
@@ -579,10 +740,7 @@ mod_hubgene_server <- function(id, data_prep_list, table_controller) {
         )
       }
 
-      # ===========================================
       # 添加标签
-      # ===========================================
-
       if (isTRUE(input$show_pathway_labels)) {
         p <- p %>% plotly::add_trace(
           type = "scatter",
@@ -613,17 +771,13 @@ mod_hubgene_server <- function(id, data_prep_list, table_controller) {
         )
       }
 
-      # ===========================================
       # 布局设置
-      # ===========================================
-
       all_x <- c(pathway_nodes$x, gene_nodes$x)
       all_y <- c(pathway_nodes$y, gene_nodes$y)
 
       x_range <- c(min(all_x) - 1.2, max(all_x) + 1.2)
       y_range <- c(min(all_y) - 1.2, max(all_y) + 1.2)
 
-      # 统计 leading edge 信息
       n_leading_edges <- sum(edges$is_leading_edge)
       n_total_edges <- nrow(edges)
 
@@ -675,5 +829,28 @@ mod_hubgene_server <- function(id, data_prep_list, table_controller) {
       return(p)
     })
 
+    # ============================================================
+    # 11. 返回值（供其他模块调用）
+    # ============================================================
+
+    return(list(
+      final_pathways = final_pathways,
+      hubgene_mode = hubgene_mode,
+      selected_pathways = selected_pathways
+    ))
+
   })
 }
+
+
+# ==============================================================================
+# 工具函数（保持不变，从 utils_hubgene.R 加载）
+# ==============================================================================
+
+# 以下函数已在 R/utils_hubgene.R 中定义，此处不再重复：
+# - build_hubgene_network()
+# - extract_hub_genes()
+# - prepare_hubgene_nodes()
+# - color_by_direction()
+# - generate_hubgene_hover_text()
+# - get_hubgene_legend()
