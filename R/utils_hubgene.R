@@ -1,139 +1,36 @@
-#' @title Extract Hub Genes from Selected Pathways
-#' @description Extract hub genes that appear in multiple selected pathways,
-#'   with their connection information and direction data.
-#'   Only genes with valid stat values in the DE table are included.
-#' @param gsea_task GseaTask object
-#' @param pathway_ids Character vector of pathway IDs to analyze
-#' @param min_degree Minimum number of pathways a gene must appear in (default: 2)
-#' @param de_df Optional differential expression data frame with stat column
-#' @return data.frame with columns: gene, degree, pathways, is_hub, log2FC
-#' @export
-#' @examples
-#' \dontrun{
-#' hub_genes <- extract_hub_genes(task, c("HALLMARK_APOPTOSIS", "KEGG_CELL_CYCLE"))
-#' }
-extract_hub_genes <- function(gsea_task, pathway_ids, min_degree = 2, de_df = NULL) {
+# ==============================================================================
+# 文件: R/utils_hubgene.R
+# 修复: 确保 de_df 正确传递，stat 能正常读取
+# ==============================================================================
 
-  # Validate inputs
-  if (is.null(pathway_ids) || length(pathway_ids) == 0) {
-    return(NULL)
-  }
+# ------------------------------------------------------------------------------
+# 修改: build_hubgene_network() 函数 - 添加 de_df 参数传递
+# ------------------------------------------------------------------------------
 
-  # Extract gene sets from GSEA result
-  gene_sets <- gsea_task$gsea_res@geneSets[pathway_ids]
-
-  if (length(gene_sets) == 0) {
-    return(NULL)
-  }
-
-  # ===========================================
-  # 源头过滤：只保留在样本中表达的基因
-  # ===========================================
-
-  # 确定有效基因列表的来源（优先级：DE表 > geneList）
-  valid_genes <- NULL
-
-  if (!is.null(de_df)) {
-    # 优先使用 DE 表中有 stat 值的基因
-    if ("gene_symbol" %in% colnames(de_df) && "stat" %in% colnames(de_df)) {
-      valid_genes <- de_df$gene_symbol[!is.na(de_df$stat)]
-      valid_genes <- toupper(trimws(as.character(valid_genes)))
-      valid_genes <- valid_genes[!is.na(valid_genes) & valid_genes != ""]
-      valid_genes <- unique(valid_genes)
-    }
-  }
-
-  # 如果 DE 表无法提供，回退到 geneList
-  if (is.null(valid_genes) || length(valid_genes) == 0) {
-    if (!is.null(gsea_task$gsea_res@geneList)) {
-      valid_genes <- toupper(names(gsea_task$gsea_res@geneList))
-      valid_genes <- unique(valid_genes)
-    }
-  }
-
-  # 如果仍然无法获取有效基因列表，返回 NULL
-  if (is.null(valid_genes) || length(valid_genes) == 0) {
-    warning("[extract_hub_genes] Cannot determine valid genes, returning NULL")
-    return(NULL)
-  }
-
-  # 过滤 gene_sets，只保留有效基因
-  gene_sets <- lapply(gene_sets, function(genes) {
-    genes_upper <- toupper(trimws(as.character(genes)))
-    genes_upper <- genes_upper[!is.na(genes_upper) & genes_upper != ""]
-    intersect(genes_upper, valid_genes)
-  })
-
-  # 移除空基因集
-  gene_sets <- gene_sets[sapply(gene_sets, length) > 0]
-
-  if (length(gene_sets) == 0) {
-    return(NULL)
-  }
-
-  # ===========================================
-  # 后续逻辑不变
-  # ===========================================
-
-  # Count gene occurrences across pathways
-  all_genes <- unlist(gene_sets)
-  gene_counts <- table(toupper(all_genes))
-
-  # Create result data frame
-  gene_info <- data.frame(
-    gene = names(gene_counts),
-    degree = as.integer(gene_counts),
-    stringsAsFactors = FALSE
-  )
-
-  # Determine which pathways each gene appears in
-  gene_info$pathways <- sapply(gene_info$gene, function(g) {
-    g_upper <- toupper(g)
-    pws <- names(gene_sets)[sapply(gene_sets, function(x) g_upper %in% toupper(x))]
-    paste(pws, collapse = ", ")
-  })
-
-  # Mark hub genes
-  gene_info$is_hub <- gene_info$degree >= min_degree
-
-  # Add log2FC if provided
-  if (!is.null(de_df) && "logFC" %in% colnames(de_df)) {
-    fc_map <- setNames(de_df$logFC, toupper(de_df$gene_symbol))
-    gene_info$log2FC <- fc_map[gene_info$gene]
-    gene_info$log2FC[is.na(gene_info$log2FC)] <- 0
-  } else {
-    gene_info$log2FC <- NA_real_
-  }
-
-  # Sort by degree descending
-  gene_info <- gene_info[order(gene_info$degree, decreasing = TRUE), ]
-
-  return(gene_info)
-}
-
-
-#' @title Build HubGene Network Data Structure
-#' @description Build complete network data (nodes and edges) for HubGene Network
+#' @title Build HubGene Network Data Structure (Enhanced with Leading Edge)
+#' @description Build complete network data with leading edge information for edges.
+#'   Now properly passes de_df to extract_hub_genes for stat extraction.
 #' @param gsea_task GseaTask object
 #' @param pathway_ids Selected pathway IDs
 #' @param min_hub_degree Minimum degree for hub genes
-#' @param de_df Optional DE data frame (will extract stat if no log2FC)
+#' @param de_df Optional DE data frame with stat column
 #' @param res_df Optional pathway result data frame
-#' @return list with nodes and edges data frames
+#' @return list with nodes, edges, and hub_df data frames
 #' @export
 build_hubgene_network <- function(gsea_task, pathway_ids,
                                   min_hub_degree = 2,
                                   de_df = NULL,
                                   res_df = NULL) {
 
-  # Extract hub genes
-  hub_df <- extract_hub_genes(gsea_task, pathway_ids, min_hub_degree, de_df)
+  # Extract hub genes (now includes leading edge info)
+  # 修复: 正确传递 de_df 参数
+  hub_df <- extract_hub_genes(gsea_task, pathway_ids, min_hub_degree, de_df = de_df)
 
   if (is.null(hub_df) || nrow(hub_df) == 0) {
-    return(list(nodes = NULL, edges = NULL))
+    return(list(nodes = NULL, edges = NULL, hub_df = NULL))
   }
 
-  # Extract gene sets
+  # Extract gene sets from GSEA result
   gene_sets <- gsea_task$gsea_res@geneSets[pathway_ids]
 
   # Get pathway result info if not provided
@@ -164,57 +61,9 @@ build_hubgene_network <- function(gsea_task, pathway_ids,
   # Calculate core ratio
   pathway_nodes$core_ratio <- pathway_nodes$n_core / pathway_nodes$n_total
 
-  # ─── 修改：使用 stat 值代替 log2FC ───
-
-  # 如果没有提供 de_df，尝试从 gsea_task 获取
-  if (is.null(de_df)) {
-    # 尝试从 gsea_res@geneList 获取排序信息
-    gene_list <- gsea_task$gsea_res@geneList
-    if (!is.null(gene_list)) {
-      stat_vec <- as.numeric(gene_list)
-      names(stat_vec) <- names(gene_list)
-
-      # 为 hub_df 添加 stat 值
-      hub_df$stat <- sapply(hub_df$gene, function(g) {
-        idx <- which(toupper(names(stat_vec)) == toupper(g))
-        if (length(idx) > 0) stat_vec[idx[1]] else NA_real_
-      })
-
-      # 如果 stat 也没有，使用 gene degree 作为方向（不太理想但至少能用）
-      if (all(is.na(hub_df$stat))) {
-        hub_df$stat <- hub_df$degree
-      }
-    } else {
-      hub_df$stat <- hub_df$degree
-    }
-  } else {
-    # 从 de_df 获取 stat 值
-    if ("stat" %in% colnames(de_df)) {
-      stat_map <- setNames(de_df$stat, toupper(de_df$gene_symbol))
-      hub_df$stat <- stat_map[hub_df$gene]
-    } else if ("logFC" %in% colnames(de_df)) {
-      stat_map <- setNames(de_df$logFC, toupper(de_df$gene_symbol))
-      hub_df$stat <- stat_map[hub_df$gene]
-    } else if ("log2FoldChange" %in% colnames(de_df)) {
-      stat_map <- setNames(de_df$log2FoldChange, toupper(de_df$gene_symbol))
-      hub_df$stat <- stat_map[hub_df$gene]
-    } else {
-      # 最后尝试 t 统计量
-      stat_col <- grep("^t$|^t\\.", colnames(de_df), value = TRUE, ignore.case = TRUE)[1]
-      if (!is.na(stat_col)) {
-        stat_map <- setNames(de_df[[stat_col]], toupper(de_df$gene_symbol))
-        hub_df$stat <- stat_map[hub_df$gene]
-      } else {
-        hub_df$stat <- hub_df$degree
-      }
-    }
-  }
-
-  # 填充 NA
-  hub_df$stat[is.na(hub_df$stat)] <- 0
-
   # Build gene nodes (only hub genes)
   hub_genes <- hub_df[hub_df$is_hub, ]
+
   gene_nodes <- data.frame(
     id = hub_genes$gene,
     type = "gene",
@@ -228,29 +77,244 @@ build_hubgene_network <- function(gsea_task, pathway_ids,
   gene_nodes$direction <- ifelse(gene_nodes$stat > 0, "up",
                                  ifelse(gene_nodes$stat < 0, "down", "neutral"))
 
-  # Build edges (hub genes -> pathways)
-  edges_list <- lapply(hub_genes$gene, function(g) {
+  # Build edges with leading edge info
+  edges_list <- lapply(seq_len(nrow(hub_genes)), function(i) {
+    g <- hub_genes$gene[i]
     g_upper <- toupper(g)
+    leading_edges <- hub_genes$pathway_leading_edges[[i]]
+
     connected_pws <- names(gene_sets)[sapply(gene_sets, function(x) g_upper %in% toupper(x))]
 
     if (length(connected_pws) > 0) {
-      data.frame(
-        source = g,
-        target = connected_pws,
-        stringsAsFactors = FALSE
-      )
+      edge_info <- lapply(connected_pws, function(pw) {
+        is_leading <- if (pw %in% names(leading_edges)) {
+          leading_edges[[pw]]
+        } else {
+          FALSE
+        }
+
+        data.frame(
+          source = g,
+          target = pw,
+          is_leading_edge = is_leading,
+          edge_width = ifelse(is_leading, 3, 1),
+          stringsAsFactors = FALSE
+        )
+      })
+
+      return(do.call(rbind, edge_info))
     } else {
-      NULL
+      return(NULL)
     }
   })
 
-  edges <- dplyr::bind_rows(edges_list)
+  edges <- do.call(rbind, c(edges_list, stringsAsFactors = FALSE))
+
+  if (!is.null(edges)) {
+    rownames(edges) <- NULL
+  }
 
   return(list(
     nodes = list(pathway = pathway_nodes, gene = gene_nodes),
     edges = edges,
     hub_df = hub_df
   ))
+}
+
+
+# ------------------------------------------------------------------------------
+# 修改: extract_hub_genes() 函数 - 添加调试输出，帮助诊断问题
+# ------------------------------------------------------------------------------
+
+#' @title Extract Hub Genes from Selected Pathways (Enhanced with Leading Edge)
+#' @description Extract hub genes with their leading edge status for each pathway.
+#' @param gsea_task GseaTask object
+#' @param pathway_ids Character vector of pathway IDs to analyze
+#' @param min_degree Minimum number of pathways a gene must appear in (default: 2)
+#' @param de_df Optional differential expression data frame with stat column
+#' @return data.frame with columns: gene, degree, pathways, is_hub, stat,
+#'         pathway_leading_edges (list column with per-pathway status)
+#' @export
+extract_hub_genes <- function(gsea_task, pathway_ids, min_degree = 2, de_df = NULL) {
+
+  # Validate inputs
+  if (is.null(pathway_ids) || length(pathway_ids) == 0) {
+    return(NULL)
+  }
+
+  # Extract gene sets from GSEA result
+  gene_sets <- gsea_task$gsea_res@geneSets[pathway_ids]
+
+  if (length(gene_sets) == 0) {
+    return(NULL)
+  }
+
+  # ===========================================
+  # 获取 Leading Edge 基因列表
+  # ===========================================
+  leading_edge_genes <- list()
+  res_df <- as.data.frame(gsea_task$gsea_res@result)
+
+  for (pw_id in pathway_ids) {
+    row_idx <- which(res_df$ID == pw_id)
+    if (length(row_idx) > 0) {
+      core_str <- as.character(res_df$core_enrichment[row_idx[1]])
+      if (!is.na(core_str) && core_str != "") {
+        core_genes <- unlist(strsplit(core_str, "/"))
+        core_genes <- toupper(trimws(core_genes))
+        core_genes <- core_genes[core_genes != ""]
+        leading_edge_genes[[pw_id]] <- unique(core_genes)
+      } else {
+        leading_edge_genes[[pw_id]] <- character(0)
+      }
+    } else {
+      leading_edge_genes[[pw_id]] <- character(0)
+    }
+  }
+
+  # ===========================================
+  # 源头过滤：只保留在样本中表达的基因
+  # ===========================================
+
+  valid_genes <- NULL
+
+  if (!is.null(de_df)) {
+    # 优先使用 DE 表中有 stat 值的基因
+    if ("gene_symbol" %in% colnames(de_df) && "stat" %in% colnames(de_df)) {
+      valid_genes <- de_df$gene_symbol[!is.na(de_df$stat)]
+      valid_genes <- toupper(trimws(as.character(valid_genes)))
+      valid_genes <- valid_genes[!is.na(valid_genes) & valid_genes != ""]
+      valid_genes <- unique(valid_genes)
+      message("[extract_hub_genes] Using stat from de_df, ", length(valid_genes), " genes with valid stat")
+    } else if ("gene_symbol" %in% colnames(de_df) && "logFC" %in% colnames(de_df)) {
+      valid_genes <- de_df$gene_symbol[!is.na(de_df$logFC)]
+      valid_genes <- toupper(trimws(as.character(valid_genes)))
+      valid_genes <- valid_genes[!is.na(valid_genes) & valid_genes != ""]
+      valid_genes <- unique(valid_genes)
+      message("[extract_hub_genes] Using logFC from de_df, ", length(valid_genes), " genes with valid logFC")
+    }
+  }
+
+  # 如果 DE 表无法提供，回退到 geneList
+  if (is.null(valid_genes) || length(valid_genes) == 0) {
+    if (!is.null(gsea_task$gsea_res@geneList)) {
+      valid_genes <- toupper(names(gsea_task$gsea_res@geneList))
+      valid_genes <- unique(valid_genes)
+      message("[extract_hub_genes] Falling back to geneList, ", length(valid_genes), " genes")
+    }
+  }
+
+  if (is.null(valid_genes) || length(valid_genes) == 0) {
+    warning("[extract_hub_genes] Cannot determine valid genes, returning NULL")
+    return(NULL)
+  }
+
+  # 过滤 gene_sets
+  gene_sets <- lapply(gene_sets, function(genes) {
+    genes_upper <- toupper(trimws(as.character(genes)))
+    genes_upper <- genes_upper[!is.na(genes_upper) & genes_upper != ""]
+    intersect(genes_upper, valid_genes)
+  })
+
+  gene_sets <- gene_sets[sapply(gene_sets, length) > 0]
+
+  if (length(gene_sets) == 0) {
+    return(NULL)
+  }
+
+  # ===========================================
+  # 统计基因在通路中的出现情况
+  # ===========================================
+
+  all_genes <- unlist(gene_sets)
+  gene_counts <- table(toupper(all_genes))
+
+  gene_info <- data.frame(
+    gene = names(gene_counts),
+    degree = as.integer(gene_counts),
+    stringsAsFactors = FALSE
+  )
+
+  gene_info$pathways <- sapply(gene_info$gene, function(g) {
+    g_upper <- toupper(g)
+    pws <- names(gene_sets)[sapply(gene_sets, function(x) g_upper %in% toupper(x))]
+    paste(pws, collapse = ", ")
+  })
+
+  # 判断每个通路是否为 leading edge
+  gene_info$pathway_leading_edges <- lapply(gene_info$gene, function(g) {
+    g_upper <- toupper(g)
+    leading_status <- sapply(pathway_ids, function(pw_id) {
+      if (pw_id %in% names(leading_edge_genes)) {
+        g_upper %in% toupper(leading_edge_genes[[pw_id]])
+      } else {
+        FALSE
+      }
+    })
+    names(leading_status) <- pathway_ids
+    return(leading_status)
+  })
+
+  gene_info$is_hub <- gene_info$degree >= min_degree
+
+  # ===========================================
+  # 关键修复: 正确读取 stat 信息
+  # ===========================================
+
+  if (!is.null(de_df) && is.data.frame(de_df)) {
+    # 确保 gene_symbol 列存在
+    if ("gene_symbol" %in% colnames(de_df)) {
+      # 创建基因名到 stat 的映射
+      de_df$gene_upper <- toupper(as.character(de_df$gene_symbol))
+
+      # 优先使用 stat 列
+      if ("stat" %in% colnames(de_df)) {
+        stat_map <- setNames(de_df$stat, de_df$gene_upper)
+        gene_info$stat <- as.numeric(stat_map[gene_info$gene])
+        message("[extract_hub_genes] Mapped stat from de_df$stat")
+      }
+      # 如果没有 stat 列，使用 logFC
+      else if ("logFC" %in% colnames(de_df)) {
+        stat_map <- setNames(de_df$logFC, de_df$gene_upper)
+        gene_info$stat <- as.numeric(stat_map[gene_info$gene])
+        message("[extract_hub_genes] Mapped stat from de_df$logFC")
+      }
+      # 如果没有 logFC 列，使用 log2FoldChange (DESeq2)
+      else if ("log2FoldChange" %in% colnames(de_df)) {
+        stat_map <- setNames(de_df$log2FoldChange, de_df$gene_upper)
+        gene_info$stat <- as.numeric(stat_map[gene_info$gene])
+        message("[extract_hub_genes] Mapped stat from de_df$log2FoldChange")
+      }
+      else {
+        gene_info$stat <- 0
+        warning("[extract_hub_genes] de_df has no stat/logFC/log2FoldChange column")
+      }
+
+      # 处理 NA 值
+      gene_info$stat[is.na(gene_info$stat)] <- 0
+    } else {
+      gene_info$stat <- 0
+      warning("[extract_hub_genes] de_df has no gene_symbol column")
+    }
+  } else {
+    # 没有 de_df，使用 geneList 的值作为后备
+    gene_list <- gsea_task$gsea_res@geneList
+    if (!is.null(gene_list)) {
+      stat_map <- setNames(as.numeric(gene_list), toupper(names(gene_list)))
+      gene_info$stat <- as.numeric(stat_map[gene_info$gene])
+      gene_info$stat[is.na(gene_info$stat)] <- 0
+      message("[extract_hub_genes] Mapped stat from geneList (fallback)")
+    } else {
+      gene_info$stat <- 0
+    }
+  }
+
+  gene_info$log2FC <- gene_info$stat
+
+  # Sort by degree descending
+  gene_info <- gene_info[order(gene_info$degree, decreasing = TRUE), ]
+
+  return(gene_info)
 }
 
 

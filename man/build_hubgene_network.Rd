@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils_hubgene.R
 \name{build_hubgene_network}
 \alias{build_hubgene_network}
-\title{Build HubGene Network Data Structure}
+\title{Build HubGene Network Data Structure (Enhanced with Leading Edge)}
 \usage{
 build_hubgene_network(
   gsea_task,
@@ -19,13 +19,14 @@ build_hubgene_network(
 
 \item{min_hub_degree}{Minimum degree for hub genes}
 
-\item{de_df}{Optional DE data frame (will extract stat if no log2FC)}
+\item{de_df}{Optional DE data frame with stat column}
 
 \item{res_df}{Optional pathway result data frame}
 }
 \value{
-list with nodes and edges data frames
+list with nodes, edges, and hub_df data frames
 }
 \description{
-Build complete network data (nodes and edges) for HubGene Network
+Build complete network data with leading edge information for edges.
+  Now properly passes de_df to extract_hub_genes for stat extraction.
 }

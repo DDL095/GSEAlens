@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils_hubgene.R
 \name{extract_hub_genes}
 \alias{extract_hub_genes}
-\title{Extract Hub Genes from Selected Pathways}
+\title{Extract Hub Genes from Selected Pathways (Enhanced with Leading Edge)}
 \usage{
 extract_hub_genes(gsea_task, pathway_ids, min_degree = 2, de_df = NULL)
 }
@@ -16,15 +16,9 @@ extract_hub_genes(gsea_task, pathway_ids, min_degree = 2, de_df = NULL)
 \item{de_df}{Optional differential expression data frame with stat column}
 }
 \value{
-data.frame with columns: gene, degree, pathways, is_hub, log2FC
+data.frame with columns: gene, degree, pathways, is_hub, stat,
+        pathway_leading_edges (list column with per-pathway status)
 }
 \description{
-Extract hub genes that appear in multiple selected pathways,
-  with their connection information and direction data.
-  Only genes with valid stat values in the DE table are included.
-}
-\examples{
-\dontrun{
-hub_genes <- extract_hub_genes(task, c("HALLMARK_APOPTOSIS", "KEGG_CELL_CYCLE"))
-}
+Extract hub genes with their leading edge status for each pathway.
 }
