@@ -2,13 +2,11 @@
 % Please edit documentation in R/18_shiny_mod_hubgene_vis.R
 \name{mod_hubgene_vis_server}
 \alias{mod_hubgene_vis_server}
-\title{HubGene Network (visNetwork) Module Server}
+\title{HubGene Network (visNetwork) Module Server (Simplified)}
 \usage{
 mod_hubgene_vis_server(id, data_prep_list, table_controller)
 }
 \description{
-HubGene Network (visNetwork) Module Server
-
-HubGene Network (visNetwork) Module Server
+HubGene Network (visNetwork) Module Server (Simplified)
 }
 \keyword{internal}

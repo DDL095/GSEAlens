@@ -1,6 +1,6 @@
 # ==============================================================================
 # 文件：R/18_shiny_mod_hubgene_vis.R
-# 功能：HubGene Network - visNetwork 交互版
+# 功能：HubGene Network - visNetwork 交互版（精简版）
 # 依赖：visNetwork, 复用 build_hubgene_network() 等现有函数
 # ==============================================================================
 
@@ -23,13 +23,14 @@ mod_hubgene_vis_ui <- function(id) {
 
           shiny::hr(),
 
+          # ── 模式选择 ──
           shiny::h5("Pathway Source Mode"),
           shiny::radioButtons(
             ns("vis_mode"),
             label = NULL,
             choices = c(
-              "Top N from Current Set" = "mode_topN",
-              "Selected from Main Table" = "mode_select"
+              "Top N" = "mode_topN",
+              "Selected from Table" = "mode_select"
             ),
             selected = "mode_topN",
             width = "100%"
@@ -37,35 +38,18 @@ mod_hubgene_vis_ui <- function(id) {
 
           shiny::hr(),
 
+          # ── Top N 配置 ──
           shiny::conditionalPanel(
             condition = sprintf("input['%s'] == 'mode_topN'", ns("vis_mode")),
-            shiny::div(
-              style = "background: #e3f2fd; padding: 10px; border-radius: 5px;",
-              shiny::numericInput(
-                ns("vis_topN"),
-                label = "Top N Count:",
-                value = 5,
-                min = 3,
-                max = 50,
-                step = 1
-              )
+            shiny::numericInput(
+              ns("vis_topN"),
+              label = "Top N Count:",
+              value = 5,
+              min = 3,
+              max = 50,
+              step = 1
             )
           ),
-
-          shiny::conditionalPanel(
-            condition = sprintf("input['%s'] == 'mode_select'", ns("vis_mode")),
-            shiny::div(
-              style = "background: #f3e5f5; padding: 10px; border-radius: 5px;",
-              shiny::helpText(
-                style = "color: #6a1b9a; font-size: 11px;",
-                "Check pathways in main table 'Joint Plot' column"
-              )
-            )
-          ),
-
-          shiny::hr(),
-
-          shiny::h5("Network Parameters"),
 
           shiny::numericInput(
             ns("vis_fdr"),
@@ -87,38 +71,99 @@ mod_hubgene_vis_ui <- function(id) {
 
           shiny::hr(),
 
+          # ── 物理引擎控制 ──
           shiny::h5("Physics & Interaction"),
 
           shiny::checkboxInput(
             ns("vis_physics"),
-            label = "Enable Physics (Real-time Simulation)",
+            label = "Enable Physics",
             value = TRUE
           ),
 
           shiny::conditionalPanel(
             condition = sprintf("input['%s'] == true", ns("vis_physics")),
+
             shiny::div(
-              style = "background: #fff3e0; padding: 10px; border-radius: 5px; margin-top: 10px;",
-              shiny::sliderInput(
-                ns("vis_physics_speed"),
-                label = "Simulation Speed:",
-                min = 0.1,
-                max = 2,
-                value = 0.5,
-                step = 0.1
+              style = "background: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 10px;",
+
+              shiny::selectInput(
+                ns("vis_solver"),
+                label = "Physics Solver:",
+                choices = c(
+                  "Barnes-Hut (Fast)" = "barnesHut",
+                  "Repulsion" = "repulsion",
+                  "Hierarchical Repulsion" = "hierarchicalRepulsion"
+                ),
+                selected = "barnesHut"
               ),
+
               shiny::sliderInput(
-                ns("vis_physics_repul"),
-                label = "Repulsion Force:",
-                min = -500,
+                ns("vis_gravitational"),
+                label = "Gravitational Constant:",
+                min = -2000,
                 max = -50,
-                value = -200,
-                step = 10
+                value = -400,
+                step = 10,
+                post = ""
+              ),
+              shiny::helpText(
+                style = "font-size: 10px; color: #666;",
+                "越负值，节点间排斥越强"
+              ),
+
+              shiny::sliderInput(
+                ns("vis_central_gravity"),
+                label = "Central Gravity:",
+                min = 0.01,
+                max = 0.5,
+                value = 0.3,
+                step = 0.01
+              ),
+              shiny::helpText(
+                style = "font-size: 10px; color: #666;",
+                "将节点拉向中心，防止分散"
+              ),
+
+              shiny::sliderInput(
+                ns("vis_spring_length"),
+                label = "Spring Length:",
+                min = 25,
+                max = 500,
+                value = 150,
+                step = 5
+              ),
+              shiny::helpText(
+                style = "font-size: 10px; color: #666;",
+                "边的理想长度（像素）"
+              ),
+
+              shiny::sliderInput(
+                ns("vis_spring_constant"),
+                label = "Spring Constant:",
+                min = 0.001,
+                max = 1.0,
+                value = 0.01,
+                step = 0.001
+              ),
+              shiny::helpText(
+                style = "font-size: 10px; color: #666;",
+                "边的弹性系数"
+              ),
+
+              shiny::sliderInput(
+                ns("vis_damping"),
+                label = "Damping:",
+                min = 0.01,
+                max = 0.9,
+                value = 0.09,
+                step = 0.01
+              ),
+              shiny::helpText(
+                style = "font-size: 10px; color: #666;",
+                "运动阻尼，防止震荡"
               )
             )
           ),
-
-          shiny::hr(),
 
           shiny::checkboxInput(
             ns("vis_nodes_draggable"),
@@ -134,36 +179,37 @@ mod_hubgene_vis_ui <- function(id) {
 
           shiny::hr(),
 
+          # ── 节点大小 ──
           shiny::h5("Node Sizing"),
 
-          shiny::selectInput(
-            ns("vis_size_mode"),
-            label = NULL,
-            choices = c(
-              "By Hub Degree" = "degree",
-              "By -log10(FDR)" = "fdr"
-            ),
-            selected = "degree"
+          shiny::sliderInput(
+            ns("vis_pw_size"),
+            label = "Pathway Node Size:",
+            min = 15,
+            max = 60,
+            value = 30,
+            step = 1
+          ),
+          shiny::helpText(
+            style = "font-size: 10px; color: #666;",
+            "节点越大，排斥越强"
+          ),
+
+          shiny::sliderInput(
+            ns("vis_gene_size"),
+            label = "Gene Node Size:",
+            min = 5,
+            max = 30,
+            value = 12,
+            step = 1
           ),
 
           shiny::hr(),
 
-          shiny::h5("Layout"),
-
-          shiny::selectInput(
-            ns("vis_layout"),
-            label = "Initial Layout:",
-            choices = c(
-              "Force-Directed (FR)" = "force",
-              "Hierarchical" = "hierarchical",
-              "LBHU (Large Graph)" = "lbhu"
-            ),
-            selected = "force"
-          ),
-
+          # ── 随机种子 ──
           shiny::numericInput(
             ns("vis_seed"),
-            label = "Seed:",
+            label = "Random Seed:",
             value = 42,
             min = 1,
             max = 9999,
@@ -172,104 +218,59 @@ mod_hubgene_vis_ui <- function(id) {
 
           shiny::hr(),
 
-          shiny::actionButton(
-            ns("vis_refresh"),
-            label = "Refresh Network",
-            icon = shiny::icon("refresh"),
-            class = "btn-primary",
-            style = "width: 100%;"
-          ),
-
-          shiny::actionButton(
-            ns("vis_fix_layout"),
-            label = "Fix Current Layout",
-            icon = shiny::icon("lock"),
-            class = "btn-warning",
-            style = "width: 100%; margin-top: 5px;"
-          ),
-
-          shiny::actionButton(
-            ns("vis_freeze"),
-            label = "Stop Physics",
-            icon = shiny::icon("pause"),
-            class = "btn-danger",
-            style = "width: 100%; margin-top: 5px;"
-          ),
-
-          shiny::hr(),
-
-          shiny::h5("Export"),
-
-          shiny::downloadButton(
-            ns("vis_export_png"),
-            label = "Export PNG",
-            class = "btn-success",
-            style = "width: 100%;"
-          ),
-
-          shiny::downloadButton(
-            ns("vis_export_json"),
-            label = "Export JSON",
-            class = "btn-info",
-            style = "width: 100%; margin-top: 5px;"
-          ),
-
-          shiny::hr(),
-
+          # ── 统计 ──
           shiny::h5("Network Statistics"),
-
           shiny::verbatimTextOutput(ns("vis_stats")) %>%
-            shiny::tagAppendAttributes(style = "font-size: 11px; max-height: 150px; overflow-y: auto;"),
+            shiny::tagAppendAttributes(style = "font-size: 10px; max-height: 100px; overflow-y: auto;"),
 
           shiny::hr(),
 
+          # ── 通路预览 ──
           shiny::h5("Pathways Preview"),
-
           shiny::uiOutput(ns("vis_pathway_list")) %>%
-            shiny::tagAppendAttributes(style = "max-height: 200px; overflow-y: auto;")
+            shiny::tagAppendAttributes(style = "max-height: 150px; overflow-y: auto;")
 
         )
       ),
 
-      # ─── 主网络绘图区域 ───
+      # ─── 主绘图区域 ───
       shiny::column(
         width = 9,
         shiny::div(
           class = "white-box",
-          style = "min-height: 800px;",
+          style = "min-height: 850px;",
 
+          # 状态栏
           shiny::div(
-            id = ns("vis_status_bar"),
-            style = "background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 10px; border-radius: 5px; margin-bottom: 15px; color: white;",
+            style = "background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 12px; border-radius: 5px; margin-bottom: 15px; color: white;",
             shiny::uiOutput(ns("vis_status_text"))
           ),
 
+          # visNetwork 输出
           visNetwork::visNetworkOutput(
             ns("vis_network"),
-            height = "750px",
+            height = "650px",
             width = "100%"
           ) %>%
             shinycssloaders::withSpinner(type = 6, color = "#28a745"),
 
           shiny::hr(),
 
-          # ─── 调试信息窗口 ───
+          # ── Debug Console ──
           shiny::div(
-            class = "white-box",
-            style = "background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 8px;",
+            style = "background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 8px; margin-top: 15px;",
             shiny::h4(
-              style = "color: #569cd6; margin-top: 0;",
+              style = "color: #569cd6; margin-top: 0; font-size: 14px;",
               "Debug Console"
             ),
             shiny::div(
-              id = ns("vis_debug_container"),
-              style = "max-height: 200px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 12px;",
+              style = "max-height: 150px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 11px;",
               shiny::verbatimTextOutput(ns("vis_debug")) %>%
                 shiny::tagAppendAttributes(style = "background: transparent; border: none; color: #9cdcfe;")
             )
           ),
 
-          # ─── 节点/边详情面板 ───
+          # ── 节点/边详情 ──
           shiny::fluidRow(
             shiny::column(
               6,
@@ -298,10 +299,7 @@ mod_hubgene_vis_ui <- function(id) {
 }
 
 
-#' @title HubGene Network (visNetwork) Module Server
-#' @keywords internal
-
-#' @title HubGene Network (visNetwork) Module Server
+#' @title HubGene Network (visNetwork) Module Server (Simplified)
 #' @keywords internal
 
 mod_hubgene_vis_server <- function(id, data_prep_list, table_controller) {
@@ -309,22 +307,22 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller) {
     ns <- session$ns
 
     # ──────────────────────────────────────────────────────────────
-    # 调试日志
+    # 调试日志（使用 session$userData）
     # ──────────────────────────────────────────────────────────────
-    .debug_log <<- character(0)
+    session$userData$debug_log <- character(0)
 
     add_debug <- function(msg, level = "INFO") {
       timestamp <- format(Sys.time(), "%H:%M:%S")
       new_entry <- sprintf("[%s] [%s] %s", timestamp, level, msg)
-      .debug_log <<- c(new_entry, .debug_log)[1:100]
+      session$userData$debug_log <- c(new_entry, session$userData$debug_log)[1:50]
       message(sprintf("[HubGene-vis] %s", new_entry))
     }
 
     output$vis_debug <- shiny::renderText({
-      paste(.debug_log, collapse = "\n")
+      paste(session$userData$debug_log, collapse = "\n")
     })
 
-    add_debug("Module initialized")
+    add_debug("Module started")
 
     # ──────────────────────────────────────────────────────────────
     # 1. 模式状态
@@ -346,7 +344,8 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller) {
       data_list <- data_prep_list$data()
       shiny::req(data_list)
       df <- data_list$df
-      top_n <- input$vis_topN %||% 5
+      top_n <- input$vis_topN
+      if (is.null(top_n)) top_n <- 5
       top_n <- max(3, min(top_n, nrow(df)))
       df[1:top_n, "ID"]
     })
@@ -368,7 +367,8 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller) {
     candidate_filtered <- shiny::reactive({
       pathways <- candidate_raw()
       if (length(pathways) == 0) return(character(0))
-      fdr_thresh <- input$vis_fdr %||% 0.25
+      fdr_thresh <- input$vis_fdr
+      if (is.null(fdr_thresh)) fdr_thresh <- 0.25
       data_list <- data_prep_list$data()
       shiny::req(data_list)
       df <- data_list$df
@@ -381,23 +381,20 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller) {
 
     shiny::observeEvent(candidate_filtered(), {
       final_pathways(candidate_filtered())
+      add_debug(sprintf("Pathways: %d", length(candidate_filtered())))
     })
 
     # ──────────────────────────────────────────────────────────────
-    # 3. 构建网络数据
+    # 3. 网络数据
     # ──────────────────────────────────────────────────────────────
 
-    network_data <- shiny::reactive({
+    net_data <- shiny::reactive({
       data_list <- data_prep_list$data()
       shiny::req(!is.null(data_list))
       pathway_ids <- final_pathways()
       shiny::req(length(pathway_ids) > 0)
 
-      add_debug(sprintf("Building network: %d pathways", length(pathway_ids)))
-
-      de_df <- tryCatch({
-        get_de_table(data_prep_list$gsea_res, data_list$contrast_id)
-      }, error = function(e) NULL)
+      add_debug(sprintf("Building: %d pathways", length(pathway_ids)))
 
       net <- build_hubgene_network(
         gsea_task = list(
@@ -408,139 +405,165 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller) {
           )
         ),
         pathway_ids = pathway_ids,
-        min_hub_degree = input$vis_min_hub %||% 2,
-        de_df = de_df,
+        min_hub_degree = input$vis_min_hub,
+        de_df = NULL,
         res_df = data_list$df
       )
 
-      add_debug(sprintf("Network built: nodes=%s, edges=%s",
-                        ifelse(is.null(net$nodes), "NULL",
-                               paste(nrow(net$nodes$pathway), "+", nrow(net$nodes$gene))),
-                        ifelse(is.null(net$edges), "NULL", nrow(net$edges))))
+      if (is.null(net)) {
+        add_debug("Build failed", "ERROR")
+        return(NULL)
+      }
+
+      add_debug(sprintf("Built: %d pw + %d gene + %d edges",
+                        ifelse(is.null(net$nodes$pathway), 0, nrow(net$nodes$pathway)),
+                        ifelse(is.null(net$nodes$gene), 0, nrow(net$nodes$gene)),
+                        ifelse(is.null(net$edges), 0, nrow(net$edges))))
       return(net)
     })
 
     # ──────────────────────────────────────────────────────────────
-    # 4. 准备 visNetwork 数据（简化版）
+    # 4. 渲染网络
     # ──────────────────────────────────────────────────────────────
 
-    vis_data <- shiny::reactive({
-      net <- network_data()
-      shiny::req(!is.null(net), !is.null(net$nodes))
+    output$vis_network <- visNetwork::renderVisNetwork({
+      net <- net_data()
+      shiny::req(!is.null(net))
 
-      add_debug("Preparing visNetwork nodes and edges...")
+      add_debug("Preparing visNetwork...")
 
-      # ── 节点 ──
-      nodes_list <- list()
+      # 获取分组信息用于 tooltip
+      data_list <- data_prep_list$data()
+      left_group <- data_list$left_group
+      right_group <- data_list$right_group
+
+      # 节点（添加 title 列用于悬停）
+      nodes <- data.frame(
+        id = character(),
+        label = character(),
+        group = character(),
+        shape = character(),
+        color = character(),
+        size = numeric(),
+        title = character(),
+        stringsAsFactors = FALSE
+      )
+
+      pw_size <- ifelse(is.null(input$vis_pw_size), 30, input$vis_pw_size)
+      gene_size <- ifelse(is.null(input$vis_gene_size), 12, input$vis_gene_size)
 
       # 通路节点
       if (!is.null(net$nodes$pathway) && nrow(net$nodes$pathway) > 0) {
         for (i in seq_len(nrow(net$nodes$pathway))) {
           row <- net$nodes$pathway[i, ]
-          nodes_list[[length(nodes_list) + 1]] <- list(
+          direction <- ifelse(row$NES > 0, left_group, right_group)
+          nodes <- rbind(nodes, data.frame(
             id = paste0("pw_", row$id),
             label = gsub("HALLMARK_", "", row$id),
             group = "pathway",
             shape = "diamond",
             color = ifelse(row$NES > 0, "#E41A1C", "#377EB8"),
-            size = 30,
-            title = sprintf("NES: %.2f<br>FDR: %.2e", row$NES, row$FDR)
-          )
+            size = pw_size,
+            title = sprintf(
+              "Pathway: %s\nDirection: %s\nNES: %.3f\nFDR: %.2e\nCore Genes: %d/%d",
+              row$id, direction, row$NES, row$FDR, row$n_core, row$n_total
+            ),
+            stringsAsFactors = FALSE
+          ))
         }
       }
 
-      # 基因节点
+      # 基因节点（保持原始大小写）
       if (!is.null(net$nodes$gene) && nrow(net$nodes$gene) > 0) {
         for (i in seq_len(nrow(net$nodes$gene))) {
           row <- net$nodes$gene[i, ]
-          nodes_list[[length(nodes_list) + 1]] <- list(
-            id = paste0("gene_", row$id),
-            label = row$id,
+          # row$id 来自 de_df$gene_symbol，保持原始大小写
+          gene_label <- row$id
+          direction <- ifelse(row$stat > 0, left_group,
+                              ifelse(row$stat < 0, right_group, "Neutral"))
+          nodes <- rbind(nodes, data.frame(
+            id = paste0("gene_", gene_label),
+            label = gene_label,  # 使用原始大小写
             group = "gene",
             shape = "dot",
             color = ifelse(row$stat > 0, "#E41A1C", "#377EB8"),
-            size = 15 + row$degree * 2,
-            title = sprintf("Degree: %d", row$degree)
-          )
+            size = gene_size + row$degree * 2,
+            title = sprintf(
+              "Gene: %s\nDirection: %s\nStat: %.3f\nHub Degree: %d",
+              gene_label, direction, row$stat, row$degree
+            ),
+            stringsAsFactors = FALSE
+          ))
         }
       }
 
-      nodes_df <- shiny::tagList(nodes_list)
-
-      # ── 边 ──
-      edges_list <- list()
+      # 边
+      edges <- data.frame(
+        from = character(),
+        to = character(),
+        color = character(),
+        width = numeric(),
+        dashes = logical(),
+        title = character(),
+        stringsAsFactors = FALSE
+      )
 
       if (!is.null(net$edges) && nrow(net$edges) > 0) {
         for (i in seq_len(nrow(net$edges))) {
           row <- net$edges[i, ]
-          edges_list[[length(edges_list) + 1]] <- list(
-            from = paste0("gene_", row$source),
+          # row$source 和 row$target 保持原始大小写
+          edges <- rbind(edges, data.frame(
+            from = paste0("gene_", row$source),  # 保持原始大小写
             to = paste0("pw_", row$target),
             color = ifelse(row$is_leading_edge, "#333333", "#AAAAAA"),
             width = ifelse(row$is_leading_edge, 3, 1),
-            dashes = !row$is_leading_edge
-          )
+            dashes = !row$is_leading_edge,
+            title = sprintf("Gene: %s -> Pathway: %s\nLeading Edge: %s",
+                            row$source, row$target,
+                            ifelse(row$is_leading_edge, "YES", "NO")),
+            stringsAsFactors = FALSE
+          ))
         }
       }
 
-      edges_df <- shiny::tagList(edges_list)
-
-      add_debug(sprintf("visData ready: %d nodes, %d edges",
-                        length(nodes_list), length(edges_list)))
-
-      list(nodes = nodes_list, edges = edges_list)
-    })
-
-    # ──────────────────────────────────────────────────────────────
-    # 5. 渲染 visNetwork
-    # ──────────────────────────────────────────────────────────────
-
-    output$vis_network <- visNetwork::renderVisNetwork({
-      vd <- vis_data()
-      shiny::req(length(vd$nodes) > 0)
-
-      add_debug("Rendering...")
-
-      # 转换列表为数据框
-      nodes_df <- as.data.frame(do.call(rbind, lapply(vd$nodes, function(x) {
-        as.data.frame(x, stringsAsFactors = FALSE)
-      })), stringsAsFactors = FALSE)
-
-      edges_df <- as.data.frame(do.call(rbind, lapply(vd$edges, function(x) {
-        as.data.frame(x, stringsAsFactors = FALSE)
-      })), stringsAsFactors = FALSE)
-
-      add_debug(sprintf("DataFrames: %d nodes, %d edges", nrow(nodes_df), nrow(edges_df)))
-
-      # 构建网络
-      vis <- visNetwork::visNetwork(nodes_df, edges_df, width = "100%", height = "700px")
+      add_debug(sprintf("Nodes: %d, Edges: %d", nrow(nodes), nrow(edges)))
 
       # 物理引擎
-      if (input$vis_physics %||% TRUE) {
+      physics_enabled <- isTRUE(input$vis_physics)
+      solver <- ifelse(is.null(input$vis_solver), "barnesHut", input$vis_solver)
+      grav <- ifelse(is.null(input$vis_gravitational), -400, input$vis_gravitational)
+
+      vis <- visNetwork::visNetwork(nodes, edges, width = "100%", height = "650px")
+
+      if (physics_enabled) {
         vis <- vis %>% visNetwork::visPhysics(
           enabled = TRUE,
+          solver = solver,
           barnesHut = list(
-            gravitationalConstant = input$vis_physics_repul %||% -200,
-            centralGravity = 0.01,
+            gravitationalConstant = grav,
+            centralGravity = 0.3,
             springLength = 150,
-            springConstant = 0.01
-          ),
-          stabilization = list(enabled = TRUE, iterations = 200),
-          solver = "barnesHut"
+            springConstant = 0.01,
+            damping = 0.09
+          )
         )
+        add_debug(sprintf("Physics: ON, solver=%s, grav=%.0f", solver, grav))
       } else {
         vis <- vis %>% visNetwork::visPhysics(enabled = FALSE)
+        add_debug("Physics: OFF")
       }
 
       # 布局
-      vis <- vis %>% visNetwork::visLayout(randomSeed = input$vis_seed %||% 42)
+      seed <- ifelse(is.null(input$vis_seed), 42, input$vis_seed)
+      vis <- vis %>% visNetwork::visLayout(randomSeed = seed)
 
       # 交互
       vis <- vis %>% visNetwork::visInteraction(
         dragNodes = TRUE,
         dragView = TRUE,
         zoomView = TRUE,
-        hover = TRUE
+        hover = TRUE,
+        tooltipDelay = 200
       )
 
       # 图例
@@ -548,9 +571,19 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller) {
         enabled = TRUE,
         position = "right",
         addNodes = list(
-          list(label = "Pathway", shape = "diamond", color = "#E41A1C"),
-          list(label = "Gene", shape = "dot", color = "#377EB8")
+          list(label = "Pathway Up", shape = "diamond", color = "#E41A1C"),
+          list(label = "Pathway Down", shape = "diamond", color = "#377EB8"),
+          list(label = "Gene Up", shape = "dot", color = "#E41A1C"),
+          list(label = "Gene Down", shape = "dot", color = "#377EB8")
         )
+      )
+
+      # 点击事件
+      vis <- vis %>% visNetwork::visEvents(
+        click = sprintf("function(props) {
+      var n = props.nodes[0];
+      if(n) Shiny.setInputValue('%s', {id: n, ts: Date.now()}, {priority:'event'});
+    }", ns("vis_click"))
       )
 
       add_debug("Render complete")
@@ -558,59 +591,54 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller) {
     })
 
     # ──────────────────────────────────────────────────────────────
-    # 6. 事件
+    # 5. 事件
     # ──────────────────────────────────────────────────────────────
 
     shiny::observeEvent(input$vis_click, {
-      click_data <- input$vis_click
-      shiny::req(click_data$nodeId)
-      add_debug(sprintf("Click: %s", click_data$nodeId), "ACTION")
-    })
-
-    shiny::observeEvent(input$vis_refresh, {
-      add_debug("Refresh", "ACTION")
+      add_debug(sprintf("Click: %s", input$vis_click$id), "CLICK")
     })
 
     # ──────────────────────────────────────────────────────────────
-    # 7. 统计
+    # 6. 统计
     # ──────────────────────────────────────────────────────────────
 
     output$vis_stats <- shiny::renderPrint({
-      vd <- tryCatch(vis_data(), error = function(e) NULL)
-      if (is.null(vd)) {
+      net <- tryCatch(net_data(), error = function(e) NULL)
+      if (is.null(net)) {
         cat("No data\n")
         return()
       }
-      pw_count <- sum(sapply(vd$nodes, function(x) x$group == "pathway"))
-      gene_count <- sum(sapply(vd$nodes, function(x) x$group == "gene"))
-      cat(sprintf("Pathways: %d\n", pw_count))
-      cat(sprintf("Genes: %d\n", gene_count))
-      cat(sprintf("Edges: %d\n", length(vd$edges)))
+      pw <- ifelse(is.null(net$nodes$pathway), 0, nrow(net$nodes$pathway))
+      gene <- ifelse(is.null(net$nodes$gene), 0, nrow(net$nodes$gene))
+      edge <- ifelse(is.null(net$edges), 0, nrow(net$edges))
+      cat(sprintf("Pathways: %d\n", pw))
+      cat(sprintf("Hub Genes: %d\n", gene))
+      cat(sprintf("Edges: %d\n", edge))
     })
 
     # ──────────────────────────────────────────────────────────────
-    # 8. 状态栏
+    # 7. 状态栏
     # ──────────────────────────────────────────────────────────────
 
     output$vis_status_text <- shiny::renderUI({
-      vd <- tryCatch(vis_data(), error = function(e) NULL)
-      if (is.null(vd) || length(vd$nodes) == 0) {
-        return(shiny::span("No network data", style = "color: #ffcccc;"))
+      net <- tryCatch(net_data(), error = function(e) NULL)
+      if (is.null(net)) {
+        return(shiny::span("No data", style = "color: #ffcccc;"))
       }
-      pw_count <- sum(sapply(vd$nodes, function(x) x$group == "pathway"))
-      gene_count <- sum(sapply(vd$nodes, function(x) x$group == "gene"))
+      pw <- ifelse(is.null(net$nodes$pathway), 0, nrow(net$nodes$pathway))
+      gene <- ifelse(is.null(net$nodes$gene), 0, nrow(net$nodes$gene))
+      edge <- ifelse(is.null(net$edges), 0, nrow(net$edges))
+      physics <- if (isTRUE(input$vis_physics)) "ON" else "OFF"
+
       shiny::tagList(
-        shiny::strong(sprintf("HubGene Network | %d Pathways + %d Genes",
-                              pw_count, gene_count)),
+        shiny::strong(sprintf("HubGene Network | %d Pathways + %d Hub Genes + %d Edges", pw, gene, edge)),
         htmltools::tags$br(),
-        htmltools::tags$small(sprintf("Physics: %s | FDR < %.2f",
-                                      ifelse(input$vis_physics, "ON", "OFF"),
-                                      input$vis_fdr %||% 0.25))
+        htmltools::tags$small(sprintf("Physics: %s | FDR < %.2f", physics, input$vis_fdr %||% 0.25))
       )
     })
 
     # ──────────────────────────────────────────────────────────────
-    # 9. 通路预览
+    # 8. 通路预览
     # ──────────────────────────────────────────────────────────────
 
     output$vis_pathway_list <- shiny::renderUI({
@@ -626,79 +654,74 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller) {
         if (length(row_idx) == 0) return(NULL)
         row <- df[row_idx[1], ]
         shiny::div(
-          style = "background: #f8f9fa; padding: 5px; margin-bottom: 3px; border-left: 3px solid #007bff; font-size: 11px;",
+          style = "background: #f8f9fa; padding: 5px; margin-bottom: 3px; border-left: 3px solid #007bff; font-size: 10px;",
           shiny::strong(gsub("HALLMARK_", "", pid)),
-          shiny::br(),
-          sprintf("NES: %.2f | FDR: %.2e", as.numeric(row$NES), as.numeric(row$p.adjust))
+          htmltools::tags$br(),
+          sprintf("NES: %.2f", as.numeric(row$NES))
         )
       })
     })
 
     # ──────────────────────────────────────────────────────────────
-    # 10. 节点/边详情
+    # 9. 详情表
     # ──────────────────────────────────────────────────────────────
 
     output$vis_node_detail <- DT::renderDataTable({
-      vd <- tryCatch(vis_data(), error = function(e) NULL)
-      if (is.null(vd) || length(vd$nodes) == 0) {
+      net <- tryCatch(net_data(), error = function(e) NULL)
+      if (is.null(net) || is.null(net$nodes$pathway) && is.null(net$nodes$gene)) {
         return(DT::datatable(data.frame(Message = "No nodes"), options = list(dom = "t")))
       }
 
-      display_df <- do.call(rbind, lapply(vd$nodes, function(x) {
-        data.frame(
-          ID = x$label,
-          Type = x$group,
-          Shape = x$shape,
-          Color = x$color,
-          Size = x$size,
-          stringsAsFactors = FALSE
-        )
-      }))
+      rows <- list()
+      if (!is.null(net$nodes$pathway) && nrow(net$nodes$pathway) > 0) {
+        for (i in seq_len(nrow(net$nodes$pathway))) {
+          r <- net$nodes$pathway[i, ]
+          rows[[length(rows) + 1]] <- data.frame(
+            ID = r$id, Type = "Pathway",
+            NES = round(r$NES, 3),
+            Degree = NA,
+            stringsAsFactors = FALSE
+          )
+        }
+      }
+      if (!is.null(net$nodes$gene) && nrow(net$nodes$gene) > 0) {
+        for (i in seq_len(nrow(net$nodes$gene))) {
+          r <- net$nodes$gene[i, ]
+          rows[[length(rows) + 1]] <- data.frame(
+            ID = r$id, Type = "Gene",
+            NES = round(r$stat, 3),
+            Degree = r$degree,
+            stringsAsFactors = FALSE
+          )
+        }
+      }
 
-      DT::datatable(display_df, rownames = FALSE, options = list(pageLength = 10, dom = "t"))
+      df <- do.call(rbind, rows)
+      DT::datatable(df, rownames = FALSE, options = list(pageLength = 10, dom = "t"))
     })
 
     output$vis_edge_detail <- DT::renderDataTable({
-      vd <- tryCatch(vis_data(), error = function(e) NULL)
-      if (is.null(vd) || length(vd$edges) == 0) {
+      net <- tryCatch(net_data(), error = function(e) NULL)
+      if (is.null(net) || is.null(net$edges) || nrow(net$edges) == 0) {
         return(DT::datatable(data.frame(Message = "No edges"), options = list(dom = "t")))
       }
 
-      display_df <- do.call(rbind, lapply(vd$edges, function(x) {
+      rows <- lapply(seq_len(nrow(net$edges)), function(i) {
+        r <- net$edges[i, ]
         data.frame(
-          From = gsub("gene_", "", x$from),
-          To = gsub("pw_", "", x$to),
-          Leading = ifelse(x$dashes, "No", "Yes"),
-          Width = x$width,
+          Gene = r$source,
+          Pathway = r$target,
+          LeadingEdge = ifelse(r$is_leading_edge, "Yes", "No"),
           stringsAsFactors = FALSE
         )
-      }))
+      })
 
-      DT::datatable(display_df, rownames = FALSE, options = list(pageLength = 10, dom = "t"))
+      df <- do.call(rbind, rows)
+      DT::datatable(df, rownames = FALSE, options = list(pageLength = 10, dom = "t"))
     })
 
-    # ──────────────────────────────────────────────────────────────
-    # 11. 导出
-    # ──────────────────────────────────────────────────────────────
-
-    output$vis_export_png <- shiny::downloadHandler(
-      filename = function() paste0("hubgene_", Sys.time(), ".png"),
-      content = function(file) {
-        vis <- visNetwork::visNetwork(
-          as.data.frame(do.call(rbind, lapply(vis_data()$nodes, as.data.frame,list))),
-          as.data.frame(do.call(rbind, lapply(vis_data()$edges, as.data.frame,list)))
-        )
-        visNetwork::visSave(vis, file = file, type = "png", background = "white")
-      }
-    )
-
-    add_debug("Server ready")
+    add_debug("Ready")
     return(list(final_pathways = final_pathways))
 
   })
 }
-
-
-# ==============================================================================
-# END OF FILE
-# ==============================================================================
