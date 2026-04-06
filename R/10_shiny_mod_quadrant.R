@@ -31,20 +31,30 @@ mod_quadrant_ui <- function(id) {
                                   shiny::h4("3. Differential Expression Volcano"),
                                   shiny::div(
                                     style = "margin-bottom: 10px;",
-                                    shiny::checkboxInput(ns("zero_baseline"), label = "Use 0 as baseline", value = FALSE),
-                                    shiny::checkboxInput(ns("toggle_volcano_settings"), label = "Settings", value = FALSE)
+                                                                        shiny::checkboxInput(ns("toggle_volcano_settings"), label = "Settings", value = FALSE)
                                   ),
                                   shiny::conditionalPanel(
                                     condition = sprintf("input['%s']", ns("toggle_volcano_settings")),
                                     shiny::div(
                                       style = "background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px;",
+
                                       shiny::numericInput(ns("volcano_logfc_thresh"), "logFC Threshold:", value = 1, min = 0, max = 22, step = 0.5),
                                       shiny::numericInput(ns("volcano_pval_thresh"), "P-value Threshold:", value = 0.05, min = 0.001, max = 1, step = 0.01)
                                     )
                                   ),
+
+
                                   plotly::plotlyOutput(ns("de_volcano"), height = "400px"))),
+
+
+
+
       shiny::column(6, shiny::div(class = "white-box",
                                   shiny::h4("4. Full Expression Distribution"),
+                                  shiny::div(
+                                    style = "margin-bottom: 10px;",
+                                    shiny::checkboxInput(ns("zero_baseline"), label = "Use 0 as baseline", value = TRUE)
+                                  ),
                                   plotly::plotlyOutput(ns("gene_expr_box"), height = "400px"),
                                   shiny::uiOutput(ns("boxplot_order_status"))))
     ),
@@ -722,6 +732,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
       data_list <- data_prep_data()
       shiny::req(data_list)
+      symbol_map <- .rebuild_symbol_map(gsea_res, data_list$contrast_id)
 
       left_grp <- data_list$left_group
       right_grp <- data_list$right_group
@@ -786,7 +797,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
         )
 
         data.frame(
-          Gene = g,
+          Gene = .get_display_symbol(g, symbol_map),
           Log2FC = ifelse(is.na(logfc), "-", sprintf("%.3f", logfc)),
           Pvalue = pval_display,
           Padjust = padj_display,
@@ -968,8 +979,9 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
           ))
         }
 
+        symbol_map <- .rebuild_symbol_map(gsea_res, data_list$contrast_id)
         actual_gene <- rownames(expr_mat)[match_idx[1]]
-        display_gene_name <- current_gene
+        display_gene_name <- .get_display_symbol(current_gene, symbol_map)
 
         expr_values <- expr_mat[actual_gene, ]
         sample_names <- names(expr_values)
@@ -1047,7 +1059,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
           ggplot2::scale_x_discrete(limits = x_categories, drop = FALSE) +
           ggplot2::coord_cartesian(ylim = c(y_min, y_max)) +
           ggplot2::theme_bw(base_size = 12) +
-          ggplot2::labs(title = sprintf("Expression: %s", display_gene_name),
+          ggplot2::labs(title = sprintf("%s", display_gene_name),
                         y = data_list$expression_type, x = NULL) +
           ggplot2::theme(legend.position = "none",
                          axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))

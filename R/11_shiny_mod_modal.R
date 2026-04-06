@@ -267,7 +267,7 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
     output$modal_heatmap <- shiny::renderPlot({
       pdata <- current_data()
       shiny::req(pdata)
-
+      symbol_map <- .rebuild_symbol_map(gsea_res, pdata$data_list$contrast_id)
       sample_meta_raw <- gsea_res$expr_bundle$sample_meta
 
       if (inherits(sample_meta_raw, "DFrame") || inherits(sample_meta_raw, "DataFrame")) {
@@ -349,21 +349,17 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
         stop("Cannot compute CPM matrix.")
       }
 
+      symbol_map <- .rebuild_symbol_map(gsea_res, pdata$data_list$contrast_id)
+      # 使用通用工具函数处理表达矩阵行名
+      cpm_mat <- .convert_expr_rownames(cpm_mat, expr_bundle$gene_meta, gsea_res)
+      # 获取更新后的基因标识符
       pathway_genes <- pdata$pathway_genes
-
       gene_identifiers <- rownames(cpm_mat)
-      if (!is.null(expr_bundle$gene_meta) && !is.null(rownames(expr_bundle$gene_meta))) {
-        gene_identifiers <- rownames(expr_bundle$gene_meta)
-      }
-
-      if (any(grepl("^ENS(MUS)?G[0-9]+", gene_identifiers, ignore.case = TRUE))) {
-        stop("Detected Ensembl IDs as row names. Heatmap requires gene symbols.")
-      }
 
       expr_genes_upper <- toupper(gene_identifiers)
       pathway_genes_upper <- toupper(pathway_genes)
-
       matched_idx <- which(expr_genes_upper %in% pathway_genes_upper)
+
 
       if (length(matched_idx) < 2) {
         stop(sprintf("Gene matching failed: only %d/%d pathway genes matched.",
@@ -508,7 +504,7 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
     output$modal_gene_table <- DT::renderDataTable({
       pdata <- current_data()
       shiny::req(pdata)
-
+      symbol_map <- .rebuild_symbol_map(gsea_res, pdata$data_list$contrast_id)
       # 获取当前checkbox状态
       current_selection <- isolate(modal_checked_genes())
 
@@ -516,8 +512,11 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
       all_genes <- pdata$pathway_genes
       core_genes <- pdata$core_genes
 
+      all_gene_names <- names(genelist)
+      display_gene_name <- .get_display_symbols(all_gene_names, symbol_map)
+
       gene_df <- data.frame(
-        Gene = names(genelist),
+        Gene = display_gene_name,
         Rank_Metric = round(as.numeric(genelist), 3),
         Rank_in_List = seq_along(genelist),
         stringsAsFactors = FALSE
@@ -537,7 +536,9 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
       ), ]
 
       # 生成checkbox列 - 使用与主Table完全相同的方式
-      gene_df$Select <- sapply(gene_df$Gene, function(g) {
+      # checkbox 使用原始大小写的基因名
+      gene_df$Select <- sapply(seq_len(nrow(gene_df)), function(i) {
+        g <- gene_df$Gene[i]  # 已经是原始大小写
         is_checked <- ifelse(g %in% current_selection, 'checked="checked"', '')
         sprintf(
           '<input type="checkbox" class="modal-gene-checkbox" data-id="%s" %s onclick="Shiny.setInputValue(\'%s\', {id: \'%s\', checked: this.checked}, {priority: \'event\'});"/>',

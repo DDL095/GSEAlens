@@ -165,6 +165,13 @@ NULL
 #' @description Unify column names from different backends to: gene_symbol, logFC, stat, pvalue, padj
 #' @keywords internal
 
+# 定义空值合并操作符（如果未定义）
+if (!exists("%||%", mode = "function")) {
+  `%||%` <- function(x, y) {
+    if (is.null(x) || length(x) == 0 || all(is.na(x))) y else x
+  }
+}
+
 .standardize_de_columns <- function(df, backend) {
   # 添加基因名列（保持大小写敏感，但确保存在）
   if ("gene_symbol" %in% colnames(df)) {
@@ -177,10 +184,17 @@ NULL
     df$gene_symbol <- rownames(df)
   }
 
-  # 标准化统计列（DESeq2特定）
+  # 标准化统计列（根据后端类型）
   if (backend == "deseq2") {
+    # DESeq2: stat, log2FoldChange, pvalue, padj
     df$stat <- df$stat %||% df$WaldStatistic %||% NA_real_
     df$logFC <- df$log2FoldChange %||% df$logFC %||% NA_real_
+    df$pvalue <- df$pvalue %||% df$p.value %||% NA_real_
+    df$padj <- df$padj %||% df$adj.P.Val %||% NA_real_
+  } else if (backend == "limma_voom") {
+    # Limma-Voom: t统计量作为stat, P.Value作为pvalue, adj.P.Val作为padj
+    df$stat <- df$stat %||% df$t %||% NA_real_
+    df$logFC <- df$logFC %||% NA_real_
     df$pvalue <- df$pvalue %||% df$P.Value %||% NA_real_
     df$padj <- df$padj %||% df$adj.P.Val %||% NA_real_
   }

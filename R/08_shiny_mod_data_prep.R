@@ -190,7 +190,7 @@ mod_data_prep_server <- function(id, gsea_res) {
           "log2(FPKM)" = "logfpkm",
           "FPKM (raw)" = "fpkm"
         )
-        selected <- "logcpm"
+        selected <- "cpm"
         message("Detected Limma-voom backend, loading corresponding expression types")
       } else if (backend == "deseq2") {
         choices <- c(
@@ -199,11 +199,11 @@ mod_data_prep_server <- function(id, gsea_res) {
           "VST (Variance Stabilizing Transform)" = "vst",
           "log2(Normalized Counts + 1)" = "lognorm"
         )
-        selected <- "logcpm"
+        selected <- "cpm"
         message("Detected DESeq2 backend, loading corresponding expression types")
       } else {
         choices <- c("log2(CPM)" = "logcpm", "CPM (raw)" = "cpm")
-        selected <- "logcpm"
+        selected <- "cpm"
       }
 
       shiny::updateSelectInput(
@@ -493,16 +493,29 @@ mod_data_prep_server <- function(id, gsea_res) {
       )
     })
 
+    # ═══════════════════════════════════════════════════════════════════════════
+    # 修复：显示原始大小写的基因名
+    # ═══════════════════════════════════════════════════════════════════════════
     output$confirmed_genes_display <- shiny::renderUI({
       genes <- applied_genes()
+
       if (length(genes) == 0) {
         shiny::span("(None)", style = "color: #999;")
       } else {
+        # 按需重建 symbol_map（获取原始大小写）
+        current_contrast <- input$selected_contrast
+        if (!is.null(current_contrast) && current_contrast != "") {
+          symbol_map <- .rebuild_symbol_map(gsea_res, current_contrast)
+          display_genes <- .get_display_symbols(genes, symbol_map)
+        } else {
+          display_genes <- genes
+        }
+
         shiny::div(
           style = "margin-top: 5px; padding: 8px; background: #f1f8f4; border-radius: 3px;",
           shiny::strong(length(genes), " genes:", style = "color: #28a745;"),
           shiny::br(),
-          shiny::span(paste(genes, collapse = ", "), style = "font-size: 12px; color: #555;")
+          shiny::span(paste(display_genes, collapse = ", "), style = "font-size: 12px; color: #555;")
         )
       }
     })

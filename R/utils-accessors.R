@@ -347,7 +347,14 @@ get_sample_meta.GseaRes <- function(obj) {
 
   # 策略C: 回退到原有逻辑（选择第一个有效因子）
   if (is.null(target_factor)) {
-    warning("[SampleMeta] Could not determine target_factor from dds_obj, using first valid factor")
+    # 只有在确实需要推断时才发出警告
+    # limma-voom 后端没有 dds_obj，不需要警告
+    is_limma_backend <- !is.null(expr_bundle$dge_list) && is.null(expr_bundle$dds_obj)
+
+    if (!is_limma_backend) {
+      warning("[SampleMeta] Could not determine target_factor from dds_obj, using first valid factor")
+    }
+
     factor_cols <- names(sample_meta)[sapply(sample_meta, is.factor)]
     valid_factors <- factor_cols[sapply(sample_meta[factor_cols], function(x) length(levels(x)) > 1)]
     if (length(valid_factors) > 0) {
@@ -747,4 +754,203 @@ create_addition_template <- function(gsea_res,
           gsub("\\.csv$", ".rds", basename(output_path)), "')")
 
   invisible(TRUE)
+}
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 通用基因名处理工具函数（跨物种、跨后端）
+# 适用于 limma-voom 和 DESeq2 双流程
+# ═══════════════════════════════════════════════════════════════════════════
+
+# 检测基因探针（跨物种通用）- 全大写，用于匹配
+DETECTION_PROBES <- c(
+  # 动物通用管家基因
+  "GAPDH", "ACTB", "ACTIN", "TUBA", "TUBB", "UBC", "UBB", "RPLP0", "RPS18",
+  "RPL13A", "PPIA", "YWHAZ", "HPRT1", "B2M",
+  # 植物通用管家基因
+  "ACTIN2", "ACTIN7", "TUB8", "EF1A", "UBQ10", "UBQ11",
+  # 真核生物通用
+  "18S", "28S", "RPS5", "RPSA"
+)
+
+
+#' @title 智能检测基因名列
+#' @description 自动识别 gene_meta 中的基因名列，支持跨物种、跨后端检测
+#' @param gene_meta data.frame 基因元数据
+#' @return 检测到的列名，或 NULL（检测失败）
+#' @keywords internal
+.detect_gene_symbol_column <- function(gene_meta) {
+  if (is.null(gene_meta) || !is.data.frame(gene_meta) || nrow(gene_meta) == 0) {
+    return(NULL)
+  }
+
+  # 策略1：探针法（最鲁棒）
+  for (col_name in colnames(gene_meta)) {
+    col_data <- gene_meta[[col_name]]
+    if (!is.character(col_data) && !is.factor(col_data)) next
+    if (length(col_data) == 0) next
+
+    col_upper <- toupper(as.character(col_data))
+    matched <- sum(col_upper %in% DETECTION_PROBES, na.rm = TRUE)
+
+    if (matched >= 2) {
+      message(sprintf("[GeneDetector] Detected gene column '%s' by probe matching (matched %d housekeeping genes)",
+                      col_name, matched))
+      return(col_name)
+    }
+  }
+
+  # 策略2：传统列名兜底
+  fallback_names <- c(
+    "SYMBOL", "symbol", "Gene", "gene_name", "gene",
+    "GeneSymbol", "gene_symbol", "gene_id", "GeneID",
+    "Gene_Name", "geneID"
+  )
+  for (name in fallback_names) {
+    if (name %in% colnames(gene_meta)) {
+      message(sprintf("[GeneDetector] Using fallback column '%s'", name))
+      return(name)
+    }
+  }
+
+  warning("[GeneDetector] Failed to detect gene symbol column in gene_meta")
+  return(NULL)
+}
+
+
+#' @title 按需重建大小写映射表
+#' @description 从 de_store 中重建 gene_symbol 大小写映射，用于显示层
+#' @param gsea_res GseaRes 对象
+#' @param contrast_id 对比组 ID
+#' @return 命名向量，names = 大写基因名，values = 原始大小写
+#' @keywords internal
+.rebuild_symbol_map <- function(gsea_res, contrast_id) {
+  de_df <- gsea_res$de_store[[contrast_id]]
+  if (is.null(de_df) || !"gene_symbol" %in% colnames(de_df)) {
+    warning(sprintf("[SymbolMap] de_store not available for contrast '%s'", contrast_id))
+    return(NULL)
+  }
+
+  gene_syms <- de_df$gene_symbol
+  gene_syms <- gene_syms[!is.na(gene_syms) & gene_syms != ""]
+
+  if (length(gene_syms) == 0) {
+    warning("[SymbolMap] No valid gene symbols found in de_store")
+    return(NULL)
+  }
+
+  symbol_map <- setNames(gene_syms, toupper(gene_syms))
+  message(sprintf("[SymbolMap] Built mapping for %d genes (contrast: %s)",
+                  length(symbol_map), contrast_id))
+  return(symbol_map)
+}
+
+
+#' @title 获取显示用基因名
+#' @description 根据大小写映射表，返回基因的原始大小写形式
+#' @param gene 基因名（任意大小写）
+#' @param symbol_map 大小写映射表（由 .rebuild_symbol_map 生成）
+#' @return 原始大小写的基因名，若无映射则返回原值
+#' @keywords internal
+.get_display_symbol <- function(gene, symbol_map) {
+  if (is.null(symbol_map) || is.null(gene) || is.na(gene) || gene == "") {
+    return(gene)
+  }
+  upper_gene <- toupper(as.character(gene))
+  if (upper_gene %in% names(symbol_map)) {
+    return(symbol_map[[upper_gene]])
+  }
+  return(gene)
+}
+
+
+#' @title 批量获取显示用基因名
+#' @param genes 字符向量
+#' @param symbol_map 大小写映射表
+#' @return 原始大小写的基因名字符向量
+#' @keywords internal
+.get_display_symbols <- function(genes, symbol_map) {
+  sapply(genes, function(g) .get_display_symbol(g, symbol_map), USE.NAMES = FALSE)
+}
+
+
+#' @title 转换表达矩阵行名为基因符号
+#' @description 自动检测并转换表达矩阵的 rownames，支持 Ensembl ID → Gene Symbol
+#' @param expr_mat 表达矩阵
+#' @param gene_meta 基因元数据
+#' @param gsea_res GseaRes 对象（用于获取后端信息）
+#' @return 转换后的表达矩阵（行名已更新）
+#' @keywords internal
+.convert_expr_rownames <- function(expr_mat, gene_meta, gsea_res) {
+  if (is.null(expr_mat) || is.null(rownames(expr_mat))) {
+    return(expr_mat)
+  }
+
+  current_rownames <- rownames(expr_mat)
+
+  # 检测是否为 Ensembl ID 格式
+  is_ensembl <- any(grepl("^ENS[A-Z]{0,3}G[0-9]+", current_rownames, ignore.case = TRUE))
+
+  if (!is_ensembl) {
+    # 检查是否为基因符号（通过探针检测）
+    detected_col <- .detect_gene_symbol_column(gene_meta)
+    if (!is.null(detected_col)) {
+      message(sprintf("[ExprConvert] Row names already appear to be gene symbols"))
+    }
+    return(expr_mat)
+  }
+
+  # 需要转换：Ensembl ID → Gene Symbol
+  message("[ExprConvert] Detected Ensembl IDs as row names, attempting conversion...")
+
+  gene_symbol_col <- .detect_gene_symbol_column(gene_meta)
+
+  if (is.null(gene_symbol_col)) {
+    stop("Ensembl IDs detected but gene symbol column not found in gene_meta. ",
+         "Cannot convert row names for heatmap plotting.")
+  }
+
+  # 构建映射
+  gm <- gene_meta
+
+  # 查找 GeneID 列（用于匹配 Ensembl ID）
+  geneid_col <- NULL
+  for (name in c("GeneID", "gene_id", "geneID", "ENSEMBL", "ensembl_id")) {
+    if (name %in% colnames(gm)) {
+      geneid_col <- name
+      break
+    }
+  }
+
+  if (is.null(geneid_col)) {
+    stop("Ensembl IDs detected but GeneID column not found in gene_meta. ",
+         "Available columns: ", paste(colnames(gm), collapse = ", "))
+  }
+
+  # 构建映射向量
+  ensembl_ids <- gm[[geneid_col]]
+  gene_symbols <- gm[[gene_symbol_col]]
+  names(gene_symbols) <- ensembl_ids
+
+  # 去重（保留第一个）
+  gene_symbols <- gene_symbols[!duplicated(names(gene_symbols))]
+
+  # 执行转换
+  converted <- gene_symbols[current_rownames]
+  valid_mask <- !is.na(converted) & converted != ""
+
+  n_converted <- sum(valid_mask)
+  n_total <- length(current_rownames)
+
+  if (n_converted == 0) {
+    stop("Conversion failed: no genes matched between expr_mat rownames and gene_meta$",
+         geneid_col)
+  }
+
+  rownames(expr_mat)[valid_mask] <- converted[valid_mask]
+
+  message(sprintf("[ExprConvert] Successfully converted %d/%d genes (%.1f%%)",
+                  n_converted, n_total, 100*n_converted/n_total))
+
+  return(expr_mat)
 }
