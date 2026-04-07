@@ -1,3 +1,8 @@
+if (!exists("%||%", mode = "function")) {
+  `%||%` <- function(x, y) {
+    if (is.null(x) || length(x) == 0 || all(is.na(x))) y else x
+  }
+}
 #' @title Backend Data Extractor
 #' @description Extract standardized data structures from limma or DESeq2 objects.
 #' @keywords internal
@@ -161,13 +166,6 @@ NULL
 #' @title Standardize Differential Expression Table Column Names
 #' @description Unify column names from different backends to: gene_symbol, logFC, stat, pvalue, padj
 #' @keywords internal
-
-if (!exists("%||%", mode = "function")) {
-  `%||%` <- function(x, y) {
-    if (is.null(x) || length(x) == 0 || all(is.na(x))) y else x
-  }
-}
-
 .standardize_de_columns <- function(df, backend) {
   # 添加基因名列（保持大小写敏感，但确保存在）
   if ("gene_symbol" %in% colnames(df)) {
