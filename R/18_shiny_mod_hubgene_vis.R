@@ -1,7 +1,7 @@
 # ==============================================================================
 # 文件：R/18_shiny_mod_hubgene_vis.R
-# 功能：HubGene Network - visNetwork 交互版（精简版）
-# 依赖：visNetwork, 复用 build_hubgene_network() 等现有函数
+# 功能：HubGene Network - visNetwork 交互版
+# 美学调整：Gene透明度、Edge颜色跟随基因stat、highlightNearest
 # ==============================================================================
 
 #' @title HubGene Network (visNetwork) Module UI
@@ -103,12 +103,7 @@ mod_hubgene_vis_ui <- function(id) {
                 min = -2000,
                 max = -50,
                 value = -400,
-                step = 10,
-                post = ""
-              ),
-              shiny::helpText(
-                style = "font-size: 10px; color: #666;",
-                "越负值，节点间排斥越强"
+                step = 10
               ),
 
               shiny::sliderInput(
@@ -119,10 +114,6 @@ mod_hubgene_vis_ui <- function(id) {
                 value = 0.3,
                 step = 0.01
               ),
-              shiny::helpText(
-                style = "font-size: 10px; color: #666;",
-                "将节点拉向中心，防止分散"
-              ),
 
               shiny::sliderInput(
                 ns("vis_spring_length"),
@@ -131,10 +122,6 @@ mod_hubgene_vis_ui <- function(id) {
                 max = 500,
                 value = 150,
                 step = 5
-              ),
-              shiny::helpText(
-                style = "font-size: 10px; color: #666;",
-                "边的理想长度（像素）"
               ),
 
               shiny::sliderInput(
@@ -145,10 +132,6 @@ mod_hubgene_vis_ui <- function(id) {
                 value = 0.01,
                 step = 0.001
               ),
-              shiny::helpText(
-                style = "font-size: 10px; color: #666;",
-                "边的弹性系数"
-              ),
 
               shiny::sliderInput(
                 ns("vis_damping"),
@@ -157,10 +140,6 @@ mod_hubgene_vis_ui <- function(id) {
                 max = 0.9,
                 value = 0.09,
                 step = 0.01
-              ),
-              shiny::helpText(
-                style = "font-size: 10px; color: #666;",
-                "运动阻尼，防止震荡"
               )
             )
           ),
@@ -190,14 +169,10 @@ mod_hubgene_vis_ui <- function(id) {
             value = 30,
             step = 1
           ),
-          shiny::helpText(
-            style = "font-size: 10px; color: #666;",
-            "节点越大，排斥越强"
-          ),
 
           shiny::sliderInput(
             ns("vis_gene_size"),
-            label = "Gene Node Size:",
+            label = "Gene Node Base Size:",
             min = 5,
             max = 30,
             value = 12,
@@ -299,7 +274,7 @@ mod_hubgene_vis_ui <- function(id) {
 }
 
 
-#' @title HubGene Network (visNetwork) Module Server (Simplified)
+#' @title HubGene Network (visNetwork) Module Server
 #' @keywords internal
 
 mod_hubgene_vis_server <- function(id, data_prep_list, table_controller) {
@@ -307,7 +282,7 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller) {
     ns <- session$ns
 
     # ──────────────────────────────────────────────────────────────
-    # 调试日志（使用 session$userData）
+    # 调试日志
     # ──────────────────────────────────────────────────────────────
     session$userData$debug_log <- character(0)
 
@@ -432,12 +407,19 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller) {
 
       add_debug("Preparing visNetwork...")
 
-      # 获取分组信息用于 tooltip
+      # 获取分组信息
       data_list <- data_prep_list$data()
       left_group <- data_list$left_group
       right_group <- data_list$right_group
 
-      # 节点（添加 title 列用于悬停）
+      # 节点大小参数
+      pw_size <- ifelse(is.null(input$vis_pw_size), 30, input$vis_pw_size)
+      gene_size <- ifelse(is.null(input$vis_gene_size), 12, input$vis_gene_size)
+
+      # ──────────────────────────────────────────────────────────────
+      # 节点构建（添加opacity列）
+      # ──────────────────────────────────────────────────────────────
+
       nodes <- data.frame(
         id = character(),
         label = character(),
@@ -445,24 +427,21 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller) {
         shape = character(),
         color = character(),
         size = numeric(),
+        opacity = numeric(),  # 新增：透明度
         title = character(),
         stringsAsFactors = FALSE
       )
 
-      pw_size <- ifelse(is.null(input$vis_pw_size), 30, input$vis_pw_size)
-      gene_size <- ifelse(is.null(input$vis_gene_size), 12, input$vis_gene_size)
-
-      # 通路节点 tooltip（添加 leading edge 基因数计算）
+      # 通路节点
       if (!is.null(net$nodes$pathway) && nrow(net$nodes$pathway) > 0) {
         for (i in seq_len(nrow(net$nodes$pathway))) {
           row <- net$nodes$pathway[i, ]
           direction <- ifelse(row$NES > 0, left_group, right_group)
 
-          # 计算该通路的 leading edge 连接数
+          # 计算LE连接数
+          le_count <- 0
           if (!is.null(net$edges) && nrow(net$edges) > 0) {
             le_count <- sum(net$edges$target == row$id & net$edges$is_leading_edge, na.rm = TRUE)
-          } else {
-            le_count <- 0
           }
 
           nodes <- rbind(nodes, data.frame(
@@ -472,8 +451,9 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller) {
             shape = "diamond",
             color = ifelse(row$NES > 0, "#E41A1C", "#377EB8"),
             size = pw_size,
+            opacity = 1.0,  # Pathway节点保持不透明
             title = sprintf(
-              "Pathway: %s\nDirection: %s\nNES: %.3f\nFDR: %.2e\nCore (LE): %d",
+              "<b>%s</b><br>Direction: %s<br>NES: %.3f<br>FDR: %.2e<br>LE Genes: %d",
               row$id, direction, row$NES, row$FDR, le_count
             ),
             stringsAsFactors = FALSE
@@ -481,24 +461,17 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller) {
         }
       }
 
-      # 基因节点 tooltip（添加 LE 状态和连接的通路）
+      # 基因节点（添加opacity区分）
       if (!is.null(net$nodes$gene) && nrow(net$nodes$gene) > 0) {
         for (i in seq_len(nrow(net$nodes$gene))) {
           row <- net$nodes$gene[i, ]
-          gene_label <- row$id  # 保持原始大小写
+          gene_label <- row$id
 
-          if (row$stat > 0) {
-            direction <- sprintf("Up in %s", left_group)
-          } else if (row$stat < 0) {
-            direction <- sprintf("Up in %s", right_group)
-          } else {
-            direction <- "Neutral"
-          }
-
-          # 判断是否为 Leading Edge（至少有一条 leading edge 边）
+          # 判断是否为Leading Edge
+          is_le <- FALSE
+          pw_str <- "None"
           if (!is.null(net$edges) && nrow(net$edges) > 0) {
             is_le <- any(net$edges$source == row$id & net$edges$is_leading_edge, na.rm = TRUE)
-            # 获取连接的通路列表
             connected_pws <- unique(net$edges$target[net$edges$source == row$id])
             if (length(connected_pws) > 0) {
               pw_labels <- gsub("HALLMARK_", "", connected_pws)
@@ -508,23 +481,31 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller) {
                 pw_str <- paste(pw_labels[1:5], collapse = ", ")
                 pw_str <- paste0(pw_str, sprintf(" (+%d)", length(pw_labels) - 5))
               }
-            } else {
-              pw_str <- "None"
             }
-          } else {
-            is_le <- FALSE
-            pw_str <- "None"
           }
+
+          # 方向
+          if (row$stat > 0) {
+            direction <- sprintf("Up in %s", left_group)
+          } else if (row$stat < 0) {
+            direction <- sprintf("Up in %s", right_group)
+          } else {
+            direction <- "Neutral"
+          }
+
+          # 透明度：LE=1.0, non-LE=0.5
+          gene_opacity <- ifelse(is_le, 1.0, 0.5)
 
           nodes <- rbind(nodes, data.frame(
             id = paste0("gene_", gene_label),
             label = gene_label,
             group = "gene",
             shape = "dot",
-            color = ifelse(row$stat > 0, "#E41A1C", "#377EB8"),
-            size = gene_size + row$degree * 2,
+            color = ifelse(row$stat > 0, "#E41A1C", ifelse(row$stat < 0, "#377EB8", "#999999")),
+            size = gene_size + row$degree * 3,
+            opacity = gene_opacity,  # 新增：透明度
             title = sprintf(
-              "Gene: %s\nDirection: %s\nStat: %.3f\nHub Degree: %d\nLE: %s\nConnected: %s",
+              "<b>%s</b><br>Direction: %s<br>Stat: %.3f<br>Hub Degree: %d<br>LE: %s<br>Connected: %s",
               gene_label, direction, row$stat, row$degree,
               ifelse(is_le, "YES", "NO"), pw_str
             ),
@@ -533,7 +514,10 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller) {
         }
       }
 
-      # 边
+      # ──────────────────────────────────────────────────────────────
+      # 边构建（颜色跟随基因stat）
+      # ──────────────────────────────────────────────────────────────
+
       edges <- data.frame(
         from = character(),
         to = character(),
@@ -547,16 +531,37 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller) {
       if (!is.null(net$edges) && nrow(net$edges) > 0) {
         for (i in seq_len(nrow(net$edges))) {
           row <- net$edges[i, ]
-          # row$source 和 row$target 保持原始大小写
+
+          # 获取源基因的stat值来决定颜色
+          gene_stat <- 0
+          if (!is.null(net$nodes$gene) && nrow(net$nodes$gene) > 0) {
+            gene_row <- net$nodes$gene[net$nodes$gene$id == row$source, ]
+            if (nrow(gene_row) > 0) {
+              gene_stat <- gene_row$stat[1]
+            }
+          }
+
+          # 颜色跟随基因stat：浅色（带透明度）
+          # 基因stat>0用浅红#E41A1C80，基因stat<0用浅蓝#377EB880
+          if (gene_stat > 0) {
+            edge_color <- "#E41A1C80"  # 浅红色（50%透明）
+          } else if (gene_stat < 0) {
+            edge_color <- "#377EB880"  # 浅蓝色（50%透明）
+          } else {
+            edge_color <- "#99999980"  # 浅灰色
+          }
+
           edges <- rbind(edges, data.frame(
-            from = paste0("gene_", row$source),  # 保持原始大小写
+            from = paste0("gene_", row$source),
             to = paste0("pw_", row$target),
-            color = ifelse(row$is_leading_edge, "#333333", "#AAAAAA"),
-            width = ifelse(row$is_leading_edge, 3, 1),
+            color = edge_color,
+            width = ifelse(row$is_leading_edge, 3, 1.5),
             dashes = !row$is_leading_edge,
-            title = sprintf("Gene: %s -> Pathway: %s\nLeading Edge: %s",
-                            row$source, row$target,
-                            ifelse(row$is_leading_edge, "YES", "NO")),
+            title = sprintf(
+              "<b>Gene:</b> %s<br><b>Pathway:</b> %s<br><b>Leading Edge:</b> %s",
+              row$source, row$target,
+              ifelse(row$is_leading_edge, "YES", "NO")
+            ),
             stringsAsFactors = FALSE
           ))
         }
@@ -564,12 +569,16 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller) {
 
       add_debug(sprintf("Nodes: %d, Edges: %d", nrow(nodes), nrow(edges)))
 
+      # ──────────────────────────────────────────────────────────────
+      # 构建visNetwork对象
+      # ──────────────────────────────────────────────────────────────
+
+      vis <- visNetwork::visNetwork(nodes, edges, width = "100%", height = "650px")
+
       # 物理引擎
       physics_enabled <- isTRUE(input$vis_physics)
       solver <- ifelse(is.null(input$vis_solver), "barnesHut", input$vis_solver)
       grav <- ifelse(is.null(input$vis_gravitational), -400, input$vis_gravitational)
-
-      vis <- visNetwork::visNetwork(nodes, edges, width = "100%", height = "650px")
 
       if (physics_enabled) {
         vis <- vis %>% visNetwork::visPhysics(
@@ -593,25 +602,21 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller) {
       seed <- ifelse(is.null(input$vis_seed), 42, input$vis_seed)
       vis <- vis %>% visNetwork::visLayout(randomSeed = seed)
 
-      # 交互
+      # 交互（tooltipDelay=100ms, navigationButtons=TRUE, highlightNearest=TRUE）
+      # 交互（tooltipDelay=100ms, navigationButtons=TRUE）
       vis <- vis %>% visNetwork::visInteraction(
         dragNodes = TRUE,
         dragView = TRUE,
         zoomView = TRUE,
         hover = TRUE,
-        tooltipDelay = 200
+        tooltipDelay = 100,
+        navigationButtons = TRUE
       )
 
-      # 图例
-      vis <- vis %>% visNetwork::visLegend(
-        enabled = TRUE,
-        position = "right",
-        addNodes = list(
-          list(label = "Pathway Up", shape = "diamond", color = "#E41A1C"),
-          list(label = "Pathway Down", shape = "diamond", color = "#377EB8"),
-          list(label = "Gene Up", shape = "dot", color = "#E41A1C"),
-          list(label = "Gene Down", shape = "dot", color = "#377EB8")
-        )
+      # 新增：点击高亮相关节点和边
+      vis <- vis %>% visNetwork::visOptions(
+        highlightNearest = TRUE,
+        nodesIdSelection = TRUE
       )
 
       # 点击事件
@@ -647,9 +652,11 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller) {
       pw <- ifelse(is.null(net$nodes$pathway), 0, nrow(net$nodes$pathway))
       gene <- ifelse(is.null(net$nodes$gene), 0, nrow(net$nodes$gene))
       edge <- ifelse(is.null(net$edges), 0, nrow(net$edges))
+      le_edges <- ifelse(is.null(net$edges), 0, sum(net$edges$is_leading_edge, na.rm = TRUE))
       cat(sprintf("Pathways: %d\n", pw))
       cat(sprintf("Hub Genes: %d\n", gene))
-      cat(sprintf("Edges: %d\n", edge))
+      cat(sprintf("Total Edges: %d\n", edge))
+      cat(sprintf("LE Edges: %d\n", le_edges))
     })
 
     # ──────────────────────────────────────────────────────────────
@@ -664,12 +671,15 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller) {
       pw <- ifelse(is.null(net$nodes$pathway), 0, nrow(net$nodes$pathway))
       gene <- ifelse(is.null(net$nodes$gene), 0, nrow(net$nodes$gene))
       edge <- ifelse(is.null(net$edges), 0, nrow(net$edges))
+      le_edges <- ifelse(is.null(net$edges), 0, sum(net$edges$is_leading_edge, na.rm = TRUE))
       physics <- if (isTRUE(input$vis_physics)) "ON" else "OFF"
 
       shiny::tagList(
-        shiny::strong(sprintf("HubGene Network | %d Pathways + %d Hub Genes + %d Edges", pw, gene, edge)),
+        shiny::strong(sprintf("HubGene Network | %d Pathways + %d Hub Genes + %d Edges (LE: %d)",
+                              pw, gene, edge, le_edges)),
         htmltools::tags$br(),
-        htmltools::tags$small(sprintf("Physics: %s | FDR < %.2f", physics, input$vis_fdr %||% 0.25))
+        htmltools::tags$small(sprintf("Physics: %s | FDR < %.2f | tooltipDelay: 100ms | highlightNearest: TRUE",
+                                      physics, input$vis_fdr %||% 0.25))
       )
     })
 
@@ -679,6 +689,8 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller) {
 
     output$vis_pathway_list <- shiny::renderUI({
       pathways <- final_pathways()
+      net <- tryCatch(net_data(), error = function(e) NULL)
+
       if (length(pathways) == 0) {
         return(shiny::div("No pathways", style = "color: #856404;"))
       }
@@ -689,11 +701,15 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller) {
         row_idx <- which(df$ID == pid)
         if (length(row_idx) == 0) return(NULL)
         row <- df[row_idx[1], ]
+        le_count <- 0
+        if (!is.null(net) && !is.null(net$edges)) {
+          le_count <- sum(net$edges$target == pid & net$edges$is_leading_edge, na.rm = TRUE)
+        }
         shiny::div(
           style = "background: #f8f9fa; padding: 5px; margin-bottom: 3px; border-left: 3px solid #007bff; font-size: 10px;",
           shiny::strong(gsub("HALLMARK_", "", pid)),
           htmltools::tags$br(),
-          sprintf("NES: %.2f", as.numeric(row$NES))
+          sprintf("NES: %.2f | LE: %d", as.numeric(row$NES), le_count)
         )
       })
     })
@@ -704,29 +720,44 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller) {
 
     output$vis_node_detail <- DT::renderDataTable({
       net <- tryCatch(net_data(), error = function(e) NULL)
-      if (is.null(net) || is.null(net$nodes$pathway) && is.null(net$nodes$gene)) {
+      if (is.null(net) || (is.null(net$nodes$pathway) && is.null(net$nodes$gene))) {
         return(DT::datatable(data.frame(Message = "No nodes"), options = list(dom = "t")))
       }
 
       rows <- list()
+
+      # Pathway节点
       if (!is.null(net$nodes$pathway) && nrow(net$nodes$pathway) > 0) {
         for (i in seq_len(nrow(net$nodes$pathway))) {
           r <- net$nodes$pathway[i, ]
+          le_count <- sum(net$edges$target == r$id & net$edges$is_leading_edge, na.rm = TRUE)
+          total_count <- sum(net$edges$target == r$id, na.rm = TRUE)
           rows[[length(rows) + 1]] <- data.frame(
-            ID = r$id, Type = "Pathway",
+            ID = r$id,
+            Type = "Pathway",
             NES = round(r$NES, 3),
-            Degree = NA,
+            Direction = ifelse(r$NES > 0, "Up", "Down"),
+            Degree = NA_integer_,  # 添加空列
+            LE = le_count,
+            Total = total_count,
             stringsAsFactors = FALSE
           )
         }
       }
+
+      # Gene节点
       if (!is.null(net$nodes$gene) && nrow(net$nodes$gene) > 0) {
         for (i in seq_len(nrow(net$nodes$gene))) {
           r <- net$nodes$gene[i, ]
+          is_le <- any(net$edges$source == r$id & net$edges$is_leading_edge, na.rm = TRUE)
           rows[[length(rows) + 1]] <- data.frame(
-            ID = r$id, Type = "Gene",
+            ID = r$id,
+            Type = "Gene",
             NES = round(r$stat, 3),
-            Degree = r$degree,
+            Direction = ifelse(r$stat > 0, "Up", ifelse(r$stat < 0, "Down", "Neutral")),
+            Degree = r$degree,  # 保持原有
+            LE = ifelse(is_le, "YES", "NO"),
+            Total = NA_integer_,  # 添加空列
             stringsAsFactors = FALSE
           )
         }
@@ -747,7 +778,9 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller) {
         data.frame(
           Gene = r$source,
           Pathway = r$target,
-          LeadingEdge = ifelse(r$is_leading_edge, "Yes", "No"),
+          LeadingEdge = ifelse(r$is_leading_edge, "YES", "NO"),
+          Width = ifelse(r$is_leading_edge, 3, 1.5),
+          Style = ifelse(r$is_leading_edge, "Solid", "Dashed"),
           stringsAsFactors = FALSE
         )
       })

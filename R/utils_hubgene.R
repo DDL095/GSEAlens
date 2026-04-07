@@ -108,10 +108,10 @@ build_hubgene_network <- function(gsea_task, pathway_ids,
     }
   })
 
-  edges <- do.call(rbind, c(edges_list, stringsAsFactors = FALSE))
-
-  if (!is.null(edges)) {
-    rownames(edges) <- NULL
+  if (length(edges_list) > 0 && !all(sapply(edges_list, is.null))) {
+    edges <- do.call(plyr::rbind.fill, edges_list)
+  } else {
+    edges <- NULL
   }
 
   return(list(
