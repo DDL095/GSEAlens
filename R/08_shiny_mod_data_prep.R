@@ -166,6 +166,18 @@ mod_data_prep_server <- function(id, gsea_res) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
+    # === 新增：获取物种信息并更新 label ===
+    species <- gsea_res$geneset_info$species %||% "HS"
+
+    shiny::observe({
+      shiny::updateSelectizeInput(
+        session,
+        "selected_collections",
+        label = sprintf("Select Gene Set Subgroup [%s]:", species)
+      )
+    })
+    # === 新增结束 ===
+
     result_data <- shiny::reactiveVal(NULL)
     has_initialized <- shiny::reactiveVal(FALSE)
 

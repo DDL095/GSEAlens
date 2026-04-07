@@ -287,7 +287,7 @@ As your GSEA enrichment direction interpretation expert, I am ready. Please anal
           shiny::icon("exclamation-triangle"),
           " No pathways selected",
           shiny::br(),
-          shiny::small("Check 'Joint Plot' in main table")
+          shiny::tags$small("Check 'Joint Plot' in main table")
         )
       } else {
         shiny::div(

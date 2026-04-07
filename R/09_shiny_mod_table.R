@@ -374,7 +374,7 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
         extensions = c('Buttons', 'Scroller', 'ColReorder', 'FixedColumns'),
         options = list(
           scrollX = TRUE,
-          scrollY = "60vh",
+          scrollY = "70vh",
           scroller = TRUE,
           deferRender = TRUE,
           pageLength = -1,
@@ -383,7 +383,7 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
           colReorder = TRUE,
           columnDefs = col_defs,
           order = list(list(0, 'asc')),
-          autoWidth = TRUE,
+          autoWidth = FALSE,
           fixedColumns = list(leftColumns = 2),
           scrollCollapse = TRUE,
           language = list(emptyTable = "No data available", zeroRecords = "No matching records found")
