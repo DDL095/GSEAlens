@@ -230,6 +230,14 @@ launch_gsea_app <- function(gsea_res, addition_data = NULL) {
             mod_hubgene_vis_ui("hubgene_vis")
           ),
 
+          # 在 tabsetPanel 中添加新Tab
+          shiny::tabPanel(
+            title = "AI Interpretation",
+            value = "ai_interpretation",
+            mod_ai_abs_page_ui("ai_abs")
+          )
+          ,
+
           shiny::tabPanel(
             title = "Joint GSEA Canvas",
             shiny::br(),
@@ -277,6 +285,9 @@ launch_gsea_app <- function(gsea_res, addition_data = NULL) {
 
     # 7. HubGene Network 模块（仅保留 visNetwork 版本）
     mod_hubgene_vis_server("hubgene_vis", data_prep_list, table_result, gsea_res)
+
+    mod_ai_abs_page_server("ai_abs", gsea_res, data_prep_list)
+
 
     # 8. Joint GSEA canvas module
     mod_joint_canvas_server("joint_canvas", gsea_res, data_prep_list, table_result)
