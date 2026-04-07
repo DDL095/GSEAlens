@@ -225,13 +225,6 @@ launch_gsea_app <- function(gsea_res, addition_data = NULL) {
           ),
           shiny::tabPanel(
             title = "HubGene Network",
-            value = "hubgene",
-            shiny::br(),
-            mod_hubgene_ui("hubgene")
-          ),
-          # 在现有 tab 附近添加
-          shiny::tabPanel(
-            title = "HubGene Network (vis)",
             value = "hubgene_vis",
             shiny::br(),
             mod_hubgene_vis_ui("hubgene_vis")
@@ -279,11 +272,11 @@ launch_gsea_app <- function(gsea_res, addition_data = NULL) {
     mod_pathway_relation_server("pathway_relation", data_prep_list, gsea_res, table_result)
 
 
-    # 7.HubGene Network 模块
-    mod_hubgene_server("hubgene", data_prep_list, table_result)
+    # 共享 gsea_res 引用（供下游模块使用）
+    shiny::shinyOptions(gsea_res_shared = gsea_res)
 
-    # 在现有 mod_hubgene_server 调用附近添加
-    mod_hubgene_vis_server("hubgene_vis", data_prep_list, table_result)
+    # 7. HubGene Network 模块（仅保留 visNetwork 版本）
+    mod_hubgene_vis_server("hubgene_vis", data_prep_list, table_result, gsea_res)
 
     # 8. Joint GSEA canvas module
     mod_joint_canvas_server("joint_canvas", gsea_res, data_prep_list, table_result)
