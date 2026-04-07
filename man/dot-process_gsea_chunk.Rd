@@ -2,7 +2,7 @@
 % Please edit documentation in R/04_calculation.R
 \name{.process_gsea_chunk}
 \alias{.process_gsea_chunk}
-\title{Process Single GSEA Chunk (Independent Function to Avoid Closure Capturing Large Objects)}
+\title{Process Single GSEA Chunk}
 \usage{
 .process_gsea_chunk(
   chunk_task_names,
@@ -16,7 +16,7 @@
 )
 }
 \arguments{
-\item{chunk_task_names}{Character vector, task names for current chunk}
+\item{chunk_task_names}{Character vector}
 
 \item{task_metadata}{Task metadata list}
 
@@ -36,7 +36,6 @@
 Result list for current chunk
 }
 \description{
-This function is independent from the main function and receives all required data
-  via parameters, avoiding future automatically capturing huge objects from the external environment.
+Process Single GSEA Chunk
 }
 \keyword{internal}

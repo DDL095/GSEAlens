@@ -13,11 +13,6 @@
 #' @param chunk_size Integer. Number of tasks per worker per chunk, default NULL (auto)
 #' @return GseaRes object
 #' @export
-#' @title Batch Parallel GSEA Calculation (Optimized Version - Fixed Global Variable Size Error)
-#' @description Consumes a standard GseaEnv object and performs efficient parallel GSEA calculation.
-#' @export
-#' @title Batch Parallel GSEA Calculation (With Real-time Progress Bar)
-#' @export
 batch_calc_gsea <- function(gsea_env,
                             custom_series_name = "Auto_Analysis",
                             output_dir = "./GSEA_Output",
@@ -27,11 +22,8 @@ batch_calc_gsea <- function(gsea_env,
                             maxGSSize = 500,
                             pvalueCutoff = 1,
                             force = FALSE,
-                            use_progress = FALSE,  # 控制是否显示进度
+                            use_progress = FALSE,
                             chunk_size = NULL) {
-
-
-  # 第一步：参数校验和初始化（保持不变）
 
   .check_gsea_env(gsea_env)
 
@@ -51,9 +43,6 @@ batch_calc_gsea <- function(gsea_env,
     message(sprintf("Cache hit! Existing GSEA capsule detected: %s", rds_name))
     return(readRDS(rds_path))
   }
-
-
-  # 第二步：构建任务列表（保持不变）
 
   registry <- gsea_env$contrast_registry
   de_store <- gsea_env$de_store
@@ -82,12 +71,7 @@ batch_calc_gsea <- function(gsea_env,
   total_tasks <- length(task_metadata)
   message(sprintf("Ready: %d contrast tasks pending calculation...", total_tasks))
 
-
-  # 第三步：并行设置（关键修复：progressr 处理器）
-
-
-  # 设置全局变量大小限制（必须在 plan 之前）
-  options(future.globals.maxSize = 192 * 1024^3)#设置无限大
+  options(future.globals.maxSize = 192 * 1024^3)
 
   total_cores <- parallel::detectCores(logical = TRUE)
   use_cores <- min(total_cores, max(1, workers))
@@ -97,38 +81,28 @@ batch_calc_gsea <- function(gsea_env,
     chunk_size <- max(1, ceiling(total_tasks / (use_cores * 4)))
   }
 
-  # 设置 future 计划
   future::plan(future::multisession, workers = use_cores)
 
-  # 关键修复 1：启用 progressr 处理器（必须在 future_lapply 之前）
   if (use_progress) {
     if (!requireNamespace("progressr", quietly = TRUE)) {
-      stop("Please install progressr package to show progress bar: install.packages('progressr')")
+      stop("Please install progressr package: install.packages('progressr')")
     }
-    progressr::handlers(global = TRUE)  # 启用全局处理器
-    progressr::handlers("progress")      # 使用 progress 包样式（或改为 "txtprogressbar"）
+    progressr::handlers(global = TRUE)
+    progressr::handlers("progress")
   }
 
-  # 准备数据
   worker_term2gene <- gsea_env$geneset$term2gene
   worker_meta_dict <- gsea_env$geneset$meta_dict
   worker_de_list <- as.list(de_store)
 
-  # 构建 chunks
   task_names <- names(task_metadata)
   task_chunks <- split(task_names, ceiling(seq_along(task_names) / chunk_size))
 
   message(sprintf("Chunk strategy: %d chunks, up to %d tasks per chunk",
                   length(task_chunks), chunk_size))
 
-
-  # 第四步：并行计算（关键修复：使用 progressr）
-
-
-  # 创建进度条对象（progressr 风格）
   p <- progressr::progressor(steps = total_tasks, enable = use_progress)
 
-  # 关键修复 2：在 worker 函数中调用 p() 来更新进度
   res_list <- future.apply::future_lapply(
     X = task_chunks,
     FUN = function(chunk_task_names,
@@ -139,9 +113,8 @@ batch_calc_gsea <- function(gsea_env,
                    minGSSize,
                    maxGSSize,
                    pvalueCutoff,
-                   progressor_fn) {  # 接收进度函数
+                   progressor_fn) {
 
-      # 加载必要的包
       if (!requireNamespace("clusterProfiler", quietly = TRUE) ||
           !requireNamespace("dplyr", quietly = TRUE)) {
         stop("Worker missing required packages")
@@ -153,7 +126,6 @@ batch_calc_gsea <- function(gsea_env,
         task_info <- task_metadata[[task_name]]
         task_id <- task_info$task_id
 
-        # 获取原始对比ID
         if (task_info$is_reversed) {
           original_cid <- paste(task_info$right_group, task_info$left_group, sep = "_vs_")
         } else {
@@ -169,12 +141,10 @@ batch_calc_gsea <- function(gsea_env,
             data = NULL,
             genelist = c()
           )
-          # 关键：即使失败也要更新进度
           if (!is.null(progressor_fn)) progressor_fn()
           next
         }
 
-        # 准备排序向量
         genelist <- tryCatch({
           .prepare_rank_vector_fast(de_table, flip = task_info$is_reversed)
         }, error = function(e) {
@@ -192,7 +162,37 @@ batch_calc_gsea <- function(gsea_env,
           next
         }
 
-        # 执行 GSEA
+        detect_case_format <- function(genes) {
+          sample <- head(unique(genes), 100)
+          sample_filtered <- sample[!grepl("^[0-9]", sample)]
+          if (length(sample_filtered) == 0) return("mixed")
+          n_title <- sum(grepl("^[A-Z][a-z]", sample_filtered))
+          n_upper <- sum(grepl("^[A-Z]{2,}$", sample_filtered))
+          if (n_title > n_upper) return("title_case")
+          if (n_upper > n_title) return("upper_case")
+          return("mixed")
+        }
+
+        geneset_species <- gsea_env$geneset$species %||% "HS"
+        term2gene_format <- detect_case_format(term2gene$gene_symbol)
+        de_format <- detect_case_format(names(genelist))
+
+        if (term2gene_format == "upper_case") {
+          if (de_format == "title_case") {
+            names(genelist) <- toupper(names(genelist))
+          }
+        } else if (term2gene_format == "title_case") {
+          if (de_format == "upper_case") {
+            stop(paste0(
+              "[Species Mismatch Error]\n",
+              "Gene set species: Mouse (MM) - requires title case gene symbols\n",
+              "DE gene format: Uppercase (e.g., GAPDH, IRF7) - appears to be human data\n\n",
+              "Please use human gene sets (species='HS') for uppercase DE data,\n",
+              "or provide mouse DE data with title case gene symbols (e.g., Gapdh, Irf7)."
+            ))
+          }
+        }
+
         set.seed(123)
         gsea_res <- tryCatch({
           clusterProfiler::GSEA(
@@ -223,7 +223,6 @@ batch_calc_gsea <- function(gsea_env,
           genelist = genelist
         )
 
-        # 关键：每完成一个任务，更新进度条
         if (!is.null(progressor_fn)) progressor_fn()
       }
 
@@ -236,40 +235,29 @@ batch_calc_gsea <- function(gsea_env,
     minGSSize = minGSSize,
     maxGSSize = maxGSSize,
     pvalueCutoff = pvalueCutoff,
-    progressor_fn = if (use_progress) p else NULL,  # 传递进度函数
+    progressor_fn = if (use_progress) p else NULL,
     future.seed = TRUE,
     future.scheduling = 1.0
   )
 
-
-  # 第五步：清理与结果汇总（关键修复：关闭连接）
-
-
-  # 关闭 future 计划（减少连接警告）
   future::plan(future::sequential)
 
-  # 关键修复 3：主动关闭所有未使用的连接（消除警告）
   all_cons <- showConnections(all = TRUE)
-  if (nrow(all_cons) > 1) {  # 第1行通常是 stdout
+  if (nrow(all_cons) > 1) {
     for (con_idx in as.integer(rownames(all_cons))) {
-      if (con_idx > 2) {  # 保留 stdin(0), stdout(1), stderr(2)
+      if (con_idx > 2) {
         try(suppressWarnings(close.connection(getConnection(con_idx))), silent = TRUE)
       }
     }
   }
 
-  # 强制 GC 清理（可选，但有助于消除警告）
   invisible(gc(verbose = FALSE, full = TRUE))
 
-  # 展平结果
   res_list_flat <- do.call(c, res_list)
   names(res_list_flat) <- names(task_metadata)
 
   end_time <- Sys.time()
   end_ms <- as.numeric(end_time) * 1000
-
-
-  # 第六步：创建结果对象（保持不变）
 
   final_obj <- create_gsea_res(
     metadata = list(
@@ -320,11 +308,8 @@ batch_calc_gsea <- function(gsea_env,
 }
 
 
-
-#' @title Process Single GSEA Chunk (Independent Function to Avoid Closure Capturing Large Objects)
-#' @description This function is independent from the main function and receives all required data
-#'   via parameters, avoiding future automatically capturing huge objects from the external environment.
-#' @param chunk_task_names Character vector, task names for current chunk
+#' @title Process Single GSEA Chunk
+#' @param chunk_task_names Character vector
 #' @param task_metadata Task metadata list
 #' @param de_list DE data in list form
 #' @param term2gene Gene set mapping dataframe
@@ -334,7 +319,6 @@ batch_calc_gsea <- function(gsea_env,
 #' @param pvalueCutoff P-value threshold
 #' @return Result list for current chunk
 #' @keywords internal
-
 .process_gsea_chunk <- function(chunk_task_names,
                                 task_metadata,
                                 de_list,
@@ -344,7 +328,6 @@ batch_calc_gsea <- function(gsea_env,
                                 maxGSSize,
                                 pvalueCutoff) {
 
-  # 在 worker 进程内部加载必要的包（确保 worker 有这些包）
   if (!requireNamespace("clusterProfiler", quietly = TRUE) ||
       !requireNamespace("dplyr", quietly = TRUE)) {
     stop("Worker missing required packages: clusterProfiler or dplyr")
@@ -356,14 +339,12 @@ batch_calc_gsea <- function(gsea_env,
     task_info <- task_metadata[[task_name]]
     task_id <- task_info$task_id
 
-    # 获取原始对比ID（用于查询 de_list）
     if (task_info$is_reversed) {
       original_cid <- paste(task_info$right_group, task_info$left_group, sep = "_vs_")
     } else {
       original_cid <- task_id
     }
 
-    # 查询DE表
     de_table <- de_list[[original_cid]]
 
     if (is.null(de_table) || nrow(de_table) == 0) {
@@ -376,7 +357,6 @@ batch_calc_gsea <- function(gsea_env,
       next
     }
 
-    # 准备排序向量
     genelist <- tryCatch({
       .prepare_rank_vector_fast(de_table, flip = task_info$is_reversed)
     }, error = function(e) {
@@ -394,7 +374,6 @@ batch_calc_gsea <- function(gsea_env,
       next
     }
 
-    # 执行 GSEA 计算
     set.seed(123)
     gsea_res <- tryCatch({
       clusterProfiler::GSEA(
@@ -419,7 +398,6 @@ batch_calc_gsea <- function(gsea_env,
       "Failed/NoEnrich"
     }
 
-    # 注入元数据
     if (status == "Success" && !is.null(meta_dict)) {
       gsea_res@result <- .enrich_gsea_result(gsea_res@result, meta_dict)
     }
@@ -436,47 +414,36 @@ batch_calc_gsea <- function(gsea_env,
 }
 
 
-#' @title Fast Rank Vector Preparation (Optimized Version)
-#' @description Uses tidyverse pipes to optimize rank vector generation
+#' @title Fast Rank Vector Preparation
+#' @param de_table DE result table
+#' @param flip Whether to flip sign
+#' @return Named numeric vector
 #' @keywords internal
-
 .prepare_rank_vector_fast <- function(de_table, flip = FALSE) {
-
-  # 单管道操作，减少中间对象
+  # 保留原始大小写，格式标准化在 worker 函数中基于 TERM2GENE 进行
   vals <- de_table %>%
     dplyr::filter(!is.na(gene_symbol), gene_symbol != "") %>%
-    dplyr::mutate(
-      gene_symbol = toupper(gene_symbol),
-      abs_stat = abs(stat)
-    ) %>%
+    dplyr::mutate(abs_stat = abs(stat)) %>%
     dplyr::arrange(dplyr::desc(abs_stat)) %>%
     dplyr::distinct(gene_symbol, .keep_all = TRUE) %>%
     {
-      # 提取值和名称
       vec <- .$stat
       names(vec) <- .$gene_symbol
       vec
     }
 
-  # 条件翻转
   if (flip) vals <- -vals
-
-  # 排序
   sort(vals, decreasing = TRUE)
 }
 
 
-#' @title GSEA Result Metadata Injection (Safe Version - Fixed for DDS Backend)
-#' @description Merges GSEA results with metadata dictionary ensuring ALL columns are preserved.
-#'   Specifically fixes the missing URL/Collection/Subcollection issue in DESeq2 backend.
-#' @param result_df GSEA result dataframe from clusterProfiler::GSEA
-#' @param meta_dict Metadata dictionary containing ID, Collection, Combo_Name, URL, Description, etc.
-#' @return Enriched dataframe with 17 standard columns
+#' @title GSEA Result Metadata Injection
+#' @param result_df GSEA result dataframe
+#' @param meta_dict Metadata dictionary
+#' @return Enriched dataframe
 #' @keywords internal
-
 .enrich_gsea_result <- function(result_df, meta_dict) {
 
-  # --- 0. 防御性检查 ---
   if (!is.data.frame(result_df) || nrow(result_df) == 0) {
     warning("result_df is invalid or empty")
     return(result_df)
@@ -491,14 +458,11 @@ batch_calc_gsea <- function(gsea_env,
     stop("Both result_df and meta_dict must contain 'ID' column")
   }
 
-  # 保存原始行名和ID
   original_rownames <- rownames(result_df)
   original_ids <- result_df$ID
 
-  # --- 1. 标准化meta_dict列结构（确保所有必需列存在）---
   required_cols <- c("ID", "Description", "URL", "Collection", "Subcollection", "Combo_Name")
 
-  # 如果meta_dict缺少某些列，创建空列占位
   for (col in required_cols) {
     if (!col %in% colnames(meta_dict)) {
       warning(sprintf("meta_dict missing column '%s', creating placeholder", col))
@@ -506,12 +470,10 @@ batch_calc_gsea <- function(gsea_env,
     }
   }
 
-  # 确保Subcollection不为NULL（DESeq2流程中可能出现）
   if (all(is.na(meta_dict$Subcollection)) || is.null(meta_dict$Subcollection)) {
     meta_dict$Subcollection <- ""
   }
 
-  # 确保Combo_Name正确生成（如果缺失）
   if (all(is.na(meta_dict$Combo_Name))) {
     meta_dict$Combo_Name <- ifelse(
       is.na(meta_dict$Subcollection) | meta_dict$Subcollection == "",
@@ -520,84 +482,60 @@ batch_calc_gsea <- function(gsea_env,
     )
   }
 
-  # --- 2. 安全地准备result_df（移除可能与meta_dict冲突的列，但保留核心统计列）---
-  # 定义GSEA核心列（统计结果，必须保留）
   core_stat_cols <- c("ID", "setSize", "enrichmentScore", "NES", "pvalue",
                       "p.adjust", "qvalue", "rank", "leading_edge", "core_enrichment")
 
-  # 定义可能冲突的元数据列（这些应该从meta_dict获取，而非保留原值）
   conflict_cols <- c("Description", "URL", "Collection", "Subcollection", "Combo_Name")
 
-  # 安全移除冲突列（如果存在）
   cols_to_keep <- setdiff(colnames(result_df), conflict_cols)
   result_work <- result_df[, cols_to_keep, drop = FALSE]
 
-  # --- 3. 执行左连接（使用标准dplyr语法，确保列名不冲突）---
-  # 选择meta_dict中需要的列，避免携带过多列
   meta_subset <- meta_dict[, required_cols, drop = FALSE]
 
-  # 使用dplyr::left_join，自动处理后缀
   merged_df <- result_work %>%
     dplyr::left_join(
       meta_subset,
       by = "ID",
-      suffix = c("", "_meta")  # 如果冲突，meta_dict的列加_meta后缀
+      suffix = c("", "_meta")
     )
 
-  # 检查合并结果
   if (nrow(merged_df) != nrow(result_work)) {
     warning(sprintf("Row count changed during merge: %d -> %d",
                     nrow(result_work), nrow(merged_df)))
   }
 
-  # --- 4. 构建标准输出列（确保17列标准格式）---
-
-  # 4.1 生成Display_Collection（从Combo_Name或Collection）
   merged_df$Display_Collection <- dplyr::coalesce(
     merged_df$Combo_Name,
     merged_df$Collection,
     "Unknown"
   )
-  # 确保是因子类型（用于Shiny中的下拉筛选）
   merged_df$Display_Collection <- as.factor(merged_df$Display_Collection)
 
-  # 4.2 生成Pathway_Link（HTML链接格式）
   merged_df$Pathway_Link <- ifelse(
     is.na(merged_df$URL) | merged_df$URL == "",
     sprintf("<b>%s</b>", merged_df$ID),
     sprintf('<a href="%s" target="_blank">%s</a>', merged_df$URL, merged_df$ID)
   )
 
-  # 4.3 确保Description列存在（优先使用meta_dict的Description）
   if ("Description_meta" %in% colnames(merged_df)) {
-    # 如果发生了列名冲突（Description.x/Description.y情况）
-    # 使用meta_dict的Description（更完整的描述）
     merged_df$Description <- dplyr::coalesce(
       merged_df$Description_meta,
       merged_df$ID
     )
-    # 删除临时列
     merged_df$Description_meta <- NULL
   } else if (!"Description" %in% colnames(merged_df)) {
-    # 如果完全没有Description列，使用ID作为后备
     merged_df$Description <- merged_df$ID
   }
 
-  # 处理NA值
   merged_df$Description[is.na(merged_df$Description)] <- merged_df$ID[is.na(merged_df$Description)]
 
-  # --- 5. 清理临时列并恢复行名 ---
-
-  # 删除所有_meta后缀的临时列（如果存在）
   meta_temp_cols <- grep("_meta$", colnames(merged_df), value = TRUE)
   if (length(meta_temp_cols) > 0) {
     merged_df <- merged_df[, !(colnames(merged_df) %in% meta_temp_cols), drop = FALSE]
   }
 
-  # 确保行名正确（使用ID作为行名，这是clusterProfiler的标准）
   merged_df <- as.data.frame(merged_df)
   if ("ID" %in% colnames(merged_df)) {
-    # 检查ID是否有重复
     if (any(duplicated(merged_df$ID))) {
       warning("Duplicate IDs found in result, using original rownames")
       rownames(merged_df) <- original_rownames
@@ -608,7 +546,6 @@ batch_calc_gsea <- function(gsea_env,
     rownames(merged_df) <- original_rownames
   }
 
-  # --- 6. 最终验证（确保17列标准）---
   standard_cols <- c("ID", "setSize", "enrichmentScore", "NES", "pvalue",
                      "p.adjust", "qvalue", "rank", "leading_edge", "core_enrichment",
                      "Description", "URL", "Collection", "Subcollection", "Combo_Name",
@@ -618,13 +555,11 @@ batch_calc_gsea <- function(gsea_env,
   if (length(missing_standard) > 0) {
     warning(sprintf("Final result missing standard columns: %s",
                     paste(missing_standard, collapse = ", ")))
-    # 为缺失的列创建空值
     for (col in missing_standard) {
       merged_df[[col]] <- NA_character_
     }
   }
 
-  # 重新排序列以匹配标准顺序（可选，但有助于一致性）
   present_cols <- intersect(standard_cols, colnames(merged_df))
   extra_cols <- setdiff(colnames(merged_df), standard_cols)
   merged_df <- merged_df[, c(present_cols, extra_cols), drop = FALSE]

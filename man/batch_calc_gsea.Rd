@@ -46,6 +46,4 @@ GseaRes object
 }
 \description{
 Consumes a standard GseaEnv object and performs efficient parallel GSEA calculation.
-
-Consumes a standard GseaEnv object and performs efficient parallel GSEA calculation.
 }

@@ -4,18 +4,20 @@
 \alias{build_gsea_pathways}
 \title{Build GSEA Pathway Database with Interactive Selection}
 \usage{
-build_gsea_pathways(species = "Homo sapiens", auto_select = NULL)
+build_gsea_pathways(species = "HS", auto_select = NULL)
 }
 \arguments{
-\item{species}{Character string specifying the species, default is "Homo sapiens".
-Supports all species available in msigdbr.}
+\item{species}{Character string specifying the species. Options:
+\itemize{
+  \item "HS": Homo sapiens (human, default)
+  \item "MM": Mus musculus (mouse)
+}}
 
 \item{auto_select}{Optional parameter for automated selection. Can be:
 \itemize{
   \item NULL: Launch interactive menu (default)
-  \item "ALL": Load entire MSigDB database
-  \item Integer vector: Index numbers (e.g., c(17, 26))
-  \item Character vector: Collection names (e.g., c("H", "C2:CP:KEGG_LEGACY"))
+  \item "ALL": Load entire MSigDB database for the specified species
+  \item Character vector: Collection names (e.g., c("H", "C5:GO:BP") for human)
 }}
 }
 \value{
@@ -25,23 +27,27 @@ A list object containing:
     \item meta_dict: Metadata dictionary with descriptions, URLs, and collection info
     \item SuperTag: Intelligent batch identifier for the selected collections
     \item collections_used: Data frame of selected collection metadata
+    \item species: Species identifier ("HS" or "MM")
   }
 }
 \description{
 Provides an interactive or automated gene set selection interface
   based on msigdbr, generating standardized pathway objects with intelligent
-  semantic tagging. Supports dynamic handling of unknown future collections
-  and includes C9 perturbation signature compatibility.
+  semantic tagging. Supports both human (HS) and mouse (MM) species.
 }
 \examples{
 \dontrun{
-# Interactive mode
-pathways <- build_gsea_pathways()
+# Human mode (default)
+pathways <- build_gsea_pathways(species = "HS")
+
+# Mouse mode
+pathways <- build_gsea_pathways(species = "MM")
 
 # Automated selection by name
-pathways <- build_gsea_pathways(auto_select = c("H", "C5:GO:BP"))
+pathways <- build_gsea_pathways(species = "HS", auto_select = c("H", "C5:GO:BP"))
+pathways_mm <- build_gsea_pathways(species = "MM", auto_select = c("H", "C5:GO:BP"))
 
 # Load all collections
-pathways <- build_gsea_pathways(auto_select = "ALL")
+pathways <- build_gsea_pathways(species = "HS", auto_select = "ALL")
 }
 }

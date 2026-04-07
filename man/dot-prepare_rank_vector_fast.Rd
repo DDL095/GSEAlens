@@ -2,11 +2,19 @@
 % Please edit documentation in R/04_calculation.R
 \name{.prepare_rank_vector_fast}
 \alias{.prepare_rank_vector_fast}
-\title{Fast Rank Vector Preparation (Optimized Version)}
+\title{Fast Rank Vector Preparation}
 \usage{
 .prepare_rank_vector_fast(de_table, flip = FALSE)
 }
+\arguments{
+\item{de_table}{DE result table}
+
+\item{flip}{Whether to flip sign}
+}
+\value{
+Named numeric vector
+}
 \description{
-Uses tidyverse pipes to optimize rank vector generation
+Fast Rank Vector Preparation
 }
 \keyword{internal}

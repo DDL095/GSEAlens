@@ -2,20 +2,19 @@
 % Please edit documentation in R/04_calculation.R
 \name{.enrich_gsea_result}
 \alias{.enrich_gsea_result}
-\title{GSEA Result Metadata Injection (Safe Version - Fixed for DDS Backend)}
+\title{GSEA Result Metadata Injection}
 \usage{
 .enrich_gsea_result(result_df, meta_dict)
 }
 \arguments{
-\item{result_df}{GSEA result dataframe from clusterProfiler::GSEA}
+\item{result_df}{GSEA result dataframe}
 
-\item{meta_dict}{Metadata dictionary containing ID, Collection, Combo_Name, URL, Description, etc.}
+\item{meta_dict}{Metadata dictionary}
 }
 \value{
-Enriched dataframe with 17 standard columns
+Enriched dataframe
 }
 \description{
-Merges GSEA results with metadata dictionary ensuring ALL columns are preserved.
-  Specifically fixes the missing URL/Collection/Subcollection issue in DESeq2 backend.
+GSEA Result Metadata Injection
 }
 \keyword{internal}
