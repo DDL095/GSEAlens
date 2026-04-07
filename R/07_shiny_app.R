@@ -286,10 +286,11 @@ launch_gsea_app <- function(gsea_res, addition_data = NULL) {
     # 7. HubGene Network 模块（仅保留 visNetwork 版本）
     mod_hubgene_vis_server("hubgene_vis", data_prep_list, table_result, gsea_res)
 
-    mod_ai_abs_page_server("ai_abs", gsea_res, data_prep_list)
+    # 8. AI 分析
+    mod_ai_abs_page_server("ai_abs", gsea_res, data_prep_list, table_result)
 
 
-    # 8. Joint GSEA canvas module
+    # 9. Joint GSEA canvas module
     mod_joint_canvas_server("joint_canvas", gsea_res, data_prep_list, table_result)
   }
 

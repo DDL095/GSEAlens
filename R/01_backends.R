@@ -158,14 +158,10 @@ NULL
 }
 
 
-# 3. 辅助函数
-
-
 #' @title Standardize Differential Expression Table Column Names
 #' @description Unify column names from different backends to: gene_symbol, logFC, stat, pvalue, padj
 #' @keywords internal
 
-# 定义空值合并操作符（如果未定义）
 if (!exists("%||%", mode = "function")) {
   `%||%` <- function(x, y) {
     if (is.null(x) || length(x) == 0 || all(is.na(x))) y else x
