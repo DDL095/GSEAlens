@@ -207,7 +207,9 @@ As your GSEA enrichment direction interpretation expert, I am ready. Please anal
 - **|NES|**: Absolute Normalized Enrichment Score. |NES| >= 1.5 indicates significant enrichment; |NES| >= 2.0 indicates strong enrichment
 - **Enrichment Direction**: Enrichment in {left_group} indicates activation in the {left_group} group; enrichment in {right_group} indicates activation in the {right_group} group
 - **FDR**: Multiple testing corrected P-value. FDR < 0.25 is the MSigDB standard threshold
-- **Leading Edge Genes**: Core contributing genes, key to understanding regulatory mechanisms'
+- **Leading Edge Genes**: Core contributing genes, key to understanding regulatory mechanisms
+- **Numbers may be presented in scientific notation,like 1.45e-03.'
+
 
     # 初始化自定义模板为空
     shiny::observe({
