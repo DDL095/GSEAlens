@@ -2,19 +2,22 @@
 % Please edit documentation in R/utils-accessors.R
 \name{.rebuild_symbol_map}
 \alias{.rebuild_symbol_map}
-\title{按需重建大小写映射表}
+\title{Rebuild Gene Symbol Case Mapping}
 \usage{
 .rebuild_symbol_map(gsea_res, contrast_id)
 }
 \arguments{
-\item{gsea_res}{GseaRes 对象}
+\item{gsea_res}{A GseaRes object.}
 
-\item{contrast_id}{对比组 ID}
+\item{contrast_id}{Character string specifying the contrast ID.}
 }
 \value{
-命名向量，names = 大写基因名，values = 原始大小写
+A named character vector where names are uppercase gene symbols and
+  values are the original case. Returns \code{NULL} if mapping cannot be
+  constructed.
 }
 \description{
-从 de_store 中重建 gene_symbol 大小写映射，用于显示层
+Reconstruct gene symbol case mapping from differential expression
+  results for display purposes.
 }
 \keyword{internal}

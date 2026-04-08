@@ -15,5 +15,5 @@ get_term_genes(gsea_res, pathway_id)
 Character vector
 }
 \description{
-Extract complete gene list for a pathway from geneset_info
+Extract complete gene list for a pathway from geneset_info.
 }

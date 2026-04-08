@@ -5,7 +5,7 @@ Version: 0.0.9
 Authors@R: 
   person("Dudali", role = c("aut", "cre"), email = "sealgod@qq.com")
 Description: Interactive GSEA exploration and visualization platform supporting both Limma-Voom and DESeq2 backends.
-License: MIT + file LICENSE
+License: MIT
 Encoding: UTF-8
 LazyData: false
 RoxygenNote: 7.3.3
@@ -48,6 +48,7 @@ Imports:
     jsonlite,
     clipr,
     progressr,
+    plyr,
     BiocParallel
 Suggests: testthat (>= 3.0.0),
     knitr,

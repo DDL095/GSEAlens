@@ -1,3 +1,5 @@
+# Section: Pathway Modal Module ----
+
 #' @title Pathway Detail Modal UI
 #' @keywords internal
 mod_pathway_modal_ui <- function(id) {

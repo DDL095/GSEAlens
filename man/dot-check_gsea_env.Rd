@@ -7,10 +7,10 @@
 .check_gsea_env(env_obj)
 }
 \arguments{
-\item{env_obj}{GseaEnv object}
+\item{env_obj}{GseaEnv object to validate}
 }
 \value{
-TRUE or stop with error
+TRUE if validation passes, otherwise stops with an error
 }
 \description{
 Internal function to ensure object structure conforms to specification.

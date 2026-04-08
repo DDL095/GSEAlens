@@ -13,6 +13,10 @@ mod_quadrant_ui(id)
 Shiny UI tagList
 }
 \description{
+Four-quadrant interactive visualization module for pathway and gene analysis.
+  Provides synchronized pathway selection, gene ranking, differential expression volcano,
+  and expression boxplot visualizations with bidirectional table-volcano synchronization.
+
 UI components for the four-quadrant interactive visualization
 }
 \keyword{internal}

@@ -6,7 +6,12 @@
 \usage{
 .auto_detect_addition_data()
 }
+\value{
+A validated data.frame or NULL if no file found
+}
 \description{
-Search working directory for default addition_data files
+Search working directory for default addition_data files.
+  Checks for 'addition_data_gsealens.rds' or 'addition_data_gsealens.csv'
+  in the current working directory.
 }
 \keyword{internal}

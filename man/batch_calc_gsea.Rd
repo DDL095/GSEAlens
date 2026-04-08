@@ -2,7 +2,7 @@
 % Please edit documentation in R/04_calculation.R
 \name{batch_calc_gsea}
 \alias{batch_calc_gsea}
-\title{Batch Parallel GSEA Calculation (Optimized Version)}
+\title{Batch Parallel GSEA Calculation}
 \usage{
 batch_calc_gsea(
   gsea_env,

@@ -20,7 +20,7 @@ Returns the parsed GseaRes or GseaEnv capsule object.
 }
 \description{
 Safely load a computation capsule. If the file is moved from its
-original project path (e.g., copied to desktop), the engine will automatically
-restore the standard folder structure in the current working directory and
-relocate the capsule. Fully compatible with GseaEnv and GseaRes objects.
+  original project path (e.g., copied to desktop), the engine will automatically
+  restore the standard folder structure in the current working directory and
+  relocate the capsule. Fully compatible with GseaEnv and GseaRes objects.
 }

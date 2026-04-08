@@ -13,7 +13,7 @@ build_edge_list_safely(core_genes_list, min_shared_genes = 2)
 }
 \value{
 Data frame with columns: from, to, shared, weight (Jaccard index),
-        overlap_coef, dice_coef, shared_genes
+  overlap_coef, dice_coef, shared_genes
 }
 \description{
 Safely construct edge list for pathway network based on Jaccard

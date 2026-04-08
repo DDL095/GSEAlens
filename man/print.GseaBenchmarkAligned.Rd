@@ -2,10 +2,26 @@
 % Please edit documentation in R/utils-benchmark.R
 \name{print.GseaBenchmarkAligned}
 \alias{print.GseaBenchmarkAligned}
-\title{Print GSEA Benchmark Alignment Results}
+\title{Print Method for GSEA Benchmark Alignment Results}
 \usage{
 \method{print}{GseaBenchmarkAligned}(x, ...)
 }
+\arguments{
+\item{x}{An object of class 'GseaBenchmarkAligned'}
+
+\item{...}{Additional arguments passed to print}
+}
+\value{
+The input object x (invisibly)
+}
 \description{
-Print GSEA Benchmark Alignment Results
+Formats and displays a summary of aligned GSEA benchmark data,
+  including computation parameters, monitoring statistics, and phase-wise
+  memory usage.
+}
+\examples{
+\dontrun{
+data <- align_benchmark_data(gsea_res, "system_monitor.csv")
+print(data)
+}
 }

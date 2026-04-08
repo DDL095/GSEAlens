@@ -13,13 +13,15 @@ calculate_overlap_ratio(
 \arguments{
 \item{pathway_genes}{Gene set of pathway (defined by TERM2GENE)}
 
-\item{de_genes}{Differentially expressed genes (filtered by pvalue threshold)}
+\item{de_genes}{Differentially expressed genes (filtered by p-value threshold)}
 
-\item{ratio_mode}{Character, "ora" (intersection/pathway size) or "leading" (intersection/DE size)}
+\item{ratio_mode}{Character, "ora" (intersection/pathway size) or "leading"
+(intersection/DE size)}
 }
 \value{
 Numeric, ratio value
 }
 \description{
-Calculate overlap ratio between pathway genes and differentially expressed genes
+Calculate overlap ratio between pathway genes and differentially
+  expressed genes.
 }

@@ -7,13 +7,18 @@
 get_hubgene_legend(left_group = "A", right_group = "B")
 }
 \arguments{
-\item{left_group}{Left group name}
+\item{left_group}{Left group name (e.g., treatment or case)}
 
-\item{right_group}{Right group name}
+\item{right_group}{Right group name (e.g., control or reference)}
 }
 \value{
-Named list with legend colors and labels
+A named list containing:
+  \item{pathway_up}{Color for up-regulated pathways}
+  \item{pathway_down}{Color for down-regulated pathways}
+  \item{gene_up}{Color for up-regulated genes}
+  \item{gene_down}{Color for down-regulated genes}
+  \item{labels}{Named list of legend labels}
 }
 \description{
-Generate color legend data for plot
+Generate color legend data for HubGene network plot.
 }

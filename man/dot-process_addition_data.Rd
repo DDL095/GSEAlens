@@ -6,7 +6,14 @@
 \usage{
 .process_addition_data(addition_data)
 }
+\arguments{
+\item{addition_data}{A data.frame or character vector (file path)}
+}
+\value{
+A validated data.frame with addition data
+}
 \description{
-Internal function to handle various addition_data input types
+Internal function to handle various addition_data input types.
+  Supports data.frame objects or file paths (.csv, .rds formats).
 }
 \keyword{internal}

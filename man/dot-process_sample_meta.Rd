@@ -2,11 +2,19 @@
 % Please edit documentation in R/utils-accessors.R
 \name{.process_sample_meta}
 \alias{.process_sample_meta}
-\title{Internal Sample Metadata Processing (DESeq2 Target Factor Aware)}
+\title{Internal Sample Metadata Processing}
 \usage{
 .process_sample_meta(sample_meta, expr_bundle)
 }
+\arguments{
+\item{sample_meta}{Raw sample metadata (possibly DFrame).}
+
+\item{expr_bundle}{Expression bundle containing raw_counts, dds_obj, and
+other components for row name recovery.}
+}
 \description{
-Now automatically infers target_factor from dds_obj@design for DESeq2 workflows.
+Automatically infers target_factor from dds_obj@design for
+  DESeq2 workflows, handles DFrame conversion, and creates a unified
+  'group' column for consistent downstream processing.
 }
 \keyword{internal}

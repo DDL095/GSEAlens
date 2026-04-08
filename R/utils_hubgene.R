@@ -1,21 +1,28 @@
 # ==============================================================================
-# 文件: R/utils_hubgene.R
-# 修复: 确保 de_df 正确传递，stat 能正常读取
+# File: R/utils_hubgene.R
+# Purpose: HubGene network construction and visualization utilities
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
-# 修改: build_hubgene_network() 函数 - 添加 de_df 参数传递
+# Modified: build_hubgene_network() function - Added de_df parameter passing
 # ------------------------------------------------------------------------------
 
-#' @title Build HubGene Network Data Structure (Enhanced with Leading Edge)
-#' @description Build complete network data with leading edge information for edges.
-#'   Now properly passes de_df to extract_hub_genes for stat extraction.
+#' Build HubGene Network Data Structure (Enhanced with Leading Edge)
+#'
+#' Build complete network data with leading edge information for edges.
+#' Now properly passes de_df to extract_hub_genes for stat extraction.
+#'
 #' @param gsea_task GseaTask object
-#' @param pathway_ids Selected pathway IDs
-#' @param min_hub_degree Minimum degree for hub genes
-#' @param de_df Optional DE data frame with stat column
+#' @param pathway_ids Character vector of selected pathway IDs
+#' @param min_hub_degree Minimum degree threshold for hub genes (default: 2)
+#' @param de_df Optional DE data frame containing stat column
 #' @param res_df Optional pathway result data frame
-#' @return list with nodes, edges, and hub_df data frames
+#'
+#' @return A list with three components:
+#'   \item{nodes}{A list containing pathway and gene data frames}
+#'   \item{edges}{Edge data frame with source, target, and leading edge info}
+#'   \item{hub_df}{Hub gene data frame from extraction}
+#'
 #' @export
 build_hubgene_network <- function(gsea_task, pathway_ids,
                                   min_hub_degree = 2,
@@ -23,7 +30,7 @@ build_hubgene_network <- function(gsea_task, pathway_ids,
                                   res_df = NULL) {
 
   # Extract hub genes (now includes leading edge info)
-  # 修复: 正确传递 de_df 参数
+  # Fixed: Properly pass de_df parameter
   hub_df <- extract_hub_genes(gsea_task, pathway_ids, min_hub_degree, de_df = de_df)
 
   if (is.null(hub_df) || nrow(hub_df) == 0) {
@@ -123,17 +130,27 @@ build_hubgene_network <- function(gsea_task, pathway_ids,
 
 
 # ------------------------------------------------------------------------------
-# 修改: extract_hub_genes() 函数 - 添加调试输出，帮助诊断问题
+# Modified: extract_hub_genes() function - Added debug output for diagnosis
 # ------------------------------------------------------------------------------
 
-#' @title Extract Hub Genes from Selected Pathways (Enhanced with Leading Edge)
-#' @description Extract hub genes with their leading edge status for each pathway.
+#' Extract Hub Genes from Selected Pathways (Enhanced with Leading Edge)
+#'
+#' Extract hub genes with their leading edge status for each pathway.
+#' A gene is considered a hub if it appears in at least min_degree pathways.
+#'
 #' @param gsea_task GseaTask object
 #' @param pathway_ids Character vector of pathway IDs to analyze
 #' @param min_degree Minimum number of pathways a gene must appear in (default: 2)
 #' @param de_df Optional differential expression data frame with stat column
-#' @return data.frame with columns: gene, degree, pathways, is_hub, stat,
-#'         pathway_leading_edges (list column with per-pathway status)
+#'
+#' @return A data frame with columns:
+#'   \item{gene}{Gene symbol}
+#'   \item{degree}{Number of pathways the gene appears in}
+#'   \item{pathways}{Comma-separated list of pathway IDs}
+#'   \item{is_hub}{Logical indicating if gene is a hub (degree >= min_degree)}
+#'   \item{stat}{Statistic value from de_df or geneList}
+#'   \item{pathway_leading_edges}{List column with per-pathway leading edge status}
+#'
 #' @export
 extract_hub_genes <- function(gsea_task, pathway_ids, min_degree = 2, de_df = NULL) {
 
@@ -150,7 +167,7 @@ extract_hub_genes <- function(gsea_task, pathway_ids, min_degree = 2, de_df = NU
   }
 
   # ===========================================
-  # 获取 Leading Edge 基因列表
+  # Extract Leading Edge gene lists
   # ===========================================
   leading_edge_genes <- list()
   res_df <- as.data.frame(gsea_task$gsea_res@result)
@@ -173,13 +190,13 @@ extract_hub_genes <- function(gsea_task, pathway_ids, min_degree = 2, de_df = NU
   }
 
   # ===========================================
-  # 源头过滤：只保留在样本中表达的基因
+  # Source filtering: keep only expressed genes
   # ===========================================
 
   valid_genes <- NULL
 
   if (!is.null(de_df)) {
-    # 优先使用 DE 表中有 stat 值的基因
+    # Preferentially use genes with stat values from DE table
     if ("gene_symbol" %in% colnames(de_df) && "stat" %in% colnames(de_df)) {
       valid_genes <- de_df$gene_symbol[!is.na(de_df$stat)]
       valid_genes <- toupper(trimws(as.character(valid_genes)))
@@ -195,7 +212,7 @@ extract_hub_genes <- function(gsea_task, pathway_ids, min_degree = 2, de_df = NU
     }
   }
 
-  # 如果 DE 表无法提供，回退到 geneList
+  # Fallback to geneList if DE table is unavailable
   if (is.null(valid_genes) || length(valid_genes) == 0) {
     if (!is.null(gsea_task$gsea_res@geneList)) {
       valid_genes <- toupper(names(gsea_task$gsea_res@geneList))
@@ -209,7 +226,7 @@ extract_hub_genes <- function(gsea_task, pathway_ids, min_degree = 2, de_df = NU
     return(NULL)
   }
 
-  # 过滤 gene_sets
+  # Filter gene_sets
   gene_sets <- lapply(gene_sets, function(genes) {
     genes_upper <- toupper(trimws(as.character(genes)))
     genes_upper <- genes_upper[!is.na(genes_upper) & genes_upper != ""]
@@ -223,7 +240,7 @@ extract_hub_genes <- function(gsea_task, pathway_ids, min_degree = 2, de_df = NU
   }
 
   # ===========================================
-  # 统计基因在通路中的出现情况
+  # Count gene occurrences across pathways
   # ===========================================
 
   all_genes <- unlist(gene_sets)
@@ -241,7 +258,7 @@ extract_hub_genes <- function(gsea_task, pathway_ids, min_degree = 2, de_df = NU
     paste(pws, collapse = ", ")
   })
 
-  # 判断每个通路是否为 leading edge
+  # Determine leading edge status for each pathway
   gene_info$pathway_leading_edges <- lapply(gene_info$gene, function(g) {
     g_upper <- toupper(g)
     leading_status <- sapply(pathway_ids, function(pw_id) {
@@ -258,28 +275,28 @@ extract_hub_genes <- function(gsea_task, pathway_ids, min_degree = 2, de_df = NU
   gene_info$is_hub <- gene_info$degree >= min_degree
 
   # ===========================================
-  # 关键修复: 正确读取 stat 信息
+  # Critical fix: Properly read stat information
   # ===========================================
 
   if (!is.null(de_df) && is.data.frame(de_df)) {
-    # 确保 gene_symbol 列存在
+    # Ensure gene_symbol column exists
     if ("gene_symbol" %in% colnames(de_df)) {
-      # 创建基因名到 stat 的映射
+      # Create gene name to stat mapping
       de_df$gene_upper <- toupper(as.character(de_df$gene_symbol))
 
-      # 优先使用 stat 列
+      # Prefer stat column
       if ("stat" %in% colnames(de_df)) {
         stat_map <- setNames(de_df$stat, de_df$gene_upper)
         gene_info$stat <- as.numeric(stat_map[gene_info$gene])
         message("[extract_hub_genes] Mapped stat from de_df$stat")
       }
-      # 如果没有 stat 列，使用 logFC
+      # Use logFC if no stat column
       else if ("logFC" %in% colnames(de_df)) {
         stat_map <- setNames(de_df$logFC, de_df$gene_upper)
         gene_info$stat <- as.numeric(stat_map[gene_info$gene])
         message("[extract_hub_genes] Mapped stat from de_df$logFC")
       }
-      # 如果没有 logFC 列，使用 log2FoldChange (DESeq2)
+      # Use log2FoldChange if no logFC column (DESeq2)
       else if ("log2FoldChange" %in% colnames(de_df)) {
         stat_map <- setNames(de_df$log2FoldChange, de_df$gene_upper)
         gene_info$stat <- as.numeric(stat_map[gene_info$gene])
@@ -290,14 +307,14 @@ extract_hub_genes <- function(gsea_task, pathway_ids, min_degree = 2, de_df = NU
         warning("[extract_hub_genes] de_df has no stat/logFC/log2FoldChange column")
       }
 
-      # 处理 NA 值
+      # Handle NA values
       gene_info$stat[is.na(gene_info$stat)] <- 0
     } else {
       gene_info$stat <- 0
       warning("[extract_hub_genes] de_df has no gene_symbol column")
     }
   } else {
-    # 没有 de_df，使用 geneList 的值作为后备
+    # No de_df available, use geneList values as fallback
     gene_list <- gsea_task$gsea_res@geneList
     if (!is.null(gene_list)) {
       stat_map <- setNames(as.numeric(gene_list), toupper(names(gene_list)))
@@ -318,12 +335,20 @@ extract_hub_genes <- function(gsea_task, pathway_ids, min_degree = 2, de_df = NU
 }
 
 
-#' @title Prepare HubGene Nodes for Plotting
-#' @description Prepare node data with positions for plotly
-#' @param network_data Output from build_hubgene_network()
-#' @param layout Layout algorithm ("fr", "kk", "circle")
-#' @param seed Random seed for reproducibility
-#' @return Named list with node data frames
+#' Prepare HubGene Nodes for Plotting
+#'
+#' Prepare node data with layout positions for plotly visualization.
+#'
+#' @param network_data Output from \code{\link{build_hubgene_network}}
+#' @param layout Layout algorithm: "fr" (Fruchterman-Reingold),
+#'   "kk" (Kamada-Kawai), or "circle"
+#' @param seed Random seed for reproducibility (default: 42)
+#'
+#' @return A named list with three components:
+#'   \item{pathway}{Pathway node data frame with coordinates}
+#'   \item{gene}{Gene node data frame with coordinates}
+#'   \item{all}{Combined node data frame}
+#'
 #' @export
 prepare_hubgene_nodes <- function(network_data, layout = "fr", seed = 42) {
 
@@ -399,13 +424,17 @@ prepare_hubgene_nodes <- function(network_data, layout = "fr", seed = 42) {
 }
 
 
-#' @title Color Nodes by Direction
-#' @description Assign colors based on NES (pathways) or log2FC (genes)
+#' Color Nodes by Direction
+#'
+#' Assign colors based on NES (pathways) or log2FC (genes).
+#'
 #' @param node_data Node data frame with type and direction columns
 #' @param color_mode Color mode: "logFC", "pathway", or "uniform"
-#' @param left_group Left group name for label
-#' @param right_group Right group name for label
-#' @return Node data with added color column
+#' @param left_group Left group name for legend label
+#' @param right_group Right group name for legend label
+#'
+#' @return Node data with added color and color_label columns
+#'
 #' @export
 color_by_direction <- function(node_data, color_mode = "logFC",
                                left_group = "A", right_group = "B") {
@@ -475,13 +504,17 @@ color_by_direction <- function(node_data, color_mode = "logFC",
 }
 
 
-#' @title Generate HubGene Hover Text
-#' @description Generate HTML text for plotly hover
+#' Generate HubGene Hover Text
+#'
+#' Generate HTML text for plotly hover tooltips.
+#'
 #' @param node Node data row (as list with named elements)
-#' @param node_type "pathway" or "gene"
+#' @param node_type Node type: "pathway" or "gene"
 #' @param left_group Left group name
 #' @param right_group Right group name
-#' @return Character string with HTML for hover
+#'
+#' @return Character string with HTML content for hover tooltip
+#'
 #' @export
 generate_hubgene_hover_text <- function(node, node_type,
                                         left_group = "A",
@@ -510,9 +543,9 @@ generate_hubgene_hover_text <- function(node, node_type,
     core_ratio <- if (n_total > 0) n_core / n_total else 0
 
     direction_text <- if (nes > 0) {
-      paste0("▲ Up in ", left_group)
+      paste0("Up in ", left_group)
     } else {
-      paste0("▼ Up in ", right_group)
+      paste0("Up in ", right_group)
     }
 
     id <- safe_char(node$id, "Unknown")
@@ -545,11 +578,11 @@ generate_hubgene_hover_text <- function(node, node_type,
     color <- safe_char(node$color, "#999999")
 
     if (log2fc > 0) {
-      direction_text <- paste0("▲ Up in ", left_group)
+      direction_text <- paste0("Up in ", left_group)
     } else if (log2fc < 0) {
-      direction_text <- paste0("▼ Up in ", right_group)
+      direction_text <- paste0("Up in ", right_group)
     } else {
-      direction_text <- "— Neutral"
+      direction_text <- "Neutral"
     }
 
     n_pathways <- length(unlist(strsplit(pathways, ", ")))
@@ -578,11 +611,20 @@ generate_hubgene_hover_text <- function(node, node_type,
 }
 
 
-#' @title Get Color Legend Configuration
-#' @description Generate color legend data for plot
-#' @param left_group Left group name
-#' @param right_group Right group name
-#' @return Named list with legend colors and labels
+#' Get Color Legend Configuration
+#'
+#' Generate color legend data for HubGene network plot.
+#'
+#' @param left_group Left group name (e.g., treatment or case)
+#' @param right_group Right group name (e.g., control or reference)
+#'
+#' @return A named list containing:
+#'   \item{pathway_up}{Color for up-regulated pathways}
+#'   \item{pathway_down}{Color for down-regulated pathways}
+#'   \item{gene_up}{Color for up-regulated genes}
+#'   \item{gene_down}{Color for down-regulated genes}
+#'   \item{labels}{Named list of legend labels}
+#'
 #' @export
 get_hubgene_legend <- function(left_group = "A", right_group = "B") {
   list(
@@ -595,7 +637,7 @@ get_hubgene_legend <- function(left_group = "A", right_group = "B") {
       pathway_down = paste0("Pathway: Up in ", right_group),
       gene_up = paste0("Gene: Up in ", left_group),
       gene_down = paste0("Gene: Up in ", right_group),
-      hub_gene = "Hub Gene (degree ≥ 2)"
+      hub_gene = "Hub Gene (degree >= 2)"
     )
   )
 }

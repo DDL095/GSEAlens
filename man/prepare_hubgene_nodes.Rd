@@ -7,15 +7,19 @@
 prepare_hubgene_nodes(network_data, layout = "fr", seed = 42)
 }
 \arguments{
-\item{network_data}{Output from build_hubgene_network()}
+\item{network_data}{Output from \code{\link{build_hubgene_network}}}
 
-\item{layout}{Layout algorithm ("fr", "kk", "circle")}
+\item{layout}{Layout algorithm: "fr" (Fruchterman-Reingold),
+"kk" (Kamada-Kawai), or "circle"}
 
-\item{seed}{Random seed for reproducibility}
+\item{seed}{Random seed for reproducibility (default: 42)}
 }
 \value{
-Named list with node data frames
+A named list with three components:
+  \item{pathway}{Pathway node data frame with coordinates}
+  \item{gene}{Gene node data frame with coordinates}
+  \item{all}{Combined node data frame}
 }
 \description{
-Prepare node data with positions for plotly
+Prepare node data with layout positions for plotly visualization.
 }

@@ -1,3 +1,7 @@
+# Section: Multi-Plot Module ----
+
+## Subsection: UI Component ----
+
 #' @title Combined Pathway Plotting UI
 #' @keywords internal
 
@@ -11,15 +15,23 @@ mod_multi_plot_ui <- function(id) {
       shiny::selectizeInput(
         ns("pathway_selector"),
         label = "Selected Pathways (click x to remove):",
-        choices = character(0), multiple = TRUE,
-        options = list(plugins = list("remove_button"), placeholder = "Select pathways..."),width = "100%",
+        choices = character(0),
+        multiple = TRUE,
+        options = list(plugins = list("remove_button"), placeholder = "Select pathways..."),
+        width = "100%"
       ),
-      shiny::actionButton(ns("clear_btn"), "Clear Selection", class = "btn-warning",
-                          style = "margin-bottom: 15px;"),
-      shiny::plotOutput(ns("multi_plot"), height = "800px",width = "100%")
+      shiny::actionButton(
+        ns("clear_btn"),
+        "Clear Selection",
+        class = "btn-warning",
+        style = "margin-bottom: 15px;"
+      ),
+      shiny::plotOutput(ns("multi_plot"), height = "800px", width = "100%")
     )
   )
 }
+
+## Subsection: Server Component ----
 
 #' @title Combined Pathway Plotting Server
 #' @keywords internal
@@ -31,7 +43,7 @@ mod_multi_plot_server <- function(id, data_prep, table_controller) {
     selected_ids <- table_controller$selected_pathways
     updating <- shiny::reactiveVal(FALSE)
 
-    # 同步选择到 selectize
+    # Sync selection to selectize
     shiny::observe({
       sel <- selected_ids()
       updating(TRUE)
@@ -39,7 +51,7 @@ mod_multi_plot_server <- function(id, data_prep, table_controller) {
       updating(FALSE)
     })
 
-    # 监听 selectize 删除
+    # Listen for selectize removal
     shiny::observeEvent(input$pathway_selector, {
       if (updating()) return()
       current <- selected_ids()
@@ -52,24 +64,28 @@ mod_multi_plot_server <- function(id, data_prep, table_controller) {
       }
     }, ignoreInit = TRUE)
 
-    # 清空按钮
+    # Clear button
     shiny::observeEvent(input$clear_btn, {
       table_controller$clear_selection()
     })
 
-    # 显示选择信息
+    # Render selection info
     output$selection_info <- shiny::renderUI({
       n <- length(selected_ids())
       if (n == 0) {
-        shiny::tags$div(style = "color: #856404; background-color: #fff3cd; padding: 10px;",
-                        "Check the 'Combined Display' column in the pathway table to select pathways")
+        shiny::tags$div(
+          style = "color: #856404; background-color: #fff3cd; padding: 10px;",
+          "Check the 'Combined Display' column in the pathway table to select pathways"
+        )
       } else {
-        shiny::tags$div(style = "color: #155724; background-color: #d4edda; padding: 10px;",
-                        sprintf("%d pathway(s) selected", n))
+        shiny::tags$div(
+          style = "color: #155724; background-color: #d4edda; padding: 10px;",
+          sprintf("%d pathway(s) selected", n)
+        )
       }
     })
 
-    # 联合绘图
+    # Combined plot rendering
     output$multi_plot <- shiny::renderPlot({
       sel <- selected_ids()
       shiny::req(sel, length(sel) > 0)
@@ -86,7 +102,10 @@ mod_multi_plot_server <- function(id, data_prep, table_controller) {
         print(plot_directional_gsea(
           directional_gsea_obj = list(
             gsea_res = data_list$gsea_res,
-            meta = list(left_group = data_list$left_group, right_group = data_list$right_group)
+            meta = list(
+              left_group = data_list$left_group,
+              right_group = data_list$right_group
+            )
           ),
           target_pathways = sel,
           subPlot = data_list$plot_subtype,

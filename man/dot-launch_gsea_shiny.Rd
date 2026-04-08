@@ -6,7 +6,16 @@
 \usage{
 .launch_gsea_shiny(gsea_res, addition_data)
 }
+\arguments{
+\item{gsea_res}{A valid GseaRes object}
+
+\item{addition_data}{Optional data.frame with pathway annotations}
+}
+\value{
+A Shiny app object
+}
 \description{
-Core Shiny application launcher
+Core Shiny application launcher. Builds the UI layout and
+  initializes all server modules for interactive GSEA analysis.
 }
 \keyword{internal}

@@ -27,5 +27,6 @@ validate_param(
 Validated value
 }
 \description{
-Unified handling of invalid parameters (e.g., ncol<=0) to ensure 03/04 module stability
+Unified handling of invalid parameters (e.g., ncol <= 0) to ensure
+  03/04 module stability.
 }

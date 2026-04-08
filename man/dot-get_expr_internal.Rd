@@ -7,6 +7,8 @@
 .get_expr_internal(expr_bundle, backend_info, type = "default", ...)
 }
 \description{
-Fixes DESeq2 backend expression matrix and sample metadata matching issues.
+Core logic for extracting and computing expression matrices.
+  Handles backend-specific computations (DESeq2, limma-voom) and normalizes
+  sample ordering between expression matrices and metadata.
 }
 \keyword{internal}

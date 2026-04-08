@@ -2,24 +2,27 @@
 % Please edit documentation in R/utils-accessors.R
 \name{read_addition_data}
 \alias{read_addition_data}
-\title{Read Addition Data}
+\title{Read Additional Data}
 \usage{
 read_addition_data(file_path)
 }
 \arguments{
-\item{file_path}{Character. File path. Supports formats:
+\item{file_path}{Character string specifying the file path. Supported formats:
 \itemize{
-  \item .csv / .csv.gz - Comma-separated values (optionally gzip compressed)
-  \item .rds / .rds.gz - R serialized data (optionally gzip compressed)
+  \item \code{.csv} / \code{.csv.gz} - Comma-separated values (optionally
+    gzip compressed)
+  \item \code{.rds} / \code{.rds.gz} - R serialized data (optionally gzip
+    compressed)
 }}
 }
 \value{
-A data frame with validated ID column. Rows are deduplicated by ID.
+A data frame with validated ID column. Rows are deduplicated by ID,
+  keeping the first occurrence of each unique ID.
 }
 \description{
-Read and validate addition_data from CSV or RDS file.
-  Supports compressed formats (.gz). The data frame must contain an 'ID'
-  column as the primary key for joining with pathway results.
+Read and validate additional data from CSV or RDS file. Supports
+  gzip-compressed formats (.gz). The data frame must contain an 'ID' column
+  as the primary key for joining with pathway results.
 }
 \examples{
 \dontrun{
@@ -31,5 +34,9 @@ add_data <- read_addition_data("pathway_annotations.csv.gz")
 
 # Read from RDS
 add_data <- read_addition_data("pathway_annotations.rds")
+
+# Use with GseaRes
+add_data <- read_addition_data("my_annotations.rds")
+gsea_app <- launch_gsea_app(gsea_res, add_data = add_data)
 }
 }

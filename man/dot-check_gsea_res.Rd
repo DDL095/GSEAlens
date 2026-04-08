@@ -6,7 +6,13 @@
 \usage{
 .check_gsea_res(res_obj)
 }
+\arguments{
+\item{res_obj}{GseaRes object to validate}
+}
+\value{
+TRUE if validation passes, otherwise stops with an error
+}
 \description{
-Validate GseaRes Object Integrity
+Internal function to ensure GseaRes object contains required components.
 }
 \keyword{internal}

@@ -6,14 +6,14 @@ mod_pathway_relation_ui <- function(id) {
   ns <- shiny::NS(id)
   shiny::tagList(
     shiny::fluidRow(
-      # ===== 左侧控制面板 =====
+      # ===== Left Control Panel =====
       shiny::column(
         2,
         shiny::div(
           class = "well",
           style = "padding: 15px;",
 
-          # ---- Mode 选择器 ----
+          # ---- Mode Selector ----
           shiny::h4("Select Analysis Mode"),
           shiny::radioButtons(
             ns("network_mode"),
@@ -28,7 +28,7 @@ mod_pathway_relation_ui <- function(id) {
 
           shiny::hr(),
 
-          # ---- 共享参数面板 ----
+          # ---- Shared Parameters Panel ----
           shiny::h4("Shared Parameters"),
 
           shiny::numericInput(
@@ -85,7 +85,7 @@ mod_pathway_relation_ui <- function(id) {
 
           shiny::hr(),
 
-          # ---- Hover 显示参数 ----
+          # ---- Hover Display Settings ----
           shiny::h4("Hover Display Settings"),
 
           shiny::sliderInput(
@@ -139,7 +139,7 @@ mod_pathway_relation_ui <- function(id) {
         )
       ),
 
-      # ===== 右侧面板 =====
+      # ===== Right Panel =====
       shiny::column(
         10,
         shiny::tabsetPanel(
@@ -239,7 +239,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
     ns <- session$ns
 
     # ============================================================
-    # 1. 模式状态管理
+    # 1. Mode State Management
     # ============================================================
 
     network_mode <- shiny::reactiveVal("mode_topN")
@@ -252,7 +252,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
     })
 
     # ============================================================
-    # 2. 数据源 reactive
+    # 2. Data Source Reactive
     # ============================================================
 
     topN_candidates <- shiny::reactive({
@@ -298,7 +298,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
     })
 
     # ============================================================
-    # 3. 最终通路列表管理
+    # 3. Final Pathway List Management
     # ============================================================
 
     final_pathways <- shiny::reactiveVal(character(0))
@@ -316,7 +316,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
     })
 
     # ============================================================
-    # 4. 通路预览列表 UI
+    # 4. Pathway Preview List UI
     # ============================================================
 
     output$pathway_preview_list <- shiny::renderUI({
@@ -349,7 +349,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
     })
 
     # ============================================================
-    # 5. DotPlot 状态提示
+    # 5. DotPlot Status Message
     # ============================================================
 
     output$dotplot_status <- shiny::renderUI({
@@ -368,7 +368,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
     })
 
     # ============================================================
-    # 6. Network 状态提示
+    # 6. Network Status Message
     # ============================================================
 
     output$network_status <- shiny::renderUI({
@@ -389,7 +389,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
     })
 
     # ============================================================
-    # 7. DotPlot 绘图函数
+    # 7. DotPlot Rendering Function
     # ============================================================
 
     output$plot_dotplot <- plotly::renderPlotly({
@@ -473,7 +473,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
     })
 
     # ============================================================
-    # 8. 节点选择状态管理
+    # 8. Node Selection State Management
     # ============================================================
 
     selected_nodes <- shiny::reactiveVal(character(0))
@@ -536,11 +536,11 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       pathway_a_genes <- core_list[[from_pw]]
       pathway_b_genes <- core_list[[to_pw]]
 
-      # ============ 修改开始：showdetail 中显示所有基因 ============
-      # 在 showdetail 中不限制基因数量，显示所有共享基因
-      # 使用逗号和空格隔离基因
+      # ============ Modify start: display all genes in showdetail ============
+      # In showdetail, do not limit the number of genes; display all shared genes
+      # Use comma and space to separate genes
 
-      # 对所有基因进行格式化显示
+      # Format all genes for display
       gene_buttons <- sapply(shared_genes, function(g) {
         sprintf(
           '<span style="display:inline-block;background:#e3f2fd;padding:4px 8px;margin:2px;border-radius:4px;font-size:12px;">%s</span>',
@@ -548,7 +548,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
         )
       })
 
-      # 不再显示"+N more"提示
+      # No longer show "+N more" hint
       gene_display <- paste(gene_buttons, collapse = ",")
 
       # Modal UI
@@ -558,7 +558,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
         easyClose = TRUE,
         footer = shiny::modalButton("Close"),
 
-        # 相似度指标
+        # Similarity metrics
         HTML("<div style='background:#f8f9fa;padding:15px;border-radius:8px;margin-bottom:15px;'>"),
         HTML("<h4 style='margin-top:0;'>Similarity Metrics</h4>"),
         HTML("<table style='width:100%;text-align:center;'>"),
@@ -568,7 +568,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
         HTML("<td><h3>", shared_count, "</h3><small>Shared</small></td></tr>"),
         HTML("</table></div>"),
 
-        # 共享基因
+        # Shared genes
         HTML("<div style='background:#fff;padding:15px;border-radius:8px;border:1px solid #dee2e6;'>"),
         HTML("<h4 style='margin-top:0;'>Shared Core Genes (", shared_count, ")</h4>"),
         HTML(gene_display),
@@ -577,7 +577,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
     })
 
     # ============================================================
-    # 9. Network 绘图函数
+    # 9. Network Rendering Function
     # ============================================================
 
     edge_list <- NULL
@@ -628,11 +628,11 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       min_shared <- input$min_shared
       if (is.null(min_shared)) min_shared <- 3
 
-      # 获取 hover 显示基因数上限
+      # Get hover max genes limit
       hover_max_genes <- input$hover_max_genes
       if (is.null(hover_max_genes)) hover_max_genes <- 10
 
-      # 构建边列表（现在包含 jaccard, overlap_coef, dice_coef）
+      # Build edge list (now includes jaccard, overlap_coef, dice_coef)
       edge_list <<- tryCatch({
         build_edge_list_safely(core_list[valid_pathways], min_shared_genes = min_shared)
       }, error = function(e) NULL)
@@ -646,16 +646,16 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       }
 
       # ============================================================
-      # 关键改进：基于 Jaccard 排名映射边缘粗细到 1-5 像素
+      # Key improvement: map edge thickness based on Jaccard ranking to 1-5 pixels
       # ============================================================
 
-      # 按 Jaccard (weight) 降序排列
+      # Sort by Jaccard (weight) in descending order
       edge_list <- edge_list[order(edge_list$weight, decreasing = TRUE), ]
 
-      # 计算粗细等级
+      # Calculate thickness rank
       n_edges <- nrow(edge_list)
       edge_width_mapping <- function(rank, n) {
-        # 根据排名分配 1-5 像素
+        # Assign 1-5 pixels based on ranking
         # rank 1 -> 5px, rank n -> 1px
         width <- 5 - (rank - 1) * (4 / max(1, n - 1))
         return(max(1, min(5, round(width))))
@@ -665,13 +665,13 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
         edge_width_mapping(i, n_edges)
       })
 
-      # 普通边粗细范围：1-5 像素
+      # Normal edge width range: 1-5 pixels
       edge_list$edge_width_normal <- edge_list$width_rank
 
-      # 选中边固定粗细：比普通最粗大 7-8 像素 (5 + 8 = 13)
+      # Selected edge fixed width: 7-8 pixels thicker than normal thickest (5 + 8 = 13)
       edge_list$edge_width_selected <- 13
 
-      # 构建 igraph 对象
+      # Build igraph object
       g <- tryCatch({
         igraph::graph_from_data_frame(edge_list, directed = FALSE, vertices = valid_pathways)
       }, error = function(e) NULL)
@@ -735,7 +735,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       p <- plotly::plot_ly(source = ns("network_plot"))
 
       # ============================================================
-      # 添加边（使用 Jaccard 排名映射的粗细）
+      # Add edges (using Jaccard ranking-mapped thickness)
       # ============================================================
 
       for (i in seq_len(nrow(edge_list))) {
@@ -744,11 +744,11 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
         is_selected <- (edge_list$from[i] %in% sel_nodes) && (edge_list$to[i] %in% sel_nodes)
 
         if (is_selected) {
-          # 选中边：橙色 + 固定粗细 13px
+          # Selected edge: orange + fixed thickness 13px
           edge_color <- "#FF6600"
           edge_width <- edge_list$edge_width_selected[i]
         } else {
-          # 普通边：灰色 + Jaccard 排名粗细 1-5px
+          # Normal edge: gray + Jaccard ranking thickness 1-5px
           edge_color <- "rgba(150, 150, 150, 0.5)"
           edge_width <- edge_list$edge_width_normal[i]
         }
@@ -763,7 +763,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       }
 
       # ============================================================
-      # 添加边 hover（增强版：显示共享基因列表）
+      # Add edge hover (enhanced: display shared gene list)
       # ============================================================
 
       for (i in seq_len(nrow(edge_list))) {
@@ -790,7 +790,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
           genes_display <- "(none)"
         }
 
-        # 简化格式，减少换行
+        # Simplified format to reduce line breaks
         edge_hover <- sprintf(
           "<b>%s with %s</b><br>Shared Genes (%d): %s<br>Jaccard: %.4f | Overlap: %.4f | Dice: %.4f",
           edge_list$from[i], edge_list$to[i], shared_count,
@@ -810,7 +810,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
           hoverlabel = list(
             bgcolor = hover_bg,
             font = list(color = "white", size = 12),
-            align = "left",     # ← 左对齐
+            align = "left",     # <- left-aligned
             bordercolor = hover_bg
           ),
           showlegend = FALSE,
@@ -819,7 +819,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       }
 
       # ============================================================
-      # 添加节点
+      # Add nodes
       # ============================================================
 
       node_colors <- ifelse(node_df$name %in% sel_nodes, "#FFD700", node_df$color_val)
@@ -843,10 +843,10 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       )
 
       # ============================================================
-      # 添加标签（选中节点更大更粗）
+      # Add labels (selected nodes are larger and bolder)
       # ============================================================
 
-      label_size <- ifelse(node_df$name %in% sel_nodes, 16, 9)  # 从 12/9 改为 16/9
+      label_size <- ifelse(node_df$name %in% sel_nodes, 16, 9)  # Changed from 12/9 to 16/9
       label_color <- ifelse(node_df$name %in% sel_nodes, "#FF6600", "#333")
       label_bold <- ifelse(node_df$name %in% sel_nodes, "bold", "normal")
 
@@ -870,7 +870,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
           showticklabels = FALSE,
           zeroline = FALSE,
           range = x_range,
-          scaleanchor = "x",      # 保持宽高比
+          scaleanchor = "x",      # Maintain aspect ratio
           scaleratio = 1
         ),
         yaxis = list(
@@ -879,26 +879,26 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
           showticklabels = FALSE,
           zeroline = FALSE,
           range = y_range,
-          scaleanchor = "x",      # 保持宽高比
+          scaleanchor = "x",      # Maintain aspect ratio
           scaleratio = 1
         ),
         hovermode = "closest",
         dragmode = "pan",
         showlegend = FALSE,
         margin = list(l = 50, r = 50, t = 80, b = 50),
-        paper_bgcolor = 'rgba(0,0,0,0)',   # 透明背景
-        plot_bgcolor = 'rgba(0,0,0,0)',    # 透明画布
-        autosize = TRUE                    # ← 关键：自动调整大小
+        paper_bgcolor = 'rgba(0,0,0,0)',   # Transparent background
+        plot_bgcolor = 'rgba(0,0,0,0)',    # Transparent canvas
+        autosize = TRUE                    # <- Key: auto-resize
       ) %>% plotly::config(
         displayModeBar = TRUE,
         displaylogo = FALSE,
         modeBarButtonsToRemove = c("lasso2d", "select2d"),
-        responsive = TRUE                  # ← 关键：响应式
+        responsive = TRUE                  # <- Key: responsive
       )
     })
 
     # ============================================================
-    # 10. 节点点击事件监听
+    # 10. Node Click Event Listener
     # ============================================================
 
     shiny::observeEvent(plotly::event_data("plotly_click", source = ns("network_plot")), {
@@ -923,7 +923,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
     })
 
     # ============================================================
-    # 11. 返回值
+    # 11. Return Values
     # ============================================================
 
     return(list(

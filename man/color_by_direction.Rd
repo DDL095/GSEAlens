@@ -16,13 +16,13 @@ color_by_direction(
 
 \item{color_mode}{Color mode: "logFC", "pathway", or "uniform"}
 
-\item{left_group}{Left group name for label}
+\item{left_group}{Left group name for legend label}
 
-\item{right_group}{Right group name for label}
+\item{right_group}{Right group name for legend label}
 }
 \value{
-Node data with added color column
+Node data with added color and color_label columns
 }
 \description{
-Assign colors based on NES (pathways) or log2FC (genes)
+Assign colors based on NES (pathways) or log2FC (genes).
 }

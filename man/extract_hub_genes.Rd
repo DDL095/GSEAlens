@@ -16,9 +16,15 @@ extract_hub_genes(gsea_task, pathway_ids, min_degree = 2, de_df = NULL)
 \item{de_df}{Optional differential expression data frame with stat column}
 }
 \value{
-data.frame with columns: gene, degree, pathways, is_hub, stat,
-        pathway_leading_edges (list column with per-pathway status)
+A data frame with columns:
+  \item{gene}{Gene symbol}
+  \item{degree}{Number of pathways the gene appears in}
+  \item{pathways}{Comma-separated list of pathway IDs}
+  \item{is_hub}{Logical indicating if gene is a hub (degree >= min_degree)}
+  \item{stat}{Statistic value from de_df or geneList}
+  \item{pathway_leading_edges}{List column with per-pathway leading edge status}
 }
 \description{
 Extract hub genes with their leading edge status for each pathway.
+A gene is considered a hub if it appears in at least min_degree pathways.
 }

@@ -12,8 +12,8 @@ get_core_genes_list(gsea_task_obj, pathway_ids)
 \item{pathway_ids}{Character vector, pathway ID list}
 }
 \value{
-Named list, names=pathway_id, values=core_genes vector
+Named list, names = pathway_id, values = core_genes vector
 }
 \description{
-Batch data preparation for 03 module Network/UpSet/Chord visualizations
+Batch data preparation for 03 module Network/UpSet/Chord visualizations.
 }

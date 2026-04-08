@@ -1,3 +1,5 @@
+# Section: Visualization and Report Generation ----
+
 #' @title GSEA Visualization and Report Generation
 #' @description Provides static plotting functions and interactive HTML report generation capabilities.
 #' @name visualization
@@ -171,8 +173,7 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
 }
 
 
-# 2. HTML 报告生成 (ComplexHeatmap 升级版)
-
+# Section: HTML Report Generation ----
 
 #' @title Generate GSEA HTML Report
 #' @description Automatically avoids column name contamination, intelligently extracts expression matrices from objects,
@@ -244,7 +245,7 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
     dplyr::mutate(Rank = dplyr::row_number())
 
   if (nrow(df_clean) == 0) {
-    message("Warning: No significant pathways under current cutoff. Skipping report generation.")
+    message("Warning: No significant pathways found under current cutoff. Skipping report generation.")
     return(invisible(NULL))
   }
 
@@ -312,7 +313,7 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
     })
 
     # 绘制热图 (ComplexHeatmap 升级版)
-    heat_html_tag <- "<p class='text-muted' style='margin-top:20px;'>No expression data matched.</p>"
+    heat_html_tag <- "<p class='text-muted' style='margin-top:20px;'>No expression data available for visualization.</p>"
     if (!is.null(expr_mat)) {
       all_genes <- res@geneSets[[pw_id]]
       match_list_idx <- which(toupper(rownames(expr_mat)) %in% toupper(all_genes))

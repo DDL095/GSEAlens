@@ -6,6 +6,19 @@
 \usage{
 get_contrast_registry(obj)
 }
+\arguments{
+\item{obj}{A GseaEnv or GseaRes object.}
+}
+\value{
+The contrast registry object stored in the input object.
+}
 \description{
-Get Contrast Registry
+Retrieve the registered contrasts used for differential expression
+  analysis, including contrast definitions and metadata.
+}
+\examples{
+\dontrun{
+registry <- get_contrast_registry(gsea_res)
+names(registry)
+}
 }
