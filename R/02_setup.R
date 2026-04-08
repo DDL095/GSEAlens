@@ -9,7 +9,7 @@
 #' @return Returns a standardized object of class \code{GseaEnv}.
 #' @export
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' # Limma workflow
 #' design <- model.matrix(~ 0 + group, data = samples)
 #' fit <- lmFit(expr, design) %>% contrasts.fit(cont.matrix) %>% eBayes()

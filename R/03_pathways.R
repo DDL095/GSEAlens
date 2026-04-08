@@ -26,7 +26,7 @@
 #'   }
 #' @export
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' # Human mode (default)
 #' pathways <- build_gsea_pathways(species = "HS")
 #'
