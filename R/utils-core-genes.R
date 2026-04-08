@@ -1,14 +1,11 @@
-# Phase 0: Core Genes Extraction and Data Access Layer (Unified Interface for 03/04 Modules)
-
-
 #' @title Extract Pathway Core Genes (Leading Edge)
-#' @description Parse the core_enrichment field from GSEA results to extract gene list.
+#' @description Parse the core_enrichment field from GSEA results to extract the gene list.
 #'   This is the fundamental data interface for all visualization modules in 03/04.
 #' @param gsea_res_obj GseaRes object or single GSEA result (list(status=, data=, ...))
 #' @param pathway_id Character, pathway ID
 #' @return Character vector, core genes (uppercase normalized)
 #' @export
-
+#'
 #' @examples
 #' \dontrun{
 #' core_genes <- get_core_genes_for_pathway(gsea_res, "HALLMARK_OXIDATIVE_PHOSPHORYLATION")
@@ -54,13 +51,21 @@ get_core_genes_for_pathway <- function(gsea_res_obj, pathway_id) {
   return(unique(genes))
 }
 
+# ==============================================================================
+# Section ----
+# ==============================================================================
+
+## Subsection ----
+
+### Sub-subsection ----
+
 #' @title Batch Extract Core Genes for Multiple Pathways
-#' @description Batch data preparation for 03 module Network/UpSet/Chord visualizations
+#' @description Batch data preparation for 03 module Network/UpSet/Chord visualizations.
 #' @param gsea_task_obj GseaTask object (single contrast)
 #' @param pathway_ids Character vector, pathway ID list
-#' @return Named list, names=pathway_id, values=core_genes vector
+#' @return Named list, names = pathway_id, values = core_genes vector
 #' @export
-
+#'
 get_core_genes_list <- function(gsea_task_obj, pathway_ids) {
   if (!inherits(gsea_task_obj, "GseaTask")) {
     stop("Must pass a GseaTask object")
@@ -73,14 +78,24 @@ get_core_genes_list <- function(gsea_task_obj, pathway_ids) {
   return(result)
 }
 
+# ==============================================================================
+# Section ----
+# ==============================================================================
+
+## Subsection ----
+
+### Sub-subsection ----
+
 #' @title Calculate ORA Ratio (for DotPlot)
-#' @description Calculate overlap ratio between pathway genes and differentially expressed genes
+#' @description Calculate overlap ratio between pathway genes and differentially
+#'   expressed genes.
 #' @param pathway_genes Gene set of pathway (defined by TERM2GENE)
-#' @param de_genes Differentially expressed genes (filtered by pvalue threshold)
-#' @param ratio_mode Character, "ora" (intersection/pathway size) or "leading" (intersection/DE size)
+#' @param de_genes Differentially expressed genes (filtered by p-value threshold)
+#' @param ratio_mode Character, "ora" (intersection/pathway size) or "leading"
+#'   (intersection/DE size)
 #' @return Numeric, ratio value
 #' @export
-
+#'
 calculate_overlap_ratio <- function(pathway_genes, de_genes, ratio_mode = c("ora", "leading")) {
   ratio_mode <- match.arg(ratio_mode)
 
@@ -98,21 +113,38 @@ calculate_overlap_ratio <- function(pathway_genes, de_genes, ratio_mode = c("ora
   }
 }
 
+# ==============================================================================
+# Section ----
+# ==============================================================================
+
+## Subsection ----
+
+### Sub-subsection ----
+
 #' @title Get Full Pathway Gene Set (TERM2GENE)
-#' @description Extract complete gene list for a pathway from geneset_info
+#' @description Extract complete gene list for a pathway from geneset_info.
 #' @param gsea_res GseaRes object
 #' @param pathway_id Pathway ID
 #' @return Character vector
 #' @export
-
+#'
 get_term_genes <- function(gsea_res, pathway_id) {
   term2gene <- gsea_res$geneset_info$term2gene
   genes <- term2gene$gene_symbol[term2gene$gs_name == pathway_id]
   return(toupper(unique(genes)))
 }
 
+# ==============================================================================
+# Section ----
+# ==============================================================================
+
+## Subsection ----
+
+### Sub-subsection ----
+
 #' @title Safe Parameter Validation with Fallback (Global Strategy)
-#' @description Unified handling of invalid parameters (e.g., ncol<=0) to ensure 03/04 module stability
+#' @description Unified handling of invalid parameters (e.g., ncol <= 0) to ensure
+#'   03/04 module stability.
 #' @param value Input value
 #' @param default Default value
 #' @param min_val Minimum value (inclusive)
@@ -120,7 +152,7 @@ get_term_genes <- function(gsea_res, pathway_id) {
 #' @param param_name Parameter name (for warning messages)
 #' @return Validated value
 #' @export
-
+#'
 validate_param <- function(value, default, min_val = 1, max_val = NULL, param_name = "parameter") {
   # 处理NULL或NA
   if (is.null(value) || is.na(value)) {
@@ -150,6 +182,14 @@ validate_param <- function(value, default, min_val = 1, max_val = NULL, param_na
 }
 
 
+# ==============================================================================
+# Section ----
+# ==============================================================================
+
+## Subsection ----
+
+### Sub-subsection ----
+
 #' @title Build Pathway Similarity Network Edges (Safe Version)
 #' @description Safely construct edge list for pathway network based on Jaccard
 #'   similarity of core genes. Includes defensive checks for edge cases.
@@ -158,9 +198,9 @@ validate_param <- function(value, default, min_val = 1, max_val = NULL, param_na
 #' @param core_genes_list Named list: pathway_id -> core_gene_vector
 #' @param min_shared_genes Minimum number of shared genes between pathways to form an edge
 #' @return Data frame with columns: from, to, shared, weight (Jaccard index),
-#'         overlap_coef, dice_coef, shared_genes
+#'   overlap_coef, dice_coef, shared_genes
 #' @export
-
+#'
 build_edge_list_safely <- function(core_genes_list, min_shared_genes = 2) {
 
   # ==== 防御性检查 ====
@@ -250,7 +290,7 @@ build_edge_list_safely <- function(core_genes_list, min_shared_genes = 2) {
         from = p1,
         to = p2,
         shared = shared_count,
-        weight = jaccard,          # Jaccard index (主权重)
+        weight = jaccard,            # Jaccard index (primary weight)
         overlap_coef = overlap_coef, # Overlap coefficient
         dice_coef = dice_coef,       # Dice coefficient
         shared_genes = I(list(shared_genes_list)),

@@ -1,5 +1,10 @@
+# Section: Joint Canvas Module ----
+
 #' @title Joint GSEA Fill Canvas Module UI (Display-Only Version)
-#' @description All controls have been moved to the sidebar; only canvas results are displayed here.
+#' @description
+#'   All controls have been moved to the sidebar; only canvas results are displayed here.
+#'   This module provides a display interface for joint GSEA visualization results
+#'   with export functionality for reproducible R code generation.
 #' @keywords internal
 
 mod_joint_canvas_ui <- function(id) {
@@ -21,7 +26,7 @@ mod_joint_canvas_ui <- function(id) {
                                      class = "btn-secondary",
                                      style = "width: 100%;"
                                    ),
-                                   shiny::helpText("Generate R code for the joint canvas")
+                                   shiny::helpText("Generate R code for reproducing the joint canvas")
       ))
 
 
@@ -30,11 +35,24 @@ mod_joint_canvas_ui <- function(id) {
 
 }
 
+# Section: Joint Canvas Server Module ----
+
 #' @title Joint GSEA Fill Canvas Module Server (Sidebar Control Version)
 #' @description
-#'   1. Receive sidebar control parameters (arrangement mode)
-#'   2. No maximum row limit
-#'   3. Aesthetic consistency with multi_plot
+#'   Server-side logic for the joint GSEA canvas display module.
+#'   This module:
+#'   \enumerate{
+#'     \item Receives sidebar control parameters (arrangement mode)
+#'     \item Applies no maximum row limit
+#'     \item Maintains aesthetic consistency with multi_plot
+#'     \item Generates combined visualization with multiple contrasts and pathways
+#'     \item Provides R code export functionality for reproducibility
+#'   }
+#' @param id Character string identifying the module namespace.
+#' @param gsea_res Reactive expression containing GSEA results.
+#' @param data_prep_list Reactive list containing data preparation parameters
+#'   including contrasts, ncol, and custom colors.
+#' @param table_result Reactive list containing pathway selection results.
 #' @keywords internal
 
 mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) {
@@ -170,8 +188,8 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
     })
 
 
+    # Subsection: Export Code Modal ----
 
-    # Export Code Button
     shiny::observeEvent(input$export_code_btn, {
       shiny::showModal(shiny::modalDialog(
         title = "Generated R Code",
@@ -200,10 +218,7 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
     })
 
 
-
-
-
-
+    # Subsection: Render Canvas ----
 
     # 渲染画布
     output$canvas_plot <- shiny::renderPlot({

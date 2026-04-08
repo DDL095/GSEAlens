@@ -7,15 +7,35 @@
 get_expr_matrix(obj, type = "default", ...)
 }
 \arguments{
-\item{obj}{GseaEnv or GseaRes object}
+\item{obj}{A GseaEnv or GseaRes object.}
 
-\item{type}{Character. Options: "default" (default display), "raw", "cpm", "logcpm", "vst", "fpkm", "tpm".}
+\item{type}{Character string specifying the type of expression values to return.
+Options include: \code{"default"} (default display matrix), \code{"raw"}
+(raw counts), \code{"cpm"} (counts per million), \code{"logcpm"}
+(log2-transformed CPM), \code{"vst"} (variance stabilizing transformation,
+DESeq2 only), \code{"fpkm"} (fragments per kilobase per million),
+\code{"tpm"} (transcripts per million), and \code{"lognorm"} (log2 of
+normalized counts).}
 
-\item{...}{Additional arguments}
+\item{...}{Additional arguments passed to backend-specific methods.}
 }
 \value{
-Expression matrix (genes x samples)
+A numeric matrix with genes as rows and samples as columns.
 }
 \description{
-Extract expression matrix from GseaEnv or GseaRes, supporting multiple normalization methods.
+Extract expression matrix from GseaEnv or GseaRes object, supporting
+  multiple normalization methods including raw counts, CPM, logCPM, VST, FPKM,
+  TPM, and log-normalized counts.
+}
+\examples{
+\dontrun{
+# Get default expression matrix
+expr <- get_expr_matrix(gsea_res)
+
+# Get log2 CPM values
+expr <- get_expr_matrix(gsea_res, type = "logcpm")
+
+# Get variance stabilizing transformed values (DESeq2 only)
+expr <- get_expr_matrix(gsea_res, type = "vst")
+}
 }

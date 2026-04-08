@@ -2,28 +2,30 @@
 % Please edit documentation in R/utils-accessors.R
 \name{creat_addition_data_rdsfile}
 \alias{creat_addition_data_rdsfile}
-\title{Create Addition Data RDS File}
+\title{Create Additional Data RDS File}
 \usage{
 creat_addition_data_rdsfile(
   csv_path,
   output_dir = getwd(),
-  output_name = "addition_data_gsealens.rds"
+  output_name = "addition_data_gsealens.rds",
+  overwrite = FALSE
 )
 }
 \arguments{
-\item{csv_path}{Character. Input CSV file path.}
+\item{csv_path}{Character string specifying the input CSV file path.}
 
-\item{output_dir}{Character. Output directory path.
+\item{output_dir}{Character string specifying the output directory path.
 Default: current working directory.}
 
-\item{output_name}{Character. Output filename.
-Default: "addition_data_gsealens.rds"}
+\item{output_name}{Character string specifying the output filename.
+Default: \code{"addition_data_gsealens.rds"}}
 
-\item{overwrite}{Logical. Whether to overwrite existing file.
-Default: FALSE.}
+\item{overwrite}{Logical scalar indicating whether to overwrite an existing
+file. Default: \code{FALSE}.}
 }
 \value{
-Invisible TRUE on success. The RDS file path is printed to console.
+Invisible \code{TRUE} on success. The RDS file path is printed to
+  the console.
 }
 \description{
 Convert a CSV file to standardized gzip-compressed RDS format
@@ -39,5 +41,9 @@ creat_addition_data_rdsfile("my_annotations.csv")
 creat_addition_data_rdsfile("annotations.csv",
                             output_dir = "/path/to/project",
                             output_name = "custom_name.rds")
+
+# Overwrite existing file
+creat_addition_data_rdsfile("updated_annotations.csv",
+                            overwrite = TRUE)
 }
 }

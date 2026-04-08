@@ -66,8 +66,8 @@ create_gsea_task <- function(gsea_res, meta) {
 
 #' @title Validate Limma Design Matrix
 #' @description Enforce no-intercept design (~ 0 + group) to ensure accurate contrast parsing.
-#' @param fit MArrayLM object
-#' @return TRUE or stop with error
+#' @param fit MArrayLM object from limma
+#' @return TRUE if validation passes, otherwise stops with an error
 #' @keywords internal
 
 .validate_limma_design <- function(fit) {
@@ -96,10 +96,10 @@ create_gsea_task <- function(gsea_res, meta) {
 }
 
 #' @title Validate DESeq2 Target Factor
-#' @description Check if target_factor exists in colData.
+#' @description Check if target_factor exists in colData and is properly formatted.
 #' @param dds DESeqDataSet object
 #' @param target_factor String, the target factor to validate
-#' @return TRUE or stop with error
+#' @return TRUE if validation passes, otherwise stops with an error
 #' @keywords internal
 
 .validate_deseq2_design <- function(dds, target_factor) {
@@ -123,8 +123,8 @@ create_gsea_task <- function(gsea_res, meta) {
 
 #' @title Validate GseaEnv Object Integrity
 #' @description Internal function to ensure object structure conforms to specification.
-#' @param env_obj GseaEnv object
-#' @return TRUE or stop with error
+#' @param env_obj GseaEnv object to validate
+#' @return TRUE if validation passes, otherwise stops with an error
 #' @keywords internal
 
 .check_gsea_env <- function(env_obj) {
@@ -147,6 +147,9 @@ create_gsea_task <- function(gsea_res, meta) {
 }
 
 #' @title Validate GseaRes Object Integrity
+#' @description Internal function to ensure GseaRes object contains required components.
+#' @param res_obj GseaRes object to validate
+#' @return TRUE if validation passes, otherwise stops with an error
 #' @keywords internal
 
 .check_gsea_res <- function(res_obj) {

@@ -2,17 +2,19 @@
 % Please edit documentation in R/utils-accessors.R
 \name{.detect_gene_symbol_column}
 \alias{.detect_gene_symbol_column}
-\title{智能检测基因名列}
+\title{Detect Gene Symbol Column}
 \usage{
 .detect_gene_symbol_column(gene_meta)
 }
 \arguments{
-\item{gene_meta}{data.frame 基因元数据}
+\item{gene_meta}{A data frame containing gene metadata.}
 }
 \value{
-检测到的列名，或 NULL（检测失败）
+The detected column name if successful, or \code{NULL} if detection
+  fails.
 }
 \description{
-自动识别 gene_meta 中的基因名列，支持跨物种、跨后端检测
+Automatically detect the gene symbol column in gene metadata.
+  Uses housekeeping gene probe matching for robust cross-species detection.
 }
 \keyword{internal}

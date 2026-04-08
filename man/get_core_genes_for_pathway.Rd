@@ -15,7 +15,7 @@ get_core_genes_for_pathway(gsea_res_obj, pathway_id)
 Character vector, core genes (uppercase normalized)
 }
 \description{
-Parse the core_enrichment field from GSEA results to extract gene list.
+Parse the core_enrichment field from GSEA results to extract the gene list.
   This is the fundamental data interface for all visualization modules in 03/04.
 }
 \examples{

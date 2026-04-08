@@ -6,7 +6,15 @@
 \usage{
 mod_hubgene_vis_ui(id)
 }
+\arguments{
+\item{id}{Character string used to namespace the module.}
+}
+\value{
+A Shiny tagList containing the module's UI elements.
+}
 \description{
-HubGene Network (visNetwork) Module UI
+Shiny module UI for visualizing HubGene networks using visNetwork.
+Provides interactive controls for pathway selection modes, physics
+simulation parameters, node sizing, and network statistics display.
 }
 \keyword{internal}

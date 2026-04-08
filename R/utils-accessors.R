@@ -1,44 +1,67 @@
+# Section: Data Accessor Utilities ----
+
 #' @title Data Accessor Utilities
-#' @description Provides unified data extraction interface, isolating underlying object structure differences. Fixes DESeq2 sample name matching issues.
+#' @description Provides unified data extraction interface, isolating underlying
+#'   object structure differences. Fixes DESeq2 sample name matching issues.
 #' @keywords internal
 #' @name utils-accessors
 NULL
 
-# 1. 表达矩阵访问器
+
+
+# Section: Expression Matrix Accessors ----
 
 
 #' @title Get Expression Matrix
-#' @description Extract expression matrix from GseaEnv or GseaRes, supporting multiple normalization methods.
-#' @param obj GseaEnv or GseaRes object
-#' @param type Character. Options: "default" (default display), "raw", "cpm", "logcpm", "vst", "fpkm", "tpm".
-#' @param ... Additional arguments
-#' @return Expression matrix (genes x samples)
+#' @description Extract expression matrix from GseaEnv or GseaRes object, supporting
+#'   multiple normalization methods including raw counts, CPM, logCPM, VST, FPKM,
+#'   TPM, and log-normalized counts.
+#' @param obj A GseaEnv or GseaRes object.
+#' @param type Character string specifying the type of expression values to return.
+#'   Options include: \code{"default"} (default display matrix), \code{"raw"}
+#'   (raw counts), \code{"cpm"} (counts per million), \code{"logcpm"}
+#'   (log2-transformed CPM), \code{"vst"} (variance stabilizing transformation,
+#'   DESeq2 only), \code{"fpkm"} (fragments per kilobase per million),
+#'   \code{"tpm"} (transcripts per million), and \code{"lognorm"} (log2 of
+#'   normalized counts).
+#' @param ... Additional arguments passed to backend-specific methods.
+#' @return A numeric matrix with genes as rows and samples as columns.
 #' @export
 #'
+#' @examples
+#' \dontrun{
+#' # Get default expression matrix
+#' expr <- get_expr_matrix(gsea_res)
+#'
+#' # Get log2 CPM values
+#' expr <- get_expr_matrix(gsea_res, type = "logcpm")
+#'
+#' # Get variance stabilizing transformed values (DESeq2 only)
+#' expr <- get_expr_matrix(gsea_res, type = "vst")
+#' }
 get_expr_matrix <- function(obj, type = "default", ...) {
   UseMethod("get_expr_matrix")
 }
 
 #' @export
-
 get_expr_matrix.GseaEnv <- function(obj, type = "default", ...) {
   .get_expr_internal(obj$expr_bundle, obj$backend_info, type, ...)
 }
 
 #' @export
-
 get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
   .get_expr_internal(obj$expr_bundle, obj$backend_info, type, ...)
 }
 
 #' @title Internal Expression Matrix Extraction Logic
-#' @description Fixes DESeq2 backend expression matrix and sample metadata matching issues.
+#' @description Core logic for extracting and computing expression matrices.
+#'   Handles backend-specific computations (DESeq2, limma-voom) and normalizes
+#'   sample ordering between expression matrices and metadata.
 #' @keywords internal
-
-
+#'
 .get_expr_internal <- function(expr_bundle, backend_info, type = "default", ...) {
 
-  # 1. 标准化类型名称
+  # Normalize type names
   type_normalized <- tolower(type)
   type_aliases <- c(
     "log2cpm" = "logcpm",
@@ -59,7 +82,7 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
 
   backend <- backend_info$backend
 
-  # 2. 如果请求默认展示矩阵
+  # Return default display matrix if requested
   if (type_normalized == "default" && !is.null(expr_bundle$display_expr)) {
     expr_mat <- expr_bundle$display_expr
     if (!is.null(expr_bundle$sample_meta)) {
@@ -73,21 +96,21 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
     return(expr_mat)
   }
 
-  # 3. 获取原始数据
+  # Retrieve raw data
   raw_counts <- expr_bundle$raw_counts
   sample_meta <- expr_bundle$sample_meta
-  gene_lengths <- expr_bundle$gene_meta$length  # 假设有基因长度信息
+  gene_lengths <- expr_bundle$gene_meta$length
 
   if (is.null(raw_counts)) {
     warning("Raw count matrix not available in object; cannot compute expression values dynamically.")
     return(NULL)
   }
 
-  # 4. 严格根据后端类型分发
+  # Compute expression values based on type and backend
   res <- switch(type_normalized,
                 "raw" = raw_counts,
 
-                # CPM 相关（通用）
+                # CPM (generic)
                 "cpm" = {
                   if (backend == "limma_voom" && !is.null(expr_bundle$dge_list)) {
                     edgeR::cpm(expr_bundle$dge_list, log = FALSE)
@@ -133,7 +156,7 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
                   }
                 },
 
-                # VST (DESeq2 专属，严格检查)
+                # VST (DESeq2-exclusive)
                 "vst" = {
                   if (backend != "deseq2") {
                     warning(sprintf("VST (variance stabilizing transformation) is a DESeq2-exclusive method; current backend is '%s', falling back to logCPM.", backend))
@@ -157,13 +180,12 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
                   }
                 },
 
-                # log2 Normalized counts (DESeq2)
+                # Log2 normalized counts (DESeq2)
                 "lognorm" = {
                   if (backend == "deseq2" && !is.null(expr_bundle$dds_obj)) {
                     norm_counts <- DESeq2::counts(expr_bundle$dds_obj, normalized = TRUE)
                     log2(norm_counts + 1)
                   } else {
-                    # Limma中也支持：使用logCPM作为替代
                     if (backend == "limma_voom" && !is.null(expr_bundle$dge_list)) {
                       edgeR::cpm(expr_bundle$dge_list, log = TRUE)
                     } else {
@@ -172,11 +194,11 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
                   }
                 },
 
-                # 未知类型
+                # Unknown type
                 stop(sprintf("Unsupported expression value type: %s", type))
   )
 
-  # 确保表达矩阵列名与sample_meta行名匹配
+  # Align expression matrix column order with sample metadata
   if (!is.null(sample_meta) && !is.null(rownames(sample_meta))) {
     common_samples <- intersect(colnames(res), rownames(sample_meta))
     if (length(common_samples) == 0) {
@@ -190,34 +212,48 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
 }
 
 
-# 2. 差异分析表访问器
+
+# Section: Differential Expression Table Accessors ----
 
 
 #' @title Get Differential Expression Table
-#' @description Extract results for a specific contrast from de_store.
-#' @param obj GseaEnv or GseaRes object
-#' @param contrast_id Character. Contrast ID (e.g., "A_vs_B").
-#' @return data.frame (containing gene_symbol, logFC, stat, pvalue, padj)
+#' @description Extract differential expression results for a specific contrast
+#'   from the stored results. Automatically handles reverse contrasts (e.g.,
+#'   B_vs_A) by retrieving the forward contrast and flipping the sign of logFC.
+#' @param obj A GseaRes object containing differential expression results.
+#' @param contrast_id Character string specifying the contrast ID (e.g., "A_vs_B").
+#'   If the reverse contrast exists in storage, it will be retrieved and
+#'   logFC/stat signs will be inverted.
+#' @return A data frame containing at minimum: gene_symbol, logFC, and p-value
+#'   columns. Additional columns (stat, pvalue, padj, t) may be present depending
+#'   on the analysis backend.
 #' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Get results for a specific contrast
+#' de_result <- get_de_table(gsea_res, contrast_id = "Treatment_vs_Control")
+#'
+#' # Reverse contrasts are automatically handled
+#' de_result <- get_de_table(gsea_res, contrast_id = "Control_vs_Treatment")
+#' # logFC and stat values will have inverted signs
+#' }
 get_de_table <- function(obj, contrast_id) {
   UseMethod("get_de_table")
 }
+
 #' @export
 get_de_table.GseaRes <- function(obj, contrast_id) {
-  # 如果是反向，找到正向对比并翻转logFC符号
 
   if (contrast_id %in% names(obj$de_store)) {
-    # 正向对比直接返回
     return(obj$de_store[[contrast_id]])
   }
 
   parts <- strsplit(contrast_id, "_vs_")[[1]]
   if (length(parts) == 2) {
-    # 构建反向ID（交换左右）
     reverse_id <- paste(parts[2], parts[1], sep = "_vs_")
 
     if (reverse_id %in% names(obj$de_store)) {
-      # 找到正向数据，翻转符号
       de_df <- obj$de_store[[reverse_id]]
 
       if ("logFC" %in% colnames(de_df)) {
@@ -226,7 +262,7 @@ get_de_table.GseaRes <- function(obj, contrast_id) {
       if ("stat" %in% colnames(de_df)) {
         de_df$stat <- -de_df$stat
       }
-      if ("t" %in% colnames(de_df)) {  # limma的t统计量
+      if ("t" %in% colnames(de_df)) {
         de_df$t <- -de_df$t
       }
 
@@ -236,7 +272,6 @@ get_de_table.GseaRes <- function(obj, contrast_id) {
     }
   }
 
-  # 如果都找不到，报错
   stop(sprintf("Contrast '%s' and its reverse '%s' not found in de_store. Available: %s",
                contrast_id,
                ifelse(length(parts)==2, paste(parts[2], parts[1], sep="_vs_"), "N/A"),
@@ -244,12 +279,24 @@ get_de_table.GseaRes <- function(obj, contrast_id) {
 }
 
 
-# 3. 元数据访问器
+
+# Section: Metadata Accessors ----
 
 
 #' @title Get Sample Metadata
-#' @description Fixes DESeq2 backend: handles DFrame properly, unifies group column names
+#' @description Extract and process sample metadata, handling DFrame conversion
+#'   from DESeq2 and unifying group column naming conventions across backends.
+#' @return A data frame with sample metadata. Includes a standardized 'group'
+#'   column derived from the target factor (inferred from dds_obj@design for
+#'   DESeq2 workflows). Sample row names are preserved for downstream matching.
 #' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Get processed sample metadata
+#' meta <- get_sample_meta(gsea_res)
+#' head(meta)
+#' }
 get_sample_meta <- function(obj) {
   UseMethod("get_sample_meta")
 }
@@ -264,15 +311,22 @@ get_sample_meta.GseaRes <- function(obj) {
   .process_sample_meta(obj$expr_bundle$sample_meta, obj$expr_bundle)
 }
 
-#' @title Internal Sample Metadata Processing (DESeq2 Target Factor Aware)
-#' @description Now automatically infers target_factor from dds_obj@design for DESeq2 workflows.
+#' @title Internal Sample Metadata Processing
+#' @description Automatically infers target_factor from dds_obj@design for
+#'   DESeq2 workflows, handles DFrame conversion, and creates a unified
+#'   'group' column for consistent downstream processing.
+#' @param sample_meta Raw sample metadata (possibly DFrame).
+#' @param expr_bundle Expression bundle containing raw_counts, dds_obj, and
+#'   other components for row name recovery.
 #' @keywords internal
+#'
 .process_sample_meta <- function(sample_meta, expr_bundle) {
   if (is.null(sample_meta)) {
     message("[SampleMeta] Input is NULL")
     return(NULL)
   }
 
+  # Convert DFrame/DataFrame to data.frame
   if (inherits(sample_meta, "DFrame") || inherits(sample_meta, "DataFrame")) {
     message("[SampleMeta] Converting DFrame to data.frame")
     original_rownames <- rownames(sample_meta)
@@ -293,6 +347,8 @@ get_sample_meta.GseaRes <- function(obj) {
   } else if (!is.data.frame(sample_meta)) {
     sample_meta <- as.data.frame(sample_meta, stringsAsFactors = FALSE)
   }
+
+  # Recover row names if missing
   if (is.null(rownames(sample_meta)) || all(rownames(sample_meta) == "")) {
     message("[SampleMeta] Row names missing, attempting recovery...")
 
@@ -315,16 +371,14 @@ get_sample_meta.GseaRes <- function(obj) {
 
   target_factor <- NULL
 
-  # 策略A: 从 dds_obj@design 推断（DESeq2 流程，最高优先级）
+  # Strategy A: Infer from dds_obj@design (DESeq2 workflow, highest priority)
   if (!is.null(expr_bundle$dds_obj)) {
     tryCatch({
       design_formula <- DESeq2::design(expr_bundle$dds_obj)
       if (inherits(design_formula, "formula")) {
         design_terms <- attr(terms(design_formula), "term.labels")
         if (length(design_terms) > 0) {
-          # 取设计公式的最后一个变量（通常是目标分组变量）
           inferred_factor <- tail(design_terms, 1)
-          # 验证该变量确实存在于 sample_meta 中
           if (inferred_factor %in% colnames(sample_meta)) {
             target_factor <- inferred_factor
             message(sprintf("[SampleMeta] Inferred target_factor from dds_obj@design: '%s'",
@@ -337,7 +391,7 @@ get_sample_meta.GseaRes <- function(obj) {
     })
   }
 
-  # 策略B: 从 expr_bundle$target_factor 读取（如果之前已存储）
+  # Strategy B: Use stored target_factor
   if (is.null(target_factor) && !is.null(expr_bundle$target_factor)) {
     if (expr_bundle$target_factor %in% colnames(sample_meta)) {
       target_factor <- expr_bundle$target_factor
@@ -345,10 +399,8 @@ get_sample_meta.GseaRes <- function(obj) {
     }
   }
 
-  # 策略C: 回退到原有逻辑（选择第一个有效因子）
+  # Strategy C: Fallback to first valid factor
   if (is.null(target_factor)) {
-    # 只有在确实需要推断时才发出警告
-    # limma-voom 后端没有 dds_obj，不需要警告
     is_limma_backend <- !is.null(expr_bundle$dge_list) && is.null(expr_bundle$dds_obj)
 
     if (!is_limma_backend) {
@@ -362,12 +414,12 @@ get_sample_meta.GseaRes <- function(obj) {
     }
   }
 
+  # Create unified 'group' column
   if (!"group" %in% colnames(sample_meta)) {
     alt_names <- c("group", "Group", "condition", "Condition",
                    "treatment", "Treatment", "grp")
     found_name <- NULL
 
-    # 优先使用推断的 target_factor
     if (!is.null(target_factor) && target_factor %in% colnames(sample_meta)) {
       found_name <- target_factor
     } else {
@@ -383,7 +435,6 @@ get_sample_meta.GseaRes <- function(obj) {
       sample_meta$group <- sample_meta[[found_name]]
       message(sprintf("[SampleMeta] Mapped column '%s' to 'group'", found_name))
     } else {
-      # 最终回退：使用推断的 target_factor（即使不在 alt_names 中）
       if (!is.null(target_factor) && target_factor %in% colnames(sample_meta)) {
         sample_meta$group <- sample_meta[[target_factor]]
         message(sprintf("[SampleMeta] Using inferred factor '%s' as 'group'", target_factor))
@@ -400,7 +451,7 @@ get_sample_meta.GseaRes <- function(obj) {
     }
   }
 
-
+  # Convert numeric group codes to character labels
   if ("group" %in% colnames(sample_meta)) {
     if (is.numeric(sample_meta$group) || is.integer(sample_meta$group)) {
       message("[SampleMeta] Converting numeric group codes to character labels...")
@@ -454,7 +505,7 @@ get_sample_meta.GseaRes <- function(obj) {
     }
   }
 
-
+  # Final validation and reporting
   if (is.null(rownames(sample_meta)) || all(rownames(sample_meta) == "")) {
     warning("[SampleMeta] CRITICAL: Failed to recover rownames, sample matching will fail!")
   } else {
@@ -472,57 +523,78 @@ get_sample_meta.GseaRes <- function(obj) {
 
 
 #' @title Get Contrast Registry
+#' @description Retrieve the registered contrasts used for differential expression
+#'   analysis, including contrast definitions and metadata.
+#' @param obj A GseaEnv or GseaRes object.
+#' @return The contrast registry object stored in the input object.
 #' @export
+#'
+#' @examples
+#' \dontrun{
+#' registry <- get_contrast_registry(gsea_res)
+#' names(registry)
+#' }
 get_contrast_registry <- function(obj) {
   UseMethod("get_contrast_registry")
 }
 
 #' @export
-
 get_contrast_registry.GseaEnv <- function(obj) {
   obj$contrast_registry
 }
 
 #' @export
-
 get_contrast_registry.GseaRes <- function(obj) {
   obj$contrast_registry
 }
 
 #' @title Get Gene Set Information
+#' @description Retrieve gene set collection metadata including pathway definitions
+#'   and annotation dictionary.
+#' @param obj A GseaEnv or GseaRes object.
+#' @return An object containing geneset_info with pathway definitions and
+#'   metadata dictionary.
 #' @export
+#'
+#' @examples
+#' \dontrun{
+#' gs_info <- get_geneset_info(gsea_res)
+#' names(gs_info)
+#' }
 get_geneset_info <- function(obj) {
   UseMethod("get_geneset_info")
 }
 
 #' @export
-
 get_geneset_info.GseaRes <- function(obj) {
   obj$geneset_info
 }
 
 #' @export
-
 get_geneset_info.GseaEnv <- function(obj) {
   obj$geneset
 }
 
 
 
-# Addition Data Helper Functions
+# Section: Additional Data Helper Functions ----
 
 
-#' @title Read Addition Data
-#' @description Read and validate addition_data from CSV or RDS file.
-#'   Supports compressed formats (.gz). The data frame must contain an 'ID'
-#'   column as the primary key for joining with pathway results.
-#' @param file_path Character. File path. Supports formats:
+#' @title Read Additional Data
+#' @description Read and validate additional data from CSV or RDS file. Supports
+#'   gzip-compressed formats (.gz). The data frame must contain an 'ID' column
+#'   as the primary key for joining with pathway results.
+#' @param file_path Character string specifying the file path. Supported formats:
 #'   \itemize{
-#'     \item .csv / .csv.gz - Comma-separated values (optionally gzip compressed)
-#'     \item .rds / .rds.gz - R serialized data (optionally gzip compressed)
+#'     \item \code{.csv} / \code{.csv.gz} - Comma-separated values (optionally
+#'       gzip compressed)
+#'     \item \code{.rds} / \code{.rds.gz} - R serialized data (optionally gzip
+#'       compressed)
 #'   }
-#' @return A data frame with validated ID column. Rows are deduplicated by ID.
+#' @return A data frame with validated ID column. Rows are deduplicated by ID,
+#'   keeping the first occurrence of each unique ID.
 #' @export
+#'
 #' @examples
 #' \dontrun{
 #' # Read from CSV
@@ -533,6 +605,10 @@ get_geneset_info.GseaEnv <- function(obj) {
 #'
 #' # Read from RDS
 #' add_data <- read_addition_data("pathway_annotations.rds")
+#'
+#' # Use with GseaRes
+#' add_data <- read_addition_data("my_annotations.rds")
+#' gsea_app <- launch_gsea_app(gsea_res, add_data = add_data)
 #' }
 read_addition_data <- function(file_path) {
 
@@ -540,17 +616,12 @@ read_addition_data <- function(file_path) {
     stop("File not found: ", file_path)
   }
 
-  # Detect file extension
   ext <- tools::file_ext(file_path)
 
-  # Read based on extension
   if (grepl("rds", ext, ignore.case = TRUE)) {
-    # RDS format
     data <- readRDS(file_path)
   } else if (grepl("csv", ext, ignore.case = TRUE) || ext == "gz") {
-    # CSV or compressed CSV
     if (grepl("\\.gz$", file_path)) {
-      # Gzip compressed CSV
       con <- gzfile(file_path, "rt", encoding = "UTF-8")
       data <- tryCatch({
         read.csv(con, stringsAsFactors = FALSE, check.names = FALSE)
@@ -558,7 +629,6 @@ read_addition_data <- function(file_path) {
         close(con)
       })
     } else {
-      # Plain CSV
       data <- read.csv(file_path, stringsAsFactors = FALSE,
                        check.names = FALSE, encoding = "UTF-8")
     }
@@ -567,21 +637,17 @@ read_addition_data <- function(file_path) {
          "\nSupported formats: .csv, .csv.gz, .rds, .rds.gz")
   }
 
-  # Validate: must be data.frame
   if (!is.data.frame(data)) {
     stop("Input file must contain a data.frame, got: ", class(data)[1])
   }
 
-  # Validate: must have ID column
   if (!"ID" %in% colnames(data)) {
     stop("Data frame must contain 'ID' column as the primary key. ",
          "Available columns: ", paste(colnames(data), collapse = ", "))
   }
 
-  # Ensure ID column is character type
   data$ID <- as.character(data$ID)
 
-  # Remove duplicates, keeping first occurrence
   if (any(duplicated(data$ID))) {
     n_dup <- sum(duplicated(data$ID))
     message("[read_addition_data] Found ", n_dup,
@@ -595,19 +661,21 @@ read_addition_data <- function(file_path) {
   return(data)
 }
 
-#' @title Create Addition Data RDS File
+#' @title Create Additional Data RDS File
 #' @description Convert a CSV file to standardized gzip-compressed RDS format
 #'   with validation. The output file will be saved to the specified directory
 #'   with a standardized naming convention.
-#' @param csv_path Character. Input CSV file path.
-#' @param output_dir Character. Output directory path.
+#' @param csv_path Character string specifying the input CSV file path.
+#' @param output_dir Character string specifying the output directory path.
 #'   Default: current working directory.
-#' @param output_name Character. Output filename.
-#'   Default: "addition_data_gsealens.rds"
-#' @param overwrite Logical. Whether to overwrite existing file.
-#'   Default: FALSE.
-#' @return Invisible TRUE on success. The RDS file path is printed to console.
+#' @param output_name Character string specifying the output filename.
+#'   Default: \code{"addition_data_gsealens.rds"}
+#' @param overwrite Logical scalar indicating whether to overwrite an existing
+#'   file. Default: \code{FALSE}.
+#' @return Invisible \code{TRUE} on success. The RDS file path is printed to
+#'   the console.
 #' @export
+#'
 #' @examples
 #' \dontrun{
 #' # Convert CSV to RDS in current directory
@@ -617,51 +685,47 @@ read_addition_data <- function(file_path) {
 #' creat_addition_data_rdsfile("annotations.csv",
 #'                             output_dir = "/path/to/project",
 #'                             output_name = "custom_name.rds")
+#'
+#' # Overwrite existing file
+#' creat_addition_data_rdsfile("updated_annotations.csv",
+#'                             overwrite = TRUE)
 #' }
 creat_addition_data_rdsfile <- function(csv_path,
                                         output_dir = getwd(),
-                                        output_name = "addition_data_gsealens.rds") {
+                                        output_name = "addition_data_gsealens.rds",
+                                        overwrite = FALSE) {
 
-  # Validate input CSV exists
   if (!file.exists(csv_path)) {
     stop("CSV file not found: ", csv_path)
   }
 
-  # Read CSV
   message("[creat_addition_data_rdsfile] Reading: ", csv_path)
   data <- read.csv(csv_path, stringsAsFactors = FALSE,
                    check.names = FALSE, encoding = "UTF-8")
 
-  # Validate: must be data.frame
   if (!is.data.frame(data)) {
     stop("CSV content must be a data.frame, got: ", class(data)[1])
   }
 
-  # Validate: must have ID column
   if (!"ID" %in% colnames(data)) {
     stop("CSV must contain 'ID' column as the primary key. ",
          "Available columns: ", paste(colnames(data), collapse = ", "))
   }
 
-  # Ensure ID column is character type
   data$ID <- as.character(data$ID)
 
-  # Remove duplicates
   if (any(duplicated(data$ID))) {
     n_dup <- sum(duplicated(data$ID))
     message("[creat_addition_data_rdsfile] Removed ", n_dup, " duplicate ID(s)")
     data <- data[!duplicated(data$ID), ]
   }
 
-  # Ensure output directory exists
   if (!dir.exists(output_dir)) {
     dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
   }
 
-  # Construct output path
   output_path <- file.path(normalizePath(output_dir), output_name)
 
-  # Check for existing file
   if (file.exists(output_path)) {
     if (!overwrite) {
       stop("Output file already exists: ", output_path,
@@ -670,7 +734,6 @@ creat_addition_data_rdsfile <- function(csv_path,
     message("[creat_addition_data_rdsfile] Overwriting existing file...")
   }
 
-  # Save as gzip-compressed RDS
   saveRDS(data, output_path, compress = "gzip")
 
   message("[creat_addition_data_rdsfile] Saved: ", output_path)
@@ -681,24 +744,28 @@ creat_addition_data_rdsfile <- function(csv_path,
   invisible(TRUE)
 }
 
-#' @title Create Addition Data Template
+#' @title Create Additional Data Template
 #' @description Generate a template CSV file containing all pathway IDs from
 #'   the GseaRes object. Users can edit this template to add custom annotations
 #'   such as Brief_Description, Custom_Category, Custom_Tag, and User_Notes.
-#' @param gsea_res GseaRes object (generated by batch_calc_gsea)
-#' @param output_path Character. Output template file path.
-#'   Default: "addition_template_gsealens.csv"
-#' @param include_cols Character vector. Additional columns to include besides ID.
-#'   Default includes standard annotation columns.
-#' @return Invisible TRUE on success.
+#' @param gsea_res A GseaRes object (generated by \code{batch_calc_gsea}).
+#' @param output_path Character string specifying the output template file path.
+#'   Default: \code{"addition_template_gsealens.csv"}.
+#' @param include_cols Character vector specifying additional columns to include
+#'   besides ID. Default includes standard annotation columns.
+#' @return Invisible \code{TRUE} on success.
 #' @export
+#'
 #' @examples
 #' \dontrun{
 #' # Create template with all pathway IDs
 #' create_addition_template(gsea_res, "my_template.csv")
 #'
-#' # After editing, convert to RDS
+#' # After editing the CSV with custom annotations, convert to RDS
 #' creat_addition_data_rdsfile("my_template.csv")
+#'
+#' # Then load in GSEAlens
+#' gsea_app <- launch_gsea_app(gsea_res, "my_template.rds")
 #' }
 create_addition_template <- function(gsea_res,
                                      output_path = "addition_template_gsealens.csv",
@@ -707,39 +774,31 @@ create_addition_template <- function(gsea_res,
                                                       "Custom_Tag",
                                                       "User_Notes")) {
 
-  # Validate GseaRes object
   if (!inherits(gsea_res, "GseaRes")) {
     stop("Input must be a GseaRes object")
   }
 
-  # Extract all pathway IDs from geneset_info
   if (is.null(gsea_res$geneset_info$meta_dict)) {
     stop("GseaRes object missing geneset_info$meta_dict")
   }
 
   meta_dict <- gsea_res$geneset_info$meta_dict
-
-  # Get unique pathway IDs
   all_ids <- unique(meta_dict$ID)
 
-  # Create template data frame
   template <- data.frame(
     ID = sort(all_ids),
     stringsAsFactors = FALSE
   )
 
-  # Add optional annotation columns
   for (col in include_cols) {
     template[[col]] <- NA_character_
   }
 
-  # Ensure output directory exists
   output_dir <- dirname(output_path)
   if (output_dir != "" && !dir.exists(output_dir)) {
     dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
   }
 
-  # Write CSV (not compressed for easy editing)
   write.csv(template, output_path, row.names = FALSE, quote = TRUE,
             fileEncoding = "UTF-8")
 
@@ -757,34 +816,37 @@ create_addition_template <- function(gsea_res,
 }
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-# 通用基因名处理工具函数（跨物种、跨后端）
-# 适用于 limma-voom 和 DESeq2 双流程
-# ═══════════════════════════════════════════════════════════════════════════
 
-# 检测基因探针（跨物种通用）- 全大写，用于匹配
+# Section: Gene Symbol Processing Utilities ----
+# Cross-species, cross-backend gene name handling utilities
+# Compatible with both limma-voom and DESeq2 pipelines
+
+# Housekeeping gene probes for detection (uppercase for matching)
 DETECTION_PROBES <- c(
-  # 动物通用管家基因
+  # Animal housekeeping genes
   "GAPDH", "ACTB", "ACTIN", "TUBA", "TUBB", "UBC", "UBB", "RPLP0", "RPS18",
   "RPL13A", "PPIA", "YWHAZ", "HPRT1", "B2M",
-  # 植物通用管家基因
+  # Plant housekeeping genes
   "ACTIN2", "ACTIN7", "TUB8", "EF1A", "UBQ10", "UBQ11",
-  # 真核生物通用
+  # Eukaryotic common
   "18S", "28S", "RPS5", "RPSA"
 )
 
 
-#' @title 智能检测基因名列
-#' @description 自动识别 gene_meta 中的基因名列，支持跨物种、跨后端检测
-#' @param gene_meta data.frame 基因元数据
-#' @return 检测到的列名，或 NULL（检测失败）
+#' @title Detect Gene Symbol Column
+#' @description Automatically detect the gene symbol column in gene metadata.
+#'   Uses housekeeping gene probe matching for robust cross-species detection.
+#' @param gene_meta A data frame containing gene metadata.
+#' @return The detected column name if successful, or \code{NULL} if detection
+#'   fails.
 #' @keywords internal
+#'
 .detect_gene_symbol_column <- function(gene_meta) {
   if (is.null(gene_meta) || !is.data.frame(gene_meta) || nrow(gene_meta) == 0) {
     return(NULL)
   }
 
-  # 策略1：探针法（最鲁棒）
+  # Strategy 1: Probe matching (most robust)
   for (col_name in colnames(gene_meta)) {
     col_data <- gene_meta[[col_name]]
     if (!is.character(col_data) && !is.factor(col_data)) next
@@ -800,7 +862,7 @@ DETECTION_PROBES <- c(
     }
   }
 
-  # 策略2：传统列名兜底
+  # Strategy 2: Fallback to common column names
   fallback_names <- c(
     "SYMBOL", "symbol", "Gene", "gene_name", "gene",
     "GeneSymbol", "gene_symbol", "gene_id", "GeneID",
@@ -818,12 +880,16 @@ DETECTION_PROBES <- c(
 }
 
 
-#' @title 按需重建大小写映射表
-#' @description 从 de_store 中重建 gene_symbol 大小写映射，用于显示层
-#' @param gsea_res GseaRes 对象
-#' @param contrast_id 对比组 ID
-#' @return 命名向量，names = 大写基因名，values = 原始大小写
+#' @title Rebuild Gene Symbol Case Mapping
+#' @description Reconstruct gene symbol case mapping from differential expression
+#'   results for display purposes.
+#' @param gsea_res A GseaRes object.
+#' @param contrast_id Character string specifying the contrast ID.
+#' @return A named character vector where names are uppercase gene symbols and
+#'   values are the original case. Returns \code{NULL} if mapping cannot be
+#'   constructed.
 #' @keywords internal
+#'
 .rebuild_symbol_map <- function(gsea_res, contrast_id) {
   de_df <- gsea_res$de_store[[contrast_id]]
   if (is.null(de_df) || !"gene_symbol" %in% colnames(de_df)) {
@@ -846,12 +912,13 @@ DETECTION_PROBES <- c(
 }
 
 
-#' @title 获取显示用基因名
-#' @description 根据大小写映射表，返回基因的原始大小写形式
-#' @param gene 基因名（任意大小写）
-#' @param symbol_map 大小写映射表（由 .rebuild_symbol_map 生成）
-#' @return 原始大小写的基因名，若无映射则返回原值
+#' @title Get Display Gene Symbol
+#' @description Retrieve the original case gene symbol based on the case mapping.
+#' @param gene A gene identifier (case-insensitive).
+#' @param symbol_map A case mapping vector generated by \code{.rebuild_symbol_map}.
+#' @return The original case gene symbol, or the input if no mapping exists.
 #' @keywords internal
+#'
 .get_display_symbol <- function(gene, symbol_map) {
   if (is.null(symbol_map) || is.null(gene) || is.na(gene) || gene == "") {
     return(gene)
@@ -864,23 +931,26 @@ DETECTION_PROBES <- c(
 }
 
 
-#' @title 批量获取显示用基因名
-#' @param genes 字符向量
-#' @param symbol_map 大小写映射表
-#' @return 原始大小写的基因名字符向量
+#' @title Batch Get Display Gene Symbols
+#' @param genes A character vector of gene identifiers.
+#' @param symbol_map A case mapping vector generated by \code{.rebuild_symbol_map}.
+#' @return A character vector of gene symbols in their original case.
 #' @keywords internal
+#'
 .get_display_symbols <- function(genes, symbol_map) {
   sapply(genes, function(g) .get_display_symbol(g, symbol_map), USE.NAMES = FALSE)
 }
 
 
-#' @title 转换表达矩阵行名为基因符号
-#' @description 自动检测并转换表达矩阵的 rownames，支持 Ensembl ID → Gene Symbol
-#' @param expr_mat 表达矩阵
-#' @param gene_meta 基因元数据
-#' @param gsea_res GseaRes 对象（用于获取后端信息）
-#' @return 转换后的表达矩阵（行名已更新）
+#' @title Convert Expression Matrix Row Names to Gene Symbols
+#' @description Automatically detect and convert expression matrix row names,
+#'   supporting Ensembl ID to gene symbol conversion.
+#' @param expr_mat An expression matrix.
+#' @param gene_meta A gene metadata data frame containing both ID and symbol columns.
+#' @param gsea_res A GseaRes object (used to access backend information).
+#' @return The expression matrix with updated row names.
 #' @keywords internal
+#'
 .convert_expr_rownames <- function(expr_mat, gene_meta, gsea_res) {
   if (is.null(expr_mat) || is.null(rownames(expr_mat))) {
     return(expr_mat)
@@ -888,11 +958,10 @@ DETECTION_PROBES <- c(
 
   current_rownames <- rownames(expr_mat)
 
-  # 检测是否为 Ensembl ID 格式
+  # Check if row names are Ensembl IDs
   is_ensembl <- any(grepl("^ENS[A-Z]{0,3}G[0-9]+", current_rownames, ignore.case = TRUE))
 
   if (!is_ensembl) {
-    # 检查是否为基因符号（通过探针检测）
     detected_col <- .detect_gene_symbol_column(gene_meta)
     if (!is.null(detected_col)) {
       message(sprintf("[ExprConvert] Row names already appear to be gene symbols"))
@@ -900,7 +969,6 @@ DETECTION_PROBES <- c(
     return(expr_mat)
   }
 
-  # 需要转换：Ensembl ID → Gene Symbol
   message("[ExprConvert] Detected Ensembl IDs as row names, attempting conversion...")
 
   gene_symbol_col <- .detect_gene_symbol_column(gene_meta)
@@ -910,10 +978,8 @@ DETECTION_PROBES <- c(
          "Cannot convert row names for heatmap plotting.")
   }
 
-  # 构建映射
   gm <- gene_meta
 
-  # 查找 GeneID 列（用于匹配 Ensembl ID）
   geneid_col <- NULL
   for (name in c("GeneID", "gene_id", "geneID", "ENSEMBL", "ensembl_id")) {
     if (name %in% colnames(gm)) {
@@ -927,15 +993,12 @@ DETECTION_PROBES <- c(
          "Available columns: ", paste(colnames(gm), collapse = ", "))
   }
 
-  # 构建映射向量
   ensembl_ids <- gm[[geneid_col]]
   gene_symbols <- gm[[gene_symbol_col]]
   names(gene_symbols) <- ensembl_ids
 
-  # 去重（保留第一个）
   gene_symbols <- gene_symbols[!duplicated(names(gene_symbols))]
 
-  # 执行转换
   converted <- gene_symbols[current_rownames]
   valid_mask <- !is.na(converted) & converted != ""
 

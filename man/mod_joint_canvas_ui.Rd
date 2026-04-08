@@ -8,5 +8,7 @@ mod_joint_canvas_ui(id)
 }
 \description{
 All controls have been moved to the sidebar; only canvas results are displayed here.
+  This module provides a display interface for joint GSEA visualization results
+  with export functionality for reproducible R code generation.
 }
 \keyword{internal}

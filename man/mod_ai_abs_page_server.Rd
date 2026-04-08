@@ -18,9 +18,15 @@ mod_ai_abs_page_server(id, gsea_res, data_prep_list, table_controller)
 \description{
 AI Interpretation Page Server
 }
+\keyword{Determine}
 \keyword{Edge}
+\keyword{Extract}
 \keyword{Leading}
+\keyword{and}
+\keyword{as}
+\keyword{comma-separated}
+\keyword{confidence}
+\keyword{format}
+\keyword{genes}
 \keyword{internal}
-\keyword{判断置信度}
-\keyword{基因并格式化为逗号分隔}
-\keyword{提取}
+\keyword{level}

@@ -12,9 +12,9 @@
 \item{target_factor}{String, the target factor to validate}
 }
 \value{
-TRUE or stop with error
+TRUE if validation passes, otherwise stops with an error
 }
 \description{
-Check if target_factor exists in colData.
+Check if target_factor exists in colData and is properly formatted.
 }
 \keyword{internal}

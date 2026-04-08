@@ -17,3 +17,10 @@ A ggplot object
 \description{
 Generates a standard memory usage curve plot for publication.
 }
+\examples{
+\dontrun{
+data <- align_benchmark_data(gsea_res, "system_monitor.csv")
+plot_gsea_memory(data)
+plot_gsea_memory(data, highlight_phases = FALSE)
+}
+}

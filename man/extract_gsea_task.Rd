@@ -19,5 +19,5 @@ GseaTask object.
 }
 \description{
 Extract results for a specified contrast from a GseaRes capsule.
-Supports subsetting by gene set collection and automatically recalculates FDR.
+  Supports subsetting by gene set collection and automatically recalculates FDR.
 }

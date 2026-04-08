@@ -4,6 +4,7 @@
 \alias{utils-accessors}
 \title{Data Accessor Utilities}
 \description{
-Provides unified data extraction interface, isolating underlying object structure differences. Fixes DESeq2 sample name matching issues.
+Provides unified data extraction interface, isolating underlying
+  object structure differences. Fixes DESeq2 sample name matching issues.
 }
 \keyword{internal}

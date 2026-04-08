@@ -14,15 +14,15 @@ generate_hubgene_hover_text(
 \arguments{
 \item{node}{Node data row (as list with named elements)}
 
-\item{node_type}{"pathway" or "gene"}
+\item{node_type}{Node type: "pathway" or "gene"}
 
 \item{left_group}{Left group name}
 
 \item{right_group}{Right group name}
 }
 \value{
-Character string with HTML for hover
+Character string with HTML content for hover tooltip
 }
 \description{
-Generate HTML text for plotly hover
+Generate HTML text for plotly hover tooltips.
 }

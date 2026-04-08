@@ -7,10 +7,10 @@
 .validate_limma_design(fit)
 }
 \arguments{
-\item{fit}{MArrayLM object}
+\item{fit}{MArrayLM object from limma}
 }
 \value{
-TRUE or stop with error
+TRUE if validation passes, otherwise stops with an error
 }
 \description{
 Enforce no-intercept design (~ 0 + group) to ensure accurate contrast parsing.

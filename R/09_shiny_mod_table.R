@@ -1,3 +1,5 @@
+# Section: Shiny Module - Master Table ----
+
 #' @title Master Workspace Table UI
 #' @description Interactive data table module for displaying GSEA pathway results
 #'   with checkbox selection and modal integration.
@@ -22,7 +24,7 @@ mod_master_table_ui <- function(id) {
           });
         });
       ", ns("updateCheckbox")))),
-      # 外部更新selection的消息处理器
+      # External selection update message handler
       shiny::tags$script(shiny::HTML(sprintf("
         Shiny.addCustomMessageHandler('%s', function(message) {
           var action = message.action;
@@ -94,8 +96,8 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
 
 
-    to_safe <- function(x) gsub("'", "\\\\'", x, fixed = TRUE)
-    to_original <- function(x) gsub("\\\\'", "'", x, fixed = TRUE)
+    to_safe <- function(x) gsub("'", "\\'", x, fixed = TRUE)
+    to_original <- function(x) gsub("\\'", "'", x, fixed = TRUE)
 
     # Validate and prepare addition_data
     .validate_addition_data_internal <- function(add_data) {
@@ -116,34 +118,34 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
 
     # =========================================
-    # 关键修复：Joint plot toggle event - 使用 identical() 判断布尔值
+    # Key fix: Joint plot toggle event - use identical() for boolean comparison
     # =========================================
     shiny::observeEvent(input$joint_plot_toggle, {
       toggle <- input$joint_plot_toggle
       if (is.null(toggle) || !is.list(toggle)) return()
 
-      # 关键修复：JavaScript传递的是字符串"true"/"false"，需要转换
+      # Key fix: JavaScript passes strings "true"/"false", need to convert
       is_checked <- identical(toggle$checked, TRUE) || identical(toggle$checked, "true")
 
-      has_interaction(TRUE)  # 只要触发事件就标记为有交互
+      has_interaction(TRUE)  # Mark as interacted when event fires
 
       current <- joint_selected()
 
       if (is_checked) {
-        # 添加到选中列表
+        # Add to selected list
         if (!(toggle$id %in% current)) {
           joint_selected(c(current, toggle$id))
           message(sprintf("[MasterTable] Added pathway: %s", toggle$id))
         }
       } else {
-        # 从选中列表移除
+        # Remove from selected list
         new_sel <- setdiff(current, toggle$id)
         joint_selected(new_sel)
         message(sprintf("[MasterTable] Removed pathway: %s", toggle$id))
       }
     })
 
-    # 外部Selection更新接口（供其他模块调用）
+    # External selection update interface (for other modules to call)
     update_selection <- function(action = c("set", "add", "remove", "clear"), ids = character(0)) {
       action <- match.arg(action)
       current <- joint_selected()
@@ -231,7 +233,7 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
       df$NES_display <- round(df$NES, 2)
 
-      # 获取当前选择状态
+      # Get current selection state
       current_selection <- isolate(joint_selected())
 
       # Interactive columns
@@ -340,7 +342,7 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
         )
       }
 
-      # JS 渲染函数：科学计数法
+      # JS render function: scientific notation for small values
       js_pval_render <- "
         function(data, type) {
           if (type === 'sort' || type === 'type') return data;
@@ -350,11 +352,11 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
         }
       "
 
-      # 找到 P-value 和 FDR 列的索引
+      # Find P-value and FDR column indices
       pval_idx <- which(display_cols == "pvalue") - 1
       padj_idx <- which(display_cols == "p.adjust") - 1
 
-      # 添加 P-value 和 FDR 的 render 定义
+      # Add P-value and FDR render definitions
       col_defs[[length(col_defs) + 1]] <- list(
         targets = pval_idx,
         render = htmlwidgets::JS(js_pval_render)
@@ -435,14 +437,14 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
     })
 
     # =========================================
-    # 关键修复：selected_pathways reactive - 确保返回checkbox状态
+    # Key fix: selected_pathways reactive - ensure checkbox state is returned
     # =========================================
     selected_pathways <- shiny::reactive({
-      # 优先返回checkbox交互后的状态
+      # Return checkbox interaction state first
       if (isTRUE(has_interaction())) {
         return(to_original(joint_selected()))
       }
-      # 回退到行点击
+      # Fall back to row click
       data_list <- data_prep()
       if (is.null(data_list) || is.null(input$table_rows_selected)) return(character(0))
       return(data_list$df$ID[input$table_rows_selected])
@@ -464,7 +466,7 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
       joint_selected(character(0))
     }
 
-    # 返回所有接口
+    # Return all interfaces
     return(list(
       selected_pathways = selected_pathways,
       show_modal = show_modal_trigger,

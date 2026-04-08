@@ -15,18 +15,21 @@ build_hubgene_network(
 \arguments{
 \item{gsea_task}{GseaTask object}
 
-\item{pathway_ids}{Selected pathway IDs}
+\item{pathway_ids}{Character vector of selected pathway IDs}
 
-\item{min_hub_degree}{Minimum degree for hub genes}
+\item{min_hub_degree}{Minimum degree threshold for hub genes (default: 2)}
 
-\item{de_df}{Optional DE data frame with stat column}
+\item{de_df}{Optional DE data frame containing stat column}
 
 \item{res_df}{Optional pathway result data frame}
 }
 \value{
-list with nodes, edges, and hub_df data frames
+A list with three components:
+  \item{nodes}{A list containing pathway and gene data frames}
+  \item{edges}{Edge data frame with source, target, and leading edge info}
+  \item{hub_df}{Hub gene data frame from extraction}
 }
 \description{
 Build complete network data with leading edge information for edges.
-  Now properly passes de_df to extract_hub_genes for stat extraction.
+Now properly passes de_df to extract_hub_genes for stat extraction.
 }

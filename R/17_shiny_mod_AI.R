@@ -1,6 +1,6 @@
 # ============================================================
-# 文件: R/mod_ai_abs_page.R
-# 功能: AI 提示词生成模块（支持自定义模板）
+# File: R/mod_ai_abs_page.R
+# Function: AI Prompt Generation Module (with Custom Template Support)
 # ============================================================
 
 #' @title AI Interpretation Page UI
@@ -12,7 +12,7 @@ mod_ai_abs_page_ui <- function(id) {
 
   shiny::tagList(
     shiny::fluidRow(
-      # ===== 左侧控制栏 =====
+      # ===== Left Control Panel =====
       shiny::column(
         width = 3,
         shiny::div(
@@ -22,19 +22,19 @@ mod_ai_abs_page_ui <- function(id) {
           shiny::h4("AI Prompt Generator"),
           shiny::hr(),
 
-          # 当前对比组信息
+          # Current comparison group info
           shiny::h5("Current Comparison"),
           shiny::uiOutput(ns("current_contrast_info")),
 
           shiny::hr(),
 
-          # 选中通路统计
+          # Selected pathway statistics
           shiny::h5("Selected Pathways"),
           shiny::uiOutput(ns("selection_stats")),
 
           shiny::hr(),
 
-          # ===== 自定义模板区域 =====
+          # ===== Custom Template Area =====
           shiny::h5("Custom Template"),
           shiny::div(
             style = "background: #f0f8ff; padding: 10px; border-radius: 5px; margin-bottom: 10px;",
@@ -49,18 +49,18 @@ mod_ai_abs_page_ui <- function(id) {
             condition = sprintf("input['%s'] == true", ns("use_custom_template")),
             shiny::div(
               style = "background: #fff; padding: 10px; border: 1px solid #ddd; border-radius: 5px;",
-              shiny::p(shiny::strong("占位符说明:")),
+              shiny::p(shiny::strong("Placeholder Guide:")),
               shiny::tags$small(
-                "{left_group} - 左组名称", shiny::br(),
-                "{right_group} - 右组名称", shiny::br(),
-                "{comparison} - 对比组描述", shiny::br(),
-                "{total} - 总通路数", shiny::br(),
-                "{high} - 高置信度数量", shiny::br(),
-                "{mod} - 中置信度数量", shiny::br(),
-                "{low} - 低置信度数量", shiny::br(),
-                "{table} - 通路数据表格", shiny::br(),
+                "{left_group} - Left group name", shiny::br(),
+                "{right_group} - Right group name", shiny::br(),
+                "{comparison} - Comparison description", shiny::br(),
+                "{total} - Total pathway count", shiny::br(),
+                "{high} - High confidence count", shiny::br(),
+                "{mod} - Medium confidence count", shiny::br(),
+                "{low} - Low confidence count", shiny::br(),
+                "{table} - Pathway data table", shiny::br(),
                 shiny::hr(),
-                "示例: {left_group} 在通路 X 中呈现激活趋势"
+                "Example: {left_group} shows activation trend in pathway X"
               ),
               shiny::hr(),
               shiny::actionButton(
@@ -90,7 +90,7 @@ mod_ai_abs_page_ui <- function(id) {
 
           shiny::hr(),
 
-          # 生成按钮
+          # Generate button
           shiny::actionButton(
             ns("generate_prompt"),
             label = "Generate Prompt",
@@ -101,7 +101,7 @@ mod_ai_abs_page_ui <- function(id) {
 
           shiny::hr(),
 
-          # 复制按钮
+          # Copy button
           shiny::actionButton(
             ns("copy_to_clipboard"),
             label = "Copy to Clipboard",
@@ -112,7 +112,7 @@ mod_ai_abs_page_ui <- function(id) {
         )
       ),
 
-      # ===== 右侧提示词输出 =====
+      # ===== Right Prompt Output =====
       shiny::column(
         width = 9,
         shiny::div(
@@ -122,7 +122,7 @@ mod_ai_abs_page_ui <- function(id) {
           shiny::h4("AI Prompt Output"),
           shiny::hr(),
 
-          # 提示词输出区域
+          # Prompt output area
           shiny::div(
             style = "background: #f8f9fa; padding: 15px; border-radius: 5px;",
             shiny::textAreaInput(
@@ -152,7 +152,7 @@ mod_ai_abs_page_server <- function(id, gsea_res, data_prep_list, table_controlle
     ns <- session$ns
 
     # ============================================================
-    # 默认提示词模板（中文优化版）
+    # Default prompt template (English optimized version)
     # ============================================================
 
     default_template <- 'Role Setting: GSEA Enrichment Direction Interpretation Expert
@@ -188,7 +188,7 @@ Workflow
    - Strictly classify and describe significant enrichment results (e.g., FDR < 0.25) as follows:
      - Enriched in {left_group}: Classified as "gene sets activated in the {left_group} group".
      - Enriched in {right_group}: Classified as "gene sets activated in the {right_group} group".
-4. Cautious Interpretation: After completing the objective directional description, analyze the biological significance of the two enrichment directions and provide constructive insights and explanations,and provide a possible functional interpretation of gene pathways in combination with specific leadingedge genes.
+4. Cautious Interpretation: After completing the objective directional description, analyze the biological significance of the two enrichment directions and provide constructive insights and explanations, and provide a possible functional interpretation of gene pathways in combination with specific leading edge genes.
 
 Initialization
 As your GSEA enrichment direction interpretation expert, I am ready. Please analyze the following GSEA results.
@@ -208,10 +208,9 @@ As your GSEA enrichment direction interpretation expert, I am ready. Please anal
 - **Enrichment Direction**: Enrichment in {left_group} indicates activation in the {left_group} group; enrichment in {right_group} indicates activation in the {right_group} group
 - **FDR**: Multiple testing corrected P-value. FDR < 0.25 is the MSigDB standard threshold
 - **Leading Edge Genes**: Core contributing genes, key to understanding regulatory mechanisms
-- **Numbers may be presented in scientific notation,like 1.45e-03.'
+- **Numbers may be presented in scientific notation, like 1.45e-03.**'
 
-
-    # 初始化自定义模板为空
+    # Initialize custom template as empty
     shiny::observe({
       shiny::updateTextAreaInput(
         session,
@@ -221,10 +220,10 @@ As your GSEA enrichment direction interpretation expert, I am ready. Please anal
     })
 
     # ============================================================
-    # 辅助函数
+    # Helper Functions
     # ============================================================
 
-    #' 提取 Leading Edge 基因并格式化为逗号分隔
+    #' Extract Leading Edge genes and format as comma-separated
     extract_leading_genes <- function(core_str, max_genes = 15) {
       if (is.null(core_str) || is.na(core_str) || core_str == "") {
         return(list(genes = "N/A", count = 0))
@@ -243,7 +242,7 @@ As your GSEA enrichment direction interpretation expert, I am ready. Please anal
       return(list(genes = display, count = count))
     }
 
-    #' 判断置信度
+    #' Determine confidence level
     get_confidence <- function(nes, fdr) {
       abs_nes <- abs(nes)
       if (abs_nes >= 1.5 && fdr < 0.05) {
@@ -256,7 +255,7 @@ As your GSEA enrichment direction interpretation expert, I am ready. Please anal
     }
 
     # ============================================================
-    # 当前对比组信息
+    # Current Comparison Group Info
     # ============================================================
 
     output$current_contrast_info <- shiny::renderUI({
@@ -275,7 +274,7 @@ As your GSEA enrichment direction interpretation expert, I am ready. Please anal
     })
 
     # ============================================================
-    # 选中通路统计
+    # Selected Pathway Statistics
     # ============================================================
 
     output$selection_stats <- shiny::renderUI({
@@ -301,7 +300,7 @@ As your GSEA enrichment direction interpretation expert, I am ready. Please anal
     })
 
     # ============================================================
-    # 导入模板
+    # Import Template
     # ============================================================
 
     shiny::observeEvent(input$import_template, {
@@ -337,7 +336,7 @@ As your GSEA enrichment direction interpretation expert, I am ready. Please anal
     })
 
     # ============================================================
-    # 导出模板
+    # Export Template
     # ============================================================
 
     shiny::observeEvent(input$export_template, {
@@ -346,7 +345,7 @@ As your GSEA enrichment direction interpretation expert, I am ready. Please anal
         current_template <- default_template
       }
 
-      # 保存到文件
+      # Save to file
       output_path <- file.path(getwd(), "gsea_prompt_template.txt")
       writeLines(current_template, output_path, useBytes = TRUE)
 
@@ -357,7 +356,7 @@ As your GSEA enrichment direction interpretation expert, I am ready. Please anal
     })
 
     # ============================================================
-    # 生成提示词
+    # Generate Prompt
     # ============================================================
 
     shiny::observeEvent(input$generate_prompt, {
@@ -365,10 +364,10 @@ As your GSEA enrichment direction interpretation expert, I am ready. Please anal
 
       data_list <- data_prep_list$data()
 
-      # 获取选中的 pathways
+      # Get selected pathways
       selected_ids <- table_controller$selected_pathways()
 
-      # 如果没有选中，使用 Top 15
+      # If none selected, use Top 15
       if (length(selected_ids) == 0) {
         selected_ids <- data_list$df$ID[1:min(15, nrow(data_list$df))]
         shiny::showNotification(
@@ -377,56 +376,56 @@ As your GSEA enrichment direction interpretation expert, I am ready. Please anal
         )
       }
 
-      # 筛选数据
+      # Filter data
       df_subset <- data_list$df[data_list$df$ID %in% selected_ids, ]
       df_subset <- df_subset[order(-abs(df_subset$NES)), ]
 
-      # 限制数量
+      # Limit count
       max_pathways <- 20
       if (nrow(df_subset) > max_pathways) {
         df_subset <- df_subset[1:max_pathways, ]
       }
 
-      # 基本信息
+      # Basic info
       left_group <- data_list$left_group
       right_group <- data_list$right_group
       comparison <- paste0(left_group, " vs ", right_group)
 
-      # 统计
+      # Statistics
       n_total <- nrow(df_subset)
       n_high <- sum(sapply(seq_len(n_total), function(i) {
-        get_confidence(df_subset$NES[i], df_subset$p.adjust[i]) == "高置信度"
+        get_confidence(df_subset$NES[i], df_subset$p.adjust[i]) == "High confidence"
       }))
       n_mod <- sum(sapply(seq_len(n_total), function(i) {
-        get_confidence(df_subset$NES[i], df_subset$p.adjust[i]) == "中置信度"
+        get_confidence(df_subset$NES[i], df_subset$p.adjust[i]) == "Medium confidence"
       }))
       n_low <- n_total - n_high - n_mod
 
       # ============================================================
-      # 构建通路表格行
+      # Build pathway table rows
       # ============================================================
 
       table_rows <- c()
       for (i in seq_len(nrow(df_subset))) {
         row <- df_subset[i, ]
 
-        # 提取 Leading Edge 基因
+        # Extract Leading Edge genes
         leading <- extract_leading_genes(row$core_enrichment)
 
-        # 确定富集方向
+        # Determine enrichment direction
         enriched_in <- ifelse(row$NES > 0, left_group, right_group)
 
-        # 置信度
+        # Confidence level
         conf <- get_confidence(row$NES, row$p.adjust)
 
-        # 截断 Description
+        # Truncate Description
         desc <- if (!is.null(row$Description) && !is.na(row$Description)) {
           substr(as.character(row$Description), 1, 9999)
         } else {
           row$ID
         }
 
-        # 构建表格行
+        # Build table row
         table_rows <- c(table_rows, sprintf(
           "| %d | `%s` | %.2f | %s | %.2e | %s | %s [%s] |",
           i,
@@ -443,7 +442,7 @@ As your GSEA enrichment direction interpretation expert, I am ready. Please anal
       table_body <- paste(table_rows, collapse = "\n")
 
       # ============================================================
-      # 获取模板（自定义或默认）
+      # Get template (custom or default)
       # ============================================================
 
       if (isTRUE(input$use_custom_template) &&
@@ -455,12 +454,12 @@ As your GSEA enrichment direction interpretation expert, I am ready. Please anal
       }
 
       # ============================================================
-      # 替换占位符
+      # Replace placeholders
       # ============================================================
 
       prompt_text <- template_text
 
-      # 基础占位符替换
+      # Basic placeholder replacement
       prompt_text <- gsub("\\{left_group\\}", left_group, prompt_text, fixed = FALSE)
       prompt_text <- gsub("\\{right_group\\}", right_group, prompt_text, fixed = FALSE)
       prompt_text <- gsub("\\{comparison\\}", comparison, prompt_text, fixed = FALSE)
@@ -470,11 +469,11 @@ As your GSEA enrichment direction interpretation expert, I am ready. Please anal
       prompt_text <- gsub("\\{low\\}", as.character(n_low), prompt_text, fixed = FALSE)
       prompt_text <- gsub("\\{table\\}", table_body, prompt_text, fixed = FALSE)
 
-      # 特殊占位符：abs_nes（用于描述模板中）
-      # 这里需要逐行处理，可以扩展更多占位符
+      # Special placeholder: abs_nes (used in description template)
+      # Can be extended for more placeholders
       prompt_text <- gsub("\\{abs_nes\\}", sprintf("%.2f", abs(df_subset$NES[1])), prompt_text, fixed = FALSE)
 
-      # 更新输出
+      # Update output
       shiny::updateTextAreaInput(
         session,
         "prompt_output",
@@ -488,7 +487,7 @@ As your GSEA enrichment direction interpretation expert, I am ready. Please anal
     })
 
     # ============================================================
-    # 复制到剪贴板
+    # Copy to Clipboard
     # ============================================================
 
     shiny::observeEvent(input$copy_to_clipboard, {
@@ -499,7 +498,7 @@ As your GSEA enrichment direction interpretation expert, I am ready. Please anal
         return()
       }
 
-      # 使用 clipr 或系统剪贴板
+      # Use clipr or system clipboard
       if (requireNamespace("clipr", quietly = TRUE)) {
         clipr::write_clip(prompt)
         shiny::showNotification("Copied!", type = "message", duration = 2)

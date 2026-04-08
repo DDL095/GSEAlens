@@ -6,6 +6,20 @@
 \usage{
 get_geneset_info(obj)
 }
+\arguments{
+\item{obj}{A GseaEnv or GseaRes object.}
+}
+\value{
+An object containing geneset_info with pathway definitions and
+  metadata dictionary.
+}
 \description{
-Get Gene Set Information
+Retrieve gene set collection metadata including pathway definitions
+  and annotation dictionary.
+}
+\examples{
+\dontrun{
+gs_info <- get_geneset_info(gsea_res)
+names(gs_info)
+}
 }

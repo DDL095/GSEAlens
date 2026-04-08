@@ -7,13 +7,29 @@
 get_de_table(obj, contrast_id)
 }
 \arguments{
-\item{obj}{GseaEnv or GseaRes object}
+\item{obj}{A GseaRes object containing differential expression results.}
 
-\item{contrast_id}{Character. Contrast ID (e.g., "A_vs_B").}
+\item{contrast_id}{Character string specifying the contrast ID (e.g., "A_vs_B").
+If the reverse contrast exists in storage, it will be retrieved and
+logFC/stat signs will be inverted.}
 }
 \value{
-data.frame (containing gene_symbol, logFC, stat, pvalue, padj)
+A data frame containing at minimum: gene_symbol, logFC, and p-value
+  columns. Additional columns (stat, pvalue, padj, t) may be present depending
+  on the analysis backend.
 }
 \description{
-Extract results for a specific contrast from de_store.
+Extract differential expression results for a specific contrast
+  from the stored results. Automatically handles reverse contrasts (e.g.,
+  B_vs_A) by retrieving the forward contrast and flipping the sign of logFC.
+}
+\examples{
+\dontrun{
+# Get results for a specific contrast
+de_result <- get_de_table(gsea_res, contrast_id = "Treatment_vs_Control")
+
+# Reverse contrasts are automatically handled
+de_result <- get_de_table(gsea_res, contrast_id = "Control_vs_Treatment")
+# logFC and stat values will have inverted signs
+}
 }

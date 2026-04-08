@@ -1,4 +1,4 @@
-#' @title Batch Parallel GSEA Calculation (Optimized Version)
+#' @title Batch Parallel GSEA Calculation
 #' @description Consumes a standard GseaEnv object and performs efficient parallel GSEA calculation.
 #' @param gsea_env GseaEnv object
 #' @param custom_series_name String. Analysis series name
@@ -193,7 +193,6 @@ batch_calc_gsea <- function(gsea_env,
           }
         }
 
-        set.seed(123)
         gsea_res <- tryCatch({
           clusterProfiler::GSEA(
             geneList = genelist,
@@ -374,7 +373,6 @@ batch_calc_gsea <- function(gsea_env,
       next
     }
 
-    set.seed(123)
     gsea_res <- tryCatch({
       clusterProfiler::GSEA(
         geneList = genelist,
@@ -420,7 +418,8 @@ batch_calc_gsea <- function(gsea_env,
 #' @return Named numeric vector
 #' @keywords internal
 .prepare_rank_vector_fast <- function(de_table, flip = FALSE) {
-  # 保留原始大小写，格式标准化在 worker 函数中基于 TERM2GENE 进行
+  # Preserve original case; format standardization is performed in worker function
+  # based on TERM2GENE
   vals <- de_table %>%
     dplyr::filter(!is.na(gene_symbol), gene_symbol != "") %>%
     dplyr::mutate(abs_stat = abs(stat)) %>%

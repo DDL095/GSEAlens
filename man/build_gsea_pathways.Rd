@@ -33,7 +33,8 @@ A list object containing:
 \description{
 Provides an interactive or automated gene set selection interface
   based on msigdbr, generating standardized pathway objects with intelligent
-  semantic tagging. Supports both human (HS) and mouse (MM) species.
+  semantic tagging. Supports both human (Homo sapiens) and mouse (Mus musculus)
+  species.
 }
 \examples{
 \dontrun{

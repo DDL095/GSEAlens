@@ -1,10 +1,19 @@
+# Section ----
+
 #' @title Quadrant Linkage Module
+#' @description Four-quadrant interactive visualization module for pathway and gene analysis.
+#'   Provides synchronized pathway selection, gene ranking, differential expression volcano,
+#'   and expression boxplot visualizations with bidirectional table-volcano synchronization.
+#' @keywords internal
 
 #' @title Quadrant Linkage UI
 #' @description UI components for the four-quadrant interactive visualization
 #' @param id Module ID
 #' @return Shiny UI tagList
 #' @keywords internal
+
+# Subsection ----
+
 mod_quadrant_ui <- function(id) {
   ns <- shiny::NS(id)
   shiny::tagList(
@@ -31,7 +40,7 @@ mod_quadrant_ui <- function(id) {
                                   shiny::h4("3. Differential Expression Volcano"),
                                   shiny::div(
                                     style = "margin-bottom: 10px;",
-                                                                        shiny::checkboxInput(ns("toggle_volcano_settings"), label = "Settings", value = FALSE)
+                                    shiny::checkboxInput(ns("toggle_volcano_settings"), label = "Settings", value = FALSE)
                                   ),
                                   shiny::conditionalPanel(
                                     condition = sprintf("input['%s']", ns("toggle_volcano_settings")),
@@ -97,6 +106,9 @@ mod_quadrant_ui <- function(id) {
 #' @param gsea_res GseaRes object
 #' @param table_controller Table controller with update_selection method
 #' @keywords internal
+
+# Subsection ----
+
 mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
@@ -110,7 +122,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
     COLOR_BOTH <- "#9C27B0"
 
     # Reactive Values
-    # 注意：selected_pathway_ids 现在应该响应 table_controller$selected_pathways 的变化
+    # 监听 table_controller$selected_pathways 的变化
     selected_pathway_ids <- shiny::reactiveVal(character(0))
     selected_pathway_genes <- shiny::reactiveVal(character(0))
     current_boxplot_gene <- shiny::reactiveVal(NULL)

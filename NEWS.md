@@ -1,5 +1,13 @@
 <!-- NEWS.md is maintained by https://cynkra.github.io/fledge, do not edit -->
 
+# GSEAlens 1.99.0
+
+- Pathway Network module addition
+- Hubgene Network module addition
+- AI prompt module addition
+- Script description standardization
+
+
 # GSEAlens 0.0.9
 
 - Gene expression and plot code.

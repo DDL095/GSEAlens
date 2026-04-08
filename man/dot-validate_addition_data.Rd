@@ -6,7 +6,15 @@
 \usage{
 .validate_addition_data(data)
 }
+\arguments{
+\item{data}{A data.frame to validate}
+}
+\value{
+Validated data.frame with character ID column
+}
 \description{
-Internal function to validate addition_data structure
+Internal function to validate addition_data structure.
+  Checks that input is a data.frame with required 'ID' column and
+  removes duplicate entries if present.
 }
 \keyword{internal}

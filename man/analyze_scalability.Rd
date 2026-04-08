@@ -12,8 +12,17 @@ analyze_scalability(gsea_res_list, monitor_csv_list = NULL)
 \item{monitor_csv_list}{Corresponding list of monitoring CSV paths (with same names as gsea_res_list)}
 }
 \value{
-A comparison data frame
+A comparison data frame with columns: run_name, workers, duration_sec, mem_peak_mb (if available), mem_avg_mb (if available)
 }
 \description{
 Compares GSEA performance across different core counts (for publication).
+}
+\examples{
+\dontrun{
+results <- analyze_scalability(
+  gsea_res_list = list("1_core" = res1, "4_core" = res4),
+  monitor_csv_list = c("1_core" = "monitor_1.csv", "4_core" = "monitor_4.csv")
+)
+print(results)
+}
 }

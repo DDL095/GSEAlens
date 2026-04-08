@@ -6,6 +6,19 @@
 \usage{
 get_sample_meta(obj)
 }
+\value{
+A data frame with sample metadata. Includes a standardized 'group'
+  column derived from the target factor (inferred from dds_obj@design for
+  DESeq2 workflows). Sample row names are preserved for downstream matching.
+}
 \description{
-Fixes DESeq2 backend: handles DFrame properly, unifies group column names
+Extract and process sample metadata, handling DFrame conversion
+  from DESeq2 and unifying group column naming conventions across backends.
+}
+\examples{
+\dontrun{
+# Get processed sample metadata
+meta <- get_sample_meta(gsea_res)
+head(meta)
+}
 }

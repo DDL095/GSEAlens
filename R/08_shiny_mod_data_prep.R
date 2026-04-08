@@ -1,4 +1,18 @@
-#' @title Data Preprocessing Module UI (Enhanced with Joint Canvas Control)
+# ==============================================================================
+# Section: Data Preprocessing Module UI
+# ==============================================================================
+
+#' @title Data Preprocessing Module UI
+#' @description
+#' User interface for the data preprocessing module, providing controls for:
+#' \itemize{
+#'   \item Contrast selection and gene set subgroup filtering
+#'   \item Joint GSEA canvas for multi-pathway visualization
+#'   \item Differential expression gene marker selection
+#'   \item Group display order customization
+#'   \item Expression metrics configuration
+#' }
+#' @param id Module namespace ID
 #' @keywords internal
 
 mod_data_prep_ui <- function(id) {
@@ -9,7 +23,7 @@ mod_data_prep_ui <- function(id) {
       label = "Select Contrast",
       choices = NULL
     ),
-    shiny::h4("Data Slicing"),
+    shiny::h4("Data Filtering"),
     shiny::selectizeInput(
       ns("selected_collections"),
       label = "Select Gene Set Subgroup:",
@@ -66,7 +80,7 @@ mod_data_prep_ui <- function(id) {
       "Generate/Update Multi-Pathway Canvas",
       class = "btn-success",
       style = "width: 100%; font-weight: bold; margin-top: 10px;"
-    ) ,
+    ),
     shiny::hr(),
 
     shiny::h4("Differential Expression Gene Markers"),
@@ -98,68 +112,94 @@ mod_data_prep_ui <- function(id) {
         style = "width: 100%; margin-top: 10px; font-weight: bold;"
       ),
 
-    shiny::div(
-      style = "background-color: #d4edda; padding: 10px; border-radius: 5px; margin-top: 10px;",
-      shiny::HTML(
-        "<strong style='color: #155724;'>Confirmed Gene Markers:</strong><br>
+      shiny::div(
+        style = "background-color: #d4edda; padding: 10px; border-radius: 5px; margin-top: 10px;",
+        shiny::HTML(
+          "<strong style='color: #155724;'>Confirmed Gene Markers:</strong><br>
     <small style='color: #666;'>Retained after switching contrasts</small>"
+        ),
+        shiny::uiOutput(ns("confirmed_genes_display"))
       ),
-      shiny::uiOutput(ns("confirmed_genes_display"))
-    )
-    ,
-    shiny::uiOutput(ns("applied_genes_display")),
-    shiny::hr(),
+      shiny::uiOutput(ns("applied_genes_display")),
+      shiny::hr(),
 
-    shiny::h4("Group Display Order"),
-    shiny::div(
-      style = "background-color: #fff3cd; padding: 10px; border-radius: 5px; border-left: 4px solid #ffc107;",
+      shiny::h4("Group Display Order"),
+      shiny::div(
+        style = "background-color: #fff3cd; padding: 10px; border-radius: 5px; border-left: 4px solid #ffc107;",
+        shiny::selectInput(
+          ns("boxplot_order_pending"),
+          label = "Group Ordering Options:",
+          choices = c("Default Order" = "default"),
+          selected = "default"
+        ),
+        shiny::actionButton(
+          ns("apply_order_btn"),
+          label = "Confirm Order (Refresh Boxplot)",
+          class = "btn-warning",
+          style = "width: 100%; margin-top: 10px; font-weight: bold;"
+        ),
+        shiny::uiOutput(ns("order_status_display")),
+        shiny::helpText(
+          style = "margin-top: 8px; color: #666;",
+          "Click confirm after selecting order; boxplot will auto-sort"
+        )
+      ),
+      shiny::hr(),
+
+      shiny::h4("Joint Plotting Control"),
       shiny::selectInput(
-        ns("boxplot_order_pending"),
-        label = "Group Ordering Options:",
-        choices = c("Default Order" = "default"),
-        selected = "default"
+        ns("plot_subtype"),
+        label = "GSEAvis Style:",
+        choices = c("1: Classic Enrichment Only" = "1", "2: Enrichment + Heatmap Strip" = "2", "3: Full Strip with Rank" = "3"),
+        selected = "3"
       ),
-      shiny::actionButton(
-        ns("apply_order_btn"),
-        label = "Confirm Order (Refresh Boxplot)",
-        class = "btn-warning",
-        style = "width: 100%; margin-top: 10px; font-weight: bold;"
+      shiny::textInput(
+        ns("custom_colors"),
+        label = "Multi-Pathway Custom Colors:",
+        value = "#E41A1C, #377EB8, #4DAF4A, #984EA3",
+        placeholder = "e.g., #FF0000, #00FF00"
       ),
-      shiny::uiOutput(ns("order_status_display")),
-      shiny::helpText(
-        style = "margin-top: 8px; color: #666;",
-        "Click confirm after selecting order, boxplot will auto-sort"
+      shiny::hr(),
+
+      shiny::h4("Expression Metrics"),
+      shiny::selectInput(
+        ns("expression_type"),
+        label = "Select Expression Data Type:",
+        choices = NULL,
+        selected = NULL
       )
-    ),
-    shiny::hr(),
-
-    shiny::h4("Joint Plotting Control"),
-    shiny::selectInput(
-      ns("plot_subtype"),
-      label = "GSEAvis Style:",
-      choices = c("1: Classic Enrichment Only" = "1", "2: Enrichment + Heatmap Strip" = "2", "3: Full Strip with Rank" = "3"),
-      selected = "3"
-    ),
-    shiny::textInput(
-      ns("custom_colors"),
-      label = "Multi-Pathway Custom Colors:",
-      value = "#E41A1C, #377EB8, #4DAF4A, #984EA3",
-      placeholder = "e.g., #FF0000, #00FF00"
-    ),
-    shiny::hr(),
-
-    shiny::h4("Expression Metrics"),
-    shiny::selectInput(
-      ns("expression_type"),
-      label = "Select Expression Data Type:",
-      choices = NULL,
-      selected = NULL
     )
   )
-)}
+}
 
+# ==============================================================================
+# Section: Data Preprocessing Module Server
+# ==============================================================================
 
-#' @title Data Preprocessing Module Server (Joint Canvas Parameter Passing Version)
+#' @title Data Preprocessing Module Server
+#' @description
+#' Server logic for the data preprocessing module. Handles:
+#' \itemize{
+#'   \item Contrast and gene set selection
+#'   \item Data processing and sorting
+#'   \item Gene marker management (add, confirm, clear)
+#'   \item Boxplot ordering configuration
+#'   \item Joint canvas parameter passing
+#'   \item Expression data type selection based on backend
+#' }
+#' @param id Module namespace ID
+#' @param gsea_res GSEA results object containing contrast registry and backend info
+#' @return A list of reactive functions and values:
+#' \itemize{
+#'   \item \code{data}: Reactive data object with processed GSEA results
+#'   \item \code{highlight_genes}: Reactive character vector of confirmed gene markers
+#'   \item \code{boxplot_order}: Reactive value for boxplot group ordering
+#'   \item \code{joint_contrasts}: Reactive vector of contrasts for joint canvas
+#'   \item \code{joint_ncol}: Reactive number of columns for joint canvas
+#'   \item \code{joint_generate}: Event reactive for canvas regeneration trigger
+#'   \item \code{update_pending_genes}: Function to update pending genes from modal
+#'   \item \code{get_pending_genes}: Function to retrieve current pending genes
+#' }
 #' @keywords internal
 
 mod_data_prep_server <- function(id, gsea_res) {
@@ -302,7 +342,7 @@ mod_data_prep_server <- function(id, gsea_res) {
           pending_genes_internal(pending_selected)
 
           message(sprintf(
-            "pending refilled from applied (%d in current choices; %d total in applied)",
+            "Pending refilled from applied (%d in current choices; %d total in applied)",
             length(pending_selected), length(current_applied)
           ))
 

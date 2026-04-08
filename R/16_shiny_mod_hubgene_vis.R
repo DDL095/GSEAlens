@@ -1,11 +1,20 @@
 # ==============================================================================
-# 文件：R/18_shiny_mod_hubgene_vis.R
-# 功能：HubGene Network - visNetwork 交互版
-# 美学调整：Gene透明度、Edge颜色跟随基因stat、highlightNearest
-# 修复：添加 symbol_map 定义，恢复基因名原始大小写
+# File: R/18_shiny_mod_hubgene_vis.R
+# Description: HubGene Network - visNetwork Interactive Module
+# Features: Gene opacity, Edge color follows gene stat, highlightNearest
+# Fix: Added symbol_map definition, restored gene name original case
 # ==============================================================================
 
 #' @title HubGene Network (visNetwork) Module UI
+#' @description
+#' Shiny module UI for visualizing HubGene networks using visNetwork.
+#' Provides interactive controls for pathway selection modes, physics
+#' simulation parameters, node sizing, and network statistics display.
+#'
+#' @param id Character string used to namespace the module.
+#'
+#' @return A Shiny tagList containing the module's UI elements.
+#'
 #' @keywords internal
 
 mod_hubgene_vis_ui <- function(id) {
@@ -13,7 +22,7 @@ mod_hubgene_vis_ui <- function(id) {
 
   shiny::tagList(
     shiny::fluidRow(
-      # ─── 左侧控制面板 ───
+      # ─── Left Control Panel ───
       shiny::column(
         width = 3,
         shiny::div(
@@ -24,7 +33,7 @@ mod_hubgene_vis_ui <- function(id) {
 
           shiny::hr(),
 
-          # ── 模式选择 ──
+          # ── Mode Selection ──
           shiny::h5("Pathway Source Mode"),
           shiny::radioButtons(
             ns("vis_mode"),
@@ -39,7 +48,7 @@ mod_hubgene_vis_ui <- function(id) {
 
           shiny::hr(),
 
-          # ── Top N 配置 ──
+          # ── Top N Configuration ──
           shiny::conditionalPanel(
             condition = sprintf("input['%s'] == 'mode_topN'", ns("vis_mode")),
             shiny::numericInput(
@@ -72,7 +81,7 @@ mod_hubgene_vis_ui <- function(id) {
 
           shiny::hr(),
 
-          # ── 物理引擎控制 ──
+          # ── Physics Engine Controls ──
           shiny::h5("Physics & Interaction"),
 
           shiny::checkboxInput(
@@ -147,7 +156,7 @@ mod_hubgene_vis_ui <- function(id) {
 
           shiny::hr(),
 
-          # ── 节点大小 ──
+          # ── Node Sizing ──
           shiny::h5("Node Sizing"),
 
           shiny::sliderInput(
@@ -170,7 +179,7 @@ mod_hubgene_vis_ui <- function(id) {
 
           shiny::hr(),
 
-          # ── 随机种子 ──
+          # ── Random Seed ──
           shiny::numericInput(
             ns("vis_seed"),
             label = "Random Seed:",
@@ -182,14 +191,14 @@ mod_hubgene_vis_ui <- function(id) {
 
           shiny::hr(),
 
-          # ── 统计 ──
+          # ── Statistics ──
           shiny::h5("Network Statistics"),
           shiny::verbatimTextOutput(ns("vis_stats")) %>%
             shiny::tagAppendAttributes(style = "font-size: 10px; max-height: 100px; overflow-y: auto;"),
 
           shiny::hr(),
 
-          # ── 通路预览 ──
+          # ── Pathway Preview ──
           shiny::h5("Pathways Preview"),
           shiny::uiOutput(ns("vis_pathway_list")) %>%
             shiny::tagAppendAttributes(style = "max-height: 150px; overflow-y: auto;")
@@ -197,20 +206,20 @@ mod_hubgene_vis_ui <- function(id) {
         )
       ),
 
-      # ─── 主绘图区域 ───
+      # ─── Main Plotting Area ───
       shiny::column(
         width = 9,
         shiny::div(
           class = "white-box",
           style = "min-height: 850px;",
 
-          # 状态栏
+          # Status Bar
           shiny::div(
             style = "background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 12px; border-radius: 5px; margin-bottom: 15px; color: white;",
             shiny::uiOutput(ns("vis_status_text"))
           ),
 
-          # visNetwork 输出
+          # visNetwork Output
           visNetwork::visNetworkOutput(
             ns("vis_network"),
             height = "1200px",
@@ -228,6 +237,21 @@ mod_hubgene_vis_ui <- function(id) {
 
 
 #' @title HubGene Network (visNetwork) Module Server
+#' @description
+#' Shiny module server for HubGene network visualization using visNetwork.
+#' Handles pathway selection, network building, rendering with physics
+#' simulation, and interactive node/edge display.
+#'
+#' @param id Character string used to namespace the module.
+#' @param data_prep_list A reactive expression returning a list containing
+#'   GSEA results, data frame, contrast groups, and metadata.
+#' @param table_controller A list containing reactive expressions for
+#'   table interactions, including selected pathways.
+#' @param gsea_res A GSEA result object used for symbol mapping.
+#'
+#' @return A list containing reactive expressions:
+#'   \item{final_pathways}{Reactive character vector of selected pathway IDs}
+#'
 #' @keywords internal
 
 mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_res) {
@@ -235,7 +259,7 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
     ns <- session$ns
 
     # ──────────────────────────────────────────────────────────────
-    # 调试日志
+    # Debug Log
     # ──────────────────────────────────────────────────────────────
     session$userData$debug_log <- character(0)
 
@@ -253,7 +277,7 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
     add_debug("Module started")
 
     # ──────────────────────────────────────────────────────────────
-    # 1. 模式状态
+    # 1. Mode State
     # ──────────────────────────────────────────────────────────────
 
     vis_mode <- shiny::reactiveVal("mode_topN")
@@ -264,7 +288,7 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
     })
 
     # ──────────────────────────────────────────────────────────────
-    # 2. 数据源
+    # 2. Data Source
     # ──────────────────────────────────────────────────────────────
 
     topN_candidates <- shiny::reactive({
@@ -313,7 +337,7 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
     })
 
     # ──────────────────────────────────────────────────────────────
-    # 3. 网络数据
+    # 3. Network Data
     # ──────────────────────────────────────────────────────────────
 
     net_data <- shiny::reactive({
@@ -351,7 +375,7 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
     })
 
     # ──────────────────────────────────────────────────────────────
-    # 4. 渲染网络
+    # 4. Render Network
     # ──────────────────────────────────────────────────────────────
 
     output$vis_network <- visNetwork::renderVisNetwork({
@@ -360,13 +384,13 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
       add_debug("Preparing visNetwork...")
 
-      # 获取分组信息
+      # Get group information
       data_list <- data_prep_list$data()
       left_group <- data_list$left_group
       right_group <- data_list$right_group
 
       # ──────────────────────────────────────────────────────────────
-      # 修复：重建基因名大小写映射
+      # Fix: Rebuild gene name case mapping
       # ──────────────────────────────────────────────────────────────
       symbol_map <- NULL
       if (!is.null(gsea_res) && !is.null(data_list$contrast_id)) {
@@ -381,12 +405,12 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
         add_debug("symbol_map skipped: gsea_res or contrast_id is NULL", "WARN")
       }
 
-      # 节点大小参数
+      # Node size parameters
       pw_size <- ifelse(is.null(input$vis_pw_size), 30, input$vis_pw_size)
       gene_size <- ifelse(is.null(input$vis_gene_size), 12, input$vis_gene_size)
 
       # ──────────────────────────────────────────────────────────────
-      # 节点构建（添加opacity列）
+      # Node Construction (add opacity column)
       # ──────────────────────────────────────────────────────────────
 
       nodes <- data.frame(
@@ -401,13 +425,13 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
         stringsAsFactors = FALSE
       )
 
-      # 通路节点
+      # Pathway nodes
       if (!is.null(net$nodes$pathway) && nrow(net$nodes$pathway) > 0) {
         for (i in seq_len(nrow(net$nodes$pathway))) {
           row <- net$nodes$pathway[i, ]
           direction <- ifelse(row$NES > 0, left_group, right_group)
 
-          # 计算LE连接数
+          # Calculate LE connection count
           le_count <- 0
           if (!is.null(net$edges) && nrow(net$edges) > 0) {
             le_count <- sum(net$edges$target == row$id & net$edges$is_leading_edge, na.rm = TRUE)
@@ -430,14 +454,14 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
         }
       }
 
-      # 基因节点（添加opacity区分）
+      # Gene nodes (add opacity for distinction)
       if (!is.null(net$nodes$gene) && nrow(net$nodes$gene) > 0) {
         for (i in seq_len(nrow(net$nodes$gene))) {
           row <- net$nodes$gene[i, ]
-          # 恢复原始大小写
+          # Restore original case
           gene_label <- .get_display_symbol(row$id, symbol_map)
 
-          # 判断是否为Leading Edge
+          # Check if Leading Edge
           is_le <- FALSE
           pw_str <- "None"
           if (!is.null(net$edges) && nrow(net$edges) > 0) {
@@ -454,7 +478,7 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
             }
           }
 
-          # 方向
+          # Direction
           if (row$stat > 0) {
             direction <- sprintf("Up in %s", left_group)
           } else if (row$stat < 0) {
@@ -463,7 +487,7 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
             direction <- "Neutral"
           }
 
-          # 透明度：LE=1.0, non-LE=0.5
+          # Opacity: LE=1.0, non-LE=0.5
           gene_opacity <- ifelse(is_le, 1.0, 0.5)
 
           nodes <- rbind(nodes, data.frame(
@@ -485,7 +509,7 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
       }
 
       # ──────────────────────────────────────────────────────────────
-      # 边构建（颜色跟随基因stat）
+      # Edge Construction (color follows gene stat)
       # ──────────────────────────────────────────────────────────────
 
       edges <- data.frame(
@@ -502,7 +526,7 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
         for (i in seq_len(nrow(net$edges))) {
           row <- net$edges[i, ]
 
-          # 获取源基因的stat值来决定颜色
+          # Get source gene stat value to determine color
           gene_stat <- 0
           if (!is.null(net$nodes$gene) && nrow(net$nodes$gene) > 0) {
             gene_row <- net$nodes$gene[net$nodes$gene$id == row$source, ]
@@ -511,7 +535,7 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
             }
           }
 
-          # 颜色跟随基因stat：浅色（带透明度）
+          # Color follows gene stat: light color (with opacity)
           if (gene_stat > 0) {
             edge_color <- "#E41A1C80"
           } else if (gene_stat < 0) {
@@ -520,7 +544,7 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
             edge_color <- "#99999980"
           }
 
-          # 恢复原始大小写
+          # Restore original case
           gene_display <- .get_display_symbol(row$source, symbol_map)
 
           edges <- rbind(edges, data.frame(
@@ -542,12 +566,12 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
       add_debug(sprintf("Nodes: %d, Edges: %d", nrow(nodes), nrow(edges)))
 
       # ──────────────────────────────────────────────────────────────
-      # 构建visNetwork对象
+      # Build visNetwork Object
       # ──────────────────────────────────────────────────────────────
 
       vis <- visNetwork::visNetwork(nodes, edges, width = "100%", height = "650px")
 
-      # 物理引擎
+      # Physics Engine
       physics_enabled <- isTRUE(input$vis_physics)
       grav <- ifelse(is.null(input$vis_gravitational), -400, input$vis_gravitational)
 
@@ -574,11 +598,11 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
         add_debug("Physics: OFF")
       }
 
-      # 布局
+      # Layout
       seed <- ifelse(is.null(input$vis_seed), 42, input$vis_seed)
       vis <- vis %>% visNetwork::visLayout(randomSeed = seed)
 
-      # 交互
+      # Interaction
       vis <- vis %>% visNetwork::visInteraction(
         dragNodes = TRUE,
         dragView = TRUE,
@@ -588,13 +612,13 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
         navigationButtons = TRUE
       )
 
-      # 点击高亮相关节点和边
+      # Click to highlight related nodes and edges
       vis <- vis %>% visNetwork::visOptions(
         highlightNearest = TRUE,
         nodesIdSelection = TRUE
       )
 
-      # 点击事件
+      # Click Event
       vis <- vis %>% visNetwork::visEvents(
         click = sprintf("function(props) {
       var n = props.nodes[0];
@@ -607,7 +631,7 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
     })
 
     # ──────────────────────────────────────────────────────────────
-    # 5. 事件
+    # 5. Events
     # ──────────────────────────────────────────────────────────────
 
     shiny::observeEvent(input$vis_click, {
@@ -615,7 +639,7 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
     })
 
     # ──────────────────────────────────────────────────────────────
-    # 6. 统计
+    # 6. Statistics
     # ──────────────────────────────────────────────────────────────
 
     output$vis_stats <- shiny::renderPrint({
@@ -635,7 +659,7 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
     })
 
     # ──────────────────────────────────────────────────────────────
-    # 7. 状态栏
+    # 7. Status Bar
     # ──────────────────────────────────────────────────────────────
 
     output$vis_status_text <- shiny::renderUI({
@@ -659,7 +683,7 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
     })
 
     # ──────────────────────────────────────────────────────────────
-    # 8. 通路预览
+    # 8. Pathway Preview
     # ──────────────────────────────────────────────────────────────
 
     output$vis_pathway_list <- shiny::renderUI({
@@ -690,7 +714,7 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
     })
 
     # ──────────────────────────────────────────────────────────────
-    # 9. 详情表
+    # 9. Detail Tables
     # ──────────────────────────────────────────────────────────────
 
     output$vis_node_detail <- DT::renderDataTable({
@@ -699,7 +723,7 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
         return(DT::datatable(data.frame(Message = "No nodes"), options = list(dom = "t")))
       }
 
-      # 获取 symbol_map 用于显示原始大小写
+      # Get symbol_map for displaying original case
       symbol_map <- NULL
       data_list <- tryCatch(data_prep_list$data(), error = function(e) NULL)
       if (!is.null(data_list) && !is.null(data_prep_list$gsea_res) && !is.null(data_list$contrast_id)) {
@@ -710,7 +734,7 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
       rows <- list()
 
-      # Pathway节点
+      # Pathway nodes
       if (!is.null(net$nodes$pathway) && nrow(net$nodes$pathway) > 0) {
         for (i in seq_len(nrow(net$nodes$pathway))) {
           r <- net$nodes$pathway[i, ]
@@ -729,7 +753,7 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
         }
       }
 
-      # Gene节点
+      # Gene nodes
       if (!is.null(net$nodes$gene) && nrow(net$nodes$gene) > 0) {
         for (i in seq_len(nrow(net$nodes$gene))) {
           r <- net$nodes$gene[i, ]
@@ -758,7 +782,7 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
         return(DT::datatable(data.frame(Message = "No edges"), options = list(dom = "t")))
       }
 
-      # 获取 symbol_map 用于显示原始大小写
+      # Get symbol_map for displaying original case
       symbol_map <- NULL
       data_list <- tryCatch(data_prep_list$data(), error = function(e) NULL)
       if (!is.null(data_list) && !is.null(data_prep_list$gsea_res) && !is.null(data_list$contrast_id)) {
