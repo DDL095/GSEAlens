@@ -11,35 +11,36 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-# Introduction to the R Package
+# Package Introduction
 
-**GSEAlens** derives its name from **Lens**, symbolizing a magnifying glass that helps researchers delve deeper into key pathways revealed by GSEA (Gene Set Enrichment Analysis).
+**GSEAlens** derives its name from **Lens**, symbolizing how this package acts as a **magnifying glass** to help researchers deeply explore key pathways in GSEA enrichment analysis.
 
-GSEAlens provides a web-based interactive platform for displaying pathway introductions and descriptions, integrating AI-assisted pathway enrichment result export functionality. By encapsulating workflows and standardizing input formats, this R package simplifies the viewing and exploration of GSEA enrichment analysis results.
+GSEAlens provides a web-based interactive platform for displaying pathway introductions and descriptions, integrating AI-assisted pathway enrichment result export functionality. By encapsulating workflows and standardizing input formats, this R package simplifies the process of viewing and exploring GSEA enrichment analysis results.
 
-## Installation Instructions
+## Installation
 
-```{r}
+``` {r}
 # Install using devtools
 if (!requireNamespace("devtools", quietly = TRUE)) {
     install.packages("devtools")
 }
 devtools::install_github("DDL095/GSEAlens")
+
 ```
 
-# Example Workflow
+# Example Code
 
-This example uses the `airway` package, which contains two groups with four replicates each.
+Using the `airway` package as an example, this R package contains two groups with 4 replicates each.
 
-```{r 环境准备}
+``` {r setup-environment}
 library(GSEAlens)
-# First check if airway is installed
+# First check if airway is already installed
 if (!requireNamespace("airway", quietly = TRUE)) {
   # If not installed, check and install BiocManager first
   if (!requireNamespace("BiocManager", quietly = TRUE)) {
     install.packages("BiocManager")
   }
-  # Install airway via BiocManager
+  # Install airway through BiocManager
   BiocManager::install("airway")
 }
 library("airway")
@@ -51,11 +52,11 @@ expression_data <- airway
 
 ### limma-voom Workflow
 
-Following the standard workflow, first use the edgeR package to construct the DGEList object, design a no-intercept matrix and rename row names, then create the contrast matrix for fitting, filter low-expression genes, retain protein-coding RNA, and use symbol as row names.
+First, refer to the standard workflow: use the edgeR package to assemble a DGEList object, design a no-intercept matrix and rename row names, then create contrasts for fitting, filter low-expression genes, retain protein-coding RNAs, and use symbols as row names.
 
 ***Note: GSEAlens is based on a no-intercept design limma-voom workflow (~0+group) to ensure that column names directly correspond to group names.***
 
-```{r limma-voom 数据准备}
+``` {r limma-voom-data-preparation}
 library(edgeR)
 library(limma)
 group_level <- airway@colData@listData[["dex"]] 
@@ -106,9 +107,9 @@ isexpr <- rowSums(edgeR::cpm(gsea_limma_voom_data) > 1) >= 3
 gsea_limma_voom_data <- gsea_limma_voom_data[isexpr,]
 ```
 
-Perform limma-voom fitting to obtain the `fit` object.
+Then perform limma-voom fitting to obtain the `fit` object.
 
-```{r limma-voom 处理}
+``` {r limma-voom-processing}
 VoomOutPut <- voom(gsea_limma_voom_data, design)
 
 fit <- lmFit(object = VoomOutPut, design = design) %>% 
@@ -120,9 +121,9 @@ fit <- lmFit(object = VoomOutPut, design = design) %>%
 
 #### SummarizedExperiment Input
 
-Refer to the DESeq2 package documentation for data cleaning and processing. First, remove non-coding RNA.
+Refer to the DESeq2 package documentation for data cleaning and processing. First, remove non-coding RNAs.
 
-```{r 仅保留编码蛋白质的RNA}
+``` {r keep-protein-coding-rna}
 library("DESeq2")
 dds_se <- DESeqDataSet(expression_data, design = ~ cell + dex)
 gene_biotypes <- rowData(dds_se)$gene_biotype
@@ -131,9 +132,9 @@ dds_se <- dds_se[keep_protein_coding, ]
 dds_se
 ```
 
-Then remove low-expression genes and use symbol as row names.
+Then remove low-expression genes and use symbols as row names.
 
-```{r 去除低表达的RNA}
+``` {r remove-low-expression-rna}
 smallestGroupSize <- 3
 keep <- rowSums(counts(dds_se) >= 10) >= smallestGroupSize
 dds_se <- dds_se[keep,]
@@ -150,19 +151,21 @@ for (gene in dup_genes) {
   keep[remove_idx] <- FALSE
 }
 dds_se <- dds_se[keep, ]
+
+
 ```
 
 Run DESeq2 processing.
 
-```{r 运行DESeq2}
+``` {r run-deseq2}
 dds_se <- DESeq(dds_se)
 ```
 
 ### Count Matrix Input
 
-Filter low-expression genes, retain only protein-coding RNA, and rename matrix row names to symbol.
+Filter low-expression genes, retain only protein-coding RNAs, and rename matrix row names to symbols.
 
-```{r 矩阵修订}
+``` {r matrix-modification}
 DDS_rawdata <- expression_data
 
 gene_biotypes_epd <- rowData(DDS_rawdata)$gene_biotype
@@ -179,27 +182,30 @@ total_counts <- rowSums(SummarizedExperiment::assay(DDS_rawdata))
 keep_name <- rep(TRUE, nrow(DDS_rawdata))
 dup_genes <- rownames(DDS_rawdata)[duplicated(rownames(DDS_rawdata))]
 for (gene in dup_genes) {
-  idx <- which(rownames(DDS_rawdata) == gene)  # All row indices for this gene
-  best_idx <- idx[which.max(total_counts[idx])]  # Row with highest expression
-  remove_idx <- idx[idx != best_idx]  # Rows to remove (same gene name but not highest expression)
+  idx <- which(rownames(DDS_rawdata) == gene)  
+  best_idx <- idx[which.max(total_counts[idx])]  
+  remove_idx <- idx[idx != best_idx]  
   keep_name[remove_idx] <- FALSE
 }
 DDS_rawdata <- DDS_rawdata[keep_name, ]
+
 ```
 
-Obtain matrix information.
+Matrix information extraction.
 
-```{r 矩阵提取}
+``` {r matrix-extraction}
 cts <- assay(DDS_rawdata,"counts")
 coldata <- DDS_rawdata@colData %>% as.data.frame.array()
 coldata <- coldata[,c("cell","dex")]
 coldata$cell <- factor(coldata$cell)
 coldata$dex <- factor(coldata$dex)
+
+
 ```
 
 Assemble into DDS object and process.
 
-```{r}
+``` {r}
 dds <- DESeqDataSetFromMatrix(countData = cts,
                               colData = coldata,
                               design = ~ dex)
@@ -210,45 +216,45 @@ dds <- DESeq(dds)
 
 ### Creating GSEA Pathway Object
 
-Use the `build_gsea_pathways` function to construct the pathway object for GSEA enrichment analysis.
+Use the `build_gsea_pathways` function to construct a pathway object for GSEA enrichment analysis.
 
-```{r}
+``` {r}
 gsea_pathwaysets <- GSEAlens::build_gsea_pathways(species = "HS",auto_select = c(17,18,19,20,26))
 ```
 
-### Assembling the Computation Object
+### Assembling Computation Object
 
-Through the `setup_gsea_env` function, assemble the `GSEAEnv` object for computational analysis. Different workflows use the same function with different input data. For the limma-voom workflow, since the `fit` object does not contain the original gene read counts, the filtered `DGEList` object used to generate the `fit` object must be additionally included, which in this example is the multi-step filtered `gsea_limma_voom_data`.
+Through the `setup_gsea_env` function, assemble a `GSEAEnv` object for computational analysis. Different workflows use the same function with different data inputs. For the limma-voom workflow, since the `fit` object does not contain the original gene read counts, the filtered `DGEList` used to generate the `fit` object must be additionally provided. In this example, it is the multi-step filtered `gsea_limma_voom_data`.
 
-Include limma-voom workflow object for analysis.
+Assemble the limma-voom workflow object for analysis.
 
-```{r}
+``` {r}
 gseadata_limmavoom <- GSEAlens::setup_gsea_env(fit = fit,pathway_obj = gsea_pathwaysets,expr_data = gsea_limma_voom_data)
 ```
 
-Include DESeq2 SummarizedExperiment object for analysis.
+Assemble the DESeq2 SummarizedExperiment object for analysis.
 
-```{r}
+``` {r}
 gseadata_se <- GSEAlens::setup_gsea_env(fit = dds_se,pathway_obj = gsea_pathwaysets)
 ```
 
-Include DESeq2 Count matrix workflow object for analysis.
+Assemble the DESeq2 Count matrix workflow object for analysis.
 
-```{r}
+``` {r}
 gseadata_dds <- GSEAlens::setup_gsea_env(fit = dds,pathway_obj = gsea_pathwaysets)
 ```
 
 ### Running Processing
 
-All objects are processed using the `batch_calc_gsea` function with no difference.
+All objects are processed using the `batch_calc_gsea` function with no differences.
 
-Parallel computing note: Adjust the workers option based on your computer's performance to set the number of cores for computation. More comparisons require higher core settings for better efficiency.
+Parallel computing note: Adjust the `workers` option based on your computer's performance to set the number of cores for computation. More contrasts recommend higher core settings for better computational efficiency.
 
-```{r}
+``` {r}
 # limma-voom workflow
 gsea_res_limmavoom <- GSEAlens::batch_calc_gsea(gseadata_limmavoom, 
                                                  custom_series_name = "limmavoom_data", 
-                                                 workers = 4,  # Adjust based on number of comparisons and computer performance
+                                                 workers = 4,  # Adjust based on number of contrasts and computer performance
                                                  force = TRUE)
 
 # DESeq2 SummarizedExperiment workflow
@@ -266,60 +272,60 @@ gsea_res_dds <- GSEAlens::batch_calc_gsea(gseadata_dds,
 
 ### Interactive Analysis and Viewing
 
-After running `batch_calc_gsea`, an RDS file will be generated in the corresponding directory. Load this file, or use `import_gsea_capsule` to read it. The `import_gsea_capsule` function automatically organizes related files into the folder of your RMD file or R script when reading, and provides a data inspection overview.
+After running `batch_calc_gsea`, an RDS file will be generated in the corresponding directory. Load this file or use `import_gsea_capsule` to read it. The `import_gsea_capsule` function can automatically organize relevant files into the folder where your RMD file or R script is located, and provide data inspection results.
 
-```{r}
+``` {r}
 gsea_res <- import_gsea_capsule("/path/to/your/files/")
-# Or read the RDS file directly
+# Or directly read the RDS file
 # gsea_res <- readRDS("/path/of/your/file/")
 ```
 
-Once the data is loaded, you can use `launch_gsea_app` for interactive viewing.
+After loading the data, you can use `launch_gsea_app` for interactive viewing.
 
-```{r}
+``` {r}
 launch_gsea_app(gsea_res)
 ```
 
-# Package Intermediate Object Documentation
+# Package Intermediate Object Descriptions
 
 ## GseaEnv Object
 
 The `GseaEnv` object returned by the `setup_gsea_env` function contains the following components:
 
-| Component | Description |
-|-----------|-------------|
-| `backend_info` | Backend type information (limma-voom or DESeq2) |
-| `contrast_registry` | Contrast registry containing all pairwise comparison information |
-| `de_store` | Differential expression analysis result storage |
-| `expr_bundle` | Expression data bundle (raw counts, normalized matrix, sample metadata) |
-| `geneset` | Geneset information (TERM2GENE, metadata dictionary, species) |
+| Component           | Description                                                                              |
+|---------------------|------------------------------------------------------------------------------------------|
+| `backend_info`      | Backend type information (limma-voom or DESeq2)                                          |
+| `contrast_registry` | Contrast registry containing all pairwise comparison information                         |
+| `de_store`          | Differential expression analysis results storage                                          |
+| `expr_bundle`       | Expression data bundle (raw counts, normalized matrix, sample metadata)                   |
+| `geneset`           | Geneset information (TERM2GENE, metadata dictionary, species)                           |
 
 ## GseaRes Object
 
 The `GseaRes` object returned by the `batch_calc_gsea` function contains the following components:
 
-| Component | Description |
-|-----------|-------------|
-| `metadata` | Computation metadata (runtime, cores used, parameter settings) |
-| `backend_info` | Backend type information |
-| `contrast_registry` | Contrast registry |
-| `de_store` | Differential expression analysis result storage |
-| `expr_bundle` | Expression data bundle |
-| `geneset_info` | Geneset information |
-| `results` | GSEA result list, one entry per contrast |
+| Component           | Description                                                                              |
+|---------------------|------------------------------------------------------------------------------------------|
+| `metadata`          | Computation metadata (runtime, cores used, parameter settings)                           |
+| `backend_info`      | Backend type information                                                                 |
+| `contrast_registry` | Contrast registry                                                                        |
+| `de_store`          | Differential expression analysis results storage                                          |
+| `expr_bundle`       | Expression data bundle                                                                    |
+| `geneset_info`      | Geneset information                                                                      |
+| `results`           | GSEA results list, one entry per contrast                                                |
 
 ## GseaTask Object
 
 The `GseaTask` object returned by the `extract_gsea_task` function is used for single-contrast analysis:
 
-| Component | Description |
-|-----------|-------------|
-| `gsea_res` | GSEA result object |
-| `meta` | Metadata (contrast information, geneset name, expression data) |
+| Component   | Description                                              |
+|-------------|----------------------------------------------------------|
+| `gsea_res`  | GSEA result object                                       |
+| `meta`      | Metadata (contrast information, geneset name, expression data) |
 
-# Session Information
+# Session Info
 
-```{r sessionInfo}
+``` {r sessionInfo}
 sessionInfo()
 ```
 
