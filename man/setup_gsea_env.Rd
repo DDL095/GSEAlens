@@ -24,10 +24,12 @@ Automatically extracts contrasts, differential analysis results, and expression 
 a standardized GseaEnv object.
 }
 \examples{
-\dontrun{
+\donttest{
 # Limma workflow
 design <- model.matrix(~ 0 + group, data = samples)
-fit <- lmFit(expr, design) \%>\% contrasts.fit(cont.matrix) \%>\% eBayes()
+fit <- lmFit(expr, design) \%>\%
+  contrasts.fit(cont.matrix) \%>\%
+  eBayes()
 env <- setup_gsea_env(fit, pathway_obj)
 
 # DESeq2 workflow

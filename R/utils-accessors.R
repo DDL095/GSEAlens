@@ -60,7 +60,6 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
 #' @keywords internal
 #'
 .get_expr_internal <- function(expr_bundle, backend_info, type = "default", ...) {
-
   # Normalize type names
   type_normalized <- tolower(type)
   type_aliases <- c(
@@ -108,94 +107,94 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
 
   # Compute expression values based on type and backend
   res <- switch(type_normalized,
-                "raw" = raw_counts,
+    "raw" = raw_counts,
 
-                # CPM (generic)
-                "cpm" = {
-                  if (backend == "limma_voom" && !is.null(expr_bundle$dge_list)) {
-                    edgeR::cpm(expr_bundle$dge_list, log = FALSE)
-                  } else if (backend == "deseq2" && !is.null(expr_bundle$dds_obj)) {
-                    counts <- DESeq2::counts(expr_bundle$dds_obj, normalized = FALSE)
-                    t(t(counts) / colSums(counts)) * 1e6
-                  } else {
-                    t(t(raw_counts) / colSums(raw_counts)) * 1e6
-                  }
-                },
+    # CPM (generic)
+    "cpm" = {
+      if (backend == "limma_voom" && !is.null(expr_bundle$dge_list)) {
+        edgeR::cpm(expr_bundle$dge_list, log = FALSE)
+      } else if (backend == "deseq2" && !is.null(expr_bundle$dds_obj)) {
+        counts <- DESeq2::counts(expr_bundle$dds_obj, normalized = FALSE)
+        t(t(counts) / colSums(counts)) * 1e6
+      } else {
+        t(t(raw_counts) / colSums(raw_counts)) * 1e6
+      }
+    },
+    "logcpm" = {
+      if (backend == "limma_voom" && !is.null(expr_bundle$dge_list)) {
+        edgeR::cpm(expr_bundle$dge_list, log = TRUE)
+      } else if (backend == "deseq2" && !is.null(expr_bundle$dds_obj)) {
+        counts <- DESeq2::counts(expr_bundle$dds_obj, normalized = FALSE)
+        log2(t(t(counts) / colSums(counts)) * 1e6 + 1)
+      } else {
+        log2(t(t(raw_counts) / colSums(raw_counts)) * 1e6 + 1)
+      }
+    },
+    "fpkm" = {
+      if (is.null(gene_lengths)) {
+        warning("FPKM calculation requires gene length information (gene_meta$length); falling back to CPM.")
+        t(t(raw_counts) / colSums(raw_counts)) * 1e6
+      } else {
+        gene_lengths_kb <- gene_lengths / 1000
+        rpm <- t(t(raw_counts) / colSums(raw_counts)) * 1e6
+        rpm / gene_lengths_kb
+      }
+    },
+    "logfpkm" = {
+      if (is.null(gene_lengths)) {
+        warning("logFPKM calculation requires gene length information; falling back to logCPM.")
+        log2(t(t(raw_counts) / colSums(raw_counts)) * 1e6 + 1)
+      } else {
+        gene_lengths_kb <- gene_lengths / 1000
+        rpm <- t(t(raw_counts) / colSums(raw_counts)) * 1e6
+        fpkm <- rpm / gene_lengths_kb
+        log2(fpkm + 1)
+      }
+    },
 
-                "logcpm" = {
-                  if (backend == "limma_voom" && !is.null(expr_bundle$dge_list)) {
-                    edgeR::cpm(expr_bundle$dge_list, log = TRUE)
-                  } else if (backend == "deseq2" && !is.null(expr_bundle$dds_obj)) {
-                    counts <- DESeq2::counts(expr_bundle$dds_obj, normalized = FALSE)
-                    log2(t(t(counts) / colSums(counts)) * 1e6 + 1)
-                  } else {
-                    log2(t(t(raw_counts) / colSums(raw_counts)) * 1e6 + 1)
-                  }
-                },
+    # VST (DESeq2-exclusive)
+    "vst" = {
+      if (backend != "deseq2") {
+        warning(sprintf("VST (variance stabilizing transformation) is a DESeq2-exclusive method; current backend is '%s', falling back to logCPM.", backend))
+        if (backend == "limma_voom" && !is.null(expr_bundle$dge_list)) {
+          edgeR::cpm(expr_bundle$dge_list, log = TRUE)
+        } else {
+          log2(t(t(raw_counts) / colSums(raw_counts)) * 1e6 + 1)
+        }
+      } else if (!is.null(expr_bundle$vst_matrix)) {
+        expr_bundle$vst_matrix
+      } else if (!is.null(expr_bundle$dds_obj)) {
+        tryCatch(
+          {
+            SummarizedExperiment::assay(DESeq2::vst(expr_bundle$dds_obj, blind = FALSE))
+          },
+          error = function(e) {
+            warning("VST calculation failed, falling back to logCPM: ", e$message)
+            counts <- DESeq2::counts(expr_bundle$dds_obj, normalized = FALSE)
+            log2(t(t(counts) / colSums(counts)) * 1e6 + 1)
+          }
+        )
+      } else {
+        stop("VST matrix was not pre-computed and cannot be computed from dds_obj.")
+      }
+    },
 
-                "fpkm" = {
-                  if (is.null(gene_lengths)) {
-                    warning("FPKM calculation requires gene length information (gene_meta$length); falling back to CPM.")
-                    t(t(raw_counts) / colSums(raw_counts)) * 1e6
-                  } else {
-                    gene_lengths_kb <- gene_lengths / 1000
-                    rpm <- t(t(raw_counts) / colSums(raw_counts)) * 1e6
-                    rpm / gene_lengths_kb
-                  }
-                },
+    # Log2 normalized counts (DESeq2)
+    "lognorm" = {
+      if (backend == "deseq2" && !is.null(expr_bundle$dds_obj)) {
+        norm_counts <- DESeq2::counts(expr_bundle$dds_obj, normalized = TRUE)
+        log2(norm_counts + 1)
+      } else {
+        if (backend == "limma_voom" && !is.null(expr_bundle$dge_list)) {
+          edgeR::cpm(expr_bundle$dge_list, log = TRUE)
+        } else {
+          log2(t(t(raw_counts) / colSums(raw_counts)) * 1e6 + 1)
+        }
+      }
+    },
 
-                "logfpkm" = {
-                  if (is.null(gene_lengths)) {
-                    warning("logFPKM calculation requires gene length information; falling back to logCPM.")
-                    log2(t(t(raw_counts) / colSums(raw_counts)) * 1e6 + 1)
-                  } else {
-                    gene_lengths_kb <- gene_lengths / 1000
-                    rpm <- t(t(raw_counts) / colSums(raw_counts)) * 1e6
-                    fpkm <- rpm / gene_lengths_kb
-                    log2(fpkm + 1)
-                  }
-                },
-
-                # VST (DESeq2-exclusive)
-                "vst" = {
-                  if (backend != "deseq2") {
-                    warning(sprintf("VST (variance stabilizing transformation) is a DESeq2-exclusive method; current backend is '%s', falling back to logCPM.", backend))
-                    if (backend == "limma_voom" && !is.null(expr_bundle$dge_list)) {
-                      edgeR::cpm(expr_bundle$dge_list, log = TRUE)
-                    } else {
-                      log2(t(t(raw_counts) / colSums(raw_counts)) * 1e6 + 1)
-                    }
-                  } else if (!is.null(expr_bundle$vst_matrix)) {
-                    expr_bundle$vst_matrix
-                  } else if (!is.null(expr_bundle$dds_obj)) {
-                    tryCatch({
-                      SummarizedExperiment::assay(DESeq2::vst(expr_bundle$dds_obj, blind = FALSE))
-                    }, error = function(e) {
-                      warning("VST calculation failed, falling back to logCPM: ", e$message)
-                      counts <- DESeq2::counts(expr_bundle$dds_obj, normalized = FALSE)
-                      log2(t(t(counts) / colSums(counts)) * 1e6 + 1)
-                    })
-                  } else {
-                    stop("VST matrix was not pre-computed and cannot be computed from dds_obj.")
-                  }
-                },
-
-                # Log2 normalized counts (DESeq2)
-                "lognorm" = {
-                  if (backend == "deseq2" && !is.null(expr_bundle$dds_obj)) {
-                    norm_counts <- DESeq2::counts(expr_bundle$dds_obj, normalized = TRUE)
-                    log2(norm_counts + 1)
-                  } else {
-                    if (backend == "limma_voom" && !is.null(expr_bundle$dge_list)) {
-                      edgeR::cpm(expr_bundle$dge_list, log = TRUE)
-                    } else {
-                      log2(t(t(raw_counts) / colSums(raw_counts)) * 1e6 + 1)
-                    }
-                  }
-                },
-
-                # Unknown type
-                stop(sprintf("Unsupported expression value type: %s", type))
+    # Unknown type
+    stop(sprintf("Unsupported expression value type: %s", type))
   )
 
   # Align expression matrix column order with sample metadata
@@ -210,7 +209,6 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
 
   return(res)
 }
-
 
 
 # Section: Differential Expression Table Accessors ----
@@ -244,7 +242,6 @@ get_de_table <- function(obj, contrast_id) {
 
 #' @export
 get_de_table.GseaRes <- function(obj, contrast_id) {
-
   if (contrast_id %in% names(obj$de_store)) {
     return(obj$de_store[[contrast_id]])
   }
@@ -266,18 +263,21 @@ get_de_table.GseaRes <- function(obj, contrast_id) {
         de_df$t <- -de_df$t
       }
 
-      message(sprintf("Auto-mapped reverse contrast: %s -> %s (logFC sign flipped)",
-                      contrast_id, reverse_id))
+      message(sprintf(
+        "Auto-mapped reverse contrast: %s -> %s (logFC sign flipped)",
+        contrast_id, reverse_id
+      ))
       return(de_df)
     }
   }
 
-  stop(sprintf("Contrast '%s' and its reverse '%s' not found in de_store. Available: %s",
-               contrast_id,
-               ifelse(length(parts)==2, paste(parts[2], parts[1], sep="_vs_"), "N/A"),
-               paste(names(obj$de_store), collapse = ", ")))
+  stop(sprintf(
+    "Contrast '%s' and its reverse '%s' not found in de_store. Available: %s",
+    contrast_id,
+    ifelse(length(parts) == 2, paste(parts[2], parts[1], sep = "_vs_"), "N/A"),
+    paste(names(obj$de_store), collapse = ", ")
+  ))
 }
-
 
 
 # Section: Metadata Accessors ----
@@ -333,16 +333,20 @@ get_sample_meta.GseaRes <- function(obj) {
     original_ncol <- ncol(sample_meta)
     sample_meta <- as.data.frame(sample_meta, stringsAsFactors = FALSE)
 
-    if ((is.null(rownames(sample_meta)) || all(rownames(sample_meta) == ""))
-        && !is.null(original_rownames)) {
+    if ((is.null(rownames(sample_meta)) || all(rownames(sample_meta) == "")) &&
+      !is.null(original_rownames)) {
       rownames(sample_meta) <- original_rownames
-      message(sprintf("[SampleMeta] Restored %d rownames after DFrame conversion",
-                      length(original_rownames)))
+      message(sprintf(
+        "[SampleMeta] Restored %d rownames after DFrame conversion",
+        length(original_rownames)
+      ))
     }
 
     if (ncol(sample_meta) != original_ncol) {
-      warning(sprintf("[SampleMeta] Column count mismatch after conversion: %d vs %d",
-                      ncol(sample_meta), original_ncol))
+      warning(sprintf(
+        "[SampleMeta] Column count mismatch after conversion: %d vs %d",
+        ncol(sample_meta), original_ncol
+      ))
     }
   } else if (!is.data.frame(sample_meta)) {
     sample_meta <- as.data.frame(sample_meta, stringsAsFactors = FALSE)
@@ -359,8 +363,8 @@ get_sample_meta.GseaRes <- function(obj) {
       }
     }
 
-    if ((is.null(rownames(sample_meta)) || all(rownames(sample_meta) == ""))
-        && !is.null(expr_bundle$dds_obj)) {
+    if ((is.null(rownames(sample_meta)) || all(rownames(sample_meta) == "")) &&
+      !is.null(expr_bundle$dds_obj)) {
       dds_colnames <- colnames(expr_bundle$dds_obj)
       if (length(dds_colnames) == nrow(sample_meta)) {
         rownames(sample_meta) <- dds_colnames
@@ -373,22 +377,27 @@ get_sample_meta.GseaRes <- function(obj) {
 
   # Strategy A: Infer from dds_obj@design (DESeq2 workflow, highest priority)
   if (!is.null(expr_bundle$dds_obj)) {
-    tryCatch({
-      design_formula <- DESeq2::design(expr_bundle$dds_obj)
-      if (inherits(design_formula, "formula")) {
-        design_terms <- attr(terms(design_formula), "term.labels")
-        if (length(design_terms) > 0) {
-          inferred_factor <- tail(design_terms, 1)
-          if (inferred_factor %in% colnames(sample_meta)) {
-            target_factor <- inferred_factor
-            message(sprintf("[SampleMeta] Inferred target_factor from dds_obj@design: '%s'",
-                            target_factor))
+    tryCatch(
+      {
+        design_formula <- DESeq2::design(expr_bundle$dds_obj)
+        if (inherits(design_formula, "formula")) {
+          design_terms <- attr(terms(design_formula), "term.labels")
+          if (length(design_terms) > 0) {
+            inferred_factor <- tail(design_terms, 1)
+            if (inferred_factor %in% colnames(sample_meta)) {
+              target_factor <- inferred_factor
+              message(sprintf(
+                "[SampleMeta] Inferred target_factor from dds_obj@design: '%s'",
+                target_factor
+              ))
+            }
           }
         }
+      },
+      error = function(e) {
+        message(sprintf("[SampleMeta] Failed to infer from dds_obj@design: %s", e$message))
       }
-    }, error = function(e) {
-      message(sprintf("[SampleMeta] Failed to infer from dds_obj@design: %s", e$message))
-    })
+    )
   }
 
   # Strategy B: Use stored target_factor
@@ -416,8 +425,10 @@ get_sample_meta.GseaRes <- function(obj) {
 
   # Create unified 'group' column
   if (!"group" %in% colnames(sample_meta)) {
-    alt_names <- c("group", "Group", "condition", "Condition",
-                   "treatment", "Treatment", "grp")
+    alt_names <- c(
+      "group", "Group", "condition", "Condition",
+      "treatment", "Treatment", "grp"
+    )
     found_name <- NULL
 
     if (!is.null(target_factor) && target_factor %in% colnames(sample_meta)) {
@@ -458,29 +469,32 @@ get_sample_meta.GseaRes <- function(obj) {
 
       converted <- FALSE
       if (!is.null(expr_bundle$dds_obj)) {
-        tryCatch({
-          original_colData <- as.data.frame(SummarizedExperiment::colData(expr_bundle$dds_obj))
-          factor_cols <- names(original_colData)[sapply(original_colData, is.factor)]
+        tryCatch(
+          {
+            original_colData <- as.data.frame(SummarizedExperiment::colData(expr_bundle$dds_obj))
+            factor_cols <- names(original_colData)[sapply(original_colData, is.factor)]
 
-          for (fc in factor_cols) {
-            if (length(levels(original_colData[[fc]])) > 1) {
-              group_levels <- levels(original_colData[[fc]])
-              sample_match <- match(rownames(sample_meta), rownames(original_colData))
-              if (any(!is.na(sample_match))) {
-                group_codes <- as.numeric(original_colData[[fc]])[sample_match]
-                mapped_groups <- group_levels[group_codes]
-                if (any(!is.na(mapped_groups))) {
-                  sample_meta$group <- mapped_groups
-                  message(sprintf("[SampleMeta] Converted using dds_obj$colData[['%s']]", fc))
-                  converted <- TRUE
-                  break
+            for (fc in factor_cols) {
+              if (length(levels(original_colData[[fc]])) > 1) {
+                group_levels <- levels(original_colData[[fc]])
+                sample_match <- match(rownames(sample_meta), rownames(original_colData))
+                if (any(!is.na(sample_match))) {
+                  group_codes <- as.numeric(original_colData[[fc]])[sample_match]
+                  mapped_groups <- group_levels[group_codes]
+                  if (any(!is.na(mapped_groups))) {
+                    sample_meta$group <- mapped_groups
+                    message(sprintf("[SampleMeta] Converted using dds_obj$colData[['%s']]", fc))
+                    converted <- TRUE
+                    break
+                  }
                 }
               }
             }
+          },
+          error = function(e) {
+            message(sprintf("[SampleMeta] Error accessing dds_obj: %s", e$message))
           }
-        }, error = function(e) {
-          message(sprintf("[SampleMeta] Error accessing dds_obj: %s", e$message))
-        })
+        )
       }
 
       if (!converted && !is.null(expr_bundle$dge_list)) {
@@ -514,8 +528,10 @@ get_sample_meta.GseaRes <- function(obj) {
     } else {
       "N/A"
     }
-    message(sprintf("[SampleMeta] Final: %d samples, groups: %s",
-                    nrow(sample_meta), unique_groups))
+    message(sprintf(
+      "[SampleMeta] Final: %d samples, groups: %s",
+      nrow(sample_meta), unique_groups
+    ))
   }
 
   return(sample_meta)
@@ -576,7 +592,6 @@ get_geneset_info.GseaEnv <- function(obj) {
 }
 
 
-
 # Section: Additional Data Helper Functions ----
 
 
@@ -611,7 +626,6 @@ get_geneset_info.GseaEnv <- function(obj) {
 #' gsea_app <- launch_gsea_app(gsea_res, add_data = add_data)
 #' }
 read_addition_data <- function(file_path) {
-
   if (!file.exists(file_path)) {
     stop("File not found: ", file_path)
   }
@@ -629,12 +643,16 @@ read_addition_data <- function(file_path) {
         close(con)
       })
     } else {
-      data <- read.csv(file_path, stringsAsFactors = FALSE,
-                       check.names = FALSE, encoding = "UTF-8")
+      data <- read.csv(file_path,
+        stringsAsFactors = FALSE,
+        check.names = FALSE, encoding = "UTF-8"
+      )
     }
   } else {
-    stop("Unsupported file format: ", ext,
-         "\nSupported formats: .csv, .csv.gz, .rds, .rds.gz")
+    stop(
+      "Unsupported file format: ", ext,
+      "\nSupported formats: .csv, .csv.gz, .rds, .rds.gz"
+    )
   }
 
   if (!is.data.frame(data)) {
@@ -642,21 +660,27 @@ read_addition_data <- function(file_path) {
   }
 
   if (!"ID" %in% colnames(data)) {
-    stop("Data frame must contain 'ID' column as the primary key. ",
-         "Available columns: ", paste(colnames(data), collapse = ", "))
+    stop(
+      "Data frame must contain 'ID' column as the primary key. ",
+      "Available columns: ", paste(colnames(data), collapse = ", ")
+    )
   }
 
   data$ID <- as.character(data$ID)
 
   if (any(duplicated(data$ID))) {
     n_dup <- sum(duplicated(data$ID))
-    message("[read_addition_data] Found ", n_dup,
-            " duplicate ID(s), keeping first occurrence")
+    message(
+      "[read_addition_data] Found ", n_dup,
+      " duplicate ID(s), keeping first occurrence"
+    )
     data <- data[!duplicated(data$ID), ]
   }
 
-  message("[read_addition_data] Loaded: ", nrow(data), " rows x ",
-          ncol(data), " columns from ", basename(file_path))
+  message(
+    "[read_addition_data] Loaded: ", nrow(data), " rows x ",
+    ncol(data), " columns from ", basename(file_path)
+  )
 
   return(data)
 }
@@ -683,33 +707,38 @@ read_addition_data <- function(file_path) {
 #'
 #' # Specify output directory and filename
 #' creat_addition_data_rdsfile("annotations.csv",
-#'                             output_dir = "/path/to/project",
-#'                             output_name = "custom_name.rds")
+#'   output_dir = "/path/to/project",
+#'   output_name = "custom_name.rds"
+#' )
 #'
 #' # Overwrite existing file
 #' creat_addition_data_rdsfile("updated_annotations.csv",
-#'                             overwrite = TRUE)
+#'   overwrite = TRUE
+#' )
 #' }
 creat_addition_data_rdsfile <- function(csv_path,
                                         output_dir = getwd(),
                                         output_name = "addition_data_gsealens.rds",
                                         overwrite = FALSE) {
-
   if (!file.exists(csv_path)) {
     stop("CSV file not found: ", csv_path)
   }
 
   message("[creat_addition_data_rdsfile] Reading: ", csv_path)
-  data <- read.csv(csv_path, stringsAsFactors = FALSE,
-                   check.names = FALSE, encoding = "UTF-8")
+  data <- read.csv(csv_path,
+    stringsAsFactors = FALSE,
+    check.names = FALSE, encoding = "UTF-8"
+  )
 
   if (!is.data.frame(data)) {
     stop("CSV content must be a data.frame, got: ", class(data)[1])
   }
 
   if (!"ID" %in% colnames(data)) {
-    stop("CSV must contain 'ID' column as the primary key. ",
-         "Available columns: ", paste(colnames(data), collapse = ", "))
+    stop(
+      "CSV must contain 'ID' column as the primary key. ",
+      "Available columns: ", paste(colnames(data), collapse = ", ")
+    )
   }
 
   data$ID <- as.character(data$ID)
@@ -728,8 +757,10 @@ creat_addition_data_rdsfile <- function(csv_path,
 
   if (file.exists(output_path)) {
     if (!overwrite) {
-      stop("Output file already exists: ", output_path,
-           "\nUse overwrite = TRUE to replace")
+      stop(
+        "Output file already exists: ", output_path,
+        "\nUse overwrite = TRUE to replace"
+      )
     }
     message("[creat_addition_data_rdsfile] Overwriting existing file...")
   }
@@ -769,11 +800,12 @@ creat_addition_data_rdsfile <- function(csv_path,
 #' }
 create_addition_template <- function(gsea_res,
                                      output_path = "addition_template_gsealens.csv",
-                                     include_cols = c("Brief_Description",
-                                                      "Custom_Category",
-                                                      "Custom_Tag",
-                                                      "User_Notes")) {
-
+                                     include_cols = c(
+                                       "Brief_Description",
+                                       "Custom_Category",
+                                       "Custom_Tag",
+                                       "User_Notes"
+                                     )) {
   if (!inherits(gsea_res, "GseaRes")) {
     stop("Input must be a GseaRes object")
   }
@@ -799,8 +831,10 @@ create_addition_template <- function(gsea_res,
     dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
   }
 
-  write.csv(template, output_path, row.names = FALSE, quote = TRUE,
-            fileEncoding = "UTF-8")
+  write.csv(template, output_path,
+    row.names = FALSE, quote = TRUE,
+    fileEncoding = "UTF-8"
+  )
 
   message("[create_addition_template] Template created: ", output_path)
   message("   Contains ", nrow(template), " pathway IDs")
@@ -809,12 +843,13 @@ create_addition_template <- function(gsea_res,
   message("Instructions:")
   message("  1. Edit the CSV file to fill in annotations")
   message("  2. Convert to RDS: creat_addition_data_rdsfile('", basename(output_path), "')")
-  message("  3. Load in GSEAlens: launch_gsea_app(gsea_res, '",
-          gsub("\\.csv$", ".rds", basename(output_path)), "')")
+  message(
+    "  3. Load in GSEAlens: launch_gsea_app(gsea_res, '",
+    gsub("\\.csv$", ".rds", basename(output_path)), "')"
+  )
 
   invisible(TRUE)
 }
-
 
 
 # Section: Gene Symbol Processing Utilities ----
@@ -856,8 +891,10 @@ DETECTION_PROBES <- c(
     matched <- sum(col_upper %in% DETECTION_PROBES, na.rm = TRUE)
 
     if (matched >= 2) {
-      message(sprintf("[GeneDetector] Detected gene column '%s' by probe matching (matched %d housekeeping genes)",
-                      col_name, matched))
+      message(sprintf(
+        "[GeneDetector] Detected gene column '%s' by probe matching (matched %d housekeeping genes)",
+        col_name, matched
+      ))
       return(col_name)
     }
   }
@@ -906,8 +943,10 @@ DETECTION_PROBES <- c(
   }
 
   symbol_map <- setNames(gene_syms, toupper(gene_syms))
-  message(sprintf("[SymbolMap] Built mapping for %d genes (contrast: %s)",
-                  length(symbol_map), contrast_id))
+  message(sprintf(
+    "[SymbolMap] Built mapping for %d genes (contrast: %s)",
+    length(symbol_map), contrast_id
+  ))
   return(symbol_map)
 }
 
@@ -974,8 +1013,10 @@ DETECTION_PROBES <- c(
   gene_symbol_col <- .detect_gene_symbol_column(gene_meta)
 
   if (is.null(gene_symbol_col)) {
-    stop("Ensembl IDs detected but gene symbol column not found in gene_meta. ",
-         "Cannot convert row names for heatmap plotting.")
+    stop(
+      "Ensembl IDs detected but gene symbol column not found in gene_meta. ",
+      "Cannot convert row names for heatmap plotting."
+    )
   }
 
   gm <- gene_meta
@@ -989,8 +1030,10 @@ DETECTION_PROBES <- c(
   }
 
   if (is.null(geneid_col)) {
-    stop("Ensembl IDs detected but GeneID column not found in gene_meta. ",
-         "Available columns: ", paste(colnames(gm), collapse = ", "))
+    stop(
+      "Ensembl IDs detected but GeneID column not found in gene_meta. ",
+      "Available columns: ", paste(colnames(gm), collapse = ", ")
+    )
   }
 
   ensembl_ids <- gm[[geneid_col]]
@@ -1006,14 +1049,18 @@ DETECTION_PROBES <- c(
   n_total <- length(current_rownames)
 
   if (n_converted == 0) {
-    stop("Conversion failed: no genes matched between expr_mat rownames and gene_meta$",
-         geneid_col)
+    stop(
+      "Conversion failed: no genes matched between expr_mat rownames and gene_meta$",
+      geneid_col
+    )
   }
 
   rownames(expr_mat)[valid_mask] <- converted[valid_mask]
 
-  message(sprintf("[ExprConvert] Successfully converted %d/%d genes (%.1f%%)",
-                  n_converted, n_total, 100*n_converted/n_total))
+  message(sprintf(
+    "[ExprConvert] Successfully converted %d/%d genes (%.1f%%)",
+    n_converted, n_total, 100 * n_converted / n_total
+  ))
 
   return(expr_mat)
 }

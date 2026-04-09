@@ -12,7 +12,9 @@
 #' \donttest{
 #' # Limma workflow
 #' design <- model.matrix(~ 0 + group, data = samples)
-#' fit <- lmFit(expr, design) %>% contrasts.fit(cont.matrix) %>% eBayes()
+#' fit <- lmFit(expr, design) %>%
+#'   contrasts.fit(cont.matrix) %>%
+#'   eBayes()
 #' env <- setup_gsea_env(fit, pathway_obj)
 #'
 #' # DESeq2 workflow
@@ -21,7 +23,6 @@
 #' env <- setup_gsea_env(dds, pathway_obj, target_factor = "group")
 #' }
 setup_gsea_env <- function(fit, pathway_obj, expr_data = NULL, target_factor = NULL) {
-
   message("\nStarting GSEAlens engine...")
 
   # 1. 校验基因集对象
@@ -45,7 +46,6 @@ setup_gsea_env <- function(fit, pathway_obj, expr_data = NULL, target_factor = N
       design_formula = NULL, # Limma fit 对象通常不直接保留公式
       target_factor = NA
     )
-
   } else if (inherits(fit, "DESeqDataSet")) {
     message("Detected input type: [DESeq2]")
 
@@ -65,7 +65,6 @@ setup_gsea_env <- function(fit, pathway_obj, expr_data = NULL, target_factor = N
       design_formula = DESeq2::design(fit),
       target_factor = actual_factor
     )
-
   } else {
     stop("Unsupported input type! Please provide MArrayLM (limma) or DESeqDataSet (DESeq2) object.")
   }
@@ -91,7 +90,7 @@ setup_gsea_env <- function(fit, pathway_obj, expr_data = NULL, target_factor = N
       md
     },
     used_collections = pathway_obj$collections_used %||% pathway_obj$used_collections,
-    species = pathway_obj$species %||% "HS"  # 新增
+    species = pathway_obj$species %||% "HS" # 新增
   )
 
   # 4. 构建最终对象
@@ -152,9 +151,11 @@ inspect_gsea_env <- function(env_obj) {
     # 打印前几个，防止刷屏
     print_head <- utils::head(reg[, c("contrast_id", "left_group", "right_group")], 5)
     for (i in 1:nrow(print_head)) {
-      cat(sprintf("   [%d] %s  ( %s vs %s )\n",
-                  i, print_head$contrast_id[i],
-                  print_head$left_group[i], print_head$right_group[i]))
+      cat(sprintf(
+        "   [%d] %s  ( %s vs %s )\n",
+        i, print_head$contrast_id[i],
+        print_head$left_group[i], print_head$right_group[i]
+      ))
     }
     if (nrow(reg) > 5) cat("   ... (remaining omitted)\n")
   } else {
@@ -171,8 +172,10 @@ inspect_gsea_env <- function(env_obj) {
   # 4. 表达数据状态
   cat("[4] Expression Data Status\n")
   if (!is.null(expr$raw_counts)) {
-    cat(sprintf("   Raw Counts  : %d genes x %d samples\n",
-                nrow(expr$raw_counts), ncol(expr$raw_counts)))
+    cat(sprintf(
+      "   Raw Counts  : %d genes x %d samples\n",
+      nrow(expr$raw_counts), ncol(expr$raw_counts)
+    ))
     cat(sprintf("   Display Mat : %s\n", ifelse(!is.null(expr$display_expr), "Ready", "Missing")))
   } else {
     cat("   Expression matrix not included (heatmap functionality will be unavailable)\n")

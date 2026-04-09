@@ -24,7 +24,6 @@ batch_calc_gsea <- function(gsea_env,
                             force = FALSE,
                             use_progress = FALSE,
                             chunk_size = NULL) {
-
   .check_gsea_env(gsea_env)
 
   start_time <- Sys.time()
@@ -35,8 +34,10 @@ batch_calc_gsea <- function(gsea_env,
     dir.create(series_dir, recursive = TRUE, showWarnings = FALSE)
   }
 
-  rds_name <- sprintf("GSEA_Capsule_[%s]_[%s].rds",
-                      custom_series_name, gsea_env$geneset$name)
+  rds_name <- sprintf(
+    "GSEA_Capsule_[%s]_[%s].rds",
+    custom_series_name, gsea_env$geneset$name
+  )
   rds_path <- file.path(series_dir, rds_name)
 
   if (file.exists(rds_path) && !force) {
@@ -98,8 +99,10 @@ batch_calc_gsea <- function(gsea_env,
   task_names <- names(task_metadata)
   task_chunks <- split(task_names, ceiling(seq_along(task_names) / chunk_size))
 
-  message(sprintf("Chunk strategy: %d chunks, up to %d tasks per chunk",
-                  length(task_chunks), chunk_size))
+  message(sprintf(
+    "Chunk strategy: %d chunks, up to %d tasks per chunk",
+    length(task_chunks), chunk_size
+  ))
 
   p <- progressr::progressor(steps = total_tasks, enable = use_progress)
 
@@ -114,9 +117,8 @@ batch_calc_gsea <- function(gsea_env,
                    maxGSSize,
                    pvalueCutoff,
                    progressor_fn) {
-
       if (!requireNamespace("clusterProfiler", quietly = TRUE) ||
-          !requireNamespace("dplyr", quietly = TRUE)) {
+        !requireNamespace("dplyr", quietly = TRUE)) {
         stop("Worker missing required packages")
       }
 
@@ -145,11 +147,14 @@ batch_calc_gsea <- function(gsea_env,
           next
         }
 
-        genelist <- tryCatch({
-          .prepare_rank_vector_fast(de_table, flip = task_info$is_reversed)
-        }, error = function(e) {
-          c()
-        })
+        genelist <- tryCatch(
+          {
+            .prepare_rank_vector_fast(de_table, flip = task_info$is_reversed)
+          },
+          error = function(e) {
+            c()
+          }
+        )
 
         if (length(genelist) == 0) {
           chunk_results[[task_name]] <- list(
@@ -165,11 +170,17 @@ batch_calc_gsea <- function(gsea_env,
         detect_case_format <- function(genes) {
           sample <- head(unique(genes), 100)
           sample_filtered <- sample[!grepl("^[0-9]", sample)]
-          if (length(sample_filtered) == 0) return("mixed")
+          if (length(sample_filtered) == 0) {
+            return("mixed")
+          }
           n_title <- sum(grepl("^[A-Z][a-z]", sample_filtered))
           n_upper <- sum(grepl("^[A-Z]{2,}$", sample_filtered))
-          if (n_title > n_upper) return("title_case")
-          if (n_upper > n_title) return("upper_case")
+          if (n_title > n_upper) {
+            return("title_case")
+          }
+          if (n_upper > n_title) {
+            return("upper_case")
+          }
           return("mixed")
         }
 
@@ -193,21 +204,24 @@ batch_calc_gsea <- function(gsea_env,
           }
         }
 
-        gsea_res <- tryCatch({
-          clusterProfiler::GSEA(
-            geneList = genelist,
-            TERM2GENE = term2gene,
-            minGSSize = minGSSize,
-            maxGSSize = maxGSSize,
-            pvalueCutoff = pvalueCutoff,
-            pAdjustMethod = "BH",
-            verbose = FALSE,
-            seed = 123,
-            eps = 0
-          )
-        }, error = function(e) {
-          NULL
-        })
+        gsea_res <- tryCatch(
+          {
+            clusterProfiler::GSEA(
+              geneList = genelist,
+              TERM2GENE = term2gene,
+              minGSSize = minGSSize,
+              maxGSSize = maxGSSize,
+              pvalueCutoff = pvalueCutoff,
+              pAdjustMethod = "BH",
+              verbose = FALSE,
+              seed = 123,
+              eps = 0
+            )
+          },
+          error = function(e) {
+            NULL
+          }
+        )
 
         status <- if (!is.null(gsea_res) && nrow(gsea_res@result) > 0) "Success" else "Failed/NoEnrich"
 
@@ -298,8 +312,10 @@ batch_calc_gsea <- function(gsea_env,
 
   success_count <- final_obj$metadata$gsea_benchmark$successful_tasks
 
-  message(sprintf("\nCalculation complete! Time elapsed: %.2f seconds",
-                  final_obj$metadata$gsea_benchmark$duration_sec))
+  message(sprintf(
+    "\nCalculation complete! Time elapsed: %.2f seconds",
+    final_obj$metadata$gsea_benchmark$duration_sec
+  ))
   message(sprintf("   Successfully analyzed: %d/%d contrasts", success_count, total_tasks))
   message(sprintf("   Results saved to: %s", rds_path))
 
@@ -326,9 +342,8 @@ batch_calc_gsea <- function(gsea_env,
                                 minGSSize,
                                 maxGSSize,
                                 pvalueCutoff) {
-
   if (!requireNamespace("clusterProfiler", quietly = TRUE) ||
-      !requireNamespace("dplyr", quietly = TRUE)) {
+    !requireNamespace("dplyr", quietly = TRUE)) {
     stop("Worker missing required packages: clusterProfiler or dplyr")
   }
 
@@ -356,12 +371,15 @@ batch_calc_gsea <- function(gsea_env,
       next
     }
 
-    genelist <- tryCatch({
-      .prepare_rank_vector_fast(de_table, flip = task_info$is_reversed)
-    }, error = function(e) {
-      warning(sprintf("Rank vector preparation failed: %s", e$message))
-      c()
-    })
+    genelist <- tryCatch(
+      {
+        .prepare_rank_vector_fast(de_table, flip = task_info$is_reversed)
+      },
+      error = function(e) {
+        warning(sprintf("Rank vector preparation failed: %s", e$message))
+        c()
+      }
+    )
 
     if (length(genelist) == 0) {
       chunk_results[[task_name]] <- list(
@@ -373,22 +391,25 @@ batch_calc_gsea <- function(gsea_env,
       next
     }
 
-    gsea_res <- tryCatch({
-      clusterProfiler::GSEA(
-        geneList = genelist,
-        TERM2GENE = term2gene,
-        minGSSize = minGSSize,
-        maxGSSize = maxGSSize,
-        pvalueCutoff = pvalueCutoff,
-        pAdjustMethod = "BH",
-        verbose = FALSE,
-        seed = 123,
-        eps = 0
-      )
-    }, error = function(e) {
-      warning(sprintf("GSEA calculation failed [%s]: %s", task_id, e$message))
-      NULL
-    })
+    gsea_res <- tryCatch(
+      {
+        clusterProfiler::GSEA(
+          geneList = genelist,
+          TERM2GENE = term2gene,
+          minGSSize = minGSSize,
+          maxGSSize = maxGSSize,
+          pvalueCutoff = pvalueCutoff,
+          pAdjustMethod = "BH",
+          verbose = FALSE,
+          seed = 123,
+          eps = 0
+        )
+      },
+      error = function(e) {
+        warning(sprintf("GSEA calculation failed [%s]: %s", task_id, e$message))
+        NULL
+      }
+    )
 
     status <- if (!is.null(gsea_res) && nrow(gsea_res@result) > 0) {
       "Success"
@@ -442,7 +463,6 @@ batch_calc_gsea <- function(gsea_env,
 #' @return Enriched dataframe
 #' @keywords internal
 .enrich_gsea_result <- function(result_df, meta_dict) {
-
   if (!is.data.frame(result_df) || nrow(result_df) == 0) {
     warning("result_df is invalid or empty")
     return(result_df)
@@ -481,8 +501,10 @@ batch_calc_gsea <- function(gsea_env,
     )
   }
 
-  core_stat_cols <- c("ID", "setSize", "enrichmentScore", "NES", "pvalue",
-                      "p.adjust", "qvalue", "rank", "leading_edge", "core_enrichment")
+  core_stat_cols <- c(
+    "ID", "setSize", "enrichmentScore", "NES", "pvalue",
+    "p.adjust", "qvalue", "rank", "leading_edge", "core_enrichment"
+  )
 
   conflict_cols <- c("Description", "URL", "Collection", "Subcollection", "Combo_Name")
 
@@ -499,8 +521,10 @@ batch_calc_gsea <- function(gsea_env,
     )
 
   if (nrow(merged_df) != nrow(result_work)) {
-    warning(sprintf("Row count changed during merge: %d -> %d",
-                    nrow(result_work), nrow(merged_df)))
+    warning(sprintf(
+      "Row count changed during merge: %d -> %d",
+      nrow(result_work), nrow(merged_df)
+    ))
   }
 
   merged_df$Display_Collection <- dplyr::coalesce(
@@ -545,15 +569,19 @@ batch_calc_gsea <- function(gsea_env,
     rownames(merged_df) <- original_rownames
   }
 
-  standard_cols <- c("ID", "setSize", "enrichmentScore", "NES", "pvalue",
-                     "p.adjust", "qvalue", "rank", "leading_edge", "core_enrichment",
-                     "Description", "URL", "Collection", "Subcollection", "Combo_Name",
-                     "Display_Collection", "Pathway_Link")
+  standard_cols <- c(
+    "ID", "setSize", "enrichmentScore", "NES", "pvalue",
+    "p.adjust", "qvalue", "rank", "leading_edge", "core_enrichment",
+    "Description", "URL", "Collection", "Subcollection", "Combo_Name",
+    "Display_Collection", "Pathway_Link"
+  )
 
   missing_standard <- setdiff(standard_cols, colnames(merged_df))
   if (length(missing_standard) > 0) {
-    warning(sprintf("Final result missing standard columns: %s",
-                    paste(missing_standard, collapse = ", ")))
+    warning(sprintf(
+      "Final result missing standard columns: %s",
+      paste(missing_standard, collapse = ", ")
+    ))
     for (col in missing_standard) {
       merged_df[[col]] <- NA_character_
     }
@@ -563,8 +591,10 @@ batch_calc_gsea <- function(gsea_env,
   extra_cols <- setdiff(colnames(merged_df), standard_cols)
   merged_df <- merged_df[, c(present_cols, extra_cols), drop = FALSE]
 
-  message(sprintf("[.enrich_gsea_result] Successfully enriched: %d rows x %d columns",
-                  nrow(merged_df), ncol(merged_df)))
+  message(sprintf(
+    "[.enrich_gsea_result] Successfully enriched: %d rows x %d columns",
+    nrow(merged_df), ncol(merged_df)
+  ))
 
   return(merged_df)
 }

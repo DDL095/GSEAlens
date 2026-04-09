@@ -18,7 +18,7 @@ A comparison data frame with columns: run_name, workers, duration_sec, mem_peak_
 Compares GSEA performance across different core counts (for publication).
 }
 \examples{
-\dontrun{
+\donttest{
 results <- analyze_scalability(
   gsea_res_list = list("1_core" = res1, "4_core" = res4),
   monitor_csv_list = c("1_core" = "monitor_1.csv", "4_core" = "monitor_4.csv")

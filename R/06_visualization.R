@@ -27,12 +27,11 @@ NULL
 plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
                                   main_title = "GSEA Plot", subPlot = 3,
                                   curveCol = NULL, add_pval = FALSE,
-                                  show_contrast_in_axis = FALSE,  # 新增参数
+                                  show_contrast_in_axis = FALSE, # 新增参数
                                   ...) {
-
   # 1. 解析对象与提取基础数据
   res <- directional_gsea_obj$gsea_res
-  res@result$Description <- res@result$ID #2026-03-25-205956 适配gseaNb制图函数，防止过长的description导致图像异常。
+  res@result$Description <- res@result$ID # 2026-03-25-205956 适配gseaNb制图函数，防止过长的description导致图像异常。
   meta <- directional_gsea_obj$meta
   df <- as.data.frame(res)
   n_lines <- length(target_pathways)
@@ -40,9 +39,11 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
 
   # 2. 高级颜色池分配逻辑
   if (is.null(curveCol) || length(curveCol) < n_lines) {
-    base_colors <- c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00",
-                     "#A65628", "#F781BF", "#1B9E77", "#D95F02", "#7570B3")
-    curveCol <- if(n_lines <= length(base_colors)) base_colors[1:n_lines] else grDevices::colorRampPalette(base_colors)(n_lines)
+    base_colors <- c(
+      "#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00",
+      "#A65628", "#F781BF", "#1B9E77", "#D95F02", "#7570B3"
+    )
+    curveCol <- if (n_lines <= length(base_colors)) base_colors[1:n_lines] else grDevices::colorRampPalette(base_colors)(n_lines)
   }
 
   curveCol_use <- curveCol[1:n_lines]
@@ -55,7 +56,7 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
   }
 
   p_base <- GseaVis::gseaNb(
-    object = res,# 2026-03-25-205752 gseaNb强制传递res当中的description作为绘图的列名，因此这里修改没有任何用处，必须强制赋值
+    object = res, # 2026-03-25-205752 gseaNb强制传递res当中的description作为绘图的列名，因此这里修改没有任何用处，必须强制赋值
     geneSetID = target_pathways,
     subPlot = subPlot,
     addPval = add_pval,
@@ -67,7 +68,7 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
   if (n_lines > 1) {
     df_sub <- df[match(target_pathways, df$ID), ]
     raw_desc <- df_sub$Description
-    name_id  <- df_sub$ID
+    name_id <- df_sub$ID
 
     nice_labels <- sapply(name_id, function(x) {
       tit <- unlist(strsplit(x, split = "_"))
@@ -123,9 +124,11 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
       ggplot2::geom_hline(yintercept = 0, linewidth = 0.5, color = "black", linetype = "dashed") +
       ggplot2::scale_x_continuous(breaks = seq(0, length(gList), 5000)) +
       ggplot2::theme_bw(base_size = 14) +
-      ggplot2::theme(panel.grid = ggplot2::element_blank(),
-                     axis.text = ggplot2::element_text(colour = "black"),
-                     plot.margin = ggplot2::margin(t = -0.1, r = 0.2, b = 0.2, l = 0.2, unit = "cm")) +
+      ggplot2::theme(
+        panel.grid = ggplot2::element_blank(),
+        axis.text = ggplot2::element_text(colour = "black"),
+        plot.margin = ggplot2::margin(t = -0.1, r = 0.2, b = 0.2, l = 0.2, unit = "cm")
+      ) +
       ggplot2::coord_cartesian(expand = 0) +
       ggplot2::labs(x = x_axis_label, y = "Ranked List")
 
@@ -141,17 +144,24 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
     }
 
 
-    z_cross <- sum(gList > 0); m_rank <- length(gList)
+    z_cross <- sum(gList > 0)
+    m_rank <- length(gList)
     anno_layers <- list(
       ggplot2::geom_vline(xintercept = z_cross, linetype = "dashed", color = "grey50"),
-      ggplot2::annotate("text", x = z_cross, y = 0, label = paste0("Zero cross at ", z_cross),
-                        vjust = 1.5, hjust = -0.05, size = 3, color = "grey30"),
-      ggplot2::annotate("text", x = m_rank * 0.01, y = max(gList) * 0.85,
-                        label = sprintf("'%s' (pos)", meta$left_group),
-                        color = "#A50F15", hjust = 0, size = 4, fontface = "italic"),
-      ggplot2::annotate("text", x = m_rank * 0.99, y = min(gList) * 0.85,
-                        label = sprintf("'%s' (neg)", meta$right_group),
-                        color = "#08519C", hjust = 1, size = 4, fontface = "italic")
+      ggplot2::annotate("text",
+        x = z_cross, y = 0, label = paste0("Zero cross at ", z_cross),
+        vjust = 1.5, hjust = -0.05, size = 3, color = "grey30"
+      ),
+      ggplot2::annotate("text",
+        x = m_rank * 0.01, y = max(gList) * 0.85,
+        label = sprintf("'%s' (pos)", meta$left_group),
+        color = "#A50F15", hjust = 0, size = 4, fontface = "italic"
+      ),
+      ggplot2::annotate("text",
+        x = m_rank * 0.99, y = min(gList) * 0.85,
+        label = sprintf("'%s' (neg)", meta$right_group),
+        color = "#08519C", hjust = 1, size = 4, fontface = "italic"
+      )
     )
 
     if (inherits(p_base, "aplot")) {
@@ -165,8 +175,10 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
   p_final <- p_base + patchwork::plot_annotation(
     title = main_title,
     subtitle = sprintf("<- %s | %s ->", meta$left_group, meta$right_group),
-    theme = ggplot2::theme(plot.title = ggplot2::element_text(size = 14, face = "bold", hjust = 0.5),
-                           plot.subtitle = ggplot2::element_text(size = 12, hjust = 0.5, color = "grey40"))
+    theme = ggplot2::theme(
+      plot.title = ggplot2::element_text(size = 14, face = "bold", hjust = 0.5),
+      plot.subtitle = ggplot2::element_text(size = 12, hjust = 0.5, color = "grey40")
+    )
   )
 
   return(p_final)
@@ -191,7 +203,6 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
 generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
                                       p_adjust_cutoff = 1, top_plots = c(15, 15),
                                       dpi = 200) {
-
   if (!requireNamespace("DT", quietly = TRUE)) stop("Missing 'DT' package.")
   if (!requireNamespace("ComplexHeatmap", quietly = TRUE)) stop("Missing 'ComplexHeatmap' package.")
   if (!requireNamespace("circlize", quietly = TRUE)) stop("Missing 'circlize' package.")
@@ -203,8 +214,10 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
   # 1. 自动寻路逻辑
   if (is.null(output_base_dir)) {
     if (!is.null(meta$project_info) && !is.null(meta$project_info$series_dir)) {
-      output_base_dir <- file.path(meta$project_info$series_dir,
-                                   sprintf("HTML_Report_%s_vs_%s", meta$left_group, meta$right_group))
+      output_base_dir <- file.path(
+        meta$project_info$series_dir,
+        sprintf("HTML_Report_%s_vs_%s", meta$left_group, meta$right_group)
+      )
     } else {
       output_base_dir <- "GSEA_Results"
     }
@@ -232,14 +245,18 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
     dplyr::filter(p.adjust <= p_adjust_cutoff) %>%
     dplyr::mutate(
       Enriched_In = factor(ifelse(NES > 0, meta$left_group, meta$right_group),
-                           levels = c(meta$left_group, meta$right_group)),
-      Display_Collection = if("Combo_Name" %in% names(.)) Combo_Name else if("Collection" %in% names(.)) Collection else "Unknown",
+        levels = c(meta$left_group, meta$right_group)
+      ),
+      Display_Collection = if ("Combo_Name" %in% names(.)) Combo_Name else if ("Collection" %in% names(.)) Collection else "Unknown",
       Display_Collection = as.factor(ifelse(is.na(Display_Collection), "Unknown", Display_Collection)),
-      Pathway_Link = if("URL" %in% names(.)) {
+      Pathway_Link = if ("URL" %in% names(.)) {
         ifelse(is.na(URL) | URL == "", sprintf("<b>%s</b>", ID),
-               sprintf('<a href="%s" target="_blank" style="color: #0056b3; text-decoration: none;">%s</a>', URL, ID))
-      } else { sprintf("<b>%s</b>", ID) },
-      Description = if("Description.y" %in% names(.)) Description.y else Description
+          sprintf('<a href="%s" target="_blank" style="color: #0056b3; text-decoration: none;">%s</a>', URL, ID)
+        )
+      } else {
+        sprintf("<b>%s</b>", ID)
+      },
+      Description = if ("Description.y" %in% names(.)) Description.y else Description
     ) %>%
     dplyr::arrange(desc(abs(NES))) %>%
     dplyr::mutate(Rank = dplyr::row_number())
@@ -251,7 +268,10 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
 
   # 3. 表达矩阵智能雷达
   message("[Smart Radar] Detecting expression matrix for heatmap plotting...")
-  expr_mat <- NULL; cpm_mat <- NULL; sample_meta_sub <- NULL; n_left <- 0
+  expr_mat <- NULL
+  cpm_mat <- NULL
+  sample_meta_sub <- NULL
+  n_left <- 0
 
   if (!is.null(meta$expr_bundle)) {
     expr_bundle <- meta$expr_bundle
@@ -263,8 +283,10 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
       target_samples <- c(left_samples, right_samples)
 
       if (length(target_samples) > 0) {
-        message(sprintf("   [Heatmap Ready] Matched samples: Left group (%s) %d | Right group (%s) %d",
-                        meta$left_group, length(left_samples), meta$right_group, length(right_samples)))
+        message(sprintf(
+          "   [Heatmap Ready] Matched samples: Left group (%s) %d | Right group (%s) %d",
+          meta$left_group, length(left_samples), meta$right_group, length(right_samples)
+        ))
 
         # 获取 display_expr (Z-score 底图)
         if (!is.null(expr_bundle$display_expr)) {
@@ -285,8 +307,16 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
   }
 
   # 4. 遍历生成子图与详情页
-  pos_plot_ids <- df_clean %>% dplyr::filter(NES > 0) %>% dplyr::arrange(desc(NES)) %>% head(top_plots[1]) %>% dplyr::pull(ID)
-  neg_plot_ids <- df_clean %>% dplyr::filter(NES < 0) %>% dplyr::arrange(NES) %>% head(top_plots[2]) %>% dplyr::pull(ID)
+  pos_plot_ids <- df_clean %>%
+    dplyr::filter(NES > 0) %>%
+    dplyr::arrange(desc(NES)) %>%
+    head(top_plots[1]) %>%
+    dplyr::pull(ID)
+  neg_plot_ids <- df_clean %>%
+    dplyr::filter(NES < 0) %>%
+    dplyr::arrange(NES) %>%
+    head(top_plots[2]) %>%
+    dplyr::pull(ID)
   target_plot_ids <- c(pos_plot_ids, neg_plot_ids)
 
   detail_links <- character(nrow(df_clean))
@@ -305,12 +335,15 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
     heat_png_name <- sprintf("Heatmap_Rank%03d_%s.png", i, safe_pw_name)
 
     # 绘制 GSEA 主图
-    tryCatch({
-      p_gsea <- plot_directional_gsea(res_obj, target_pathways = pw_id, main_title = pw_id, subPlot = 3, add_pval = FALSE)
-      ggplot2::ggsave(file.path(details_dir, gsea_png_name), plot = p_gsea, width = 8, height = 6, dpi = dpi, bg = "white")
-    }, error = function(e) {
-      message(sprintf("Failed to plot %s: %s", pw_id, e$message))
-    })
+    tryCatch(
+      {
+        p_gsea <- plot_directional_gsea(res_obj, target_pathways = pw_id, main_title = pw_id, subPlot = 3, add_pval = FALSE)
+        ggplot2::ggsave(file.path(details_dir, gsea_png_name), plot = p_gsea, width = 8, height = 6, dpi = dpi, bg = "white")
+      },
+      error = function(e) {
+        message(sprintf("Failed to plot %s: %s", pw_id, e$message))
+      }
+    )
 
     # 绘制热图 (ComplexHeatmap 升级版)
     heat_html_tag <- "<p class='text-muted' style='margin-top:20px;'>No expression data available for visualization.</p>"
@@ -380,10 +413,15 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
 
           # 6. 保存图片
           png(file.path(details_dir, heat_png_name),
-              width = 800, height = 600, res = 100)
-          ComplexHeatmap::draw(ht, merge_legend = TRUE,
-                               column_title = sprintf("Row-Scaled Z-Score [-1, 1]\nEnriched in: %s",
-                                                      as.character(df_clean$Enriched_In[i])))
+            width = 800, height = 600, res = 100
+          )
+          ComplexHeatmap::draw(ht,
+            merge_legend = TRUE,
+            column_title = sprintf(
+              "Row-Scaled Z-Score [-1, 1]\nEnriched in: %s",
+              as.character(df_clean$Enriched_In[i])
+            )
+          )
           dev.off()
 
           heat_html_tag <- sprintf("<img src='%s' class='img-fluid shadow-sm border'>", heat_png_name)
@@ -414,23 +452,30 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
     dplyr::select(Rank, Detail_Page, Pathway = Pathway_Link, Collection = Display_Collection, Enriched_In, Size = setSize, NES, pvalue, p.adjust, Description)
 
   dt_table <- DT::datatable(
-    display_df, rownames = FALSE, escape = FALSE, filter = "top",
-    caption = htmltools::tags$caption(style = 'caption-side: top; text-align: center; font-size: 150%; font-weight: bold;',
-                                      sprintf("GSEA Report: %s vs %s", meta$left_group, meta$right_group)),
-    extensions = c('Buttons', 'Scroller'),
-    options = list(dom = 'Bfrtip', deferRender = TRUE, scrollY = 600, scroller = TRUE, pageLength = -1, buttons = c('copy', 'csv', 'excel'), autoWidth = TRUE)
+    display_df,
+    rownames = FALSE, escape = FALSE, filter = "top",
+    caption = htmltools::tags$caption(
+      style = "caption-side: top; text-align: center; font-size: 150%; font-weight: bold;",
+      sprintf("GSEA Report: %s vs %s", meta$left_group, meta$right_group)
+    ),
+    extensions = c("Buttons", "Scroller"),
+    options = list(dom = "Bfrtip", deferRender = TRUE, scrollY = 600, scroller = TRUE, pageLength = -1, buttons = c("copy", "csv", "excel"), autoWidth = TRUE)
   ) %>%
-    DT::formatRound(columns = c('NES'), digits = 3) %>%
-    DT::formatSignif(columns = c('pvalue', 'p.adjust'), digits = 4) %>%
-    DT::formatStyle('Enriched_In', backgroundColor = DT::styleEqual(c(meta$left_group, meta$right_group), c('#fee0d2', '#deebf7'))) %>%
-    DT::formatStyle('NES', color = DT::styleInterval(0, c('blue', 'red')), fontWeight = 'bold')
+    DT::formatRound(columns = c("NES"), digits = 3) %>%
+    DT::formatSignif(columns = c("pvalue", "p.adjust"), digits = 4) %>%
+    DT::formatStyle("Enriched_In", backgroundColor = DT::styleEqual(c(meta$left_group, meta$right_group), c("#fee0d2", "#deebf7"))) %>%
+    DT::formatStyle("NES", color = DT::styleInterval(0, c("blue", "red")), fontWeight = "bold")
 
   old_wd <- getwd()
   setwd(bundle_dir)
   tryCatch({
-    htmlwidgets::saveWidget(dt_table, file = basename(main_html_path), selfcontained = FALSE, libdir = "lib",
-                            title = sprintf("GSEA Report: %s vs %s [%s]", meta$left_group, meta$right_group, meta$geneset_name))
-  }, finally = { setwd(old_wd) })
+    htmlwidgets::saveWidget(dt_table,
+      file = basename(main_html_path), selfcontained = FALSE, libdir = "lib",
+      title = sprintf("GSEA Report: %s vs %s [%s]", meta$left_group, meta$right_group, meta$geneset_name)
+    )
+  }, finally = {
+    setwd(old_wd)
+  })
 
   message(sprintf("Done! HTML report generated at: %s", bundle_dir))
   return(invisible(bundle_dir))

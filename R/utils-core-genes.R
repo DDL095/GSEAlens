@@ -22,7 +22,9 @@ get_core_genes_for_pathway <- function(gsea_res_obj, pathway_id) {
     gsea_result <- gsea_res_obj$gsea_res
   } else if (is.list(gsea_res_obj) && !is.null(gsea_res_obj$data)) {
     # 来自results列表的直接元素
-    if (gsea_res_obj$status != "Success") return(character(0))
+    if (gsea_res_obj$status != "Success") {
+      return(character(0))
+    }
     gsea_result <- gsea_res_obj$data
   } else {
     gsea_result <- gsea_res_obj
@@ -37,11 +39,15 @@ get_core_genes_for_pathway <- function(gsea_res_obj, pathway_id) {
 
   # 匹配通路ID
   row_idx <- which(res_df$ID == pathway_id)
-  if (length(row_idx) == 0) return(character(0))
+  if (length(row_idx) == 0) {
+    return(character(0))
+  }
 
   # 解析core_enrichment字段（以/分隔的基因字符串）
   core_str <- as.character(res_df$core_enrichment[row_idx[1]])
-  if (is.na(core_str) || core_str == "") return(character(0))
+  if (is.na(core_str) || core_str == "") {
+    return(character(0))
+  }
 
   # 分割并清洗
   genes <- unlist(strsplit(core_str, "/"))
@@ -202,7 +208,6 @@ validate_param <- function(value, default, min_val = 1, max_val = NULL, param_na
 #' @export
 #'
 build_edge_list_safely <- function(core_genes_list, min_shared_genes = 2) {
-
   # ==== 防御性检查 ====
 
   # 防御1：检查输入是否为 NULL 或空列表
@@ -290,9 +295,9 @@ build_edge_list_safely <- function(core_genes_list, min_shared_genes = 2) {
         from = p1,
         to = p2,
         shared = shared_count,
-        weight = jaccard,            # Jaccard index (primary weight)
+        weight = jaccard, # Jaccard index (primary weight)
         overlap_coef = overlap_coef, # Overlap coefficient
-        dice_coef = dice_coef,       # Dice coefficient
+        dice_coef = dice_coef, # Dice coefficient
         shared_genes = I(list(shared_genes_list)),
         stringsAsFactors = FALSE
       )
@@ -302,8 +307,10 @@ build_edge_list_safely <- function(core_genes_list, min_shared_genes = 2) {
   # ==== 返回结果 ====
 
   if (edge_count == 0) {
-    message("[build_edge_list_safely] No edges formed with current threshold (min_shared=",
-            min_shared_genes, ")")
+    message(
+      "[build_edge_list_safely] No edges formed with current threshold (min_shared=",
+      min_shared_genes, ")"
+    )
     return(NULL)
   }
 
@@ -311,8 +318,10 @@ build_edge_list_safely <- function(core_genes_list, min_shared_genes = 2) {
   edge_df <- do.call(rbind, edges_list[1:edge_count])
   rownames(edge_df) <- NULL
 
-  message(sprintf("[build_edge_list_safely] Built %d edges from %d pathways",
-                  nrow(edge_df), n))
+  message(sprintf(
+    "[build_edge_list_safely] Built %d edges from %d pathways",
+    nrow(edge_df), n
+  ))
 
   return(edge_df)
 }

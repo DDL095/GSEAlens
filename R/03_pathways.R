@@ -43,7 +43,6 @@
 #' @importFrom dplyr arrange left_join select distinct mutate all_of bind_rows filter
 #' @importFrom msigdbr msigdbr_collections msigdbr
 build_gsea_pathways <- function(species = "HS", auto_select = NULL) {
-
   # === Section: Species Parameter Standardization === ----
 
   species <- toupper(trimws(as.character(species)))
@@ -79,34 +78,62 @@ build_gsea_pathways <- function(species = "HS", auto_select = NULL) {
   # msigdbr_collections(db_species = "MM") returns MM codes like M1, M2, MH
   # but msigdbr(species = "mouse", ...) only accepts human codes (C1, C2, H, etc.)
   mm_code_map <- list(
-    "MH" = list(coll = "H", subcoll = "",
-                desc = "MH Hallmark Gene Sets", tag = "MHall"),
-    "M1" = list(coll = "C1", subcoll = "",
-                desc = "M1 Positional Gene Sets", tag = "M1Pos"),
-    "M2:CGP" = list(coll = "C2", subcoll = "CGP",
-                    desc = "M2 Chemical and Genetic Perturbations", tag = "MCGP"),
-    "M2:CP:BIOCARTA" = list(coll = "C2", subcoll = "CP:BIOCARTA",
-                            desc = "M2 BioCarta Pathways", tag = "MBioC"),
-    "M2:CP:REACTOME" = list(coll = "C2", subcoll = "CP:REACTOME",
-                            desc = "M2 Reactome Pathways", tag = "MReac"),
-    "M2:CP:WIKIPATHWAYS" = list(coll = "C2", subcoll = "CP:WIKIPATHWAYS",
-                                desc = "M2 WikiPathways", tag = "MWiki"),
-    "M3:GTRD" = list(coll = "C3", subcoll = "GTRD",
-                     desc = "M3 GTRD Transcription Factors", tag = "MTFTG"),
-    "M3:MIRDB" = list(coll = "C3", subcoll = "MIRDB",
-                      desc = "M3 miRDB", tag = "MMirDB"),
-    "M5:GO:BP" = list(coll = "C5", subcoll = "GO:BP",
-                      desc = "M5 GO Biological Process", tag = "MGoBP"),
-    "M5:GO:CC" = list(coll = "C5", subcoll = "GO:CC",
-                      desc = "M5 GO Cellular Component", tag = "MGoCC"),
-    "M5:GO:MF" = list(coll = "C5", subcoll = "GO:MF",
-                      desc = "M5 GO Molecular Function", tag = "MGoMF"),
-    "M5:MPT" = list(coll = "C5", subcoll = "HPO",  # MPT maps to HPO
-                    desc = "M5 Mouse Phenotype Tumor", tag = "MPTumor"),
-    "M7" = list(coll = "C7", subcoll = "",
-                desc = "M7 Immunologic Signatures", tag = "MImmS"),
-    "M8" = list(coll = "C8", subcoll = "",
-                desc = "M8 Cell Type Signatures", tag = "MC8Cell")
+    "MH" = list(
+      coll = "H", subcoll = "",
+      desc = "MH Hallmark Gene Sets", tag = "MHall"
+    ),
+    "M1" = list(
+      coll = "C1", subcoll = "",
+      desc = "M1 Positional Gene Sets", tag = "M1Pos"
+    ),
+    "M2:CGP" = list(
+      coll = "C2", subcoll = "CGP",
+      desc = "M2 Chemical and Genetic Perturbations", tag = "MCGP"
+    ),
+    "M2:CP:BIOCARTA" = list(
+      coll = "C2", subcoll = "CP:BIOCARTA",
+      desc = "M2 BioCarta Pathways", tag = "MBioC"
+    ),
+    "M2:CP:REACTOME" = list(
+      coll = "C2", subcoll = "CP:REACTOME",
+      desc = "M2 Reactome Pathways", tag = "MReac"
+    ),
+    "M2:CP:WIKIPATHWAYS" = list(
+      coll = "C2", subcoll = "CP:WIKIPATHWAYS",
+      desc = "M2 WikiPathways", tag = "MWiki"
+    ),
+    "M3:GTRD" = list(
+      coll = "C3", subcoll = "GTRD",
+      desc = "M3 GTRD Transcription Factors", tag = "MTFTG"
+    ),
+    "M3:MIRDB" = list(
+      coll = "C3", subcoll = "MIRDB",
+      desc = "M3 miRDB", tag = "MMirDB"
+    ),
+    "M5:GO:BP" = list(
+      coll = "C5", subcoll = "GO:BP",
+      desc = "M5 GO Biological Process", tag = "MGoBP"
+    ),
+    "M5:GO:CC" = list(
+      coll = "C5", subcoll = "GO:CC",
+      desc = "M5 GO Cellular Component", tag = "MGoCC"
+    ),
+    "M5:GO:MF" = list(
+      coll = "C5", subcoll = "GO:MF",
+      desc = "M5 GO Molecular Function", tag = "MGoMF"
+    ),
+    "M5:MPT" = list(
+      coll = "C5", subcoll = "HPO", # MPT maps to HPO
+      desc = "M5 Mouse Phenotype Tumor", tag = "MPTumor"
+    ),
+    "M7" = list(
+      coll = "C7", subcoll = "",
+      desc = "M7 Immunologic Signatures", tag = "MImmS"
+    ),
+    "M8" = list(
+      coll = "C8", subcoll = "",
+      desc = "M8 Cell Type Signatures", tag = "MC8Cell"
+    )
   )
 
   # === Section: Dynamically Fetch Available Gene Set Collections === ----
@@ -119,9 +146,12 @@ build_gsea_pathways <- function(species = "HS", auto_select = NULL) {
   # For MM mode, map MM codes to human codes and display info
   menu_df <- lapply(1:nrow(avail_colls), function(i) {
     row <- avail_colls[i, ]
-    mm_key <- paste0(row$gs_collection,
-                     ifelse(row$gs_subcollection == "" || is.na(row$gs_subcollection),
-                            "", paste0(":", row$gs_subcollection)))
+    mm_key <- paste0(
+      row$gs_collection,
+      ifelse(row$gs_subcollection == "" || is.na(row$gs_subcollection),
+        "", paste0(":", row$gs_subcollection)
+      )
+    )
 
     if (cfg$is_mouse && mm_key %in% names(mm_code_map)) {
       mapped <- mm_code_map[[mm_key]]
@@ -131,19 +161,25 @@ build_gsea_pathways <- function(species = "HS", auto_select = NULL) {
       # Display info
       short_tag <- mapped$tag
       display_desc <- mapped$desc
-      combo_name <- mm_key  # 保持 MM 代码格式
+      combo_name <- mm_key # 保持 MM 代码格式
       # Combined name (for auto_select matching)
     } else {
       # 人类模式：直接使用
       human_coll <- row$gs_collection
       human_subcoll <- row$gs_subcollection
-      short_tag <- paste0(row$gs_collection,
-                          ifelse(row$gs_subcollection == "" || is.na(row$gs_subcollection),
-                                 "", paste0("_", gsub(":", "_", row$gs_subcollection))))
+      short_tag <- paste0(
+        row$gs_collection,
+        ifelse(row$gs_subcollection == "" || is.na(row$gs_subcollection),
+          "", paste0("_", gsub(":", "_", row$gs_subcollection))
+        )
+      )
       display_desc <- row$gs_collection_name
-      combo_name <- paste0(row$gs_collection,
-                           ifelse(row$gs_subcollection == "" || is.na(row$gs_subcollection),
-                                  "", paste0(":", row$gs_subcollection)))
+      combo_name <- paste0(
+        row$gs_collection,
+        ifelse(row$gs_subcollection == "" || is.na(row$gs_subcollection),
+          "", paste0(":", row$gs_subcollection)
+        )
+      )
     }
 
     data.frame(
@@ -173,15 +209,17 @@ build_gsea_pathways <- function(species = "HS", auto_select = NULL) {
     message(rep("-", 70))
 
     for (i in 1:nrow(menu_df)) {
-      cat(sprintf("[%2d] %-6s | %-18s | %s\n",
-                  i, menu_df$short_tag[i], menu_df$combo_name[i], menu_df$description[i]))
+      cat(sprintf(
+        "[%2d] %-6s | %-18s | %s\n",
+        i, menu_df$short_tag[i], menu_df$combo_name[i], menu_df$description[i]
+      ))
     }
 
     user_input <- readline(prompt = "\nEnter selection (comma-separated, e.g., 1,3,5): ")
     selected_idx <- as.integer(unlist(strsplit(user_input, "[, ]+")))
     selected_idx <- selected_idx[!is.na(selected_idx) &
-                                   selected_idx >= 1 &
-                                   selected_idx <= nrow(menu_df)]
+      selected_idx >= 1 &
+      selected_idx <= nrow(menu_df)]
 
     if (length(selected_idx) == 0) {
       stop("Invalid input: No valid selection provided.")
@@ -227,9 +265,11 @@ build_gsea_pathways <- function(species = "HS", auto_select = NULL) {
       # 4. Final validation check
       if (any(is.na(matched))) {
         missing <- auto_select[is.na(matched)]
-        stop(sprintf("Collection not found: %s. Available: %s",
-                     paste(missing, collapse = ", "),
-                     paste(unique(menu_df$combo_name), collapse = ", ")))
+        stop(sprintf(
+          "Collection not found: %s. Available: %s",
+          paste(missing, collapse = ", "),
+          paste(unique(menu_df$combo_name), collapse = ", ")
+        ))
       }
       selected_idx <- matched[!is.na(matched)]
     } else if (is.numeric(auto_select)) {
@@ -256,8 +296,10 @@ build_gsea_pathways <- function(species = "HS", auto_select = NULL) {
     )
   }
 
-  message(sprintf("\nSelected %d collection(s). Batch Tag: [%s]",
-                  nrow(selected_rows), super_tag))
+  message(sprintf(
+    "\nSelected %d collection(s). Batch Tag: [%s]",
+    nrow(selected_rows), super_tag
+  ))
 
   # === Section: Core Extraction Using Correct Species and Codes === ----
 
@@ -268,9 +310,11 @@ build_gsea_pathways <- function(species = "HS", auto_select = NULL) {
     if (row$human_subcoll == "" || is.na(row$human_subcoll)) {
       msigdbr::msigdbr(species = cfg$msigdbr_species, collection = row$human_coll)
     } else {
-      msigdbr::msigdbr(species = cfg$msigdbr_species,
-                       collection = row$human_coll,
-                       subcollection = row$human_subcoll)
+      msigdbr::msigdbr(
+        species = cfg$msigdbr_species,
+        collection = row$human_coll,
+        subcollection = row$human_subcoll
+      )
     }
   })
 
@@ -316,10 +360,12 @@ build_gsea_pathways <- function(species = "HS", auto_select = NULL) {
     species = species
   )
 
-  message(sprintf("\n[build_gsea_pathways] Done! Built %d pathways x %d genes for %s",
-                  nrow(TERM2NAME),
-                  length(unique(TERM2GENE$gene_symbol)),
-                  cfg$display_name))
+  message(sprintf(
+    "\n[build_gsea_pathways] Done! Built %d pathways x %d genes for %s",
+    nrow(TERM2NAME),
+    length(unique(TERM2GENE$gene_symbol)),
+    cfg$display_name
+  ))
 
   return(result)
 }

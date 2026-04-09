@@ -24,7 +24,7 @@ Extract differential expression results for a specific contrast
   B_vs_A) by retrieving the forward contrast and flipping the sign of logFC.
 }
 \examples{
-\dontrun{
+\donttest{
 # Get results for a specific contrast
 de_result <- get_de_table(gsea_res, contrast_id = "Treatment_vs_Control")
 

@@ -21,7 +21,6 @@ NULL
 #' @return A list containing contrast_registry, de_store, and expr_bundle
 #' @keywords internal
 .extract_limma_data <- function(fit, expr_data = NULL) {
-
   # 1. 强制校验：无截距设计
   .validate_limma_design(fit)
 
@@ -88,7 +87,6 @@ NULL
 #' @keywords internal
 
 .extract_deseq2_data <- function(dds, target_factor = NULL) {
-
   # 1. 确定 target_factor
   design_formula <- DESeq2::design(dds)
   design_terms <- attr(terms(design_formula), "term.labels")
@@ -124,12 +122,15 @@ NULL
     contrast_vec <- c(target_factor, left, right)
 
     # 提取结果
-    res <- tryCatch({
-      DESeq2::results(dds, contrast = contrast_vec)
-    }, error = function(e) {
-      warning(sprintf("Error extracting contrast %s: %s", contrast_id, e$message))
-      return(NULL)
-    })
+    res <- tryCatch(
+      {
+        DESeq2::results(dds, contrast = contrast_vec)
+      },
+      error = function(e) {
+        warning(sprintf("Error extracting contrast %s: %s", contrast_id, e$message))
+        return(NULL)
+      }
+    )
 
     if (!is.null(res)) {
       # 添加到 registry
@@ -197,7 +198,7 @@ NULL
   core_cols <- c("gene_symbol", "logFC", "stat", "pvalue", "padj")
   missing <- setdiff(core_cols, colnames(df))
   if (length(missing) > 0) {
-    stop(sprintf("Standardization failed, missing columns: %s", paste(missing, collapse=", ")))
+    stop(sprintf("Standardization failed, missing columns: %s", paste(missing, collapse = ", ")))
   }
 
   # 保留所有原始列，但确保核心列在前
@@ -210,7 +211,6 @@ NULL
 #' @keywords internal
 
 .build_expr_bundle <- function(obj, backend) {
-
   if (is.null(obj)) {
     return(list(
       raw_counts = NULL,
@@ -232,7 +232,6 @@ NULL
       gene_meta <- NULL
       display_expr <- log2(raw_counts + 1)
     }
-
   } else if (backend == "deseq2") {
     raw_counts <- counts(obj, normalized = FALSE)
     gene_meta <- as.data.frame(rowData(obj))
@@ -247,7 +246,7 @@ NULL
     display_expr = display_expr,
     sample_meta = sample_meta,
     gene_meta = gene_meta,
-    dge_list = if(backend == "limma_voom" && inherits(obj, "DGEList")) obj else NULL,
-    dds_obj = if(backend == "deseq2") obj else NULL
+    dge_list = if (backend == "limma_voom" && inherits(obj, "DGEList")) obj else NULL,
+    dds_obj = if (backend == "deseq2") obj else NULL
   ))
 }

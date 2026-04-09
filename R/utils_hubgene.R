@@ -28,7 +28,6 @@ build_hubgene_network <- function(gsea_task, pathway_ids,
                                   min_hub_degree = 2,
                                   de_df = NULL,
                                   res_df = NULL) {
-
   # Extract hub genes (now includes leading edge info)
   # Fixed: Properly pass de_df parameter
   hub_df <- extract_hub_genes(gsea_task, pathway_ids, min_hub_degree, de_df = de_df)
@@ -82,7 +81,8 @@ build_hubgene_network <- function(gsea_task, pathway_ids,
 
   # Gene direction based on stat
   gene_nodes$direction <- ifelse(gene_nodes$stat > 0, "up",
-                                 ifelse(gene_nodes$stat < 0, "down", "neutral"))
+    ifelse(gene_nodes$stat < 0, "down", "neutral")
+  )
 
   # Build edges with leading edge info
   edges_list <- lapply(seq_len(nrow(hub_genes)), function(i) {
@@ -153,7 +153,6 @@ build_hubgene_network <- function(gsea_task, pathway_ids,
 #'
 #' @export
 extract_hub_genes <- function(gsea_task, pathway_ids, min_degree = 2, de_df = NULL) {
-
   # Validate inputs
   if (is.null(pathway_ids) || length(pathway_ids) == 0) {
     return(NULL)
@@ -301,8 +300,7 @@ extract_hub_genes <- function(gsea_task, pathway_ids, min_degree = 2, de_df = NU
         stat_map <- setNames(de_df$log2FoldChange, de_df$gene_upper)
         gene_info$stat <- as.numeric(stat_map[gene_info$gene])
         message("[extract_hub_genes] Mapped stat from de_df$log2FoldChange")
-      }
-      else {
+      } else {
         gene_info$stat <- 0
         warning("[extract_hub_genes] de_df has no stat/logFC/log2FoldChange column")
       }
@@ -351,7 +349,6 @@ extract_hub_genes <- function(gsea_task, pathway_ids, min_degree = 2, de_df = NU
 #'
 #' @export
 prepare_hubgene_nodes <- function(network_data, layout = "fr", seed = 42) {
-
   if (is.null(network_data) || is.null(network_data$nodes)) {
     return(NULL)
   }
@@ -375,7 +372,8 @@ prepare_hubgene_nodes <- function(network_data, layout = "fr", seed = 42) {
   )
 
   # Calculate layout
-  set.seed(seed) # TODO: BiocCheck: set.seed accepted
+  # TODO: BiocCheck: set.seed accepted for reproducibility
+  set.seed(seed)
   if (layout == "fr") {
     coords <- igraph::layout_with_fr(g)
   } else if (layout == "kk") {
@@ -409,8 +407,9 @@ prepare_hubgene_nodes <- function(network_data, layout = "fr", seed = 42) {
 
   # Assign final size based on type
   all_nodes$size <- ifelse(all_nodes$type == "pathway",
-                           all_nodes$size_pathway,
-                           all_nodes$size_gene)
+    all_nodes$size_pathway,
+    all_nodes$size_gene
+  )
 
   # Split back into pathway and gene nodes
   pathway_nodes_out <- all_nodes[all_nodes$type == "pathway", ]
@@ -438,12 +437,11 @@ prepare_hubgene_nodes <- function(network_data, layout = "fr", seed = 42) {
 #' @export
 color_by_direction <- function(node_data, color_mode = "logFC",
                                left_group = "A", right_group = "B") {
-
   # Define color palette (consistent with volcano/NES plots)
-  color_up <- "#E41A1C"      # Red for up-regulated
-  color_down <- "#377EB8"    # Blue for down-regulated
+  color_up <- "#E41A1C" # Red for up-regulated
+  color_down <- "#377EB8" # Blue for down-regulated
   color_neutral <- "#999999" # Gray for neutral
-  color_hub <- "#FFD700"     # Gold for hub genes
+  color_hub <- "#FFD700" # Gold for hub genes
 
   if (color_mode == "logFC") {
     # For gene nodes: color by log2FC
@@ -455,27 +453,30 @@ color_by_direction <- function(node_data, color_mode = "logFC",
       if (row$type == "pathway") {
         # Pathway: color by NES direction
         if (!is.na(row$NES)) {
-          if (row$NES > 0) return(color_up)
-          else if (row$NES < 0) return(color_down)
+          if (row$NES > 0) {
+            return(color_up)
+          } else if (row$NES < 0) {
+            return(color_down)
+          }
         }
         return(color_neutral)
-
       } else if (row$type == "gene") {
         # Gene: color by log2FC
         if (!is.na(row$log2FC)) {
-          if (row$log2FC > 0) return(color_up)
-          else if (row$log2FC < 0) return(color_down)
+          if (row$log2FC > 0) {
+            return(color_up)
+          } else if (row$log2FC < 0) {
+            return(color_down)
+          }
         }
         return(color_neutral)
       }
 
       return(color_neutral)
     })
-
   } else if (color_mode == "pathway") {
     # Color genes by which pathway they connect to most
-    node_data$color <- color_hub  # Default hub color
-
+    node_data$color <- color_hub # Default hub color
   } else {
     # Uniform color
     node_data$color <- color_neutral
@@ -487,14 +488,20 @@ color_by_direction <- function(node_data, color_mode = "logFC",
 
     if (row$type == "pathway") {
       if (!is.na(row$NES)) {
-        if (row$NES > 0) return(paste0("Up in ", left_group))
-        else return(paste0("Up in ", right_group))
+        if (row$NES > 0) {
+          return(paste0("Up in ", left_group))
+        } else {
+          return(paste0("Up in ", right_group))
+        }
       }
       return("Neutral")
     } else {
       if (!is.na(row$log2FC)) {
-        if (row$log2FC > 0) return(paste0("Up in ", left_group))
-        else if (row$log2FC < 0) return(paste0("Up in ", right_group))
+        if (row$log2FC > 0) {
+          return(paste0("Up in ", left_group))
+        } else if (row$log2FC < 0) {
+          return(paste0("Up in ", right_group))
+        }
       }
       return("Neutral")
     }
@@ -519,17 +526,22 @@ color_by_direction <- function(node_data, color_mode = "logFC",
 generate_hubgene_hover_text <- function(node, node_type,
                                         left_group = "A",
                                         right_group = "B") {
-
   # Safe type conversion - ensure all numeric fields are properly converted
   safe_num <- function(x, default = 0) {
-    if (is.null(x) || is.na(x)) return(default)
+    if (is.null(x) || is.na(x)) {
+      return(default)
+    }
     x <- as.numeric(x)
-    if (is.na(x)) return(default)
+    if (is.na(x)) {
+      return(default)
+    }
     return(x)
   }
 
   safe_char <- function(x, default = "") {
-    if (is.null(x) || is.na(x) || is.factor(x)) return(default)
+    if (is.null(x) || is.na(x) || is.factor(x)) {
+      return(default)
+    }
     return(as.character(x))
   }
 
@@ -568,7 +580,6 @@ generate_hubgene_hover_text <- function(node, node_type,
       as.integer(n_total),
       core_ratio * 100
     )
-
   } else if (node_type == "gene") {
     # Gene hover text
     id <- safe_char(node$id, "Unknown")

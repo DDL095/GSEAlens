@@ -25,12 +25,10 @@ mod_pathway_relation_ui <- function(id) {
             selected = "mode_topN",
             width = "100%"
           ),
-
           shiny::hr(),
 
           # ---- Shared Parameters Panel ----
           shiny::h4("Shared Parameters"),
-
           shiny::numericInput(
             ns("fdr_threshold"),
             label = "FDR Threshold:",
@@ -39,7 +37,6 @@ mod_pathway_relation_ui <- function(id) {
             value = 0.25,
             step = 0.01
           ),
-
           shiny::numericInput(
             ns("min_shared"),
             label = "Min Shared Core Genes:",
@@ -48,7 +45,6 @@ mod_pathway_relation_ui <- function(id) {
             max = 9999,
             step = 1
           ),
-
           shiny::sliderInput(
             ns("max_nodes"),
             label = "Max Nodes:",
@@ -57,7 +53,6 @@ mod_pathway_relation_ui <- function(id) {
             value = 30,
             step = 5
           ),
-
           shiny::selectInput(
             ns("network_layout"),
             label = "Layout Algorithm:",
@@ -68,7 +63,6 @@ mod_pathway_relation_ui <- function(id) {
             ),
             selected = "fr"
           ),
-
           shiny::numericInput(
             ns("seed"),
             label = "Seed (for reproducibility):",
@@ -77,17 +71,14 @@ mod_pathway_relation_ui <- function(id) {
             max = 9999,
             step = 1
           ),
-
           shiny::helpText(
             style = "color: #666; font-size: 11px;",
             "Seed ensures reproducible layout when parameters change"
           ),
-
           shiny::hr(),
 
           # ---- Hover Display Settings ----
           shiny::h4("Hover Display Settings"),
-
           shiny::sliderInput(
             ns("hover_max_genes"),
             label = "Max Genes in Hover:",
@@ -96,14 +87,11 @@ mod_pathway_relation_ui <- function(id) {
             value = 5,
             step = 1
           ),
-
           shiny::helpText(
             style = "color: #666; font-size: 11px;",
             "Number of shared genes to display in edge hover tooltip"
           ),
-
           shiny::hr(),
-
           shiny::conditionalPanel(
             condition = sprintf("input['%s'] == 'mode_topN'", ns("network_mode")),
             shiny::div(
@@ -119,7 +107,6 @@ mod_pathway_relation_ui <- function(id) {
               )
             )
           ),
-
           shiny::conditionalPanel(
             condition = sprintf("input['%s'] == 'mode_select'", ns("network_mode")),
             shiny::div(
@@ -131,9 +118,7 @@ mod_pathway_relation_ui <- function(id) {
               )
             )
           ),
-
           shiny::hr(),
-
           shiny::h4("Pathways to Plot"),
           shiny::uiOutput(ns("pathway_preview_list"))
         )
@@ -145,7 +130,6 @@ mod_pathway_relation_ui <- function(id) {
         shiny::tabsetPanel(
           id = ns("active_tab"),
           type = "tabs",
-
           shiny::tabPanel(
             title = "DotPlot",
             value = "dotplot",
@@ -176,41 +160,41 @@ mod_pathway_relation_ui <- function(id) {
                 shinycssloaders::withSpinner(type = 6, color = "#28a745")
             )
           ),
-
           shiny::tabPanel(
             title = "Network",
             value = "network",
             shiny::div(
               class = "white-box",
               style = "padding: 15px; margin-top: 15px;",
-
               shiny::uiOutput(ns("network_status")),
-
               shiny::div(
                 id = ns("selection_panel"),
                 style = "background: #e8f4fd; padding: 12px; border-radius: 8px; margin-bottom: 15px;",
                 shiny::fluidRow(
-                  shiny::column(12,
-                                shiny::uiOutput(ns("selection_display"))
+                  shiny::column(
+                    12,
+                    shiny::uiOutput(ns("selection_display"))
                   )
                 ),
                 shiny::fluidRow(
-                  shiny::column(6,
-                                shiny::actionButton(
-                                  ns("show_edge_detail"),
-                                  label = "Show Edge Detail",
-                                  class = "btn-primary",
-                                  style = "width: 100%;",
-                                  disabled = NA
-                                )
+                  shiny::column(
+                    6,
+                    shiny::actionButton(
+                      ns("show_edge_detail"),
+                      label = "Show Edge Detail",
+                      class = "btn-primary",
+                      style = "width: 100%;",
+                      disabled = NA
+                    )
                   ),
-                  shiny::column(6,
-                                shiny::actionButton(
-                                  ns("clear_selection"),
-                                  label = "Clear Selection",
-                                  class = "btn-warning",
-                                  style = "width: 100%;"
-                                )
+                  shiny::column(
+                    6,
+                    shiny::actionButton(
+                      ns("clear_selection"),
+                      label = "Clear Selection",
+                      class = "btn-warning",
+                      style = "width: 100%;"
+                    )
                   )
                 ),
                 shiny::div(
@@ -218,7 +202,6 @@ mod_pathway_relation_ui <- function(id) {
                   shiny::HTML("<b>Instruction:</b> Click two nodes to select, then click 'Show Edge Detail'")
                 )
               ),
-
               plotly::plotlyOutput(ns("plot_network"), height = "1200px") %>%
                 shinycssloaders::withSpinner(type = 6, color = "#28a745")
             )
@@ -256,7 +239,9 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
     # ============================================================
 
     topN_candidates <- shiny::reactive({
-      if (network_mode() != "mode_topN") return(character(0))
+      if (network_mode() != "mode_topN") {
+        return(character(0))
+      }
       data_list <- data_prep_list$data()
       shiny::req(data_list)
       df <- data_list$df
@@ -268,24 +253,32 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
     })
 
     select_candidates <- shiny::reactive({
-      if (network_mode() != "mode_select") return(character(0))
-      if (is.null(table_result) || is.null(table_result$selected_pathways)) return(character(0))
+      if (network_mode() != "mode_select") {
+        return(character(0))
+      }
+      if (is.null(table_result) || is.null(table_result$selected_pathways)) {
+        return(character(0))
+      }
       selected <- table_result$selected_pathways()
-      if (is.null(selected)) return(character(0))
+      if (is.null(selected)) {
+        return(character(0))
+      }
       return(selected)
     })
 
     candidate_raw <- shiny::reactive({
       switch(network_mode(),
-             "mode_topN" = topN_candidates(),
-             "mode_select" = select_candidates(),
-             character(0)
+        "mode_topN" = topN_candidates(),
+        "mode_select" = select_candidates(),
+        character(0)
       )
     })
 
     candidate_filtered <- shiny::reactive({
       pathways <- candidate_raw()
-      if (length(pathways) == 0) return(character(0))
+      if (length(pathways) == 0) {
+        return(character(0))
+      }
       fdr_thresh <- input$fdr_threshold
       if (is.null(fdr_thresh)) fdr_thresh <- 0.25
       data_list <- data_prep_list$data()
@@ -333,7 +326,9 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       df <- data_list$df
       pathway_info <- lapply(pathways, function(pid) {
         row_idx <- which(df$ID == pid)
-        if (length(row_idx) == 0) return(NULL)
+        if (length(row_idx) == 0) {
+          return(NULL)
+        }
         row <- df[row_idx[1], ]
         fdr <- row$p.adjust
         nes <- row$NES
@@ -416,20 +411,36 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
         )
       )
       class(task) <- "GseaTask"
-      core_list <- tryCatch({get_core_genes_list(task, plot_df$ID)}, error = function(e) NULL)
+      core_list <- tryCatch(
+        {
+          get_core_genes_list(task, plot_df$ID)
+        },
+        error = function(e) NULL
+      )
       plot_df$CoreCount <- sapply(plot_df$ID, function(pid) {
-        if (is.null(core_list) || is.null(core_list[[pid]])) return(0)
+        if (is.null(core_list) || is.null(core_list[[pid]])) {
+          return(0)
+        }
         length(core_list[[pid]])
       })
       color_mode <- input$dotplot_color_mode
       color_vals <- switch(color_mode,
-                           "padj" = -log10(plot_df$p.adjust),
-                           "pval" = -log10(plot_df$pvalue),
-                           "nes" = abs(plot_df$NES),
-                           -log10(plot_df$p.adjust))
-      color_title <- switch(color_mode, "padj" = "-log10(FDR)", "pval" = "-log10(P-value)", "nes" = "|NES|")
+        "padj" = -log10(plot_df$p.adjust),
+        "pval" = -log10(plot_df$pvalue),
+        "nes" = abs(plot_df$NES),
+        -log10(plot_df$p.adjust)
+      )
+      color_title <- switch(color_mode,
+        "padj" = "-log10(FDR)",
+        "pval" = "-log10(P-value)",
+        "nes" = "|NES|"
+      )
       size_mode <- input$dotplot_size_mode
-      size_vals <- switch(size_mode, "core_size" = plot_df$CoreCount, "setsize" = plot_df$setSize, plot_df$CoreCount)
+      size_vals <- switch(size_mode,
+        "core_size" = plot_df$CoreCount,
+        "setsize" = plot_df$setSize,
+        plot_df$CoreCount
+      )
       size_range <- c(5, 25)
       if (max(size_vals) > min(size_vals)) {
         size_scaled <- size_range[1] + (size_vals - min(size_vals)) / (max(size_vals) - min(size_vals)) * (size_range[2] - size_range[1])
@@ -460,16 +471,18 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
         text = hover_text,
         hoverinfo = "text",
         hovertemplate = "%{text}<extra></extra>"
-      ) %>% plotly::layout(
-        title = list(
-          text = sprintf("Pathway DotPlot: %s vs %s", data_list$left_group, data_list$right_group),
-          font = list(size = 12), x = 0.5, xanchor = "center"
-        ),
-        xaxis = list(title = "NES", zeroline = TRUE),
-        yaxis = list(title = "", tickmode = "array", tickvals = seq_len(nrow(plot_df)), ticktext = plot_df$ID, tickfont = list(size = 9)),
-        margin = list(l = 250, r = 50, t = 80, b = 50),
-        showlegend = FALSE
-      ) %>% plotly::config(displayModeBar = TRUE, displaylogo = FALSE)
+      ) %>%
+        plotly::layout(
+          title = list(
+            text = sprintf("Pathway DotPlot: %s vs %s", data_list$left_group, data_list$right_group),
+            font = list(size = 12), x = 0.5, xanchor = "center"
+          ),
+          xaxis = list(title = "NES", zeroline = TRUE),
+          yaxis = list(title = "", tickmode = "array", tickvals = seq_len(nrow(plot_df)), ticktext = plot_df$ID, tickfont = list(size = 9)),
+          margin = list(l = 250, r = 50, t = 80, b = 50),
+          showlegend = FALSE
+        ) %>%
+        plotly::config(displayModeBar = TRUE, displaylogo = FALSE)
     })
 
     # ============================================================
@@ -608,7 +621,12 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       )
       class(task) <- "GseaTask"
 
-      core_list <<- tryCatch({get_core_genes_list(task, pathways)}, error = function(e) NULL)
+      core_list <- tryCatch(
+        {
+          get_core_genes_list(task, pathways)
+        },
+        error = function(e) NULL
+      )
 
       if (is.null(core_list) || length(core_list) == 0) {
         return(plotly::plot_ly() %>% plotly::layout(
@@ -633,9 +651,12 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       if (is.null(hover_max_genes)) hover_max_genes <- 10
 
       # Build edge list (now includes jaccard, overlap_coef, dice_coef)
-      edge_list <<- tryCatch({
-        build_edge_list_safely(core_list[valid_pathways], min_shared_genes = min_shared)
-      }, error = function(e) NULL)
+      edge_list <<- tryCatch(
+        {
+          build_edge_list_safely(core_list[valid_pathways], min_shared_genes = min_shared)
+        },
+        error = function(e) NULL
+      )
 
       if (is.null(edge_list) || nrow(edge_list) == 0) {
         return(plotly::plot_ly() %>% plotly::layout(
@@ -672,9 +693,12 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       edge_list$edge_width_selected <- 13
 
       # Build igraph object
-      g <- tryCatch({
-        igraph::graph_from_data_frame(edge_list, directed = FALSE, vertices = valid_pathways)
-      }, error = function(e) NULL)
+      g <- tryCatch(
+        {
+          igraph::graph_from_data_frame(edge_list, directed = FALSE, vertices = valid_pathways)
+        },
+        error = function(e) NULL
+      )
 
       if (is.null(g)) {
         return(plotly::plot_ly() %>% plotly::layout(
@@ -686,14 +710,23 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       layout_algo <- input$network_layout
       seed_val <- input$seed
 
-      layout_coords <- tryCatch({
-        switch(layout_algo,
-               "fr" = {set.seed(seed_val); igraph::layout_with_fr(g)},
-               "kk" = igraph::layout_with_kk(g),
-               "circle" = igraph::layout_in_circle(g),
-               {set.seed(seed_val); igraph::layout_with_fr(g)}
-        )
-      }, error = function(e) NULL)
+      layout_coords <- tryCatch(
+        {
+          switch(layout_algo,
+            "fr" = {
+              set.seed(seed_val)
+              igraph::layout_with_fr(g)
+            },
+            "kk" = igraph::layout_with_kk(g),
+            "circle" = igraph::layout_in_circle(g),
+            {
+              set.seed(seed_val)
+              igraph::layout_with_fr(g)
+            }
+          )
+        },
+        error = function(e) NULL
+      )
 
       if (is.null(layout_coords)) {
         return(plotly::plot_ly() %>% plotly::layout(
@@ -714,7 +747,9 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       node_df$NES <- node_info$NES
       node_df$FDR <- node_info$p.adjust
       node_df$CoreCount <- sapply(node_df$name, function(n) {
-        if (is.null(core_list[[n]])) return(0)
+        if (is.null(core_list[[n]])) {
+          return(0)
+        }
         length(core_list[[n]])
       })
       node_df$color_val <- ifelse(is.na(node_df$NES), 0, node_df$NES)
@@ -767,9 +802,8 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       # ============================================================
 
       for (i in seq_len(nrow(edge_list))) {
-
         from_node <- node_df[node_df$name == edge_list$from[i], ]
-        to_node   <- node_df[node_df$name == edge_list$to[i], ]
+        to_node <- node_df[node_df$name == edge_list$to[i], ]
 
         is_selected <- (edge_list$from[i] %in% sel_nodes) && (edge_list$to[i] %in% sel_nodes)
 
@@ -810,7 +844,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
           hoverlabel = list(
             bgcolor = hover_bg,
             font = list(color = "white", size = 12),
-            align = "left",     # <- left-aligned
+            align = "left", # <- left-aligned
             bordercolor = hover_bg
           ),
           showlegend = FALSE,
@@ -846,7 +880,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       # Add labels (selected nodes are larger and bolder)
       # ============================================================
 
-      label_size <- ifelse(node_df$name %in% sel_nodes, 16, 9)  # Changed from 12/9 to 16/9
+      label_size <- ifelse(node_df$name %in% sel_nodes, 16, 9) # Changed from 12/9 to 16/9
       label_color <- ifelse(node_df$name %in% sel_nodes, "#FF6600", "#333")
       label_bold <- ifelse(node_df$name %in% sel_nodes, "bold", "normal")
 
@@ -862,39 +896,41 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       x_range <- c(min(layout_coords[, 1]) - 0.5, max(layout_coords[, 1]) + 0.5)
       y_range <- c(min(layout_coords[, 2]) - 0.5, max(layout_coords[, 2]) + 0.5)
 
-      p %>% plotly::layout(
-        title = list(text = title_text, font = list(size = 12), x = 0.5, xanchor = "center"),
-        xaxis = list(
-          title = "",
-          showgrid = FALSE,
-          showticklabels = FALSE,
-          zeroline = FALSE,
-          range = x_range,
-          scaleanchor = "x",      # Maintain aspect ratio
-          scaleratio = 1
-        ),
-        yaxis = list(
-          title = "",
-          showgrid = FALSE,
-          showticklabels = FALSE,
-          zeroline = FALSE,
-          range = y_range,
-          scaleanchor = "x",      # Maintain aspect ratio
-          scaleratio = 1
-        ),
-        hovermode = "closest",
-        dragmode = "pan",
-        showlegend = FALSE,
-        margin = list(l = 50, r = 50, t = 80, b = 50),
-        paper_bgcolor = 'rgba(0,0,0,0)',   # Transparent background
-        plot_bgcolor = 'rgba(0,0,0,0)',    # Transparent canvas
-        autosize = TRUE                    # <- Key: auto-resize
-      ) %>% plotly::config(
-        displayModeBar = TRUE,
-        displaylogo = FALSE,
-        modeBarButtonsToRemove = c("lasso2d", "select2d"),
-        responsive = TRUE                  # <- Key: responsive
-      )
+      p %>%
+        plotly::layout(
+          title = list(text = title_text, font = list(size = 12), x = 0.5, xanchor = "center"),
+          xaxis = list(
+            title = "",
+            showgrid = FALSE,
+            showticklabels = FALSE,
+            zeroline = FALSE,
+            range = x_range,
+            scaleanchor = "x", # Maintain aspect ratio
+            scaleratio = 1
+          ),
+          yaxis = list(
+            title = "",
+            showgrid = FALSE,
+            showticklabels = FALSE,
+            zeroline = FALSE,
+            range = y_range,
+            scaleanchor = "x", # Maintain aspect ratio
+            scaleratio = 1
+          ),
+          hovermode = "closest",
+          dragmode = "pan",
+          showlegend = FALSE,
+          margin = list(l = 50, r = 50, t = 80, b = 50),
+          paper_bgcolor = "rgba(0,0,0,0)", # Transparent background
+          plot_bgcolor = "rgba(0,0,0,0)", # Transparent canvas
+          autosize = TRUE # <- Key: auto-resize
+        ) %>%
+        plotly::config(
+          displayModeBar = TRUE,
+          displaylogo = FALSE,
+          modeBarButtonsToRemove = c("lasso2d", "select2d"),
+          responsive = TRUE # <- Key: responsive
+        )
     })
 
     # ============================================================
@@ -903,12 +939,16 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
 
     shiny::observeEvent(plotly::event_data("plotly_click", source = ns("network_plot")), {
       click_data <- plotly::event_data("plotly_click", source = ns("network_plot"))
-      if (is.null(click_data) || is.null(click_data$pointNumber)) return()
+      if (is.null(click_data) || is.null(click_data$pointNumber)) {
+        return()
+      }
 
       n_edges <- nrow(edge_list)
       point_idx <- click_data$pointNumber + 1
 
-      if (point_idx > nrow(node_df) || point_idx < 1) return()
+      if (point_idx > nrow(node_df) || point_idx < 1) {
+        return()
+      }
 
       node_name <- as.character(node_df$name[point_idx])
       current_sel <- selected_nodes()
@@ -930,6 +970,5 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       final_pathways = final_pathways,
       network_mode = network_mode
     ))
-
   })
 }

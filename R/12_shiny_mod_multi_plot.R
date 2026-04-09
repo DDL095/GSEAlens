@@ -52,17 +52,22 @@ mod_multi_plot_server <- function(id, data_prep, table_controller) {
     })
 
     # Listen for selectize removal
-    shiny::observeEvent(input$pathway_selector, {
-      if (updating()) return()
-      current <- selected_ids()
-      new_sel <- input$pathway_selector
-      if (is.null(new_sel)) new_sel <- character(0)
+    shiny::observeEvent(input$pathway_selector,
+      {
+        if (updating()) {
+          return()
+        }
+        current <- selected_ids()
+        new_sel <- input$pathway_selector
+        if (is.null(new_sel)) new_sel <- character(0)
 
-      removed <- setdiff(current, new_sel)
-      if (length(removed) > 0) {
-        table_controller$remove_pathways(removed)
-      }
-    }, ignoreInit = TRUE)
+        removed <- setdiff(current, new_sel)
+        if (length(removed) > 0) {
+          table_controller$remove_pathways(removed)
+        }
+      },
+      ignoreInit = TRUE
+    )
 
     # Clear button
     shiny::observeEvent(input$clear_btn, {
@@ -98,24 +103,27 @@ mod_multi_plot_server <- function(id, data_prep, table_controller) {
         colors <- rep(colors, length.out = length(sel))
       }
 
-      tryCatch({
-        print(plot_directional_gsea(
-          directional_gsea_obj = list(
-            gsea_res = data_list$gsea_res,
-            meta = list(
-              left_group = data_list$left_group,
-              right_group = data_list$right_group
-            )
-          ),
-          target_pathways = sel,
-          subPlot = data_list$plot_subtype,
-          curveCol = colors,
-          main_title = sprintf("Combined Display: %d Pathway(s)", length(sel))
-        ))
-      }, error = function(e) {
-        graphics::plot(1, type = "n", axes = FALSE)
-        graphics::text(1, 1, sprintf("Plotting Error: %s", e$message), col = "red")
-      })
+      tryCatch(
+        {
+          print(plot_directional_gsea(
+            directional_gsea_obj = list(
+              gsea_res = data_list$gsea_res,
+              meta = list(
+                left_group = data_list$left_group,
+                right_group = data_list$right_group
+              )
+            ),
+            target_pathways = sel,
+            subPlot = data_list$plot_subtype,
+            curveCol = colors,
+            main_title = sprintf("Combined Display: %d Pathway(s)", length(sel))
+          ))
+        },
+        error = function(e) {
+          graphics::plot(1, type = "n", axes = FALSE)
+          graphics::text(1, 1, sprintf("Plotting Error: %s", e$message), col = "red")
+        }
+      )
     })
   })
 }

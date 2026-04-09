@@ -13,7 +13,6 @@
 #' @return Returns the parsed GseaRes or GseaEnv capsule object.
 #' @export
 import_gsea_capsule <- function(file_path, auto_relocate = TRUE, inspect = TRUE) {
-
   # 1. 文件存在性检查
   if (!file.exists(file_path)) {
     stop(sprintf("File does not exist: %s", file_path))
@@ -74,7 +73,6 @@ import_gsea_capsule <- function(file_path, auto_relocate = TRUE, inspect = TRUE)
         capsule$metadata$project_info$output_dir <- file.path(getwd(), "GSEA_Output")
         capsule$metadata$project_info$series_dir <- local_series_dir
         capsule$metadata$project_info$rds_path <- target_file
-
       } else {
         message("   Backup already exists in standard archive (no duplicate needed).")
       }
@@ -94,7 +92,6 @@ import_gsea_capsule <- function(file_path, auto_relocate = TRUE, inspect = TRUE)
 }
 
 
-
 #' @title Extract GSEA Results for Specific Contrast
 #' @description Extract results for a specified contrast from a GseaRes capsule.
 #'   Supports subsetting by gene set collection and automatically recalculates FDR.
@@ -105,13 +102,14 @@ import_gsea_capsule <- function(file_path, auto_relocate = TRUE, inspect = TRUE)
 #' @return GseaTask object.
 #' @export
 extract_gsea_task <- function(gsea_res, contrast_id, target_collection = "ALL") {
-
   # 1. 校验输入
   .check_gsea_res(gsea_res)
 
   if (!(contrast_id %in% names(gsea_res$results))) {
-    stop(sprintf("Contrast '%s' not found in results. Available: %s",
-                 contrast_id, paste(names(gsea_res$results), collapse = ", ")))
+    stop(sprintf(
+      "Contrast '%s' not found in results. Available: %s",
+      contrast_id, paste(names(gsea_res$results), collapse = ", ")
+    ))
   }
 
   task_info <- gsea_res$results[[contrast_id]]
@@ -160,11 +158,13 @@ extract_gsea_task <- function(gsea_res, contrast_id, target_collection = "ALL") 
     # 查找匹配的行
     # 支持 Collection (如 "H") 或 Combo_Name (如 "C2:CP:KEGG_LEGACY")
     match_idx <- which(res_df$Collection %in% target_collection |
-                         res_df$Combo_Name %in% target_collection)
+      res_df$Combo_Name %in% target_collection)
 
     if (length(match_idx) == 0) {
-      stop(sprintf("Slice failed! No pathways found for '%s' in '%s'.",
-                   contrast_id, paste(target_collection, collapse = ", ")))
+      stop(sprintf(
+        "Slice failed! No pathways found for '%s' in '%s'.",
+        contrast_id, paste(target_collection, collapse = ", ")
+      ))
     }
 
     res_df <- res_df[match_idx, , drop = FALSE]
@@ -186,8 +186,9 @@ extract_gsea_task <- function(gsea_res, contrast_id, target_collection = "ALL") 
     left_group = left_group,
     right_group = right_group,
     geneset_name = ifelse(is_slice_mode,
-                          paste(target_collection, collapse = "_"),
-                          gsea_res$geneset_info$name),
+      paste(target_collection, collapse = "_"),
+      gsea_res$geneset_info$name
+    ),
     meta_dict = gsea_res$geneset_info$meta_dict,
     expr_bundle = gsea_res$expr_bundle,
     project_info = gsea_res$metadata$project_info,
@@ -251,7 +252,7 @@ inspect_gsea_res <- function(gsea_res) {
   cat("[4] Next Step\n")
   cat("   Extract specific results for visualization:\n")
   cat(sprintf('   > task <- extract_gsea_task(gsea_res, "%s")\n', names(results)[1]))
-  cat('   > plot_directional_gsea(task, ...)\n')
+  cat("   > plot_directional_gsea(task, ...)\n")
   cat(rep("=", 60), "\n\n", sep = "")
 
   invisible(gsea_res)

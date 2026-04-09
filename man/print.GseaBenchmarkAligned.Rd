@@ -20,7 +20,7 @@ Formats and displays a summary of aligned GSEA benchmark data,
   memory usage.
 }
 \examples{
-\dontrun{
+\donttest{
 data <- align_benchmark_data(gsea_res, "system_monitor.csv")
 print(data)
 }

@@ -29,9 +29,7 @@
 #' add_data <- read.csv("annotations.csv")
 #' launch_gsea_app(gsea_res, add_data)
 #' }
-
 launch_gsea_app <- function(gsea_res, addition_data = NULL) {
-
   # Step 1: Validate GseaRes object ------------------------------------------------
 
   if (!inherits(gsea_res, "GseaRes")) {
@@ -81,8 +79,10 @@ launch_gsea_app <- function(gsea_res, addition_data = NULL) {
     if (grepl("\\.rds", addition_data, ignore.case = TRUE)) {
       data <- readRDS(addition_data)
     } else if (grepl("\\.csv", addition_data, ignore.case = TRUE)) {
-      data <- read.csv(addition_data, stringsAsFactors = FALSE,
-                       check.names = FALSE, encoding = "UTF-8")
+      data <- read.csv(addition_data,
+        stringsAsFactors = FALSE,
+        check.names = FALSE, encoding = "UTF-8"
+      )
     } else {
       stop("Unsupported addition_data format. Use .csv or .rds")
     }
@@ -119,8 +119,10 @@ launch_gsea_app <- function(gsea_res, addition_data = NULL) {
     message("[GSEAlens] Removed ", n_dup, " duplicate ID(s) from addition_data")
     data <- data[!duplicated(data$ID), ]
   }
-  message("[GSEAlens] addition_data validated: ", nrow(data), " rows x ",
-          ncol(data), " columns")
+  message(
+    "[GSEAlens] addition_data validated: ", nrow(data), " rows x ",
+    ncol(data), " columns"
+  )
   return(data)
 }
 
@@ -149,8 +151,10 @@ launch_gsea_app <- function(gsea_res, addition_data = NULL) {
   if (file.exists(csv_path)) {
     message("[GSEAlens] Auto-detected addition_data: ", basename(csv_path))
     message("[GSEAlens] Converting CSV to RDS for faster loading...")
-    data <- read.csv(csv_path, stringsAsFactors = FALSE,
-                     check.names = FALSE, encoding = "UTF-8")
+    data <- read.csv(csv_path,
+      stringsAsFactors = FALSE,
+      check.names = FALSE, encoding = "UTF-8"
+    )
     # Validate and save as RDS for future use
     data <- .validate_addition_data(data)
     saveRDS(data, rds_path, compress = "gzip")
@@ -173,7 +177,6 @@ launch_gsea_app <- function(gsea_res, addition_data = NULL) {
 #' @return A Shiny app object
 #' @keywords internal
 .launch_gsea_shiny <- function(gsea_res, addition_data) {
-
   ui <- shiny::fluidPage(
     shiny::tags$head(
       shiny::tags$style(shiny::HTML("
@@ -242,7 +245,6 @@ launch_gsea_app <- function(gsea_res, addition_data = NULL) {
 
   # Server part -------------------------------------------------------------------------
   server <- function(input, output, session) {
-
     # Module 1: Data preprocessing module
     data_prep_list <- mod_data_prep_server("data_prep", gsea_res)
 

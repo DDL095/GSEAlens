@@ -10,29 +10,27 @@
 mod_joint_canvas_ui <- function(id) {
   ns <- shiny::NS(id)
   shiny::tagList(
-    shiny::div(class = "white-box", style = "min-height: 900px;",
-               shiny::h4("GSEA Joint Canvas"),
-               shiny::uiOutput(ns("canvas_info")),
-               shiny::plotOutput(ns("canvas_plot"), height = "auto", width = "100%")
+    shiny::div(
+      class = "white-box", style = "min-height: 900px;",
+      shiny::h4("GSEA Joint Canvas"),
+      shiny::uiOutput(ns("canvas_info")),
+      shiny::plotOutput(ns("canvas_plot"), height = "auto", width = "100%")
     ),
-
     shiny::hr(),
     shiny::fluidRow(
-      shiny::column(12, shiny::div(class = "white-box",
-                                   shiny::h4("Export Code"),
-                                   shiny::actionButton(
-                                     ns("export_code_btn"),
-                                     label = "Export Joint Canvas Code",
-                                     class = "btn-secondary",
-                                     style = "width: 100%;"
-                                   ),
-                                   shiny::helpText("Generate R code for reproducing the joint canvas")
+      shiny::column(12, shiny::div(
+        class = "white-box",
+        shiny::h4("Export Code"),
+        shiny::actionButton(
+          ns("export_code_btn"),
+          label = "Export Joint Canvas Code",
+          class = "btn-secondary",
+          style = "width: 100%;"
+        ),
+        shiny::helpText("Generate R code for reproducing the joint canvas")
       ))
-
-
     )
   )
-
 }
 
 # Section: Joint Canvas Server Module ----
@@ -63,7 +61,6 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
     canvas_result <- shiny::reactiveVal(NULL)
 
     shiny::observeEvent(data_prep_list$joint_generate(), {
-
       contrasts <- data_prep_list$joint_contrasts()
       ncol_val <- data_prep_list$joint_ncol()
 
@@ -102,18 +99,23 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
       for (i in seq_along(contrasts)) {
         contrast_id <- contrasts[i]
 
-        task_obj <- tryCatch({
-          extract_gsea_task(gsea_res, contrast_id, "ALL")
-        }, error = function(e) {
-          message(sprintf("Extraction failed for %s: %s", contrast_id, e$message))
-          NULL
-        })
+        task_obj <- tryCatch(
+          {
+            extract_gsea_task(gsea_res, contrast_id, "ALL")
+          },
+          error = function(e) {
+            message(sprintf("Extraction failed for %s: %s", contrast_id, e$message))
+            NULL
+          }
+        )
 
         if (is.null(task_obj)) {
           p <- ggplot2::ggplot() +
-            ggplot2::annotate("text", x = 0.5, y = 0.5,
-                              label = sprintf("Not found:\n%s", contrast_id),
-                              size = 3, color = "red") +
+            ggplot2::annotate("text",
+              x = 0.5, y = 0.5,
+              label = sprintf("Not found:\n%s", contrast_id),
+              size = 3, color = "red"
+            ) +
             ggplot2::theme_void()
           plot_list[[i]] <- p
           next
@@ -125,29 +127,35 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
           length(pathways)
         )
 
-        p <- tryCatch({
-          plot_directional_gsea(
-            directional_gsea_obj = task_obj,
-            target_pathways = pathways,
-            subPlot = as.numeric(plot_subtype),  # 使用主控制栏的subPlot
-            curveCol = colors,
-            main_title = main_title,
-            add_pval = FALSE,
-            show_contrast_in_axis = TRUE
-          )
-        }, error = function(e) {
-          ggplot2::ggplot() +
-            ggplot2::annotate("text", x = 0.5, y = 0.5,
-                              label = sprintf("Error:\n%s", substr(e$message, 1, 80)),
-                              size = 3, color = "red") +
-            ggplot2::theme_void()
-        })
+        p <- tryCatch(
+          {
+            plot_directional_gsea(
+              directional_gsea_obj = task_obj,
+              target_pathways = pathways,
+              subPlot = as.numeric(plot_subtype), # 使用主控制栏的subPlot
+              curveCol = colors,
+              main_title = main_title,
+              add_pval = FALSE,
+              show_contrast_in_axis = TRUE
+            )
+          },
+          error = function(e) {
+            ggplot2::ggplot() +
+              ggplot2::annotate("text",
+                x = 0.5, y = 0.5,
+                label = sprintf("Error:\n%s", substr(e$message, 1, 80)),
+                size = 3, color = "red"
+              ) +
+              ggplot2::theme_void()
+          }
+        )
 
         plot_list[[i]] <- p
 
         if (i %% 2 == 0 || i == length(contrasts)) {
           shiny::incProgress(0.6 * i / length(contrasts),
-                             detail = sprintf("Plotting %d/%d ...", i, length(contrasts)))
+            detail = sprintf("Plotting %d/%d ...", i, length(contrasts))
+          )
         }
       }
 
@@ -196,21 +204,22 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
         size = "l",
         easyClose = TRUE,
         shiny::fluidRow(
-          shiny::column(12,
-                        shiny::div(
-                          style = "background: #f5f5f5; padding: 15px; border-radius: 5px; max-height: 500px; overflow: auto;",
-                          shiny::tags$pre(
-                            shiny::code(
-                              generate_joint_canvas_code(
-                                GSEAlens_res = gsea_res,
-                                contrast_ids = data_prep_list$joint_contrasts(),
-                                target_pathways = table_result$selected_pathways(),
-                                ncol = data_prep_list$joint_ncol()
-                              )
-                            ),
-                            style = "font-size: 11px; white-space: pre-wrap; word-break: break-all;"
-                          )
-                        )
+          shiny::column(
+            12,
+            shiny::div(
+              style = "background: #f5f5f5; padding: 15px; border-radius: 5px; max-height: 500px; overflow: auto;",
+              shiny::tags$pre(
+                shiny::code(
+                  generate_joint_canvas_code(
+                    GSEAlens_res = gsea_res,
+                    contrast_ids = data_prep_list$joint_contrasts(),
+                    target_pathways = table_result$selected_pathways(),
+                    ncol = data_prep_list$joint_ncol()
+                  )
+                ),
+                style = "font-size: 11px; white-space: pre-wrap; word-break: break-all;"
+              )
+            )
           )
         ),
         footer = shiny::modalButton("Close")
@@ -221,14 +230,21 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
     # Subsection: Render Canvas ----
 
     # 渲染画布
-    output$canvas_plot <- shiny::renderPlot({
-      shiny::req(canvas_result())
-      canvas_result()$plot
-    }, height = function() {
-      if (is.null(canvas_result())) return(900)
-      nrow <- canvas_result()$nrow
-      return(max(900, nrow * 400))
-    }, width = 1600, res = 72)
+    output$canvas_plot <- shiny::renderPlot(
+      {
+        shiny::req(canvas_result())
+        canvas_result()$plot
+      },
+      height = function() {
+        if (is.null(canvas_result())) {
+          return(900)
+        }
+        nrow <- canvas_result()$nrow
+        return(max(900, nrow * 400))
+      },
+      width = 1600,
+      res = 72
+    )
 
     # 画布信息
     output$canvas_info <- shiny::renderUI({
@@ -245,6 +261,5 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
         ))
       )
     })
-
   })
 }

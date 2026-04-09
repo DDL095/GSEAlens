@@ -18,80 +18,78 @@ mod_quadrant_ui <- function(id) {
   ns <- shiny::NS(id)
   shiny::tagList(
     shiny::fluidRow(
-      shiny::column(6, shiny::div(class = "white-box",
-                                  shiny::h4("1. Pathway Volcano"),
-                                  shiny::div(
-                                    style = "position: relative;",
-                                    plotly::plotlyOutput(ns("volcano_pathway"), height = "400px"),
-                                    shiny::div(
-                                      style = "position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.9); padding: 5px 10px; border-radius: 4px; font-size: 11px; color: #666;",
-                                      "Click pathway to highlight | Check 'Joint Plot' in table"
-                                    )
-                                  ),
-                                  shiny::uiOutput(ns("selected_pathways_display"))
+      shiny::column(6, shiny::div(
+        class = "white-box",
+        shiny::h4("1. Pathway Volcano"),
+        shiny::div(
+          style = "position: relative;",
+          plotly::plotlyOutput(ns("volcano_pathway"), height = "400px"),
+          shiny::div(
+            style = "position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.9); padding: 5px 10px; border-radius: 4px; font-size: 11px; color: #666;",
+            "Click pathway to highlight | Check 'Joint Plot' in table"
+          )
+        ),
+        shiny::uiOutput(ns("selected_pathways_display"))
       )),
-      shiny::column(6, shiny::div(class = "white-box",
-                                  shiny::h4("2. Gene Rank Distribution"),
-                                  plotly::plotlyOutput(ns("volcano_gene"), height = "400px")))
-    ),
-
-    shiny::fluidRow(
-      shiny::column(6, shiny::div(class = "white-box",
-                                  shiny::h4("3. Differential Expression Volcano"),
-                                  shiny::div(
-                                    style = "margin-bottom: 10px;",
-                                    shiny::checkboxInput(ns("toggle_volcano_settings"), label = "Settings", value = FALSE)
-                                  ),
-                                  shiny::conditionalPanel(
-                                    condition = sprintf("input['%s']", ns("toggle_volcano_settings")),
-                                    shiny::div(
-                                      style = "background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px;",
-
-                                      shiny::numericInput(ns("volcano_logfc_thresh"), "logFC Threshold:", value = 1, min = 0, max = 22, step = 0.5),
-                                      shiny::numericInput(ns("volcano_pval_thresh"), "P-value Threshold:", value = 0.05, min = 0.001, max = 1, step = 0.01)
-                                    )
-                                  ),
-
-
-                                  plotly::plotlyOutput(ns("de_volcano"), height = "400px"))),
-
-
-
-
-      shiny::column(6, shiny::div(class = "white-box",
-                                  shiny::h4("4. Full Expression Distribution"),
-                                  shiny::div(
-                                    style = "margin-bottom: 10px;",
-                                    shiny::checkboxInput(ns("zero_baseline"), label = "Use 0 as baseline", value = TRUE)
-                                  ),
-                                  plotly::plotlyOutput(ns("gene_expr_box"), height = "400px"),
-                                  shiny::uiOutput(ns("boxplot_order_status"))))
-    ),
-
-    shiny::hr(),
-
-    shiny::fluidRow(
-      shiny::column(12, shiny::div(class = "white-box",
-                                   shiny::h4("Gene Expression Table (Click View to display boxplot | Click X to remove)"),
-                                   shiny::div(
-                                     style = "margin-bottom: 10px;",
-                                     shiny::actionButton(ns("clear_all_genes_btn_quadrant"), label = "Clear Table", class = "btn-warning btn-sm"),
-                                     shiny::helpText("Click 'Clear Table' to remove all genes from the table")
-                                   ),
-                                   shiny::div(
-                                     style = "margin-bottom: 10px; font-size: 12px; color: #666;",
-                                     shiny::HTML("<b>Gene Sources:</b> Interest genes from sidebar | DE volcano clicks | Pathway genes (orange)")
-                                   ),
-                                   DT::dataTableOutput(ns("gene_expr_table"))
+      shiny::column(6, shiny::div(
+        class = "white-box",
+        shiny::h4("2. Gene Rank Distribution"),
+        plotly::plotlyOutput(ns("volcano_gene"), height = "400px")
       ))
     ),
-
+    shiny::fluidRow(
+      shiny::column(6, shiny::div(
+        class = "white-box",
+        shiny::h4("3. Differential Expression Volcano"),
+        shiny::div(
+          style = "margin-bottom: 10px;",
+          shiny::checkboxInput(ns("toggle_volcano_settings"), label = "Settings", value = FALSE)
+        ),
+        shiny::conditionalPanel(
+          condition = sprintf("input['%s']", ns("toggle_volcano_settings")),
+          shiny::div(
+            style = "background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px;",
+            shiny::numericInput(ns("volcano_logfc_thresh"), "logFC Threshold:", value = 1, min = 0, max = 22, step = 0.5),
+            shiny::numericInput(ns("volcano_pval_thresh"), "P-value Threshold:", value = 0.05, min = 0.001, max = 1, step = 0.01)
+          )
+        ),
+        plotly::plotlyOutput(ns("de_volcano"), height = "400px")
+      )),
+      shiny::column(6, shiny::div(
+        class = "white-box",
+        shiny::h4("4. Full Expression Distribution"),
+        shiny::div(
+          style = "margin-bottom: 10px;",
+          shiny::checkboxInput(ns("zero_baseline"), label = "Use 0 as baseline", value = TRUE)
+        ),
+        plotly::plotlyOutput(ns("gene_expr_box"), height = "400px"),
+        shiny::uiOutput(ns("boxplot_order_status"))
+      ))
+    ),
     shiny::hr(),
     shiny::fluidRow(
-      shiny::column(12, shiny::div(class = "white-box",
-                                   shiny::h4("Export Code"),
-                                   shiny::actionButton(ns("export_code_btn"), label = "Export Current Plot Code", class = "btn-secondary", style = "width: 100%;"),
-                                   shiny::helpText("Generate R code for the currently selected pathways")
+      shiny::column(12, shiny::div(
+        class = "white-box",
+        shiny::h4("Gene Expression Table (Click View to display boxplot | Click X to remove)"),
+        shiny::div(
+          style = "margin-bottom: 10px;",
+          shiny::actionButton(ns("clear_all_genes_btn_quadrant"), label = "Clear Table", class = "btn-warning btn-sm"),
+          shiny::helpText("Click 'Clear Table' to remove all genes from the table")
+        ),
+        shiny::div(
+          style = "margin-bottom: 10px; font-size: 12px; color: #666;",
+          shiny::HTML("<b>Gene Sources:</b> Interest genes from sidebar | DE volcano clicks | Pathway genes (orange)")
+        ),
+        DT::dataTableOutput(ns("gene_expr_table"))
+      ))
+    ),
+    shiny::hr(),
+    shiny::fluidRow(
+      shiny::column(12, shiny::div(
+        class = "white-box",
+        shiny::h4("Export Code"),
+        shiny::actionButton(ns("export_code_btn"), label = "Export Current Plot Code", class = "btn-secondary", style = "width: 100%;"),
+        shiny::helpText("Generate R code for the currently selected pathways")
       ))
     )
   )
@@ -265,10 +263,12 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       current_selections <- selected_pathway_ids()
 
       df$color <- ifelse(df$ID %in% current_selections, COLOR_PATHWAY,
-                         ifelse(df$NES > 0, COLOR_LEFT, COLOR_RIGHT))
+        ifelse(df$NES > 0, COLOR_LEFT, COLOR_RIGHT)
+      )
       df$size <- ifelse(df$ID %in% current_selections, 18, 10)
       df$opacity <- ifelse(length(current_selections) == 0, 0.8,
-                           ifelse(df$ID %in% current_selections, 1.0, 0.35))
+        ifelse(df$ID %in% current_selections, 1.0, 0.35)
+      )
       df$linewidth <- ifelse(df$ID %in% current_selections, 3, 1)
 
       annotations_list <- list()
@@ -300,7 +300,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       plotly::plot_ly(
         data = df,
         x = ~NES,
-        y = ~-log10(p.adjust),
+        y = ~ -log10(p.adjust),
         type = "scatter",
         mode = "markers",
         marker = list(
@@ -309,16 +309,18 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
           opacity = ~opacity,
           line = list(color = "white", width = ~linewidth)
         ),
-        text = ~sprintf("%s<br>NES: %.2f<br>FDR: %.2e", ID, NES, p.adjust),
+        text = ~ sprintf("%s<br>NES: %.2f<br>FDR: %.2e", ID, NES, p.adjust),
         hoverinfo = "text",
         key = ~ID,
         source = ns("pathway_volcano")
       ) %>%
         plotly::layout(
           title = list(
-            text = sprintf("Pathway Volcano: %s vs %s<br><sub>%d pathways | %d selected | %d significant (FDR<0.25)</sub>",
-                           data_list$left_group, data_list$right_group,
-                           nrow(df), length(current_selections), sum(df$p.adjust < 0.25, na.rm = TRUE)),
+            text = sprintf(
+              "Pathway Volcano: %s vs %s<br><sub>%d pathways | %d selected | %d significant (FDR<0.25)</sub>",
+              data_list$left_group, data_list$right_group,
+              nrow(df), length(current_selections), sum(df$p.adjust < 0.25, na.rm = TRUE)
+            ),
             font = list(size = 14),
             x = 0.5,
             xanchor = "center"
@@ -334,7 +336,9 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
     # Pathway Volcano Click Event - 双向同步
     shiny::observeEvent(plotly::event_data("plotly_click", source = ns("pathway_volcano")), {
       click <- plotly::event_data("plotly_click", source = ns("pathway_volcano"))
-      if (is.null(click) || is.null(click$key)) return()
+      if (is.null(click) || is.null(click$key)) {
+        return()
+      }
 
       clicked_id <- click$key
       current <- selected_pathway_ids()
@@ -361,7 +365,6 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
         }
 
         message(sprintf("[Pathway] Deselected: %s", clicked_id))
-
       } else {
         # 点击未选中的 → 添加选中
         new_selection <- c(current, clicked_id)
@@ -422,8 +425,9 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
           showlegend = FALSE,
           title = list(
             text = ifelse(length(pathway_genes) > 0,
-                          sprintf("Selected: %d pathway genes highlighted", length(pathway_genes)),
-                          "Click pathway in volcano above to mark"),
+              sprintf("Selected: %d pathway genes highlighted", length(pathway_genes)),
+              "Click pathway in volcano above to mark"
+            ),
             font = list(size = 12)
           )
         )
@@ -438,9 +442,12 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       left_group <- data_list$left_group
       right_group <- data_list$right_group
 
-      de_df <- tryCatch({
-        get_de_table(gsea_res, contrast_id)
-      }, error = function(e) NULL)
+      de_df <- tryCatch(
+        {
+          get_de_table(gsea_res, contrast_id)
+        },
+        error = function(e) NULL
+      )
 
       shiny::req(de_df)
 
@@ -449,7 +456,9 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       if (!"padj" %in% colnames(de_df)) de_df$padj <- de_df$p.adjust
 
       de_df <- de_df[!is.na(de_df$logFC) & !is.na(de_df$pvalue), ]
-      if (nrow(de_df) == 0) return(NULL)
+      if (nrow(de_df) == 0) {
+        return(NULL)
+      }
 
       logfc_thresh <- if (!is.null(input$volcano_logfc_thresh)) input$volcano_logfc_thresh else 1
       pval_thresh <- if (!is.null(input$volcano_pval_thresh)) input$volcano_pval_thresh else 0.05
@@ -710,15 +719,21 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
           dragmode = "pan",
           annotations = annotations_list,
           shapes = list(
-            list(type = "line", x0 = logfc_thresh, x1 = logfc_thresh,
-                 y0 = 0, y1 = max_y_val * 1.05,
-                 line = list(color = "gray", dash = "dash", width = 1)),
-            list(type = "line", x0 = -logfc_thresh, x1 = -logfc_thresh,
-                 y0 = 0, y1 = max_y_val * 1.05,
-                 line = list(color = "gray", dash = "dash", width = 1)),
-            list(type = "line", x0 = min(de_df$x_axis) * 1.1, x1 = max(de_df$x_axis) * 1.1,
-                 y0 = -log10(pval_thresh), y1 = -log10(pval_thresh),
-                 line = list(color = "gray", dash = "dash", width = 1))
+            list(
+              type = "line", x0 = logfc_thresh, x1 = logfc_thresh,
+              y0 = 0, y1 = max_y_val * 1.05,
+              line = list(color = "gray", dash = "dash", width = 1)
+            ),
+            list(
+              type = "line", x0 = -logfc_thresh, x1 = -logfc_thresh,
+              y0 = 0, y1 = max_y_val * 1.05,
+              line = list(color = "gray", dash = "dash", width = 1)
+            ),
+            list(
+              type = "line", x0 = min(de_df$x_axis) * 1.1, x1 = max(de_df$x_axis) * 1.1,
+              y0 = -log10(pval_thresh), y1 = -log10(pval_thresh),
+              line = list(color = "gray", dash = "dash", width = 1)
+            )
           )
         )
 
@@ -728,7 +743,9 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
     # DE Volcano Click Event
     shiny::observeEvent(plotly::event_data("plotly_click", source = ns("deg_volcano")), {
       click <- plotly::event_data("plotly_click", source = ns("deg_volcano"))
-      if (is.null(click) || is.null(click$key)) return()
+      if (is.null(click) || is.null(click$key)) {
+        return()
+      }
 
       clicked_gene <- click$key
       current_boxplot_gene(clicked_gene)
@@ -756,9 +773,12 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       user_genes <- toupper(highlight_genes_reactive())
       pathway_genes <- selected_pathway_genes()
 
-      de_df <- tryCatch({
-        get_de_table(gsea_res, data_list$contrast_id)
-      }, error = function(e) NULL)
+      de_df <- tryCatch(
+        {
+          get_de_table(gsea_res, data_list$contrast_id)
+        },
+        error = function(e) NULL
+      )
 
       table_data <- lapply(genes, function(g) {
         gene_upper <- toupper(g)
@@ -791,10 +811,15 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         # 使用 DE volcano 阈值的 Significant 判断
         sig_label <- {
-          if (is.na(pval) || is.na(logfc)) "-"
-          else if (pval < pval_thresh && logfc > logfc_thresh) "upreg"
-          else if (pval < pval_thresh && logfc < -logfc_thresh) "downreg"
-          else "ns"
+          if (is.na(pval) || is.na(logfc)) {
+            "-"
+          } else if (pval < pval_thresh && logfc > logfc_thresh) {
+            "upreg"
+          } else if (pval < pval_thresh && logfc < -logfc_thresh) {
+            "downreg"
+          } else {
+            "ns"
+          }
         }
 
         # ✅ 修复后的Delete和View按钮生成
@@ -844,7 +869,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
         escape = FALSE,
         rownames = FALSE,
         selection = "none",
-        extensions = c('Scroller'),
+        extensions = c("Scroller"),
         options = list(
           pageLength = 10,
           scrollY = "50vh",
@@ -914,35 +939,45 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
     })
 
     # ✅ 修复Delete基因事件监听
-    shiny::observeEvent(input$delete_gene_action, {
-      action_data <- input$delete_gene_action
-      if (is.null(action_data) || is.null(action_data$gene_to_remove)) return()
+    shiny::observeEvent(input$delete_gene_action,
+      {
+        action_data <- input$delete_gene_action
+        if (is.null(action_data) || is.null(action_data$gene_to_remove)) {
+          return()
+        }
 
-      gene_to_remove <- action_data$gene_to_remove
-      current_applied <- highlight_genes_reactive()
-      new_applied <- setdiff(toupper(current_applied), toupper(gene_to_remove))
-      highlight_genes_reactive(new_applied)
+        gene_to_remove <- action_data$gene_to_remove
+        current_applied <- highlight_genes_reactive()
+        new_applied <- setdiff(toupper(current_applied), toupper(gene_to_remove))
+        highlight_genes_reactive(new_applied)
 
-      # 同时清除对应的箱线图
-      if (!is.null(current_boxplot_gene()) && toupper(current_boxplot_gene()) == toupper(gene_to_remove)) {
-        current_boxplot_gene(NULL)
-      }
+        # 同时清除对应的箱线图
+        if (!is.null(current_boxplot_gene()) && toupper(current_boxplot_gene()) == toupper(gene_to_remove)) {
+          current_boxplot_gene(NULL)
+        }
 
-      message(sprintf("[Gene] Removed from table: %s", gene_to_remove))
-      shiny::showNotification(sprintf("Gene removed: %s", gene_to_remove), type = "message", duration = 2)
-    }, ignoreNULL = TRUE)
+        message(sprintf("[Gene] Removed from table: %s", gene_to_remove))
+        shiny::showNotification(sprintf("Gene removed: %s", gene_to_remove), type = "message", duration = 2)
+      },
+      ignoreNULL = TRUE
+    )
 
     # ✅ 修复View箱线图事件监听
-    shiny::observeEvent(input$view_boxplot_action, {
-      action_data <- input$view_boxplot_action
-      if (is.null(action_data) || is.null(action_data$gene_to_view)) return()
+    shiny::observeEvent(input$view_boxplot_action,
+      {
+        action_data <- input$view_boxplot_action
+        if (is.null(action_data) || is.null(action_data$gene_to_view)) {
+          return()
+        }
 
-      gene_name <- action_data$gene_to_view
-      current_boxplot_gene(gene_name)
+        gene_name <- action_data$gene_to_view
+        current_boxplot_gene(gene_name)
 
-      message(sprintf("[Boxplot] Displaying: %s", gene_name))
-      shiny::showNotification(sprintf("Showing boxplot for: %s", gene_name), type = "message", duration = 2)
-    }, ignoreNULL = TRUE)
+        message(sprintf("[Boxplot] Displaying: %s", gene_name))
+        shiny::showNotification(sprintf("Showing boxplot for: %s", gene_name), type = "message", duration = 2)
+      },
+      ignoreNULL = TRUE
+    )
 
     # 5. Expression Boxplot
     output$gene_expr_box <- plotly::renderPlotly({
@@ -957,141 +992,153 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       data_list <- data_prep_data()
       shiny::req(data_list)
 
-      tryCatch({
-        expr_mat <- get_expr_matrix(gsea_res, type = data_list$expression_type)
-        sample_meta <- get_sample_meta(gsea_res)
+      tryCatch(
+        {
+          expr_mat <- get_expr_matrix(gsea_res, type = data_list$expression_type)
+          sample_meta <- get_sample_meta(gsea_res)
 
-        if (is.null(expr_mat) || is.null(sample_meta)) {
-          return(plotly::plot_ly() %>% plotly::layout(title = "Expression matrix not available"))
-        }
+          if (is.null(expr_mat) || is.null(sample_meta)) {
+            return(plotly::plot_ly() %>% plotly::layout(title = "Expression matrix not available"))
+          }
 
-        target_gene_upper <- toupper(current_gene)
-        gene_names_upper <- toupper(rownames(expr_mat))
-        match_idx <- which(gene_names_upper == target_gene_upper)
+          target_gene_upper <- toupper(current_gene)
+          gene_names_upper <- toupper(rownames(expr_mat))
+          match_idx <- which(gene_names_upper == target_gene_upper)
 
-        if (length(match_idx) == 0) {
-          gene_meta <- gsea_res$expr_bundle$gene_meta
-          if (!is.null(gene_meta) && nrow(gene_meta) > 0) {
-            rownames(gene_meta) <- if (is.null(rownames(gene_meta))) rownames(expr_mat) else rownames(gene_meta)
-            symbol_col <- intersect(c("SYMBOL", "symbol", "Gene", "gene_name", "gene_symbol"), colnames(gene_meta))[1]
-            if (!is.na(symbol_col)) {
-              meta_symbols_upper <- toupper(as.character(gene_meta[[symbol_col]]))
-              meta_matches <- which(meta_symbols_upper == target_gene_upper)
-              if (length(meta_matches) > 0) {
-                ensembl_id <- rownames(gene_meta)[meta_matches[1]]
-                match_idx <- which(rownames(expr_mat) == ensembl_id)
+          if (length(match_idx) == 0) {
+            gene_meta <- gsea_res$expr_bundle$gene_meta
+            if (!is.null(gene_meta) && nrow(gene_meta) > 0) {
+              rownames(gene_meta) <- if (is.null(rownames(gene_meta))) rownames(expr_mat) else rownames(gene_meta)
+              symbol_col <- intersect(c("SYMBOL", "symbol", "Gene", "gene_name", "gene_symbol"), colnames(gene_meta))[1]
+              if (!is.na(symbol_col)) {
+                meta_symbols_upper <- toupper(as.character(gene_meta[[symbol_col]]))
+                meta_matches <- which(meta_symbols_upper == target_gene_upper)
+                if (length(meta_matches) > 0) {
+                  ensembl_id <- rownames(gene_meta)[meta_matches[1]]
+                  match_idx <- which(rownames(expr_mat) == ensembl_id)
+                }
               }
             }
           }
-        }
 
-        if (length(match_idx) == 0 || is.na(match_idx)) {
+          if (length(match_idx) == 0 || is.na(match_idx)) {
+            return(plotly::plot_ly() %>% plotly::layout(
+              title = sprintf("Gene '%s' not found", current_gene)
+            ))
+          }
+
+          symbol_map <- .rebuild_symbol_map(gsea_res, data_list$contrast_id)
+          actual_gene <- rownames(expr_mat)[match_idx[1]]
+          display_gene_name <- .get_display_symbol(current_gene, symbol_map)
+
+          expr_values <- expr_mat[actual_gene, ]
+          sample_names <- names(expr_values)
+          group_info <- sample_meta$group[match(sample_names, rownames(sample_meta))]
+
+          plot_data <- data.frame(
+            Sample = sample_names,
+            Expression = as.numeric(expr_values),
+            Group = group_info,
+            stringsAsFactors = FALSE
+          )
+
+          plot_data <- plot_data[!is.na(plot_data$Group), ]
+          if (nrow(plot_data) == 0) {
+            return(plotly::plot_ly() %>% plotly::layout(title = "No valid group data"))
+          }
+
+          current_confirmed_order <- boxplot_order_ref()
+          final_order_to_use <- if (!is.null(current_confirmed_order) &&
+            current_confirmed_order != "default" &&
+            current_confirmed_order != "") {
+            current_confirmed_order
+          } else {
+            "default"
+          }
+
+          actual_groups <- unique(as.character(plot_data$Group))
+          x_categories <- NULL
+
+          if (final_order_to_use != "default" && final_order_to_use != "" && !is.na(final_order_to_use)) {
+            sep <- if (grepl("->", final_order_to_use, fixed = TRUE)) "->" else ","
+            order_parts <- strsplit(final_order_to_use, sep)[[1]]
+            order_parts <- trimws(order_parts)
+            valid_parts <- order_parts[order_parts %in% actual_groups]
+            x_categories <- c(valid_parts, setdiff(actual_groups, valid_parts))
+          } else {
+            x_categories <- actual_groups
+          }
+
+          plot_data <- plot_data[plot_data$Group %in% x_categories, ]
+          plot_data$Group <- factor(plot_data$Group, levels = x_categories, ordered = TRUE)
+
+          unique_groups <- levels(plot_data$Group)
+          if (length(unique_groups) == 2) {
+            group_colors <- c(COLOR_LEFT, COLOR_RIGHT)
+            names(group_colors) <- unique_groups
+          } else {
+            group_colors <- c(
+              "#E41A1C", "#377EB8", "#4DAF4A", "#984EA3",
+              "#FF7F00", "#A65628", "#F781BF", "#999999"
+            )[1:length(unique_groups)]
+            names(group_colors) <- unique_groups
+          }
+
+          use_zero_baseline <- input$zero_baseline %||% FALSE
+
+          y_min <- min(plot_data$Expression, na.rm = TRUE)
+          y_max <- max(plot_data$Expression, na.rm = TRUE)
+
+          if (use_zero_baseline) {
+            y_min <- min(y_min, 0)
+            y_max <- max(y_max, 0)
+          }
+
+          y_range <- y_max - y_min
+          y_min <- y_min - y_range * 0.1
+          y_max <- y_max + y_range * 0.1
+
+          p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = Group, y = Expression, fill = Group)) +
+            ggplot2::geom_boxplot(alpha = 0.7, outlier.shape = NA) +
+            ggplot2::geom_jitter(
+              width = 0.2, size = 3, alpha = 0.6,
+              ggplot2::aes(text = sprintf(
+                "<b>Sample:</b> %s<br><b>Group:</b> %s<br><b>Expression:</b> %.3f",
+                Sample, Group, Expression
+              ))
+            ) +
+            ggplot2::scale_fill_manual(values = group_colors) +
+            ggplot2::scale_x_discrete(limits = x_categories, drop = FALSE) +
+            ggplot2::coord_cartesian(ylim = c(y_min, y_max)) +
+            ggplot2::theme_bw(base_size = 12) +
+            ggplot2::labs(
+              title = sprintf("%s", display_gene_name),
+              y = data_list$expression_type, x = NULL
+            ) +
+            ggplot2::theme(
+              legend.position = "none",
+              axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
+            )
+
+          if (use_zero_baseline) {
+            p <- p + ggplot2::geom_hline(
+              yintercept = 0, linetype = "dashed",
+              color = "red", alpha = 0.7, size = 0.8
+            )
+          }
+
+          ply <- plotly::ggplotly(p, tooltip = "text")
+          ply %>% plotly::layout(
+            xaxis = list(categoryorder = "array", categoryarray = x_categories, title = ""),
+            dragmode = FALSE
+          )
+        },
+        error = function(e) {
           return(plotly::plot_ly() %>% plotly::layout(
-            title = sprintf("Gene '%s' not found", current_gene)
+            title = sprintf("Error: %s", e$message)
           ))
         }
-
-        symbol_map <- .rebuild_symbol_map(gsea_res, data_list$contrast_id)
-        actual_gene <- rownames(expr_mat)[match_idx[1]]
-        display_gene_name <- .get_display_symbol(current_gene, symbol_map)
-
-        expr_values <- expr_mat[actual_gene, ]
-        sample_names <- names(expr_values)
-        group_info <- sample_meta$group[match(sample_names, rownames(sample_meta))]
-
-        plot_data <- data.frame(
-          Sample = sample_names,
-          Expression = as.numeric(expr_values),
-          Group = group_info,
-          stringsAsFactors = FALSE
-        )
-
-        plot_data <- plot_data[!is.na(plot_data$Group), ]
-        if (nrow(plot_data) == 0) {
-          return(plotly::plot_ly() %>% plotly::layout(title = "No valid group data"))
-        }
-
-        current_confirmed_order <- boxplot_order_ref()
-        final_order_to_use <- if (!is.null(current_confirmed_order) &&
-                                  current_confirmed_order != "default" &&
-                                  current_confirmed_order != "") {
-          current_confirmed_order
-        } else {
-          "default"
-        }
-
-        actual_groups <- unique(as.character(plot_data$Group))
-        x_categories <- NULL
-
-        if (final_order_to_use != "default" && final_order_to_use != "" && !is.na(final_order_to_use)) {
-          sep <- if (grepl("->", final_order_to_use, fixed = TRUE)) "->" else ","
-          order_parts <- strsplit(final_order_to_use, sep)[[1]]
-          order_parts <- trimws(order_parts)
-          valid_parts <- order_parts[order_parts %in% actual_groups]
-          x_categories <- c(valid_parts, setdiff(actual_groups, valid_parts))
-        } else {
-          x_categories <- actual_groups
-        }
-
-        plot_data <- plot_data[plot_data$Group %in% x_categories, ]
-        plot_data$Group <- factor(plot_data$Group, levels = x_categories, ordered = TRUE)
-
-        unique_groups <- levels(plot_data$Group)
-        if (length(unique_groups) == 2) {
-          group_colors <- c(COLOR_LEFT, COLOR_RIGHT)
-          names(group_colors) <- unique_groups
-        } else {
-          group_colors <- c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3",
-                            "#FF7F00", "#A65628", "#F781BF", "#999999")[1:length(unique_groups)]
-          names(group_colors) <- unique_groups
-        }
-
-        use_zero_baseline <- input$zero_baseline %||% FALSE
-
-        y_min <- min(plot_data$Expression, na.rm = TRUE)
-        y_max <- max(plot_data$Expression, na.rm = TRUE)
-
-        if (use_zero_baseline) {
-          y_min <- min(y_min, 0)
-          y_max <- max(y_max, 0)
-        }
-
-        y_range <- y_max - y_min
-        y_min <- y_min - y_range * 0.1
-        y_max <- y_max + y_range * 0.1
-
-        p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = Group, y = Expression, fill = Group)) +
-          ggplot2::geom_boxplot(alpha = 0.7, outlier.shape = NA) +
-          ggplot2::geom_jitter(width = 0.2, size = 3, alpha = 0.6,
-                               ggplot2::aes(text = sprintf(
-                                 "<b>Sample:</b> %s<br><b>Group:</b> %s<br><b>Expression:</b> %.3f",
-                                 Sample, Group, Expression
-                               ))) +
-          ggplot2::scale_fill_manual(values = group_colors) +
-          ggplot2::scale_x_discrete(limits = x_categories, drop = FALSE) +
-          ggplot2::coord_cartesian(ylim = c(y_min, y_max)) +
-          ggplot2::theme_bw(base_size = 12) +
-          ggplot2::labs(title = sprintf("%s", display_gene_name),
-                        y = data_list$expression_type, x = NULL) +
-          ggplot2::theme(legend.position = "none",
-                         axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
-
-        if (use_zero_baseline) {
-          p <- p + ggplot2::geom_hline(yintercept = 0, linetype = "dashed",
-                                       color = "red", alpha = 0.7, size = 0.8)
-        }
-
-        ply <- plotly::ggplotly(p, tooltip = "text")
-        ply %>% plotly::layout(
-          xaxis = list(categoryorder = "array", categoryarray = x_categories, title = ""),
-          dragmode = FALSE
-        )
-
-      }, error = function(e) {
-        return(plotly::plot_ly() %>% plotly::layout(
-          title = sprintf("Error: %s", e$message)
-        ))
-      })
+      )
     })
 
     # Boxplot Order Status
@@ -1100,8 +1147,10 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       if (is.null(order_info) || order_info == "default") {
         shiny::div(style = "font-size: 12px; color: #666;", "Order: Default")
       } else {
-        shiny::div(style = "font-size: 12px; color: #666;",
-                   "Order:", gsub(",", " -> ", order_info))
+        shiny::div(
+          style = "font-size: 12px; color: #666;",
+          "Order:", gsub(",", " -> ", order_info)
+        )
       }
     })
 
@@ -1121,28 +1170,28 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
         size = "l",
         easyClose = TRUE,
         shiny::fluidRow(
-          shiny::column(12,
-                        shiny::div(
-                          style = "background: #f5f5f5; padding: 15px; border-radius: 5px; max-height: 500px; overflow: auto;",
-                          shiny::tags$pre(
-                            shiny::code(
-                              generate_pathway_plot_code(
-                                GSEAlens_res = gsea_res,
-                                contrast_id = data_list$contrast_id,
-                                target_pathways = target_pw,
-                                user_genes = highlight_genes_reactive(),
-                                pathway_genes = selected_pathway_genes(),
-                                expr_type = data_list$expression_type
-                              )
-                            ),
-                            style = "font-size: 11px; white-space: pre-wrap; word-break: break-all;"
-                          )
-                        )
+          shiny::column(
+            12,
+            shiny::div(
+              style = "background: #f5f5f5; padding: 15px; border-radius: 5px; max-height: 500px; overflow: auto;",
+              shiny::tags$pre(
+                shiny::code(
+                  generate_pathway_plot_code(
+                    GSEAlens_res = gsea_res,
+                    contrast_id = data_list$contrast_id,
+                    target_pathways = target_pw,
+                    user_genes = highlight_genes_reactive(),
+                    pathway_genes = selected_pathway_genes(),
+                    expr_type = data_list$expression_type
+                  )
+                ),
+                style = "font-size: 11px; white-space: pre-wrap; word-break: break-all;"
+              )
+            )
           )
         ),
         footer = shiny::modalButton("Close")
       ))
     })
-
   })
 }

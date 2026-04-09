@@ -18,20 +18,17 @@ mod_ai_abs_page_ui <- function(id) {
         shiny::div(
           class = "well",
           style = "padding: 15px;",
-
           shiny::h4("AI Prompt Generator"),
           shiny::hr(),
 
           # Current comparison group info
           shiny::h5("Current Comparison"),
           shiny::uiOutput(ns("current_contrast_info")),
-
           shiny::hr(),
 
           # Selected pathway statistics
           shiny::h5("Selected Pathways"),
           shiny::uiOutput(ns("selection_stats")),
-
           shiny::hr(),
 
           # ===== Custom Template Area =====
@@ -44,7 +41,6 @@ mod_ai_abs_page_ui <- function(id) {
               value = FALSE
             )
           ),
-
           shiny::conditionalPanel(
             condition = sprintf("input['%s'] == true", ns("use_custom_template")),
             shiny::div(
@@ -87,7 +83,6 @@ mod_ai_abs_page_ui <- function(id) {
               )
             )
           ),
-
           shiny::hr(),
 
           # Generate button
@@ -98,7 +93,6 @@ mod_ai_abs_page_ui <- function(id) {
             class = "btn-primary",
             style = "width: 100%; font-weight: bold;"
           ),
-
           shiny::hr(),
 
           # Copy button
@@ -118,7 +112,6 @@ mod_ai_abs_page_ui <- function(id) {
         shiny::div(
           class = "white-box",
           style = "min-height: 800px; padding: 15px;",
-
           shiny::h4("AI Prompt Output"),
           shiny::hr(),
 
@@ -234,8 +227,9 @@ As your GSEA enrichment direction interpretation expert, I am ready. Please anal
       count <- length(genes)
       if (count > max_genes) {
         display <- paste(paste(genes[1:max_genes], collapse = ", "),
-                         paste0("(+", count - max_genes, " more)"),
-                         sep = " ")
+          paste0("(+", count - max_genes, " more)"),
+          sep = " "
+        )
       } else {
         display <- paste(genes, collapse = ", ")
       }
@@ -446,8 +440,8 @@ As your GSEA enrichment direction interpretation expert, I am ready. Please anal
       # ============================================================
 
       if (isTRUE(input$use_custom_template) &&
-          !is.null(input$custom_template_text) &&
-          input$custom_template_text != "") {
+        !is.null(input$custom_template_text) &&
+        input$custom_template_text != "") {
         template_text <- input$custom_template_text
       } else {
         template_text <- default_template
@@ -508,6 +502,5 @@ As your GSEA enrichment direction interpretation expert, I am ready. Please anal
         shiny::showNotification("Copied!", type = "message", duration = 2)
       }
     })
-
   })
 }

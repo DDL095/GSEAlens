@@ -14,9 +14,7 @@
 #' aligned <- align_benchmark_data(res, "system_monitor.csv")
 #' plot(aligned$relative_sec, aligned$rss_mb, type = "l")
 #' }
-
 align_benchmark_data <- function(gsea_res, monitor_csv) {
-
   if (!inherits(gsea_res, "GseaRes")) {
     stop("Input must be a GseaRes object")
   }
@@ -35,7 +33,7 @@ align_benchmark_data <- function(gsea_res, monitor_csv) {
 
   # Python和R的时间戳都是Unix毫秒，直接对齐
   aligned <- monitor[monitor$timestamp_ms >= (start_ms - 5000) &
-                       monitor$timestamp_ms <= (end_ms + 5000), ]
+    monitor$timestamp_ms <= (end_ms + 5000), ]
 
   if (nrow(aligned) == 0) {
     warning("No overlapping time data found")
@@ -50,17 +48,19 @@ align_benchmark_data <- function(gsea_res, monitor_csv) {
   aligned$phase <- ifelse(
     aligned$relative_sec < 0, "pre_start",
     ifelse(aligned$relative_sec > total_duration, "post_end",
-           ifelse(aligned$relative_sec < total_duration * 0.2, "startup",
-                  ifelse(aligned$relative_sec < total_duration * 0.8, "core_compute", "cleanup")
-           )
+      ifelse(aligned$relative_sec < total_duration * 0.2, "startup",
+        ifelse(aligned$relative_sec < total_duration * 0.8, "core_compute", "cleanup")
+      )
     )
   )
 
   attr(aligned, "gsea_info") <- bench
   class(aligned) <- c("GseaBenchmarkAligned", "data.frame")
 
-  message(sprintf("Alignment complete: %d sampling points, spanning %.1f seconds",
-                  nrow(aligned), max(aligned$relative_sec) - min(aligned$relative_sec)))
+  message(sprintf(
+    "Alignment complete: %d sampling points, spanning %.1f seconds",
+    nrow(aligned), max(aligned$relative_sec) - min(aligned$relative_sec)
+  ))
 
   invisible(aligned)
 }
@@ -81,9 +81,7 @@ align_benchmark_data <- function(gsea_res, monitor_csv) {
 #' plot_gsea_memory(data)
 #' plot_gsea_memory(data, highlight_phases = FALSE)
 #' }
-
 plot_gsea_memory <- function(aligned_data, highlight_phases = TRUE) {
-
   if (!requireNamespace("ggplot2", quietly = TRUE)) {
     stop("ggplot2 package required: install.packages('ggplot2')")
   }
@@ -99,9 +97,11 @@ plot_gsea_memory <- function(aligned_data, highlight_phases = TRUE) {
       subtitle = sprintf("Total duration: %.1f seconds", info$duration_sec),
       x = "Time (seconds from GSEA start)",
       y = "Memory (MB)",
-      caption = sprintf("Peak: %.0f MB | Average: %.0f MB",
-                        max(aligned_data$rss_mb, na.rm = TRUE),
-                        mean(aligned_data$rss_mb[aligned_data$phase %in% c("startup", "core_compute", "cleanup")], na.rm = TRUE))
+      caption = sprintf(
+        "Peak: %.0f MB | Average: %.0f MB",
+        max(aligned_data$rss_mb, na.rm = TRUE),
+        mean(aligned_data$rss_mb[aligned_data$phase %in% c("startup", "core_compute", "cleanup")], na.rm = TRUE)
+      )
     ) +
     ggplot2::theme_minimal()
 
@@ -136,7 +136,6 @@ plot_gsea_memory <- function(aligned_data, highlight_phases = TRUE) {
 #' data <- align_benchmark_data(gsea_res, "system_monitor.csv")
 #' print(data)
 #' }
-
 print.GseaBenchmarkAligned <- function(x, ...) {
   info <- attr(x, "gsea_info")
 
@@ -148,18 +147,20 @@ print.GseaBenchmarkAligned <- function(x, ...) {
   cat(sprintf("GSEA Total Duration:   %.2f seconds\n", info$duration_sec))
   cat("----------------------------------------\n")
   cat(sprintf("Monitoring Samples:    %d\n", nrow(x)))
-  cat(sprintf("Monitoring Span:       %.1f seconds (%.1f to %.1f)\n",
-              max(x$relative_sec) - min(x$relative_sec),
-              min(x$relative_sec), max(x$relative_sec)))
+  cat(sprintf(
+    "Monitoring Span:       %.1f seconds (%.1f to %.1f)\n",
+    max(x$relative_sec) - min(x$relative_sec),
+    min(x$relative_sec), max(x$relative_sec)
+  ))
   cat(sprintf("Peak Memory:           %.0f MB\n", max(x$rss_mb, na.rm = TRUE)))
   cat(sprintf("Average Memory:        %.0f MB\n", mean(x$rss_mb[x$phase %in% c("startup", "core_compute", "cleanup")], na.rm = TRUE)))
   cat("========================================\n")
 
   # 各阶段统计
   cat("\nMemory Statistics by Phase:\n")
-  stage_stats <- tapply(x$rss_mb, x$phase, function(v)
+  stage_stats <- tapply(x$rss_mb, x$phase, function(v) {
     sprintf("Mean %.0f MB, Peak %.0f MB", mean(v, na.rm = TRUE), max(v, na.rm = TRUE))
-  )
+  })
   for (phase in names(stage_stats)) {
     if (!is.na(stage_stats[phase])) {
       cat(sprintf("  [%s]: %s\n", phase, stage_stats[phase]))
@@ -186,9 +187,7 @@ print.GseaBenchmarkAligned <- function(x, ...) {
 #' )
 #' print(results)
 #' }
-
 analyze_scalability <- function(gsea_res_list, monitor_csv_list = NULL) {
-
   if (is.null(names(gsea_res_list))) {
     names(gsea_res_list) <- paste0("run_", seq_along(gsea_res_list))
   }
@@ -218,7 +217,7 @@ analyze_scalability <- function(gsea_res_list, monitor_csv_list = NULL) {
         monitor <- read.csv(csv_path, stringsAsFactors = FALSE)
         # 筛选GSEA时间段
         aligned <- monitor[monitor$timestamp_ms >= bench$start_ms &
-                             monitor$timestamp_ms <= bench$end_ms, ]
+          monitor$timestamp_ms <= bench$end_ms, ]
         if (nrow(aligned) > 0) {
           out$mem_peak_mb <- max(aligned$rss_mb, na.rm = TRUE)
           out$mem_avg_mb <- mean(aligned$rss_mb, na.rm = TRUE)

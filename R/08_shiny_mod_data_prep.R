@@ -47,14 +47,11 @@ mod_data_prep_ui <- function(id) {
       class = "btn-success",
       style = "width: 100%; font-weight: bold; margin-top: 15px; font-size: 16px;"
     ),
-
     shiny::helpText(
       style = "margin-top: 10px; text-align: center; color: #28a745;",
       "Click this button after modifying settings"
     ),
-
     shiny::hr(),
-
     shiny::h4("Joint GSEA Canvas"),
     shiny::selectizeInput(
       ns("joint_contrasts"),
@@ -63,7 +60,7 @@ mod_data_prep_ui <- function(id) {
       multiple = TRUE,
       options = list(
         plugins = list("remove_button"),
-        placeholder = 'Select contrasts...',
+        placeholder = "Select contrasts...",
         maxItems = 999
       )
     ),
@@ -82,7 +79,6 @@ mod_data_prep_ui <- function(id) {
       style = "width: 100%; font-weight: bold; margin-top: 10px;"
     ),
     shiny::hr(),
-
     shiny::h4("Differential Expression Gene Markers"),
     shiny::div(
       style = "background-color: #e8f4f8; padding: 10px; border-radius: 5px; border-left: 4px solid #17a2b8;",
@@ -92,8 +88,8 @@ mod_data_prep_ui <- function(id) {
         choices = NULL,
         multiple = TRUE,
         options = list(
-          plugins = list('remove_button'),
-          placeholder = 'Enter gene names (e.g., TP53)',
+          plugins = list("remove_button"),
+          placeholder = "Enter gene names (e.g., TP53)",
           maxItems = 999,
           closeAfterSelect = FALSE,
           selectOnTab = TRUE
@@ -111,7 +107,6 @@ mod_data_prep_ui <- function(id) {
         class = "btn-warning",
         style = "width: 100%; margin-top: 10px; font-weight: bold;"
       ),
-
       shiny::div(
         style = "background-color: #d4edda; padding: 10px; border-radius: 5px; margin-top: 10px;",
         shiny::HTML(
@@ -122,7 +117,6 @@ mod_data_prep_ui <- function(id) {
       ),
       shiny::uiOutput(ns("applied_genes_display")),
       shiny::hr(),
-
       shiny::h4("Group Display Order"),
       shiny::div(
         style = "background-color: #fff3cd; padding: 10px; border-radius: 5px; border-left: 4px solid #ffc107;",
@@ -145,7 +139,6 @@ mod_data_prep_ui <- function(id) {
         )
       ),
       shiny::hr(),
-
       shiny::h4("Joint Plotting Control"),
       shiny::selectInput(
         ns("plot_subtype"),
@@ -160,7 +153,6 @@ mod_data_prep_ui <- function(id) {
         placeholder = "e.g., #FF0000, #00FF00"
       ),
       shiny::hr(),
-
       shiny::h4("Expression Metrics"),
       shiny::selectInput(
         ns("expression_type"),
@@ -303,60 +295,68 @@ mod_data_prep_server <- function(id, gsea_res) {
 
 
     # 基因列表更新（根治版：已确认基因独立维护）
-    shiny::observeEvent(input$selected_contrast, {
-      contrast_id <- input$selected_contrast
-      shiny::req(contrast_id)
+    shiny::observeEvent(input$selected_contrast,
+      {
+        contrast_id <- input$selected_contrast
+        shiny::req(contrast_id)
 
-      if (!is.null(current_contrast_cache()) && current_contrast_cache() == contrast_id) {
-        return()
-      }
-
-      message(sprintf("Switching contrast: %s", contrast_id))
-      current_contrast_cache(contrast_id)
-
-      tryCatch({
-        de_df <- get_de_table(gsea_res, contrast_id)
-        if (!is.null(de_df) && "gene_symbol" %in% colnames(de_df)) {
-          gene_choices <- de_df$gene_symbol
-          gene_choices <- gene_choices[!is.na(gene_choices)]
-          gene_choices <- sort(unique(gene_choices))
-
-          current_applied <- applied_genes()
-
-          applied_upper <- toupper(current_applied)
-          choices_upper <- toupper(gene_choices)
-
-          selected_upper <- applied_upper[applied_upper %in% choices_upper]
-          pending_selected <- gene_choices[choices_upper %in% selected_upper]
-
-          pending_selected <- unique(pending_selected)
-
-          shiny::updateSelectizeInput(
-            session,
-            "pending_genes",
-            choices = gene_choices,
-            selected = pending_selected,
-            server = length(gene_choices) > 1000
-          )
-
-          pending_genes_internal(pending_selected)
-
-          message(sprintf(
-            "Pending refilled from applied (%d in current choices; %d total in applied)",
-            length(pending_selected), length(current_applied)
-          ))
-
-          message(sprintf("Confirmed gene markers remain unchanged (%d genes)", length(current_applied)))
+        if (!is.null(current_contrast_cache()) && current_contrast_cache() == contrast_id) {
+          return()
         }
-      }, error = function(e) {
-        message("Failed to update gene list: ", e$message)
-      })
-    }, ignoreInit = FALSE)
+
+        message(sprintf("Switching contrast: %s", contrast_id))
+        current_contrast_cache(contrast_id)
+
+        tryCatch(
+          {
+            de_df <- get_de_table(gsea_res, contrast_id)
+            if (!is.null(de_df) && "gene_symbol" %in% colnames(de_df)) {
+              gene_choices <- de_df$gene_symbol
+              gene_choices <- gene_choices[!is.na(gene_choices)]
+              gene_choices <- sort(unique(gene_choices))
+
+              current_applied <- applied_genes()
+
+              applied_upper <- toupper(current_applied)
+              choices_upper <- toupper(gene_choices)
+
+              selected_upper <- applied_upper[applied_upper %in% choices_upper]
+              pending_selected <- gene_choices[choices_upper %in% selected_upper]
+
+              pending_selected <- unique(pending_selected)
+
+              shiny::updateSelectizeInput(
+                session,
+                "pending_genes",
+                choices = gene_choices,
+                selected = pending_selected,
+                server = length(gene_choices) > 1000
+              )
+
+              pending_genes_internal(pending_selected)
+
+              message(sprintf(
+                "Pending refilled from applied (%d in current choices; %d total in applied)",
+                length(pending_selected), length(current_applied)
+              ))
+
+              message(sprintf("Confirmed gene markers remain unchanged (%d genes)", length(current_applied)))
+            }
+          },
+          error = function(e) {
+            message("Failed to update gene list: ", e$message)
+          }
+        )
+      },
+      ignoreInit = FALSE
+    )
 
     # 生成排列组合
     generate_all_permutations <- function(groups) {
       n <- length(groups)
-      if (n <= 1) return(list(default = "Default Order"))
+      if (n <= 1) {
+        return(list(default = "Default Order"))
+      }
 
       perms <- list()
       permute <- function(arr, l, r) {
@@ -367,9 +367,13 @@ mod_data_prep_server <- function(id, gsea_res) {
           return()
         }
         for (i in l:r) {
-          tmp <- arr[l]; arr[l] <- arr[i]; arr[i] <- tmp
+          tmp <- arr[l]
+          arr[l] <- arr[i]
+          arr[i] <- tmp
           permute(arr, l + 1, r)
-          tmp <- arr[l]; arr[l] <- arr[i]; arr[i] <- tmp
+          tmp <- arr[l]
+          arr[l] <- arr[i]
+          arr[i] <- tmp
         }
       }
       permute(groups, 1, n)
@@ -387,14 +391,15 @@ mod_data_prep_server <- function(id, gsea_res) {
       perms[[paste(rev(groups), collapse = ",")]] <- paste(rev(groups), collapse = "->")
       count <- count + 1
 
-      for (i in 2:min(n, max_perms/2)) {
-        shifted <- groups[c(i:n, 1:(i-1))]
+      for (i in 2:min(n, max_perms / 2)) {
+        shifted <- groups[c(i:n, 1:(i - 1))]
         perms[[paste(shifted, collapse = ",")]] <- paste(shifted, collapse = "->")
         count <- count + 1
         if (count >= max_perms) break
       }
 
       if (count < max_perms) {
+        # TODO: BiocCheck: set.seed accepted for reproducibility
         set.seed(123)
         for (i in 1:(max_perms - count)) {
           shuffled <- sample(groups)
@@ -411,10 +416,14 @@ mod_data_prep_server <- function(id, gsea_res) {
     # 动态更新Boxplot排序选项
     shiny::observe({
       sample_meta <- tryCatch(get_sample_meta(gsea_res), error = function(e) NULL)
-      if (is.null(sample_meta) || !"group" %in% colnames(sample_meta)) return()
+      if (is.null(sample_meta) || !"group" %in% colnames(sample_meta)) {
+        return()
+      }
 
       all_groups <- levels(sample_meta$group)
-      if (length(all_groups) <= 1) return()
+      if (length(all_groups) <= 1) {
+        return()
+      }
 
       total_perms <- factorial(length(all_groups))
 
@@ -439,45 +448,49 @@ mod_data_prep_server <- function(id, gsea_res) {
     # 关键修复：input$pending_genes observer应该追加而非覆盖
     # 当用户在输入框手动输入时，只更新pending_genes_internal
     # 不再无条件覆盖Modal添加的基因
-    shiny::observeEvent(input$pending_genes, {
-      genes <- input$pending_genes
-      if (is.null(genes)) genes <- character(0)
+    shiny::observeEvent(input$pending_genes,
+      {
+        genes <- input$pending_genes
+        if (is.null(genes)) genes <- character(0)
 
-      # 清理基因名
-      genes_clean <- toupper(trimws(genes))
-      genes_clean <- genes_clean[genes_clean != ""]
+        # 清理基因名
+        genes_clean <- toupper(trimws(genes))
+        genes_clean <- genes_clean[genes_clean != ""]
 
-      # 获取当前pending
-      current_pending <- pending_genes_internal()
+        # 获取当前pending
+        current_pending <- pending_genes_internal()
 
-      # 判断：是追加还是覆盖？
-      # 如果用户输入的基因不在当前pending中，认为是手动追加
-      # 如果用户输入的基因与当前pending完全不同（通过手动清空后输入），认为是覆盖
-      if (length(genes_clean) == 0) {
-        # 用户清空了输入框，保持pending不变
-        pending_genes_internal(current_pending)
-      } else if (length(current_pending) == 0) {
-        # 当前pending为空，直接设置
-        pending_genes_internal(genes_clean)
-      } else {
-        # 当前pending有值，比较差异
-        # 如果输入的内容比pending多很多，认为是手动输入（覆盖）
-        # 否则认为是追加
-        genes_not_in_pending <- setdiff(genes_clean, current_pending)
-        pending_not_in_genes <- setdiff(current_pending, genes_clean)
-
-        # 如果大部分pending都在输入中，且输入中有新基因，认为是追加
-        if (length(pending_not_in_genes) < length(current_pending) * 0.5 && length(genes_not_in_pending) > 0) {
-          # 追加模式：保留原有 + 添加新的
-          pending_genes_internal(unique(c(current_pending, genes_clean)))
-        } else {
-          # 覆盖模式：直接替换
+        # 判断：是追加还是覆盖？
+        # 如果用户输入的基因不在当前pending中，认为是手动追加
+        # 如果用户输入的基因与当前pending完全不同（通过手动清空后输入），认为是覆盖
+        if (length(genes_clean) == 0) {
+          # 用户清空了输入框，保持pending不变
+          pending_genes_internal(current_pending)
+        } else if (length(current_pending) == 0) {
+          # 当前pending为空，直接设置
           pending_genes_internal(genes_clean)
-        }
-      }
+        } else {
+          # 当前pending有值，比较差异
+          # 如果输入的内容比pending多很多，认为是手动输入（覆盖）
+          # 否则认为是追加
+          genes_not_in_pending <- setdiff(genes_clean, current_pending)
+          pending_not_in_genes <- setdiff(current_pending, genes_clean)
 
-      message(sprintf("[PendingInput] User input updated: %d genes", length(genes_clean)))
-    }, ignoreNULL = FALSE, ignoreInit = TRUE)
+          # 如果大部分pending都在输入中，且输入中有新基因，认为是追加
+          if (length(pending_not_in_genes) < length(current_pending) * 0.5 && length(genes_not_in_pending) > 0) {
+            # 追加模式：保留原有 + 添加新的
+            pending_genes_internal(unique(c(current_pending, genes_clean)))
+          } else {
+            # 覆盖模式：直接替换
+            pending_genes_internal(genes_clean)
+          }
+        }
+
+        message(sprintf("[PendingInput] User input updated: %d genes", length(genes_clean)))
+      },
+      ignoreNULL = FALSE,
+      ignoreInit = TRUE
+    )
 
     shiny::observeEvent(input$apply_genes_btn, {
       genes_to_apply <- pending_genes_internal()
@@ -487,10 +500,13 @@ mod_data_prep_server <- function(id, gsea_res) {
       new_applied <- union(toupper(current_applied), toupper(genes_to_apply))
       applied_genes(new_applied)
 
-      message(sprintf("Applied genes: %d (merged: %d existing + %d new)",
-                      length(new_applied), length(current_applied), length(genes_to_apply)))
+      message(sprintf(
+        "Applied genes: %d (merged: %d existing + %d new)",
+        length(new_applied), length(current_applied), length(genes_to_apply)
+      ))
       shiny::showNotification(sprintf("Applied genes: %d (merged)", length(new_applied)),
-                              type = "message", duration = 3)
+        type = "message", duration = 3
+      )
     })
 
     # 【新增】Clear All 按钮
@@ -507,20 +523,27 @@ mod_data_prep_server <- function(id, gsea_res) {
     })
 
     # 排序确认按钮
-    shiny::observeEvent(input$apply_order_btn, {
-      order_to_apply <- input$boxplot_order_pending
-      applied_boxplot_order(order_to_apply)
+    shiny::observeEvent(input$apply_order_btn,
+      {
+        order_to_apply <- input$boxplot_order_pending
+        applied_boxplot_order(order_to_apply)
 
-      message(sprintf("Order Confirm: User selected: %s | Quad-link module triggered update",
-                      if(order_to_apply == "default") "default" else order_to_apply))
+        message(sprintf(
+          "Order Confirm: User selected: %s | Quad-link module triggered update",
+          if (order_to_apply == "default") "default" else order_to_apply
+        ))
 
-      shiny::showNotification(
-        sprintf("Order applied: %s | Boxplot refreshed",
-                if(order_to_apply == "default") "Default order" else gsub(",", " -> ", order_to_apply)),
-        type = "message",
-        duration = 2
-      )
-    }, ignoreInit = TRUE)
+        shiny::showNotification(
+          sprintf(
+            "Order applied: %s | Boxplot refreshed",
+            if (order_to_apply == "default") "Default order" else gsub(",", " -> ", order_to_apply)
+          ),
+          type = "message",
+          duration = 2
+        )
+      },
+      ignoreInit = TRUE
+    )
 
     # 显示实时排序状态
     output$order_status_display <- shiny::renderUI({
@@ -573,41 +596,52 @@ mod_data_prep_server <- function(id, gsea_res) {
     })
 
     # 监听画布参数变化
-    shiny::observeEvent(input$canvas_contrasts, {
-      canvas_contrasts_val(input$canvas_contrasts)
-    }, ignoreNULL = FALSE)
+    shiny::observeEvent(input$canvas_contrasts,
+      {
+        canvas_contrasts_val(input$canvas_contrasts)
+      },
+      ignoreNULL = FALSE
+    )
 
     shiny::observeEvent(input$canvas_ncol, {
       canvas_ncol_val(input$canvas_ncol)
     })
 
 
-
     # 核心数据处理
     process_data_core <- function(contrast_id, collections, sort_by, expr_type, plot_subtype, colors, is_auto = FALSE) {
-      if (is.null(contrast_id)) return(NULL)
-
-      task_obj <- tryCatch({
-        extract_gsea_task(gsea_res, contrast_id, target_collection = collections)
-      }, error = function(e) {
-        message(sprintf("Task extraction failed: %s", e$message))
+      if (is.null(contrast_id)) {
         return(NULL)
-      })
+      }
 
-      if (is.null(task_obj)) return(NULL)
+      task_obj <- tryCatch(
+        {
+          extract_gsea_task(gsea_res, contrast_id, target_collection = collections)
+        },
+        error = function(e) {
+          message(sprintf("Task extraction failed: %s", e$message))
+          return(NULL)
+        }
+      )
+
+      if (is.null(task_obj)) {
+        return(NULL)
+      }
 
       meta <- task_obj$meta
       gsea_res_obj <- task_obj$gsea_res
       df <- as.data.frame(gsea_res_obj@result)
 
-      if (nrow(df) == 0) return(NULL)
+      if (nrow(df) == 0) {
+        return(NULL)
+      }
 
       df$abs_NES <- abs(df$NES)
       sort_config <- switch(sort_by,
-                            "nes_desc" = list(col = "NES", desc = TRUE),
-                            "abs_nes_desc" = list(col = "abs_NES", desc = TRUE),
-                            "pval_asc" = list(col = "pvalue", desc = FALSE),
-                            list(col = "abs_NES", desc = TRUE)
+        "nes_desc" = list(col = "NES", desc = TRUE),
+        "abs_nes_desc" = list(col = "abs_NES", desc = TRUE),
+        "pval_asc" = list(col = "pvalue", desc = FALSE),
+        list(col = "abs_NES", desc = TRUE)
       )
 
       sort_order <- order(df[[sort_config$col]], decreasing = sort_config$desc)
@@ -620,9 +654,11 @@ mod_data_prep_server <- function(id, gsea_res) {
       if (nrow(reg_row) == 0) {
         parts <- strsplit(contrast_id, "_vs_")[[1]]
         if (length(parts) == 2) {
-          left <- parts[1]; right <- parts[2]
+          left <- parts[1]
+          right <- parts[2]
         } else {
-          left <- contrast_id; right <- "Background"
+          left <- contrast_id
+          right <- "Background"
         }
       } else {
         left <- reg_row$left_group[1]
@@ -648,53 +684,65 @@ mod_data_prep_server <- function(id, gsea_res) {
     }
 
     # 自动初始化
-    shiny::observeEvent(input$selected_contrast, {
-      if (has_initialized()) return()
-
-      shiny::invalidateLater(200, session)
-
-      shiny::isolate({
-        if (is.null(input$selected_contrast)) return()
-
-        task_temp <- tryCatch(
-          extract_gsea_task(gsea_res, input$selected_contrast, "ALL"),
-          error = function(e) NULL
-        )
-        if (is.null(task_temp)) return()
-
-        df_temp <- as.data.frame(task_temp$gsea_res@result)
-        available <- unique(c(df_temp$Collection, df_temp$Combo_Name))
-        available <- setdiff(available, c(NA, "Unknown"))
-
-        if (length(available) == 0) return()
-
-        counts <- sapply(available, function(x) sum(startsWith(as.character(df_temp$Combo_Name), x)))
-        min_col <- available[which.min(counts)[1]]
-
-        shiny::updateSelectizeInput(
-          session,
-          "selected_collections",
-          choices = c("ALL", sort(available)),
-          selected = min_col
-        )
-
-        auto_data <- process_data_core(
-          input$selected_contrast,
-          min_col,
-          "abs_nes_desc",
-          input$expression_type %||% "logcpm",
-          "3",
-          "#E41A1C, #377EB8, #4DAF4A, #984EA3",
-          TRUE
-        )
-
-        if (!is.null(auto_data)) {
-          result_data(auto_data)
-          has_initialized(TRUE)
-          shiny::showNotification(sprintf("Auto-loaded: %s", min_col), type = "default", duration = 3)
+    shiny::observeEvent(input$selected_contrast,
+      {
+        if (has_initialized()) {
+          return()
         }
-      })
-    }, ignoreNULL = TRUE, ignoreInit = TRUE)
+
+        shiny::invalidateLater(200, session)
+
+        shiny::isolate({
+          if (is.null(input$selected_contrast)) {
+            return()
+          }
+
+          task_temp <- tryCatch(
+            extract_gsea_task(gsea_res, input$selected_contrast, "ALL"),
+            error = function(e) NULL
+          )
+          if (is.null(task_temp)) {
+            return()
+          }
+
+          df_temp <- as.data.frame(task_temp$gsea_res@result)
+          available <- unique(c(df_temp$Collection, df_temp$Combo_Name))
+          available <- setdiff(available, c(NA, "Unknown"))
+
+          if (length(available) == 0) {
+            return()
+          }
+
+          counts <- sapply(available, function(x) sum(startsWith(as.character(df_temp$Combo_Name), x)))
+          min_col <- available[which.min(counts)[1]]
+
+          shiny::updateSelectizeInput(
+            session,
+            "selected_collections",
+            choices = c("ALL", sort(available)),
+            selected = min_col
+          )
+
+          auto_data <- process_data_core(
+            input$selected_contrast,
+            min_col,
+            "abs_nes_desc",
+            input$expression_type %||% "logcpm",
+            "3",
+            "#E41A1C, #377EB8, #4DAF4A, #984EA3",
+            TRUE
+          )
+
+          if (!is.null(auto_data)) {
+            result_data(auto_data)
+            has_initialized(TRUE)
+            shiny::showNotification(sprintf("Auto-loaded: %s", min_col), type = "default", duration = 3)
+          }
+        })
+      },
+      ignoreNULL = TRUE,
+      ignoreInit = TRUE
+    )
 
     # 手动确认按钮
     shiny::observeEvent(input$run_btn, {
@@ -723,13 +771,16 @@ mod_data_prep_server <- function(id, gsea_res) {
     })
 
     # 画布生成触发器
-    joint_generate_event <- shiny::eventReactive(input$joint_generate, {
-      list(
-        contrasts = input$joint_contrasts,
-        ncol = input$joint_ncol,
-        timestamp = Sys.time()
-      )
-    }, ignoreNULL = TRUE)
+    joint_generate_event <- shiny::eventReactive(input$joint_generate,
+      {
+        list(
+          contrasts = input$joint_contrasts,
+          ncol = input$joint_ncol,
+          timestamp = Sys.time()
+        )
+      },
+      ignoreNULL = TRUE
+    )
 
     # Modal传递基因接口（追加模式）- 完全重写
     update_pending_genes <- function(new_genes_from_modal) {
@@ -746,12 +797,15 @@ mod_data_prep_server <- function(id, gsea_res) {
       new_genes_clean <- unique(new_genes_clean)
 
       # 直接获取当前pending_genes_internal的值
-      current_pending <- tryCatch({
-        shiny::isolate(pending_genes_internal())
-      }, error = function(e) {
-        message("[UpdatePending] Error: ", e$message)
-        character(0)
-      })
+      current_pending <- tryCatch(
+        {
+          shiny::isolate(pending_genes_internal())
+        },
+        error = function(e) {
+          message("[UpdatePending] Error: ", e$message)
+          character(0)
+        }
+      )
 
       # 追加合并（不是替换）
       updated_pending <- unique(c(current_pending, new_genes_clean))
@@ -759,27 +813,32 @@ mod_data_prep_server <- function(id, gsea_res) {
       # 更新reactive值
       pending_genes_internal(updated_pending)
 
-      message(sprintf("[UpdatePending] Merged: %d existing + %d new = %d total (pending)",
-                      length(current_pending), length(new_genes_clean), length(updated_pending)))
+      message(sprintf(
+        "[UpdatePending] Merged: %d existing + %d new = %d total (pending)",
+        length(current_pending), length(new_genes_clean), length(updated_pending)
+      ))
 
       # 获取当前contrast的基因choices
       gene_choices_upper <- character(0)
 
-      tryCatch({
-        contrast_id <- shiny::isolate(input$selected_contrast)
-        if (!is.null(contrast_id) && contrast_id != "") {
-          de_df <- get_de_table(gsea_res, contrast_id)
-          if (!is.null(de_df) && "gene_symbol" %in% colnames(de_df)) {
-            gene_choices <- de_df$gene_symbol
-            gene_choices <- gene_choices[!is.na(gene_choices)]
-            gene_choices <- trimws(gene_choices)
-            gene_choices <- gene_choices[gene_choices != ""]
-            gene_choices_upper <- toupper(sort(unique(gene_choices)))
+      tryCatch(
+        {
+          contrast_id <- shiny::isolate(input$selected_contrast)
+          if (!is.null(contrast_id) && contrast_id != "") {
+            de_df <- get_de_table(gsea_res, contrast_id)
+            if (!is.null(de_df) && "gene_symbol" %in% colnames(de_df)) {
+              gene_choices <- de_df$gene_symbol
+              gene_choices <- gene_choices[!is.na(gene_choices)]
+              gene_choices <- trimws(gene_choices)
+              gene_choices <- gene_choices[gene_choices != ""]
+              gene_choices_upper <- toupper(sort(unique(gene_choices)))
+            }
           }
+        },
+        error = function(e) {
+          message("[UpdatePending] Error getting gene choices: ", e$message)
         }
-      }, error = function(e) {
-        message("[UpdatePending] Error getting gene choices: ", e$message)
-      })
+      )
 
       # 如果没有choices，使用pending作为choices
       if (length(gene_choices_upper) == 0) {
@@ -787,40 +846,50 @@ mod_data_prep_server <- function(id, gsea_res) {
       }
 
       # 刷新selectizeInput
-      tryCatch({
-        shiny::updateSelectizeInput(
-          session,
-          "pending_genes",
-          choices = gene_choices_upper,
-          selected = updated_pending,
-          options = list(
-            plugins = list('remove_button'),
-            placeholder = 'Enter gene names (e.g., TP53)',
-            maxItems = 999,
-            closeAfterSelect = FALSE,
-            selectOnTab = TRUE
-          ),
-          server = FALSE
-        )
-        message("[UpdatePending] UI refreshed")
-      }, error = function(e) {
-        message("[UpdatePending] UI update error: ", e$message)
-      })
+      tryCatch(
+        {
+          shiny::updateSelectizeInput(
+            session,
+            "pending_genes",
+            choices = gene_choices_upper,
+            selected = updated_pending,
+            options = list(
+              plugins = list("remove_button"),
+              placeholder = "Enter gene names (e.g., TP53)",
+              maxItems = 999,
+              closeAfterSelect = FALSE,
+              selectOnTab = TRUE
+            ),
+            server = FALSE
+          )
+          message("[UpdatePending] UI refreshed")
+        },
+        error = function(e) {
+          message("[UpdatePending] UI update error: ", e$message)
+        }
+      )
 
       invisible(NULL)
     }
 
 
-
     return(list(
-      data = shiny::reactive({ result_data() }),
+      data = shiny::reactive({
+        result_data()
+      }),
       highlight_genes = applied_genes,
       boxplot_order = applied_boxplot_order,
-      joint_contrasts = shiny::reactive({ input$joint_contrasts }),
-      joint_ncol = shiny::reactive({ input$joint_ncol }),
+      joint_contrasts = shiny::reactive({
+        input$joint_contrasts
+      }),
+      joint_ncol = shiny::reactive({
+        input$joint_ncol
+      }),
       joint_generate = joint_generate_event,
       update_pending_genes = update_pending_genes,
-      get_pending_genes = function() { shiny::isolate(pending_genes_internal()) }
+      get_pending_genes = function() {
+        shiny::isolate(pending_genes_internal())
+      }
     ))
   })
 }
