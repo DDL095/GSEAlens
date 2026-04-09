@@ -1,6 +1,7 @@
 ---
 title: "GSEAlens：基因集富集分析的交互式探索平台"
 author: "Dudali"
+date: "`r Sys.Date()`"
 output: 
   rmarkdown::html_vignette:
     toc: true
@@ -19,7 +20,7 @@ GSEAlens 提供了一个基于 Web 界面的交互式平台，用于展示通路
 
 ## 安装说明
 
-```{r}
+```{r, eval=FALSE}
 # 使用 devtools 安装
 if (!requireNamespace("devtools", quietly = TRUE)) {
     install.packages("devtools")
@@ -32,7 +33,7 @@ devtools::install_github("DDL095/GSEAlens")
 
 使用`airway`包作为示例运行，这个R包当中包含两组每组4个重复
 
-```{r 环境准备}
+```{r 环境准备, results='hide'}
 library(GSEAlens)
 # 先检查是否已安装 airway
 if (!requireNamespace("airway", quietly = TRUE)) {
@@ -157,7 +158,7 @@ dds_se <- dds_se[keep, ]
 
 运行DESeq2处理
 
-```{r 运行DESeq2}
+```{r 运行DESeq2, results='hide'}
 dds_se <- DESeq(dds_se)
 ```
 
@@ -205,7 +206,7 @@ coldata$dex <- factor(coldata$dex)
 
 组装为DDS对象并进行处理
 
-```{r}
+```{r, results='hide'}
 dds <- DESeqDataSetFromMatrix(countData = cts,
                               colData = coldata,
                               design = ~ dex)
@@ -250,7 +251,7 @@ gseadata_dds <- GSEAlens::setup_gsea_env(fit = dds,pathway_obj = gsea_pathwayset
 
 并行计算提示：可根据电脑性能调整 workers 选项，设置计算使用的核心数量。 比对数量越多，建议设置越高的核心数以提升计算效率。
 
-```{r}
+```{r, eval=FALSE}
 # limma-voom 流程
 gsea_res_limmavoom <- GSEAlens::batch_calc_gsea(gseadata_limmavoom, 
                                                  custom_series_name = "limmavoom_data", 
@@ -274,7 +275,7 @@ gsea_res_dds <- GSEAlens::batch_calc_gsea(gseadata_dds,
 
 运行`batch_calc_gsea`之后，在对应目录下会生成一个RDS文件，读入该文件，或者使用`import_gsea_capsule`读取，`import_gsea_capsule`函数可以在读取的时候，自动将相关文件整理到使用的RMD文件或者R脚本的文件夹中，并且给出数据的检视情况。
 
-```{r}
+```{r, eval=FALSE}
 gsea_res <- import_gsea_capsule("/path/to/your/files/")
 # 或直接读取 RDS 文件
 # gsea_res <- readRDS("/path/of/your/file/")
@@ -282,7 +283,7 @@ gsea_res <- import_gsea_capsule("/path/to/your/files/")
 
 数据载入后，就可以使用`launch_gsea_app`进行交互式查看
 
-```{r}
+```{r, eval=FALSE}
 launch_gsea_app(gsea_res)
 ```
 

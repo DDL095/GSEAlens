@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Dudali" />
+
+<meta name="date" content="2026-04-09" />
+
+<title>GSEAlens: An Interactive Exploration Platform for Gene Set Enrichment Analysis</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">GSEAlens: An Interactive Exploration
+Platform for Gene Set Enrichment Analysis</h1>
+<h4 class="author">Dudali</h4>
+<h4 class="date">2026-04-09</h4>
+
+
+
+<div id="package-introduction" class="section level1">
+<h1>Package Introduction</h1>
+<p><strong>GSEAlens</strong> derives its name from
+<strong>Lens</strong>, symbolizing how this package acts as a
+<strong>magnifying glass</strong> to help researchers deeply explore key
+pathways in GSEA enrichment analysis.</p>
+<p>GSEAlens provides a web-based interactive platform for displaying
+pathway introductions and descriptions, integrating AI-assisted pathway
+enrichment result export functionality. By encapsulating workflows and
+standardizing input formats, this R package simplifies the process of
+viewing and exploring GSEA enrichment analysis results.</p>
+<div id="installation" class="section level2">
+<h2>Installation</h2>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="co"># Install using devtools</span></span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">requireNamespace</span>(<span class="st">&quot;devtools&quot;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>    <span class="fu">install.packages</span>(<span class="st">&quot;devtools&quot;</span>)</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>}</span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">&quot;DDL095/GSEAlens&quot;</span>)</span></code></pre></div>
+</div>
+</div>
+<div id="example-code" class="section level1">
+<h1>Example Code</h1>
+<p>Using the <code>airway</code> package as an example, this R package
+contains two groups with 4 replicates each.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">library</span>(GSEAlens)</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="co"># First check if airway is already installed</span></span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">requireNamespace</span>(<span class="st">&quot;airway&quot;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>  <span class="co"># If not installed, check and install BiocManager first</span></span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">requireNamespace</span>(<span class="st">&quot;BiocManager&quot;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>    <span class="fu">install.packages</span>(<span class="st">&quot;BiocManager&quot;</span>)</span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>  }</span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>  <span class="co"># Install airway through BiocManager</span></span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a>  BiocManager<span class="sc">::</span><span class="fu">install</span>(<span class="st">&quot;airway&quot;</span>)</span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a>}</span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a><span class="fu">library</span>(<span class="st">&quot;airway&quot;</span>)</span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a><span class="fu">data</span>(airway)</span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a>expression_data <span class="ot">&lt;-</span> airway</span></code></pre></div>
+<div id="input-data-preparation" class="section level2">
+<h2>Input Data Preparation</h2>
+<div id="limma-voom-workflow" class="section level3">
+<h3>limma-voom Workflow</h3>
+<p>First, refer to the standard workflow: use the edgeR package to
+assemble a DGEList object, design a no-intercept matrix and rename row
+names, then create contrasts for fitting, filter low-expression genes,
+retain protein-coding RNAs, and use symbols as row names.</p>
+<p><strong><em>Note: GSEAlens is based on a no-intercept design
+limma-voom workflow (~0+group) to ensure that column names directly
+correspond to group names.</em></strong></p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">library</span>(edgeR)</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">library</span>(limma)</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>group_level <span class="ot">&lt;-</span> airway<span class="sc">@</span>colData<span class="sc">@</span>listData[[<span class="st">&quot;dex&quot;</span>]] </span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>design <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(<span class="sc">~</span><span class="dv">0</span><span class="sc">+</span>group_level)</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="fu">colnames</span>(design) <span class="ot">&lt;-</span> <span class="fu">levels</span>(group_level)</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>compare_end <span class="ot">&lt;-</span> <span class="fu">combn</span>(<span class="fu">levels</span>(group_level), <span class="dv">2</span>, <span class="at">simplify =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>contrast_strings <span class="ot">&lt;-</span> <span class="fu">sapply</span>(compare_end, <span class="cf">function</span>(x) <span class="fu">paste</span>(x[<span class="dv">2</span>], x[<span class="dv">1</span>], <span class="at">sep =</span> <span class="st">&quot; - &quot;</span>)) </span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>contrast_matrix <span class="ot">&lt;-</span> <span class="fu">makeContrasts</span>(<span class="at">contrasts =</span> contrast_strings, <span class="at">levels =</span> design)</span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a></span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>genes_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a>  <span class="at">gene_id =</span> airway<span class="sc">@</span>rowRanges<span class="sc">@</span>elementMetadata<span class="sc">@</span>listData<span class="sc">$</span>gene_id,</span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a>  <span class="at">symbol =</span> airway<span class="sc">@</span>rowRanges<span class="sc">@</span>elementMetadata<span class="sc">@</span>listData<span class="sc">$</span>symbol,</span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a>  <span class="at">gene_biotype =</span> airway<span class="sc">@</span>rowRanges<span class="sc">@</span>elementMetadata<span class="sc">@</span>listData<span class="sc">$</span>gene_biotype</span>
+<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a>)</span>
+<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a>genes_df<span class="sc">$</span>Length <span class="ot">&lt;-</span> airway<span class="sc">@</span>rowRanges<span class="sc">@</span>elementMetadata<span class="sc">@</span>listData<span class="sc">$</span>gene_seq_end <span class="sc">-</span> </span>
+<span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a>                   airway<span class="sc">@</span>rowRanges<span class="sc">@</span>elementMetadata<span class="sc">@</span>listData<span class="sc">$</span>gene_seq_start <span class="sc">+</span> <span class="dv">1</span></span>
+<span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a>gsea_limma_voom_data <span class="ot">&lt;-</span> edgeR<span class="sc">::</span><span class="fu">DGEList</span>(</span>
+<span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a>  <span class="at">counts =</span> <span class="fu">assay</span>(airway, <span class="st">&quot;counts&quot;</span>),</span>
+<span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a>  <span class="at">genes =</span> genes_df,</span>
+<span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a>  <span class="at">norm.factors =</span> <span class="cn">NULL</span>,</span>
+<span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a>  <span class="at">group =</span> group_level,</span>
+<span id="cb3-22"><a href="#cb3-22" tabindex="-1"></a>  <span class="at">remove.zeros =</span> T</span>
+<span id="cb3-23"><a href="#cb3-23" tabindex="-1"></a>)</span></code></pre></div>
+<pre><code>## Removing 30208 rows with all zero counts</code></pre>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>total_counts <span class="ot">&lt;-</span> edgeR<span class="sc">::</span><span class="fu">cpm</span>(gsea_limma_voom_data) <span class="sc">|&gt;</span> <span class="fu">rowSums</span>()  </span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>dup_symbols <span class="ot">&lt;-</span> gsea_limma_voom_data<span class="sc">$</span>genes<span class="sc">$</span>symbol[<span class="fu">duplicated</span>(gsea_limma_voom_data<span class="sc">$</span>genes<span class="sc">$</span>symbol)]</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>keep <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">TRUE</span>, <span class="fu">nrow</span>(gsea_limma_voom_data))</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a><span class="cf">for</span> (gene <span class="cf">in</span> dup_symbols) {</span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>  idx <span class="ot">&lt;-</span> <span class="fu">which</span>(gsea_limma_voom_data<span class="sc">$</span>genes<span class="sc">$</span>symbol <span class="sc">==</span> gene)  </span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>  best_idx <span class="ot">&lt;-</span> idx[<span class="fu">which.max</span>(total_counts[idx])]            </span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>  remove_idx <span class="ot">&lt;-</span> idx[idx <span class="sc">!=</span> best_idx]                       </span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a>  keep[remove_idx] <span class="ot">&lt;-</span> <span class="cn">FALSE</span></span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>}</span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a></span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a>gsea_limma_voom_data <span class="ot">&lt;-</span> gsea_limma_voom_data[keep, ]</span>
+<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a></span>
+<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a><span class="fu">rownames</span>(gsea_limma_voom_data) <span class="ot">&lt;-</span> gsea_limma_voom_data<span class="sc">$</span>genes<span class="sc">$</span>symbol</span>
+<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a></span>
+<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a>keep_biotype <span class="ot">&lt;-</span> gsea_limma_voom_data<span class="sc">$</span>genes<span class="sc">$</span>gene_biotype <span class="sc">==</span> <span class="st">&quot;protein_coding&quot;</span></span>
+<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a>gsea_limma_voom_data <span class="ot">&lt;-</span> gsea_limma_voom_data[keep_biotype,]</span>
+<span id="cb5-20"><a href="#cb5-20" tabindex="-1"></a></span>
+<span id="cb5-21"><a href="#cb5-21" tabindex="-1"></a>gsea_limma_voom_data <span class="ot">&lt;-</span> edgeR<span class="sc">::</span><span class="fu">normLibSizes</span>(gsea_limma_voom_data, <span class="at">method =</span> <span class="st">&quot;TMM&quot;</span>)</span>
+<span id="cb5-22"><a href="#cb5-22" tabindex="-1"></a></span>
+<span id="cb5-23"><a href="#cb5-23" tabindex="-1"></a>isexpr <span class="ot">&lt;-</span> <span class="fu">rowSums</span>(edgeR<span class="sc">::</span><span class="fu">cpm</span>(gsea_limma_voom_data) <span class="sc">&gt;</span> <span class="dv">1</span>) <span class="sc">&gt;=</span> <span class="dv">3</span></span>
+<span id="cb5-24"><a href="#cb5-24" tabindex="-1"></a>gsea_limma_voom_data <span class="ot">&lt;-</span> gsea_limma_voom_data[isexpr,]</span></code></pre></div>
+<p>Then perform limma-voom fitting to obtain the <code>fit</code>
+object.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>VoomOutPut <span class="ot">&lt;-</span> <span class="fu">voom</span>(gsea_limma_voom_data, design)</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">lmFit</span>(<span class="at">object =</span> VoomOutPut, <span class="at">design =</span> design) <span class="sc">%&gt;%</span> </span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>  <span class="fu">contrasts.fit</span>(<span class="at">fit =</span> ., <span class="at">contrasts =</span> contrast_matrix) <span class="sc">%&gt;%</span> </span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>  <span class="fu">eBayes</span>(.)</span></code></pre></div>
+</div>
+<div id="deseq2-workflow" class="section level3">
+<h3>DESeq2 Workflow</h3>
+<div id="summarizedexperiment-input" class="section level4">
+<h4>SummarizedExperiment Input</h4>
+<p>Refer to the DESeq2 package documentation for data cleaning and
+processing. First, remove non-coding RNAs.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="fu">library</span>(<span class="st">&quot;DESeq2&quot;</span>)</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>dds_se <span class="ot">&lt;-</span> <span class="fu">DESeqDataSet</span>(expression_data, <span class="at">design =</span> <span class="sc">~</span> cell <span class="sc">+</span> dex)</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>gene_biotypes <span class="ot">&lt;-</span> <span class="fu">rowData</span>(dds_se)<span class="sc">$</span>gene_biotype</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>keep_protein_coding <span class="ot">&lt;-</span> gene_biotypes <span class="sc">==</span> <span class="st">&quot;protein_coding&quot;</span></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>dds_se <span class="ot">&lt;-</span> dds_se[keep_protein_coding, ]</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>dds_se</span></code></pre></div>
+<pre><code>## class: DESeqDataSet 
+## dim: 22810 8 
+## metadata(2): &#39;&#39; version
+## assays(1): counts
+## rownames(22810): ENSG00000000003 ENSG00000000005 ... ENSG00000273482 ENSG00000273490
+## rowData names(10): gene_id gene_name ... seq_coord_system symbol
+## colnames(8): SRR1039508 SRR1039509 ... SRR1039520 SRR1039521
+## colData names(9): SampleName cell ... Sample BioSample</code></pre>
+<p>Then remove low-expression genes and use symbols as row names.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>smallestGroupSize <span class="ot">&lt;-</span> <span class="dv">3</span></span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>keep <span class="ot">&lt;-</span> <span class="fu">rowSums</span>(<span class="fu">counts</span>(dds_se) <span class="sc">&gt;=</span> <span class="dv">10</span>) <span class="sc">&gt;=</span> smallestGroupSize</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>dds_se <span class="ot">&lt;-</span> dds_se[keep,]</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>dds_se</span></code></pre></div>
+<pre><code>## class: DESeqDataSet 
+## dim: 13256 8 
+## metadata(2): &#39;&#39; version
+## assays(1): counts
+## rownames(13256): ENSG00000000003 ENSG00000000419 ... ENSG00000272047 ENSG00000272325
+## rowData names(10): gene_id gene_name ... seq_coord_system symbol
+## colnames(8): SRR1039508 SRR1039509 ... SRR1039520 SRR1039521
+## colData names(9): SampleName cell ... Sample BioSample</code></pre>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="fu">rownames</span>(dds_se) <span class="ot">&lt;-</span> dds_se<span class="sc">@</span>rowRanges<span class="sc">@</span>elementMetadata<span class="sc">@</span>listData[[<span class="st">&quot;gene_name&quot;</span>]]</span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a></span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>total_counts <span class="ot">&lt;-</span> <span class="fu">rowSums</span>(SummarizedExperiment<span class="sc">::</span><span class="fu">assay</span>(dds_se))</span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a>keep <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">TRUE</span>, <span class="fu">nrow</span>(dds_se))</span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a>dup_genes <span class="ot">&lt;-</span> <span class="fu">rownames</span>(dds_se)[<span class="fu">duplicated</span>(<span class="fu">rownames</span>(dds_se))]</span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a><span class="cf">for</span> (gene <span class="cf">in</span> dup_genes) {</span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a>  idx <span class="ot">&lt;-</span> <span class="fu">which</span>(<span class="fu">rownames</span>(dds_se) <span class="sc">==</span> gene)  </span>
+<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a>  best_idx <span class="ot">&lt;-</span> idx[<span class="fu">which.max</span>(total_counts[idx])]  </span>
+<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a>  remove_idx <span class="ot">&lt;-</span> idx[idx <span class="sc">!=</span> best_idx]  </span>
+<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a>  keep[remove_idx] <span class="ot">&lt;-</span> <span class="cn">FALSE</span></span>
+<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a>}</span>
+<span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a>dds_se <span class="ot">&lt;-</span> dds_se[keep, ]</span></code></pre></div>
+<p>Run DESeq2 processing.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>dds_se <span class="ot">&lt;-</span> <span class="fu">DESeq</span>(dds_se)</span></code></pre></div>
+<pre><code>## estimating size factors</code></pre>
+<pre><code>## estimating dispersions</code></pre>
+<pre><code>## gene-wise dispersion estimates</code></pre>
+<pre><code>## mean-dispersion relationship</code></pre>
+<pre><code>## final dispersion estimates</code></pre>
+<pre><code>## fitting model and testing</code></pre>
+</div>
+</div>
+<div id="count-matrix-input" class="section level3">
+<h3>Count Matrix Input</h3>
+<p>Filter low-expression genes, retain only protein-coding RNAs, and
+rename matrix row names to symbols.</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a>DDS_rawdata <span class="ot">&lt;-</span> expression_data</span>
+<span id="cb19-2"><a href="#cb19-2" tabindex="-1"></a></span>
+<span id="cb19-3"><a href="#cb19-3" tabindex="-1"></a>gene_biotypes_epd <span class="ot">&lt;-</span> <span class="fu">rowData</span>(DDS_rawdata)<span class="sc">$</span>gene_biotype</span>
+<span id="cb19-4"><a href="#cb19-4" tabindex="-1"></a>keep_protein_coding_epd <span class="ot">&lt;-</span> gene_biotypes <span class="sc">==</span> <span class="st">&quot;protein_coding&quot;</span></span>
+<span id="cb19-5"><a href="#cb19-5" tabindex="-1"></a>DDS_rawdata <span class="ot">&lt;-</span> DDS_rawdata[keep_protein_coding, ]</span>
+<span id="cb19-6"><a href="#cb19-6" tabindex="-1"></a></span>
+<span id="cb19-7"><a href="#cb19-7" tabindex="-1"></a>smallestGroupSize <span class="ot">&lt;-</span> <span class="dv">3</span></span>
+<span id="cb19-8"><a href="#cb19-8" tabindex="-1"></a>keep_epd <span class="ot">&lt;-</span> <span class="fu">rowSums</span>(<span class="fu">assay</span>(DDS_rawdata, <span class="st">&quot;counts&quot;</span>) <span class="sc">&gt;=</span> <span class="dv">10</span>) <span class="sc">&gt;=</span> smallestGroupSize</span>
+<span id="cb19-9"><a href="#cb19-9" tabindex="-1"></a>DDS_rawdata <span class="ot">&lt;-</span> DDS_rawdata[keep_epd,]</span>
+<span id="cb19-10"><a href="#cb19-10" tabindex="-1"></a></span>
+<span id="cb19-11"><a href="#cb19-11" tabindex="-1"></a><span class="fu">rownames</span>(DDS_rawdata) <span class="ot">&lt;-</span> DDS_rawdata<span class="sc">@</span>rowRanges<span class="sc">@</span>elementMetadata<span class="sc">@</span>listData[[<span class="st">&quot;gene_name&quot;</span>]]</span>
+<span id="cb19-12"><a href="#cb19-12" tabindex="-1"></a></span>
+<span id="cb19-13"><a href="#cb19-13" tabindex="-1"></a>total_counts <span class="ot">&lt;-</span> <span class="fu">rowSums</span>(SummarizedExperiment<span class="sc">::</span><span class="fu">assay</span>(DDS_rawdata))</span>
+<span id="cb19-14"><a href="#cb19-14" tabindex="-1"></a>keep_name <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">TRUE</span>, <span class="fu">nrow</span>(DDS_rawdata))</span>
+<span id="cb19-15"><a href="#cb19-15" tabindex="-1"></a>dup_genes <span class="ot">&lt;-</span> <span class="fu">rownames</span>(DDS_rawdata)[<span class="fu">duplicated</span>(<span class="fu">rownames</span>(DDS_rawdata))]</span>
+<span id="cb19-16"><a href="#cb19-16" tabindex="-1"></a><span class="cf">for</span> (gene <span class="cf">in</span> dup_genes) {</span>
+<span id="cb19-17"><a href="#cb19-17" tabindex="-1"></a>  idx <span class="ot">&lt;-</span> <span class="fu">which</span>(<span class="fu">rownames</span>(DDS_rawdata) <span class="sc">==</span> gene)  </span>
+<span id="cb19-18"><a href="#cb19-18" tabindex="-1"></a>  best_idx <span class="ot">&lt;-</span> idx[<span class="fu">which.max</span>(total_counts[idx])]  </span>
+<span id="cb19-19"><a href="#cb19-19" tabindex="-1"></a>  remove_idx <span class="ot">&lt;-</span> idx[idx <span class="sc">!=</span> best_idx]  </span>
+<span id="cb19-20"><a href="#cb19-20" tabindex="-1"></a>  keep_name[remove_idx] <span class="ot">&lt;-</span> <span class="cn">FALSE</span></span>
+<span id="cb19-21"><a href="#cb19-21" tabindex="-1"></a>}</span>
+<span id="cb19-22"><a href="#cb19-22" tabindex="-1"></a>DDS_rawdata <span class="ot">&lt;-</span> DDS_rawdata[keep_name, ]</span></code></pre></div>
+<p>Matrix information extraction.</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a>cts <span class="ot">&lt;-</span> <span class="fu">assay</span>(DDS_rawdata,<span class="st">&quot;counts&quot;</span>)</span>
+<span id="cb20-2"><a href="#cb20-2" tabindex="-1"></a>coldata <span class="ot">&lt;-</span> DDS_rawdata<span class="sc">@</span>colData <span class="sc">%&gt;%</span> <span class="fu">as.data.frame.array</span>()</span>
+<span id="cb20-3"><a href="#cb20-3" tabindex="-1"></a>coldata <span class="ot">&lt;-</span> coldata[,<span class="fu">c</span>(<span class="st">&quot;cell&quot;</span>,<span class="st">&quot;dex&quot;</span>)]</span>
+<span id="cb20-4"><a href="#cb20-4" tabindex="-1"></a>coldata<span class="sc">$</span>cell <span class="ot">&lt;-</span> <span class="fu">factor</span>(coldata<span class="sc">$</span>cell)</span>
+<span id="cb20-5"><a href="#cb20-5" tabindex="-1"></a>coldata<span class="sc">$</span>dex <span class="ot">&lt;-</span> <span class="fu">factor</span>(coldata<span class="sc">$</span>dex)</span></code></pre></div>
+<p>Assemble into DDS object and process.</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a>dds <span class="ot">&lt;-</span> <span class="fu">DESeqDataSetFromMatrix</span>(<span class="at">countData =</span> cts,</span>
+<span id="cb21-2"><a href="#cb21-2" tabindex="-1"></a>                              <span class="at">colData =</span> coldata,</span>
+<span id="cb21-3"><a href="#cb21-3" tabindex="-1"></a>                              <span class="at">design =</span> <span class="sc">~</span> dex)</span>
+<span id="cb21-4"><a href="#cb21-4" tabindex="-1"></a>dds <span class="ot">&lt;-</span> <span class="fu">DESeq</span>(dds)</span></code></pre></div>
+<pre><code>## estimating size factors</code></pre>
+<pre><code>## estimating dispersions</code></pre>
+<pre><code>## gene-wise dispersion estimates</code></pre>
+<pre><code>## mean-dispersion relationship</code></pre>
+<pre><code>## final dispersion estimates</code></pre>
+<pre><code>## fitting model and testing</code></pre>
+</div>
+</div>
+<div id="gsealens-processing" class="section level2">
+<h2>GSEAlens Processing</h2>
+<div id="creating-gsea-pathway-object" class="section level3">
+<h3>Creating GSEA Pathway Object</h3>
+<p>Use the <code>build_gsea_pathways</code> function to construct a
+pathway object for GSEA enrichment analysis.</p>
+<div class="sourceCode" id="cb28"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" tabindex="-1"></a>gsea_pathwaysets <span class="ot">&lt;-</span> GSEAlens<span class="sc">::</span><span class="fu">build_gsea_pathways</span>(<span class="at">species =</span> <span class="st">&quot;HS&quot;</span>,<span class="at">auto_select =</span> <span class="fu">c</span>(<span class="dv">17</span>,<span class="dv">18</span>,<span class="dv">19</span>,<span class="dv">20</span>,<span class="dv">26</span>))</span></code></pre></div>
+<pre><code>## [build_gsea_pathways] Species: Homo sapiens (Human)</code></pre>
+<pre><code>## 
+## Selected 5 collection(s). Batch Tag: [Mix5_HS_C5_GO_BP]</code></pre>
+<pre><code>## 
+## [build_gsea_pathways] Done! Built 16333 pathways x 19676 genes for Homo sapiens (Human)</code></pre>
+</div>
+<div id="assembling-computation-object" class="section level3">
+<h3>Assembling Computation Object</h3>
+<p>Through the <code>setup_gsea_env</code> function, assemble a
+<code>GSEAEnv</code> object for computational analysis. Different
+workflows use the same function with different data inputs. For the
+limma-voom workflow, since the <code>fit</code> object does not contain
+the original gene read counts, the filtered <code>DGEList</code> used to
+generate the <code>fit</code> object must be additionally provided. In
+this example, it is the multi-step filtered
+<code>gsea_limma_voom_data</code>.</p>
+<p>Assemble the limma-voom workflow object for analysis.</p>
+<div class="sourceCode" id="cb32"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" tabindex="-1"></a>gseadata_limmavoom <span class="ot">&lt;-</span> GSEAlens<span class="sc">::</span><span class="fu">setup_gsea_env</span>(<span class="at">fit =</span> fit,<span class="at">pathway_obj =</span> gsea_pathwaysets,<span class="at">expr_data =</span> gsea_limma_voom_data)</span></code></pre></div>
+<pre><code>## 
+## Starting GSEAlens engine...</code></pre>
+<pre><code>## Detected input type: [Limma-Voom]</code></pre>
+<pre><code>## GseaEnv object built successfully!</code></pre>
+<pre><code>##    Contains 1 contrast groups</code></pre>
+<pre><code>##    Contains 16333 pathways</code></pre>
+<p>Assemble the DESeq2 SummarizedExperiment object for analysis.</p>
+<div class="sourceCode" id="cb38"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" tabindex="-1"></a>gseadata_se <span class="ot">&lt;-</span> GSEAlens<span class="sc">::</span><span class="fu">setup_gsea_env</span>(<span class="at">fit =</span> dds_se,<span class="at">pathway_obj =</span> gsea_pathwaysets)</span></code></pre></div>
+<pre><code>## 
+## Starting GSEAlens engine...</code></pre>
+<pre><code>## Detected input type: [DESeq2]</code></pre>
+<pre><code>## [DESeq2] target_factor not specified, automatically inferred as: &#39;dex&#39;</code></pre>
+<pre><code>## GseaEnv object built successfully!</code></pre>
+<pre><code>##    Contains 1 contrast groups</code></pre>
+<pre><code>##    Contains 16333 pathways</code></pre>
+<p>Assemble the DESeq2 Count matrix workflow object for analysis.</p>
+<div class="sourceCode" id="cb45"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" tabindex="-1"></a>gseadata_dds <span class="ot">&lt;-</span> GSEAlens<span class="sc">::</span><span class="fu">setup_gsea_env</span>(<span class="at">fit =</span> dds,<span class="at">pathway_obj =</span> gsea_pathwaysets)</span></code></pre></div>
+<pre><code>## 
+## Starting GSEAlens engine...</code></pre>
+<pre><code>## Detected input type: [DESeq2]</code></pre>
+<pre><code>## [DESeq2] target_factor not specified, automatically inferred as: &#39;dex&#39;</code></pre>
+<pre><code>## GseaEnv object built successfully!</code></pre>
+<pre><code>##    Contains 1 contrast groups</code></pre>
+<pre><code>##    Contains 16333 pathways</code></pre>
+</div>
+<div id="running-processing" class="section level3">
+<h3>Running Processing</h3>
+<p>All objects are processed using the <code>batch_calc_gsea</code>
+function with no differences.</p>
+<p>Parallel computing note: Adjust the <code>workers</code> option based
+on your computer’s performance to set the number of cores for
+computation. More contrasts recommend higher core settings for better
+computational efficiency.</p>
+<div class="sourceCode" id="cb52"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" tabindex="-1"></a><span class="co"># limma-voom workflow</span></span>
+<span id="cb52-2"><a href="#cb52-2" tabindex="-1"></a>gsea_res_limmavoom <span class="ot">&lt;-</span> GSEAlens<span class="sc">::</span><span class="fu">batch_calc_gsea</span>(gseadata_limmavoom, </span>
+<span id="cb52-3"><a href="#cb52-3" tabindex="-1"></a>                                                 <span class="at">custom_series_name =</span> <span class="st">&quot;limmavoom_data&quot;</span>, </span>
+<span id="cb52-4"><a href="#cb52-4" tabindex="-1"></a>                                                 <span class="at">workers =</span> <span class="dv">4</span>,  <span class="co"># Adjust based on number of contrasts and computer performance</span></span>
+<span id="cb52-5"><a href="#cb52-5" tabindex="-1"></a>                                                 <span class="at">force =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb52-6"><a href="#cb52-6" tabindex="-1"></a></span>
+<span id="cb52-7"><a href="#cb52-7" tabindex="-1"></a><span class="co"># DESeq2 SummarizedExperiment workflow</span></span>
+<span id="cb52-8"><a href="#cb52-8" tabindex="-1"></a>gsea_res_se <span class="ot">&lt;-</span> GSEAlens<span class="sc">::</span><span class="fu">batch_calc_gsea</span>(gseadata_se, </span>
+<span id="cb52-9"><a href="#cb52-9" tabindex="-1"></a>                                          <span class="at">custom_series_name =</span> <span class="st">&quot;dds_se_data&quot;</span>, </span>
+<span id="cb52-10"><a href="#cb52-10" tabindex="-1"></a>                                          <span class="at">workers =</span> <span class="dv">4</span>,</span>
+<span id="cb52-11"><a href="#cb52-11" tabindex="-1"></a>                                          <span class="at">force =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb52-12"><a href="#cb52-12" tabindex="-1"></a></span>
+<span id="cb52-13"><a href="#cb52-13" tabindex="-1"></a><span class="co"># DESeq2 Count matrix workflow</span></span>
+<span id="cb52-14"><a href="#cb52-14" tabindex="-1"></a>gsea_res_dds <span class="ot">&lt;-</span> GSEAlens<span class="sc">::</span><span class="fu">batch_calc_gsea</span>(gseadata_dds, </span>
+<span id="cb52-15"><a href="#cb52-15" tabindex="-1"></a>                                           <span class="at">custom_series_name =</span> <span class="st">&quot;dds_data&quot;</span>, </span>
+<span id="cb52-16"><a href="#cb52-16" tabindex="-1"></a>                                           <span class="at">workers =</span> <span class="dv">4</span>,</span>
+<span id="cb52-17"><a href="#cb52-17" tabindex="-1"></a>                                           <span class="at">force =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
+</div>
+<div id="interactive-analysis-and-viewing" class="section level3">
+<h3>Interactive Analysis and Viewing</h3>
+<p>After running <code>batch_calc_gsea</code>, an RDS file will be
+generated in the corresponding directory. Load this file or use
+<code>import_gsea_capsule</code> to read it. The
+<code>import_gsea_capsule</code> function can automatically organize
+relevant files into the folder where your RMD file or R script is
+located, and provide data inspection results.</p>
+<div class="sourceCode" id="cb53"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" tabindex="-1"></a>gsea_res <span class="ot">&lt;-</span> <span class="fu">import_gsea_capsule</span>(<span class="st">&quot;/path/to/your/files/&quot;</span>)</span>
+<span id="cb53-2"><a href="#cb53-2" tabindex="-1"></a><span class="co"># Or directly read the RDS file</span></span>
+<span id="cb53-3"><a href="#cb53-3" tabindex="-1"></a><span class="co"># gsea_res &lt;- readRDS(&quot;/path/of/your/file/&quot;)</span></span></code></pre></div>
+<p>After loading the data, you can use <code>launch_gsea_app</code> for
+interactive viewing.</p>
+<div class="sourceCode" id="cb54"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" tabindex="-1"></a><span class="fu">launch_gsea_app</span>(gsea_res)</span></code></pre></div>
+</div>
+</div>
+</div>
+<div id="package-intermediate-object-descriptions" class="section level1">
+<h1>Package Intermediate Object Descriptions</h1>
+<div id="gseaenv-object" class="section level2">
+<h2>GseaEnv Object</h2>
+<p>The <code>GseaEnv</code> object returned by the
+<code>setup_gsea_env</code> function contains the following
+components:</p>
+<table>
+<colgroup>
+<col width="23%" />
+<col width="76%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Component</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>backend_info</code></td>
+<td>Backend type information (limma-voom or DESeq2)</td>
+</tr>
+<tr class="even">
+<td><code>contrast_registry</code></td>
+<td>Contrast registry containing all pairwise comparison
+information</td>
+</tr>
+<tr class="odd">
+<td><code>de_store</code></td>
+<td>Differential expression analysis results storage</td>
+</tr>
+<tr class="even">
+<td><code>expr_bundle</code></td>
+<td>Expression data bundle (raw counts, normalized matrix, sample
+metadata)</td>
+</tr>
+<tr class="odd">
+<td><code>geneset</code></td>
+<td>Geneset information (TERM2GENE, metadata dictionary, species)</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="gseares-object" class="section level2">
+<h2>GseaRes Object</h2>
+<p>The <code>GseaRes</code> object returned by the
+<code>batch_calc_gsea</code> function contains the following
+components:</p>
+<table>
+<colgroup>
+<col width="23%" />
+<col width="76%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Component</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>metadata</code></td>
+<td>Computation metadata (runtime, cores used, parameter settings)</td>
+</tr>
+<tr class="even">
+<td><code>backend_info</code></td>
+<td>Backend type information</td>
+</tr>
+<tr class="odd">
+<td><code>contrast_registry</code></td>
+<td>Contrast registry</td>
+</tr>
+<tr class="even">
+<td><code>de_store</code></td>
+<td>Differential expression analysis results storage</td>
+</tr>
+<tr class="odd">
+<td><code>expr_bundle</code></td>
+<td>Expression data bundle</td>
+</tr>
+<tr class="even">
+<td><code>geneset_info</code></td>
+<td>Geneset information</td>
+</tr>
+<tr class="odd">
+<td><code>results</code></td>
+<td>GSEA results list, one entry per contrast</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="gseatask-object" class="section level2">
+<h2>GseaTask Object</h2>
+<p>The <code>GseaTask</code> object returned by the
+<code>extract_gsea_task</code> function is used for single-contrast
+analysis:</p>
+<table>
+<colgroup>
+<col width="22%" />
+<col width="77%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Component</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>gsea_res</code></td>
+<td>GSEA result object</td>
+</tr>
+<tr class="even">
+<td><code>meta</code></td>
+<td>Metadata (contrast information, geneset name, expression data)</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="session-info" class="section level1">
+<h1>Session Info</h1>
+<div class="sourceCode" id="cb55"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span></code></pre></div>
+<pre><code>## R version 4.5.3 (2026-03-11 ucrt)
+## Platform: x86_64-w64-mingw32/x64
+## Running under: Windows 11 x64 (build 26200)
+## 
+## Matrix products: default
+##   LAPACK version 3.12.1
+## 
+## locale:
+## [1] LC_COLLATE=Chinese (Simplified)_China.utf8  LC_CTYPE=Chinese (Simplified)_China.utf8   
+## [3] LC_MONETARY=Chinese (Simplified)_China.utf8 LC_NUMERIC=C                               
+## [5] LC_TIME=Chinese (Simplified)_China.utf8    
+## 
+## time zone: Asia/Shanghai
+## tzcode source: internal
+## 
+## attached base packages:
+## [1] stats4    stats     graphics  grDevices utils     datasets  methods   base     
+## 
+## other attached packages:
+##  [1] DESeq2_1.50.2               edgeR_4.8.2                 limma_3.66.0                airway_1.30.0              
+##  [5] SummarizedExperiment_1.40.0 Biobase_2.70.0              GenomicRanges_1.62.1        Seqinfo_1.0.0              
+##  [9] IRanges_2.44.0              S4Vectors_0.48.1            BiocGenerics_0.56.0         generics_0.1.4             
+## [13] MatrixGenerics_1.22.0       matrixStats_1.5.0           GSEAlens_0.99.0            
+## 
+## loaded via a namespace (and not attached):
+##   [1] later_1.4.8             splines_4.5.3           ggplotify_0.1.3         tibble_3.3.1            R.oo_1.27.1            
+##   [6] polyclip_1.10-7         lifecycle_1.0.5         doParallel_1.0.17       globals_0.19.1          lattice_0.22-9         
+##  [11] MASS_7.3-65             magrittr_2.0.4          plotly_4.12.0           sass_0.4.10             rmarkdown_2.31         
+##  [16] jquerylib_0.1.4         yaml_2.3.12             remotes_2.5.0           httpuv_1.6.17           otel_0.2.0             
+##  [21] ggtangle_0.1.1          sessioninfo_1.2.3       pkgbuild_1.4.8          cowplot_1.2.0           DBI_1.3.0              
+##  [26] RColorBrewer_1.1-3      abind_1.4-8             pkgload_1.5.1           purrr_1.2.1             R.utils_2.13.0         
+##  [31] msigdbr_26.1.0          yulab.utils_0.2.4       tweenr_2.0.3            rappdirs_0.3.4          gdtools_0.5.0          
+##  [36] circlize_0.4.18         enrichplot_1.30.5       ggrepel_0.9.8           listenv_0.10.1          tidytree_0.4.7         
+##  [41] parallelly_1.46.1       codetools_0.2-20        DelayedArray_0.36.1     DOSE_4.4.0              DT_0.34.0              
+##  [46] ggforce_0.5.0           tidyselect_1.2.1        shape_1.4.6.1           aplot_0.2.9             farver_2.1.2           
+##  [51] jsonlite_2.0.0          GetoptLong_1.1.1        progressr_0.19.0        ellipsis_0.3.3          iterators_1.0.14       
+##  [56] systemfonts_1.3.2       foreach_1.5.2           tools_4.5.3             ggnewscale_0.5.2        treeio_1.34.0          
+##  [61] Rcpp_1.1.1              glue_1.8.0              SparseArray_1.10.10     xfun_0.57               qvalue_2.42.0          
+##  [66] usethis_3.2.1           dplyr_1.2.1             withr_3.0.2             fastmap_1.2.0           digest_0.6.39          
+##  [71] mime_0.13               R6_2.6.1                gridGraphics_0.5-1      colorspace_2.1-2        GO.db_3.22.0           
+##  [76] RSQLite_2.4.6           R.methodsS3_1.8.2       tidyr_1.3.2             fontLiberation_0.1.0    data.table_1.18.2.1    
+##  [81] httr_1.4.8              htmlwidgets_1.6.4       S4Arrays_1.10.1         scatterpie_0.2.6        pkgconfig_2.0.3        
+##  [86] gtable_0.3.6            rsconnect_1.7.0         blob_1.3.0              ComplexHeatmap_2.26.1   S7_0.2.1               
+##  [91] XVector_0.50.0          clusterProfiler_4.18.4  htmltools_0.5.9         fontBitstreamVera_0.1.1 fgsea_1.36.2           
+##  [96] clue_0.3-68             scales_1.4.0            png_0.1-9               ggfun_0.2.0             knitr_1.51             
+## [101] rstudioapi_0.18.0       reshape2_1.4.5          rjson_0.2.23            nlme_3.1-169            curl_7.0.0             
+## [106] cachem_1.1.0            GlobalOptions_0.1.4     stringr_1.6.0           shinycssloaders_1.1.0   parallel_4.5.3         
+## [111] AnnotationDbi_1.72.0    pillar_1.11.1           grid_4.5.3              vctrs_0.7.2             promises_1.5.0         
+## [116] tidydr_0.0.6            xtable_1.8-8            cluster_2.1.8.2         evaluate_1.0.5          cli_3.6.5              
+## [121] locfit_1.5-9.12         compiler_4.5.3          rlang_1.1.7             crayon_1.5.3            future.apply_1.20.2    
+## [126] plyr_1.8.9              fs_2.0.1                ggiraph_0.9.6           stringi_1.8.7           viridisLite_0.4.3      
+## [131] BiocParallel_1.44.0     babelgene_22.9          assertthat_0.2.1        Biostrings_2.78.0       lazyeval_0.2.3         
+## [136] devtools_2.5.0          GOSemSim_2.36.0         fontquiver_0.2.1        Matrix_1.7-5            patchwork_1.3.2        
+## [141] bit64_4.6.0-1           future_1.70.0           ggplot2_4.0.2           shiny_1.13.0            KEGGREST_1.50.0        
+## [146] statmod_1.5.1           clipr_0.8.0             igraph_2.2.3            memoise_2.0.1           bslib_0.10.0           
+## [151] ggtree_4.0.5            fastmatch_1.1-8         bit_4.6.0               ape_5.8-1               gson_0.1.0</code></pre>
+</div>
+<div id="references" class="section level1">
+<h1>References</h1>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
