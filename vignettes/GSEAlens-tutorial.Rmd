@@ -7,13 +7,251 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, include = FALSE}
-knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>"
-)
+# R包简介
+
+# 示例代码
+
+使用`airway`包作为示例运行，这个R包当中包含两组每组4个重复
+
+```{r 环境准备}
+library(GSEAlens)
+# 先检查是否已安装 airway
+if (!requireNamespace("airway", quietly = TRUE)) {
+  # 如果未安装，先检查并安装 BiocManager
+  if (!requireNamespace("BiocManager", quietly = TRUE)) {
+    install.packages("BiocManager")
+  }
+  # 通过 BiocManager 安装 airway
+  BiocManager::install("airway")
+}
+library("airway")
+data(airway)
+expression_data <- airway
 ```
 
-```{r setup}
-library(GSEAlens)
+## 输入数据准备
+
+### limma-voom 流程
+
+首先参考标准流程，使用edgeR包组装DGEList对象，设计无截距矩阵并重命名行名，之后制作用于拟合的比对，过滤低表达基因，保留蛋白质编码RNA，使用symbol作为行名
+
+```{r limma-voom 数据准备}
+library(edgeR)
+library(limma)
+group_level <- airway@colData@listData[["dex"]] 
+design <- model.matrix(~0+group_level)
+colnames(design) <- levels(group_level)
+compare_end <- combn(levels(group_level), 2, simplify = FALSE)
+contrast_strings <- sapply(compare_end, function(x) paste(x[2], x[1], sep = " - ")) 
+contrast_matrix <- makeContrasts(contrasts = contrast_strings, levels = design)
+
+genes_df <- data.frame(
+  gene_id = airway@rowRanges@elementMetadata@listData$gene_id,
+  symbol = airway@rowRanges@elementMetadata@listData$symbol,
+  gene_biotype = airway@rowRanges@elementMetadata@listData$gene_biotype
+)
+genes_df$Length <- airway@rowRanges@elementMetadata@listData$gene_seq_end - 
+                   airway@rowRanges@elementMetadata@listData$gene_seq_start + 1
+gsea_limma_voom_data <- edgeR::DGEList(
+  counts = assay(airway, "counts"),
+  genes = genes_df,
+    norm.factors = NULL,
+    group = group_level,
+    remove.zeros = T
+  )
+
+total_counts <- edgeR::cpm(gsea_limma_voom_data) |> rowSums()  
+
+dup_symbols <- gsea_limma_voom_data$genes$symbol[duplicated(gsea_limma_voom_data$genes$symbol)]
+
+keep <- rep(TRUE, nrow(gsea_limma_voom_data))
+
+for (gene in dup_symbols) {
+  idx <- which(gsea_limma_voom_data$genes$symbol == gene)  # 该 symbol 的所有行索引
+  best_idx <- idx[which.max(total_counts[idx])]            # 表达量最高的行
+  remove_idx <- idx[idx != best_idx]                        # 要剔除的行
+  keep[remove_idx] <- FALSE
+}
+
+gsea_limma_voom_data <- gsea_limma_voom_data[keep, ]
+
+rownames(gsea_limma_voom_data) <- gsea_limma_voom_data$genes$symbol
+
+keep_biotype <- gsea_limma_voom_data$genes$gene_biotype == "protein_coding"
+gsea_limma_voom_data <- gsea_limma_voom_data[keep_biotype,]
+
+gsea_limma_voom_data <- edgeR::normLibSizes(gsea_limma_voom_data, method = "TMM")
+
+isexpr <- rowSums(edgeR::cpm(gsea_limma_voom_data) > 1) >= 3
+gsea_limma_voom_data <- gsea_limma_voom_data[isexpr,]
 ```
+
+之后进行limma-voom拟合，获取`fit`对象
+
+```{r limma-voom 处理}
+VoomOutPut <- voom(gsea_limma_voom_data,design)
+
+fit <- lmFit(object = VoomOutPut,design = design) %>% 
+  contrasts.fit(fit = ., contrasts = contrast_matrix) %>% 
+  eBayes(.) 
+```
+
+### DESeq2流程
+
+#### SummarizedExperiment input
+
+参考`DESeq2`包的说明文档，进行数据清洗与处理。 首先去除非编码RNA
+
+```{r 仅保留编码蛋白质的RNA}
+library("DESeq2")
+dds_se <- DESeqDataSet(expression_data, design = ~ cell + dex)
+gene_biotypes <- rowData(dds_se)$gene_biotype
+keep_protein_coding <- gene_biotypes == "protein_coding"
+dds_se <- dds_se[keep_protein_coding, ]
+dds_se
+```
+
+之后去除低表达基因，使用symbol作为行名
+
+```{r 去除低表达的RNA}
+smallestGroupSize <- 3
+keep <- rowSums(counts(dds_se) >= 10) >= smallestGroupSize
+dds_se <- dds_se[keep,]
+dds_se
+rownames(dds_se) <- dds_se@rowRanges@elementMetadata@listData[["gene_name"]]
+
+total_counts <- rowSums(SummarizedExperiment::assay(dds_se))
+keep <- rep(TRUE, nrow(dds_se))
+dup_genes <- rownames(dds_se)[duplicated(rownames(dds_se))]
+for (gene in dup_genes) {
+  idx <- which(rownames(dds_se) == gene)  # 该基因的所有行索引
+  best_idx <- idx[which.max(total_counts[idx])]  # 表达量最高的行
+  remove_idx <- idx[idx != best_idx]  # 要剔除的行（同一基因名下非最高表达）
+  keep[remove_idx] <- FALSE
+}
+dds_se <- dds_se[keep, ]
+
+
+```
+
+运行DESeq2处理
+
+```{r 运行DESeq2}
+dds_se <- DESeq(dds_se)
+```
+
+### Count matrix input
+
+过滤低表达基因，保留仅蛋白质编码RNA，并将矩阵行名修订为symbol
+
+```{r 矩阵修订}
+DDS_rawdata <- expression_data
+
+gene_biotypes_epd <- rowData(DDS_rawdata)$gene_biotype
+keep_protein_coding_epd <- gene_biotypes == "protein_coding"
+DDS_rawdata <- DDS_rawdata[keep_protein_coding, ]
+
+smallestGroupSize <- 3
+keep_epd <- rowSums(assay(DDS_rawdata, "counts") >= 10) >= smallestGroupSize
+DDS_rawdata <- DDS_rawdata[keep_epd,]
+
+rownames(DDS_rawdata) <- DDS_rawdata@rowRanges@elementMetadata@listData[["gene_name"]]
+
+total_counts <- rowSums(SummarizedExperiment::assay(DDS_rawdata))
+keep_name <- rep(TRUE, nrow(DDS_rawdata))
+dup_genes <- rownames(DDS_rawdata)[duplicated(rownames(DDS_rawdata))]
+for (gene in dup_genes) {
+  idx <- which(rownames(DDS_rawdata) == gene)  # 该基因的所有行索引
+  best_idx <- idx[which.max(total_counts[idx])]  # 表达量最高的行
+  remove_idx <- idx[idx != best_idx]  # 要剔除的行（同一基因名下非最高表达）
+  keep_name[remove_idx] <- FALSE
+}
+DDS_rawdata <- DDS_rawdata[keep_name, ]
+
+```
+
+矩阵信息获取
+
+```{r 矩阵提取}
+cts <- assay(DDS_rawdata,"counts")
+coldata <- DDS_rawdata@colData %>% as.data.frame.array()
+coldata <- coldata[,c("cell","dex")]
+coldata$cell <- factor(coldata$cell)
+coldata$dex <- factor(coldata$dex)
+
+
+```
+
+组装为DDS对象并进行处理
+
+```{r}
+dds <- DESeqDataSetFromMatrix(countData = cts,
+                              colData = coldata,
+                              design = ~ dex)
+dds <- DESeq(dds)
+```
+
+## GSEAlens处理
+
+### 创建GSEA基因集对象
+
+使用`build_gsea_pathways`函数构建用于GSEA富集分析的基因集对象
+
+```{r}
+gsea_pathwaysets <- GSEAlens::build_gsea_pathways(species = "HS",auto_select = c(17,18,19,20,26))
+```
+
+### 组装运算对象
+
+通过`setup_gsea_env`函数，组装用于计算分析的`GSEAEnv`对象，不同的终端使用同一个函数，仅纳入数据不同，对于limma-voom流程，由于`fit`对象当中不包含原始的基因读数，因此必须额外纳入过滤后用于生成`fit`对象的`DGEList`，本例中为多部过滤的`gsea_limma_voom_data`
+
+limma-voom流程对象纳入分析
+
+```{r}
+gseadata_limmavoom <- GSEAlens::setup_gsea_env(fit = fit,pathway_obj = gsea_pathwaysets,expr_data = gsea_limma_voom_data)
+```
+
+DESeq2的SummarizedExperiment对象纳入分析
+
+```{r}
+gseadata_se <- GSEAlens::setup_gsea_env(fit = dds_se,pathway_obj = gsea_pathwaysets)
+```
+
+DESeq2的Count matrix流程的对象纳入分析
+
+```{r}
+gseadata_dds <- GSEAlens::setup_gsea_env(fit = dds,pathway_obj = gsea_pathwaysets)
+```
+
+### 运行处理
+
+所有对象均使用`batch_calc_gsea`这个函数处理，没有任何区别
+
+```{r}
+gsea_res_limmavoom <- GSEAlens::batch_calc_gsea(gseadata_limmavoom,custom_series_name = "limmavoom_data",force = T)
+gsea_res_se <- GSEAlens::batch_calc_gsea(gseadata_se,custom_series_name = "dds_se_data",force = T)
+gsea_res_dds <- GSEAlens::batch_calc_gsea(gseadata_dds,custom_series_name = "dds_data",force = T)
+```
+
+### 交互式分析与查看
+
+运行`batch_calc_gsea`之后，在对应目录下会生成一个RDS文件，读入该文件，或者使用`import_gsea_capsule`读取，`import_gsea_capsule`函数可以在读取的时候，自动将相关文件整理到使用的RMD文件或者R脚本的文件夹中，并且给出数据的检视情况。
+
+```{r}
+gsea_res <- import_gsea_capsule("/path/to/your/files/")
+#gsea_res <- readRDS("/path/of/your/file/")
+```
+
+数据载入后，就可以使用`launch_gsea_app`进行交互式查看
+
+```{r}
+launch_gsea_app(gsea_res)
+```
+
+# Session info
+
+```{r sessionInfo}
+sessionInfo()
+```
+
+# References

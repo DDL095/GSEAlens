@@ -217,7 +217,7 @@ As your GSEA enrichment direction interpretation expert, I am ready. Please anal
     # ============================================================
 
     #' Extract Leading Edge genes and format as comma-separated
-    extract_leading_genes <- function(core_str, max_genes = 15) {
+    extract_leading_genes <- function(core_str, max_genes = 20) {
       if (is.null(core_str) || is.na(core_str) || core_str == "") {
         return(list(genes = "N/A", count = 0))
       }
@@ -361,9 +361,9 @@ As your GSEA enrichment direction interpretation expert, I am ready. Please anal
       # Get selected pathways
       selected_ids <- table_controller$selected_pathways()
 
-      # If none selected, use Top 15
+      # If none selected, use Top 30
       if (length(selected_ids) == 0) {
-        selected_ids <- data_list$df$ID[1:min(15, nrow(data_list$df))]
+        selected_ids <- data_list$df$ID[1:min(30, nrow(data_list$df))]
         shiny::showNotification(
           "No pathways selected - using Top 15 by |NES|",
           type = "warning", duration = 3
