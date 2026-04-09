@@ -2,7 +2,7 @@
 % Please edit documentation in R/16_shiny_mod_hubgene_vis.R
 \name{mod_hubgene_vis_ui}
 \alias{mod_hubgene_vis_ui}
-\title{HubGene Network (visNetwork) Module UI}
+\title{HubGene Network Module UI}
 \usage{
 mod_hubgene_vis_ui(id)
 }

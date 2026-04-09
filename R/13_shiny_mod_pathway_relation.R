@@ -319,7 +319,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
           style = "background: #fff3cd; padding: 10px; border-radius: 5px; color: #856404;",
           shiny::strong("No pathways available"),
           shiny::br(),
-          shiny::small("Adjust parameters or select pathways in Main Table")
+          htmltools::tags$small("Adjust parameters or select pathways in Main Table")
         ))
       }
       data_list <- data_prep_list$data()

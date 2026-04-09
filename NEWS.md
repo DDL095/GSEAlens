@@ -1,6 +1,6 @@
 <!-- NEWS.md is maintained by https://cynkra.github.io/fledge, do not edit -->
 
-# GSEAlens 1.99.0
+# GSEAlens 0.99.0
 
 - Pathway Network module addition
 - Hubgene Network module addition

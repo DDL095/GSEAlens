@@ -1,11 +1,4 @@
-# ==============================================================================
-# File: R/18_shiny_mod_hubgene_vis.R
-# Description: HubGene Network - visNetwork Interactive Module
-# Features: Gene opacity, Edge color follows gene stat, highlightNearest
-# Fix: Added symbol_map definition, restored gene name original case
-# ==============================================================================
-
-#' @title HubGene Network (visNetwork) Module UI
+#' @title HubGene Network Module UI
 #' @description
 #' Shiny module UI for visualizing HubGene networks using visNetwork.
 #' Provides interactive controls for pathway selection modes, physics

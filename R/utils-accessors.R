@@ -831,7 +831,7 @@ create_addition_template <- function(gsea_res,
     dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
   }
 
-  write.csv(template, output_path,
+  utils::write.csv(template, output_path,
     row.names = FALSE, quote = TRUE,
     fileEncoding = "UTF-8"
   )

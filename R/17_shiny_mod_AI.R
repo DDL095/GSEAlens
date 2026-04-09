@@ -46,7 +46,7 @@ mod_ai_abs_page_ui <- function(id) {
             shiny::div(
               style = "background: #fff; padding: 10px; border: 1px solid #ddd; border-radius: 5px;",
               shiny::p(shiny::strong("Placeholder Guide:")),
-              shiny::tags$small(
+              htmltools::tags$small(
                 "{left_group} - Left group name", shiny::br(),
                 "{right_group} - Right group name", shiny::br(),
                 "{comparison} - Comparison description", shiny::br(),
@@ -282,7 +282,7 @@ As your GSEA enrichment direction interpretation expert, I am ready. Please anal
           shiny::icon("exclamation-triangle"),
           " No pathways selected",
           shiny::br(),
-          shiny::tags$small("Check 'Joint Plot' in main table")
+          htmltools::tags$small("Check 'Joint Plot' in main table")
         )
       } else {
         shiny::div(

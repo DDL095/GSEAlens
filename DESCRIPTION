@@ -14,7 +14,6 @@ biocViews: GeneSetEnrichment, Visualization, ShinyApps, Software
 Imports: 
     stats,
     utils,
-    biocViews,
     enrichplot,
     grDevices,
     magrittr,
@@ -51,6 +50,8 @@ Imports:
     clipr,
     progressr,
     plyr,
+    visNetwork,
+    shinyjs,
     BiocParallel
 Suggests: testthat (>= 3.0.0),
     knitr,
