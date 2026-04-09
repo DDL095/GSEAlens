@@ -24,7 +24,7 @@ Automatically extracts contrasts, differential analysis results, and expression 
 a standardized GseaEnv object.
 }
 \examples{
-\donttest{
+\dontrun{
 # Limma workflow
 design <- model.matrix(~ 0 + group, data = samples)
 fit <- lmFit(expr, design) \%>\%

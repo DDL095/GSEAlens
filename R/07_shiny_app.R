@@ -17,7 +17,7 @@
 #' @return Shiny application object
 #' @export
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' # Basic usage
 #' gsea_res <- batch_calc_gsea(gsea_env)
 #' launch_gsea_app(gsea_res)

@@ -33,7 +33,7 @@ Convert a CSV file to standardized gzip-compressed RDS format
   with a standardized naming convention.
 }
 \examples{
-\donttest{
+\dontrun{
 # Convert CSV to RDS in current directory
 creat_addition_data_rdsfile("my_annotations.csv")
 

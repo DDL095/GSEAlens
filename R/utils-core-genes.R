@@ -7,7 +7,7 @@
 #' @export
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' core_genes <- get_core_genes_for_pathway(gsea_res, "HALLMARK_OXIDATIVE_PHOSPHORYLATION")
 #' }
 get_core_genes_for_pathway <- function(gsea_res_obj, pathway_id) {

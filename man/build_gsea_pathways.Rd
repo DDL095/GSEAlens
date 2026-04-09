@@ -37,7 +37,7 @@ Provides an interactive or automated gene set selection interface
   species.
 }
 \examples{
-\donttest{
+\dontrun{
 # Human mode (default)
 pathways <- build_gsea_pathways(species = "HS")
 
