@@ -1,13 +1,32 @@
 ---
-title: "GSEAlens-tutorial"
-output: rmarkdown::html_vignette
+title: "GSEAlens：基因集富集分析的交互式探索平台"
+author: "Dudali"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+    number_sections: true
 vignette: >
-  %\VignetteIndexEntry{GSEAlens-tutorial}
+  %\VignetteIndexEntry{GSEAlens：基因集富集分析的交互式探索平台}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
 # R包简介
+
+**GSEAlens** 中的 **Lens**（透镜）象征着这个包如同一个**放大镜**，帮助研究者深入探索 GSEA 富集分析中的关键通路。
+
+GSEAlens 提供了一个基于 Web 界面的交互式平台，用于展示通路的介绍和描述，并集成了 AI 辅助的通路富集结果导出功能。通过封装工作流程和标准化输入格式，这个 R 包简化了 GSEA 富集分析的结果查看和探索过程。
+
+## 安装说明
+
+```{r}
+# 使用 devtools 安装
+if (!requireNamespace("devtools", quietly = TRUE)) {
+    install.packages("devtools")
+}
+devtools::install_github("DDL095/GSEAlens")
+
+```
 
 # 示例代码
 
@@ -33,7 +52,9 @@ expression_data <- airway
 
 ### limma-voom 流程
 
-首先参考标准流程，使用edgeR包组装DGEList对象，设计无截距矩阵并重命名行名，之后制作用于拟合的比对，过滤低表达基因，保留蛋白质编码RNA，使用symbol作为行名
+首先参考标准流程，使用 edgeR 包组装 DGEList 对象，设计无截距矩阵并重命名行名， 之后制作用于拟合的比对，过滤低表达基因，保留蛋白质编码 RNA，使用 symbol 作为行名。
+
+***注意：GSEAlens 基于无截距设计的 limma-voom 流程 (\~0+group)，以确保列名直接对应组别名称。***
 
 ```{r limma-voom 数据准备}
 library(edgeR)
@@ -55,10 +76,10 @@ genes_df$Length <- airway@rowRanges@elementMetadata@listData$gene_seq_end -
 gsea_limma_voom_data <- edgeR::DGEList(
   counts = assay(airway, "counts"),
   genes = genes_df,
-    norm.factors = NULL,
-    group = group_level,
-    remove.zeros = T
-  )
+  norm.factors = NULL,
+  group = group_level,
+  remove.zeros = T
+)
 
 total_counts <- edgeR::cpm(gsea_limma_voom_data) |> rowSums()  
 
@@ -67,9 +88,9 @@ dup_symbols <- gsea_limma_voom_data$genes$symbol[duplicated(gsea_limma_voom_data
 keep <- rep(TRUE, nrow(gsea_limma_voom_data))
 
 for (gene in dup_symbols) {
-  idx <- which(gsea_limma_voom_data$genes$symbol == gene)  # 该 symbol 的所有行索引
-  best_idx <- idx[which.max(total_counts[idx])]            # 表达量最高的行
-  remove_idx <- idx[idx != best_idx]                        # 要剔除的行
+  idx <- which(gsea_limma_voom_data$genes$symbol == gene)  
+  best_idx <- idx[which.max(total_counts[idx])]            
+  remove_idx <- idx[idx != best_idx]                       
   keep[remove_idx] <- FALSE
 }
 
@@ -89,11 +110,11 @@ gsea_limma_voom_data <- gsea_limma_voom_data[isexpr,]
 之后进行limma-voom拟合，获取`fit`对象
 
 ```{r limma-voom 处理}
-VoomOutPut <- voom(gsea_limma_voom_data,design)
+VoomOutPut <- voom(gsea_limma_voom_data, design)
 
-fit <- lmFit(object = VoomOutPut,design = design) %>% 
+fit <- lmFit(object = VoomOutPut, design = design) %>% 
   contrasts.fit(fit = ., contrasts = contrast_matrix) %>% 
-  eBayes(.) 
+  eBayes(.)
 ```
 
 ### DESeq2流程
@@ -124,9 +145,9 @@ total_counts <- rowSums(SummarizedExperiment::assay(dds_se))
 keep <- rep(TRUE, nrow(dds_se))
 dup_genes <- rownames(dds_se)[duplicated(rownames(dds_se))]
 for (gene in dup_genes) {
-  idx <- which(rownames(dds_se) == gene)  # 该基因的所有行索引
-  best_idx <- idx[which.max(total_counts[idx])]  # 表达量最高的行
-  remove_idx <- idx[idx != best_idx]  # 要剔除的行（同一基因名下非最高表达）
+  idx <- which(rownames(dds_se) == gene)  
+  best_idx <- idx[which.max(total_counts[idx])]  
+  remove_idx <- idx[idx != best_idx]  
   keep[remove_idx] <- FALSE
 }
 dds_se <- dds_se[keep, ]
@@ -203,21 +224,21 @@ gsea_pathwaysets <- GSEAlens::build_gsea_pathways(species = "HS",auto_select = c
 
 ### 组装运算对象
 
-通过`setup_gsea_env`函数，组装用于计算分析的`GSEAEnv`对象，不同的终端使用同一个函数，仅纳入数据不同，对于limma-voom流程，由于`fit`对象当中不包含原始的基因读数，因此必须额外纳入过滤后用于生成`fit`对象的`DGEList`，本例中为多部过滤的`gsea_limma_voom_data`
+通过`setup_gsea_env`函数，组装用于计算分析的`GSEAEnv`对象，不同的终端使用同一个函数，仅纳入数据不同，对于limma-voom流程，由于`fit`对象当中不包含原始的基因读数，因此必须额外纳入过滤后用于生成`fit`对象的`DGEList`，本例中为多步过滤的`gsea_limma_voom_data`。
 
-limma-voom流程对象纳入分析
+limma-voom 流程对象纳入分析。
 
 ```{r}
 gseadata_limmavoom <- GSEAlens::setup_gsea_env(fit = fit,pathway_obj = gsea_pathwaysets,expr_data = gsea_limma_voom_data)
 ```
 
-DESeq2的SummarizedExperiment对象纳入分析
+DESeq2 的 SummarizedExperiment 对象纳入分析。
 
 ```{r}
 gseadata_se <- GSEAlens::setup_gsea_env(fit = dds_se,pathway_obj = gsea_pathwaysets)
 ```
 
-DESeq2的Count matrix流程的对象纳入分析
+DESeq2 的 Count matrix 流程的对象纳入分析。
 
 ```{r}
 gseadata_dds <- GSEAlens::setup_gsea_env(fit = dds,pathway_obj = gsea_pathwaysets)
@@ -225,12 +246,28 @@ gseadata_dds <- GSEAlens::setup_gsea_env(fit = dds,pathway_obj = gsea_pathwayset
 
 ### 运行处理
 
-所有对象均使用`batch_calc_gsea`这个函数处理，没有任何区别
+所有对象均使用`batch_calc_gsea`这个函数处理，没有任何区别。
+
+并行计算提示：可根据电脑性能调整 workers 选项，设置计算使用的核心数量。 比对数量越多，建议设置越高的核心数以提升计算效率。
 
 ```{r}
-gsea_res_limmavoom <- GSEAlens::batch_calc_gsea(gseadata_limmavoom,custom_series_name = "limmavoom_data",force = T)
-gsea_res_se <- GSEAlens::batch_calc_gsea(gseadata_se,custom_series_name = "dds_se_data",force = T)
-gsea_res_dds <- GSEAlens::batch_calc_gsea(gseadata_dds,custom_series_name = "dds_data",force = T)
+# limma-voom 流程
+gsea_res_limmavoom <- GSEAlens::batch_calc_gsea(gseadata_limmavoom, 
+                                                 custom_series_name = "limmavoom_data", 
+                                                 workers = 4,  # 根据比对数量和电脑性能调整
+                                                 force = TRUE)
+
+# DESeq2 SummarizedExperiment 流程
+gsea_res_se <- GSEAlens::batch_calc_gsea(gseadata_se, 
+                                          custom_series_name = "dds_se_data", 
+                                          workers = 4,
+                                          force = TRUE)
+
+# DESeq2 Count matrix 流程
+gsea_res_dds <- GSEAlens::batch_calc_gsea(gseadata_dds, 
+                                           custom_series_name = "dds_data", 
+                                           workers = 4,
+                                           force = TRUE)
 ```
 
 ### 交互式分析与查看
@@ -239,7 +276,8 @@ gsea_res_dds <- GSEAlens::batch_calc_gsea(gseadata_dds,custom_series_name = "dds
 
 ```{r}
 gsea_res <- import_gsea_capsule("/path/to/your/files/")
-#gsea_res <- readRDS("/path/of/your/file/")
+# 或直接读取 RDS 文件
+# gsea_res <- readRDS("/path/of/your/file/")
 ```
 
 数据载入后，就可以使用`launch_gsea_app`进行交互式查看
@@ -247,6 +285,25 @@ gsea_res <- import_gsea_capsule("/path/to/your/files/")
 ```{r}
 launch_gsea_app(gsea_res)
 ```
+
+# R包中间对象说明
+
+## GseaEnv 对象
+
+`setup_gsea_env` 函数返回的 `GseaEnv` 对象包含以下组件： \| 组件 \| 说明 \| \|------\|------\| \| `backend_info` \| 后端类型信息（limma-voom 或 DESeq2） \| \| `contrast_registry` \| 对比组注册表，包含所有成对比较信息 \| \| `de_store` \| 差异分析结果存储 \| \| `expr_bundle` \| 表达数据封装（原始计数、标准化矩阵、样本元数据） \| \| `geneset` \| 基因集信息（TERM2GENE、元数据字典、物种） \|
+
+## GseaRes 对象
+
+`batch_calc_gsea` 函数返回的 `GseaRes` 对象包含以下组件： \| 组件 \| 说明 \| \|------\|------\| \| `metadata` \| 计算元数据（运行时间、使用的核心数、参数设置） \| \| `backend_info` \| 后端类型信息 \| \| `contrast_registry` \| 对比组注册表 \| \| `de_store` \| 差异分析结果存储 \| \| `expr_bundle` \| 表达数据封装 \| \| `geneset_info` \| 基因集信息 \| \| `results` \| GSEA 结果列表，每个对比组对应一个条目 \|
+
+## GseaTask 对象
+
+`extract_gsea_task` 函数返回的 `GseaTask` 对象用于单对比分析：
+
+| 组件       | 说明                                       |
+|------------|--------------------------------------------|
+| `gsea_res` | GSEA result 对象                           |
+| `meta`     | 元信息（对比组信息、基因集名称、表达数据） |
 
 # Session info
 
