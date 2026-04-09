@@ -14,7 +14,7 @@
 
 <meta name="date" content="2026-04-09" />
 
-<title>GSEAlens: An Interactive Exploration Platform for Gene Set Enrichment Analysis</title>
+<title>GSEAlens：基因集富集分析的交互式探索平台</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -339,61 +339,96 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 
 
-<h1 class="title toc-ignore">GSEAlens: An Interactive Exploration
-Platform for Gene Set Enrichment Analysis</h1>
+<h1 class="title toc-ignore">GSEAlens：基因集富集分析的交互式探索平台</h1>
 <h4 class="author">Dudali</h4>
 <h4 class="date">2026-04-09</h4>
 
 
+<div id="TOC">
+<ul>
+<li><a href="#r%E5%8C%85%E7%AE%80%E4%BB%8B" id="toc-r包简介"><span class="toc-section-number">1</span> R包简介</a>
+<ul>
+<li><a href="#%E5%AE%89%E8%A3%85%E8%AF%B4%E6%98%8E" id="toc-安装说明"><span class="toc-section-number">1.1</span>
+安装说明</a></li>
+</ul></li>
+<li><a href="#%E7%A4%BA%E4%BE%8B%E4%BB%A3%E7%A0%81" id="toc-示例代码"><span class="toc-section-number">2</span> 示例代码</a>
+<ul>
+<li><a href="#%E8%BE%93%E5%85%A5%E6%95%B0%E6%8D%AE%E5%87%86%E5%A4%87" id="toc-输入数据准备"><span class="toc-section-number">2.1</span>
+输入数据准备</a>
+<ul>
+<li><a href="#limma-voom-%E6%B5%81%E7%A8%8B" id="toc-limma-voom-流程"><span class="toc-section-number">2.1.1</span>
+limma-voom 流程</a></li>
+<li><a href="#deseq2%E6%B5%81%E7%A8%8B" id="toc-deseq2流程"><span class="toc-section-number">2.1.2</span> DESeq2流程</a></li>
+<li><a href="#count-matrix-input" id="toc-count-matrix-input"><span class="toc-section-number">2.1.3</span> Count matrix input</a></li>
+</ul></li>
+<li><a href="#gsealens%E5%A4%84%E7%90%86" id="toc-gsealens处理"><span class="toc-section-number">2.2</span> GSEAlens处理</a>
+<ul>
+<li><a href="#%E5%88%9B%E5%BB%BAgsea%E5%9F%BA%E5%9B%A0%E9%9B%86%E5%AF%B9%E8%B1%A1" id="toc-创建gsea基因集对象"><span class="toc-section-number">2.2.1</span> 创建GSEA基因集对象</a></li>
+<li><a href="#%E7%BB%84%E8%A3%85%E8%BF%90%E7%AE%97%E5%AF%B9%E8%B1%A1" id="toc-组装运算对象"><span class="toc-section-number">2.2.2</span>
+组装运算对象</a></li>
+<li><a href="#%E8%BF%90%E8%A1%8C%E5%A4%84%E7%90%86" id="toc-运行处理"><span class="toc-section-number">2.2.3</span>
+运行处理</a></li>
+<li><a href="#%E4%BA%A4%E4%BA%92%E5%BC%8F%E5%88%86%E6%9E%90%E4%B8%8E%E6%9F%A5%E7%9C%8B" id="toc-交互式分析与查看"><span class="toc-section-number">2.2.4</span>
+交互式分析与查看</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#r%E5%8C%85%E4%B8%AD%E9%97%B4%E5%AF%B9%E8%B1%A1%E8%AF%B4%E6%98%8E" id="toc-r包中间对象说明"><span class="toc-section-number">3</span>
+R包中间对象说明</a>
+<ul>
+<li><a href="#gseaenv-%E5%AF%B9%E8%B1%A1" id="toc-gseaenv-对象"><span class="toc-section-number">3.1</span> GseaEnv 对象</a></li>
+<li><a href="#gseares-%E5%AF%B9%E8%B1%A1" id="toc-gseares-对象"><span class="toc-section-number">3.2</span> GseaRes 对象</a></li>
+<li><a href="#gseatask-%E5%AF%B9%E8%B1%A1" id="toc-gseatask-对象"><span class="toc-section-number">3.3</span> GseaTask 对象</a></li>
+</ul></li>
+<li><a href="#session-info" id="toc-session-info"><span class="toc-section-number">4</span> Session info</a></li>
+<li><a href="#references" id="toc-references"><span class="toc-section-number">5</span> References</a></li>
+</ul>
+</div>
 
-<div id="package-introduction" class="section level1">
-<h1>Package Introduction</h1>
-<p><strong>GSEAlens</strong> derives its name from
-<strong>Lens</strong>, symbolizing how this package acts as a
-<strong>magnifying glass</strong> to help researchers deeply explore key
-pathways in GSEA enrichment analysis.</p>
-<p>GSEAlens provides a web-based interactive platform for displaying
-pathway introductions and descriptions, integrating AI-assisted pathway
-enrichment result export functionality. By encapsulating workflows and
-standardizing input formats, this R package simplifies the process of
-viewing and exploring GSEA enrichment analysis results.</p>
-<div id="installation" class="section level2">
-<h2>Installation</h2>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="co"># Install using devtools</span></span>
+<div id="r包简介" class="section level1" number="1">
+<h1><span class="header-section-number">1</span> R包简介</h1>
+<p><strong>GSEAlens</strong> 中的
+<strong>Lens</strong>（透镜）象征着这个包如同一个<strong>放大镜</strong>，帮助研究者深入探索
+GSEA 富集分析中的关键通路。</p>
+<p>GSEAlens 提供了一个基于 Web
+界面的交互式平台，用于展示通路的介绍和描述，并集成了 AI
+辅助的通路富集结果导出功能。通过封装工作流程和标准化输入格式，这个 R
+包简化了 GSEA 富集分析的结果查看和探索过程。</p>
+<div id="安装说明" class="section level2" number="1.1">
+<h2><span class="header-section-number">1.1</span> 安装说明</h2>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="co"># 使用 devtools 安装</span></span>
 <span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">requireNamespace</span>(<span class="st">&quot;devtools&quot;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) {</span>
 <span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>    <span class="fu">install.packages</span>(<span class="st">&quot;devtools&quot;</span>)</span>
 <span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>}</span>
 <span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">&quot;DDL095/GSEAlens&quot;</span>)</span></code></pre></div>
 </div>
 </div>
-<div id="example-code" class="section level1">
-<h1>Example Code</h1>
-<p>Using the <code>airway</code> package as an example, this R package
-contains two groups with 4 replicates each.</p>
+<div id="示例代码" class="section level1" number="2">
+<h1><span class="header-section-number">2</span> 示例代码</h1>
+<p>使用<code>airway</code>包作为示例运行，这个R包当中包含两组每组4个重复</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">library</span>(GSEAlens)</span>
-<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="co"># First check if airway is already installed</span></span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="co"># 先检查是否已安装 airway</span></span>
 <span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">requireNamespace</span>(<span class="st">&quot;airway&quot;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) {</span>
-<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>  <span class="co"># If not installed, check and install BiocManager first</span></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>  <span class="co"># 如果未安装，先检查并安装 BiocManager</span></span>
 <span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">requireNamespace</span>(<span class="st">&quot;BiocManager&quot;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) {</span>
 <span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>    <span class="fu">install.packages</span>(<span class="st">&quot;BiocManager&quot;</span>)</span>
 <span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>  }</span>
-<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>  <span class="co"># Install airway through BiocManager</span></span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>  <span class="co"># 通过 BiocManager 安装 airway</span></span>
 <span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a>  BiocManager<span class="sc">::</span><span class="fu">install</span>(<span class="st">&quot;airway&quot;</span>)</span>
 <span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a>}</span>
 <span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a><span class="fu">library</span>(<span class="st">&quot;airway&quot;</span>)</span>
 <span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a><span class="fu">data</span>(airway)</span>
 <span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a>expression_data <span class="ot">&lt;-</span> airway</span></code></pre></div>
-<div id="input-data-preparation" class="section level2">
-<h2>Input Data Preparation</h2>
-<div id="limma-voom-workflow" class="section level3">
-<h3>limma-voom Workflow</h3>
-<p>First, refer to the standard workflow: use the edgeR package to
-assemble a DGEList object, design a no-intercept matrix and rename row
-names, then create contrasts for fitting, filter low-expression genes,
-retain protein-coding RNAs, and use symbols as row names.</p>
-<p><strong><em>Note: GSEAlens is based on a no-intercept design
-limma-voom workflow (~0+group) to ensure that column names directly
-correspond to group names.</em></strong></p>
+<div id="输入数据准备" class="section level2" number="2.1">
+<h2><span class="header-section-number">2.1</span> 输入数据准备</h2>
+<div id="limma-voom-流程" class="section level3" number="2.1.1">
+<h3><span class="header-section-number">2.1.1</span> limma-voom
+流程</h3>
+<p>首先参考标准流程，使用 edgeR 包组装 DGEList
+对象，设计无截距矩阵并重命名行名，
+之后制作用于拟合的比对，过滤低表达基因，保留蛋白质编码 RNA，使用 symbol
+作为行名。</p>
+<p><strong><em>注意：GSEAlens 基于无截距设计的 limma-voom 流程
+(~0+group)，以确保列名直接对应组别名称。</em></strong></p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">library</span>(edgeR)</span>
 <span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">library</span>(limma)</span>
 <span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>group_level <span class="ot">&lt;-</span> airway<span class="sc">@</span>colData<span class="sc">@</span>listData[[<span class="st">&quot;dex&quot;</span>]] </span>
@@ -442,20 +477,20 @@ correspond to group names.</em></strong></p>
 <span id="cb5-22"><a href="#cb5-22" tabindex="-1"></a></span>
 <span id="cb5-23"><a href="#cb5-23" tabindex="-1"></a>isexpr <span class="ot">&lt;-</span> <span class="fu">rowSums</span>(edgeR<span class="sc">::</span><span class="fu">cpm</span>(gsea_limma_voom_data) <span class="sc">&gt;</span> <span class="dv">1</span>) <span class="sc">&gt;=</span> <span class="dv">3</span></span>
 <span id="cb5-24"><a href="#cb5-24" tabindex="-1"></a>gsea_limma_voom_data <span class="ot">&lt;-</span> gsea_limma_voom_data[isexpr,]</span></code></pre></div>
-<p>Then perform limma-voom fitting to obtain the <code>fit</code>
-object.</p>
+<p>之后进行limma-voom拟合，获取<code>fit</code>对象</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>VoomOutPut <span class="ot">&lt;-</span> <span class="fu">voom</span>(gsea_limma_voom_data, design)</span>
 <span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a></span>
 <span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">lmFit</span>(<span class="at">object =</span> VoomOutPut, <span class="at">design =</span> design) <span class="sc">%&gt;%</span> </span>
 <span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>  <span class="fu">contrasts.fit</span>(<span class="at">fit =</span> ., <span class="at">contrasts =</span> contrast_matrix) <span class="sc">%&gt;%</span> </span>
 <span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>  <span class="fu">eBayes</span>(.)</span></code></pre></div>
 </div>
-<div id="deseq2-workflow" class="section level3">
-<h3>DESeq2 Workflow</h3>
-<div id="summarizedexperiment-input" class="section level4">
-<h4>SummarizedExperiment Input</h4>
-<p>Refer to the DESeq2 package documentation for data cleaning and
-processing. First, remove non-coding RNAs.</p>
+<div id="deseq2流程" class="section level3" number="2.1.2">
+<h3><span class="header-section-number">2.1.2</span> DESeq2流程</h3>
+<div id="summarizedexperiment-input" class="section level4" number="2.1.2.1">
+<h4><span class="header-section-number">2.1.2.1</span>
+SummarizedExperiment input</h4>
+<p>参考<code>DESeq2</code>包的说明文档，进行数据清洗与处理。
+首先去除非编码RNA</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="fu">library</span>(<span class="st">&quot;DESeq2&quot;</span>)</span>
 <span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>dds_se <span class="ot">&lt;-</span> <span class="fu">DESeqDataSet</span>(expression_data, <span class="at">design =</span> <span class="sc">~</span> cell <span class="sc">+</span> dex)</span>
 <span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>gene_biotypes <span class="ot">&lt;-</span> <span class="fu">rowData</span>(dds_se)<span class="sc">$</span>gene_biotype</span>
@@ -466,11 +501,12 @@ processing. First, remove non-coding RNAs.</p>
 ## dim: 22810 8 
 ## metadata(2): &#39;&#39; version
 ## assays(1): counts
-## rownames(22810): ENSG00000000003 ENSG00000000005 ... ENSG00000273482 ENSG00000273490
+## rownames(22810): ENSG00000000003 ENSG00000000005 ... ENSG00000273482
+##   ENSG00000273490
 ## rowData names(10): gene_id gene_name ... seq_coord_system symbol
 ## colnames(8): SRR1039508 SRR1039509 ... SRR1039520 SRR1039521
 ## colData names(9): SampleName cell ... Sample BioSample</code></pre>
-<p>Then remove low-expression genes and use symbols as row names.</p>
+<p>之后去除低表达基因，使用symbol作为行名</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>smallestGroupSize <span class="ot">&lt;-</span> <span class="dv">3</span></span>
 <span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>keep <span class="ot">&lt;-</span> <span class="fu">rowSums</span>(<span class="fu">counts</span>(dds_se) <span class="sc">&gt;=</span> <span class="dv">10</span>) <span class="sc">&gt;=</span> smallestGroupSize</span>
 <span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>dds_se <span class="ot">&lt;-</span> dds_se[keep,]</span>
@@ -479,7 +515,8 @@ processing. First, remove non-coding RNAs.</p>
 ## dim: 13256 8 
 ## metadata(2): &#39;&#39; version
 ## assays(1): counts
-## rownames(13256): ENSG00000000003 ENSG00000000419 ... ENSG00000272047 ENSG00000272325
+## rownames(13256): ENSG00000000003 ENSG00000000419 ... ENSG00000272047
+##   ENSG00000272325
 ## rowData names(10): gene_id gene_name ... seq_coord_system symbol
 ## colnames(8): SRR1039508 SRR1039509 ... SRR1039520 SRR1039521
 ## colData names(9): SampleName cell ... Sample BioSample</code></pre>
@@ -495,7 +532,7 @@ processing. First, remove non-coding RNAs.</p>
 <span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a>  keep[remove_idx] <span class="ot">&lt;-</span> <span class="cn">FALSE</span></span>
 <span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a>}</span>
 <span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a>dds_se <span class="ot">&lt;-</span> dds_se[keep, ]</span></code></pre></div>
-<p>Run DESeq2 processing.</p>
+<p>运行DESeq2处理</p>
 <div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>dds_se <span class="ot">&lt;-</span> <span class="fu">DESeq</span>(dds_se)</span></code></pre></div>
 <pre><code>## estimating size factors</code></pre>
 <pre><code>## estimating dispersions</code></pre>
@@ -505,10 +542,10 @@ processing. First, remove non-coding RNAs.</p>
 <pre><code>## fitting model and testing</code></pre>
 </div>
 </div>
-<div id="count-matrix-input" class="section level3">
-<h3>Count Matrix Input</h3>
-<p>Filter low-expression genes, retain only protein-coding RNAs, and
-rename matrix row names to symbols.</p>
+<div id="count-matrix-input" class="section level3" number="2.1.3">
+<h3><span class="header-section-number">2.1.3</span> Count matrix
+input</h3>
+<p>过滤低表达基因，保留仅蛋白质编码RNA，并将矩阵行名修订为symbol</p>
 <div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a>DDS_rawdata <span class="ot">&lt;-</span> expression_data</span>
 <span id="cb19-2"><a href="#cb19-2" tabindex="-1"></a></span>
 <span id="cb19-3"><a href="#cb19-3" tabindex="-1"></a>gene_biotypes_epd <span class="ot">&lt;-</span> <span class="fu">rowData</span>(DDS_rawdata)<span class="sc">$</span>gene_biotype</span>
@@ -525,19 +562,19 @@ rename matrix row names to symbols.</p>
 <span id="cb19-14"><a href="#cb19-14" tabindex="-1"></a>keep_name <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">TRUE</span>, <span class="fu">nrow</span>(DDS_rawdata))</span>
 <span id="cb19-15"><a href="#cb19-15" tabindex="-1"></a>dup_genes <span class="ot">&lt;-</span> <span class="fu">rownames</span>(DDS_rawdata)[<span class="fu">duplicated</span>(<span class="fu">rownames</span>(DDS_rawdata))]</span>
 <span id="cb19-16"><a href="#cb19-16" tabindex="-1"></a><span class="cf">for</span> (gene <span class="cf">in</span> dup_genes) {</span>
-<span id="cb19-17"><a href="#cb19-17" tabindex="-1"></a>  idx <span class="ot">&lt;-</span> <span class="fu">which</span>(<span class="fu">rownames</span>(DDS_rawdata) <span class="sc">==</span> gene)  </span>
-<span id="cb19-18"><a href="#cb19-18" tabindex="-1"></a>  best_idx <span class="ot">&lt;-</span> idx[<span class="fu">which.max</span>(total_counts[idx])]  </span>
-<span id="cb19-19"><a href="#cb19-19" tabindex="-1"></a>  remove_idx <span class="ot">&lt;-</span> idx[idx <span class="sc">!=</span> best_idx]  </span>
+<span id="cb19-17"><a href="#cb19-17" tabindex="-1"></a>  idx <span class="ot">&lt;-</span> <span class="fu">which</span>(<span class="fu">rownames</span>(DDS_rawdata) <span class="sc">==</span> gene)  <span class="co"># 该基因的所有行索引</span></span>
+<span id="cb19-18"><a href="#cb19-18" tabindex="-1"></a>  best_idx <span class="ot">&lt;-</span> idx[<span class="fu">which.max</span>(total_counts[idx])]  <span class="co"># 表达量最高的行</span></span>
+<span id="cb19-19"><a href="#cb19-19" tabindex="-1"></a>  remove_idx <span class="ot">&lt;-</span> idx[idx <span class="sc">!=</span> best_idx]  <span class="co"># 要剔除的行（同一基因名下非最高表达）</span></span>
 <span id="cb19-20"><a href="#cb19-20" tabindex="-1"></a>  keep_name[remove_idx] <span class="ot">&lt;-</span> <span class="cn">FALSE</span></span>
 <span id="cb19-21"><a href="#cb19-21" tabindex="-1"></a>}</span>
 <span id="cb19-22"><a href="#cb19-22" tabindex="-1"></a>DDS_rawdata <span class="ot">&lt;-</span> DDS_rawdata[keep_name, ]</span></code></pre></div>
-<p>Matrix information extraction.</p>
+<p>矩阵信息获取</p>
 <div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a>cts <span class="ot">&lt;-</span> <span class="fu">assay</span>(DDS_rawdata,<span class="st">&quot;counts&quot;</span>)</span>
 <span id="cb20-2"><a href="#cb20-2" tabindex="-1"></a>coldata <span class="ot">&lt;-</span> DDS_rawdata<span class="sc">@</span>colData <span class="sc">%&gt;%</span> <span class="fu">as.data.frame.array</span>()</span>
 <span id="cb20-3"><a href="#cb20-3" tabindex="-1"></a>coldata <span class="ot">&lt;-</span> coldata[,<span class="fu">c</span>(<span class="st">&quot;cell&quot;</span>,<span class="st">&quot;dex&quot;</span>)]</span>
 <span id="cb20-4"><a href="#cb20-4" tabindex="-1"></a>coldata<span class="sc">$</span>cell <span class="ot">&lt;-</span> <span class="fu">factor</span>(coldata<span class="sc">$</span>cell)</span>
 <span id="cb20-5"><a href="#cb20-5" tabindex="-1"></a>coldata<span class="sc">$</span>dex <span class="ot">&lt;-</span> <span class="fu">factor</span>(coldata<span class="sc">$</span>dex)</span></code></pre></div>
-<p>Assemble into DDS object and process.</p>
+<p>组装为DDS对象并进行处理</p>
 <div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a>dds <span class="ot">&lt;-</span> <span class="fu">DESeqDataSetFromMatrix</span>(<span class="at">countData =</span> cts,</span>
 <span id="cb21-2"><a href="#cb21-2" tabindex="-1"></a>                              <span class="at">colData =</span> coldata,</span>
 <span id="cb21-3"><a href="#cb21-3" tabindex="-1"></a>                              <span class="at">design =</span> <span class="sc">~</span> dex)</span>
@@ -550,12 +587,12 @@ rename matrix row names to symbols.</p>
 <pre><code>## fitting model and testing</code></pre>
 </div>
 </div>
-<div id="gsealens-processing" class="section level2">
-<h2>GSEAlens Processing</h2>
-<div id="creating-gsea-pathway-object" class="section level3">
-<h3>Creating GSEA Pathway Object</h3>
-<p>Use the <code>build_gsea_pathways</code> function to construct a
-pathway object for GSEA enrichment analysis.</p>
+<div id="gsealens处理" class="section level2" number="2.2">
+<h2><span class="header-section-number">2.2</span> GSEAlens处理</h2>
+<div id="创建gsea基因集对象" class="section level3" number="2.2.1">
+<h3><span class="header-section-number">2.2.1</span>
+创建GSEA基因集对象</h3>
+<p>使用<code>build_gsea_pathways</code>函数构建用于GSEA富集分析的基因集对象</p>
 <div class="sourceCode" id="cb28"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" tabindex="-1"></a>gsea_pathwaysets <span class="ot">&lt;-</span> GSEAlens<span class="sc">::</span><span class="fu">build_gsea_pathways</span>(<span class="at">species =</span> <span class="st">&quot;HS&quot;</span>,<span class="at">auto_select =</span> <span class="fu">c</span>(<span class="dv">17</span>,<span class="dv">18</span>,<span class="dv">19</span>,<span class="dv">20</span>,<span class="dv">26</span>))</span></code></pre></div>
 <pre><code>## [build_gsea_pathways] Species: Homo sapiens (Human)</code></pre>
 <pre><code>## 
@@ -563,17 +600,10 @@ pathway object for GSEA enrichment analysis.</p>
 <pre><code>## 
 ## [build_gsea_pathways] Done! Built 16333 pathways x 19676 genes for Homo sapiens (Human)</code></pre>
 </div>
-<div id="assembling-computation-object" class="section level3">
-<h3>Assembling Computation Object</h3>
-<p>Through the <code>setup_gsea_env</code> function, assemble a
-<code>GSEAEnv</code> object for computational analysis. Different
-workflows use the same function with different data inputs. For the
-limma-voom workflow, since the <code>fit</code> object does not contain
-the original gene read counts, the filtered <code>DGEList</code> used to
-generate the <code>fit</code> object must be additionally provided. In
-this example, it is the multi-step filtered
-<code>gsea_limma_voom_data</code>.</p>
-<p>Assemble the limma-voom workflow object for analysis.</p>
+<div id="组装运算对象" class="section level3" number="2.2.2">
+<h3><span class="header-section-number">2.2.2</span> 组装运算对象</h3>
+<p>通过<code>setup_gsea_env</code>函数，组装用于计算分析的<code>GSEAEnv</code>对象，不同的终端使用同一个函数，仅纳入数据不同，对于limma-voom流程，由于<code>fit</code>对象当中不包含原始的基因读数，因此必须额外纳入过滤后用于生成<code>fit</code>对象的<code>DGEList</code>，本例中为多步过滤的<code>gsea_limma_voom_data</code>。</p>
+<p>limma-voom 流程对象纳入分析。</p>
 <div class="sourceCode" id="cb32"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" tabindex="-1"></a>gseadata_limmavoom <span class="ot">&lt;-</span> GSEAlens<span class="sc">::</span><span class="fu">setup_gsea_env</span>(<span class="at">fit =</span> fit,<span class="at">pathway_obj =</span> gsea_pathwaysets,<span class="at">expr_data =</span> gsea_limma_voom_data)</span></code></pre></div>
 <pre><code>## 
 ## Starting GSEAlens engine...</code></pre>
@@ -581,7 +611,7 @@ this example, it is the multi-step filtered
 <pre><code>## GseaEnv object built successfully!</code></pre>
 <pre><code>##    Contains 1 contrast groups</code></pre>
 <pre><code>##    Contains 16333 pathways</code></pre>
-<p>Assemble the DESeq2 SummarizedExperiment object for analysis.</p>
+<p>DESeq2 的 SummarizedExperiment 对象纳入分析。</p>
 <div class="sourceCode" id="cb38"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" tabindex="-1"></a>gseadata_se <span class="ot">&lt;-</span> GSEAlens<span class="sc">::</span><span class="fu">setup_gsea_env</span>(<span class="at">fit =</span> dds_se,<span class="at">pathway_obj =</span> gsea_pathwaysets)</span></code></pre></div>
 <pre><code>## 
 ## Starting GSEAlens engine...</code></pre>
@@ -590,7 +620,7 @@ this example, it is the multi-step filtered
 <pre><code>## GseaEnv object built successfully!</code></pre>
 <pre><code>##    Contains 1 contrast groups</code></pre>
 <pre><code>##    Contains 16333 pathways</code></pre>
-<p>Assemble the DESeq2 Count matrix workflow object for analysis.</p>
+<p>DESeq2 的 Count matrix 流程的对象纳入分析。</p>
 <div class="sourceCode" id="cb45"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" tabindex="-1"></a>gseadata_dds <span class="ot">&lt;-</span> GSEAlens<span class="sc">::</span><span class="fu">setup_gsea_env</span>(<span class="at">fit =</span> dds,<span class="at">pathway_obj =</span> gsea_pathwaysets)</span></code></pre></div>
 <pre><code>## 
 ## Starting GSEAlens engine...</code></pre>
@@ -600,172 +630,91 @@ this example, it is the multi-step filtered
 <pre><code>##    Contains 1 contrast groups</code></pre>
 <pre><code>##    Contains 16333 pathways</code></pre>
 </div>
-<div id="running-processing" class="section level3">
-<h3>Running Processing</h3>
-<p>All objects are processed using the <code>batch_calc_gsea</code>
-function with no differences.</p>
-<p>Parallel computing note: Adjust the <code>workers</code> option based
-on your computer’s performance to set the number of cores for
-computation. More contrasts recommend higher core settings for better
-computational efficiency.</p>
-<div class="sourceCode" id="cb52"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" tabindex="-1"></a><span class="co"># limma-voom workflow</span></span>
+<div id="运行处理" class="section level3" number="2.2.3">
+<h3><span class="header-section-number">2.2.3</span> 运行处理</h3>
+<p>所有对象均使用<code>batch_calc_gsea</code>这个函数处理，没有任何区别。</p>
+<p>并行计算提示：可根据电脑性能调整 workers
+选项，设置计算使用的核心数量。
+比对数量越多，建议设置越高的核心数以提升计算效率。</p>
+<div class="sourceCode" id="cb52"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" tabindex="-1"></a><span class="co"># limma-voom 流程</span></span>
 <span id="cb52-2"><a href="#cb52-2" tabindex="-1"></a>gsea_res_limmavoom <span class="ot">&lt;-</span> GSEAlens<span class="sc">::</span><span class="fu">batch_calc_gsea</span>(gseadata_limmavoom, </span>
 <span id="cb52-3"><a href="#cb52-3" tabindex="-1"></a>                                                 <span class="at">custom_series_name =</span> <span class="st">&quot;limmavoom_data&quot;</span>, </span>
-<span id="cb52-4"><a href="#cb52-4" tabindex="-1"></a>                                                 <span class="at">workers =</span> <span class="dv">4</span>,  <span class="co"># Adjust based on number of contrasts and computer performance</span></span>
+<span id="cb52-4"><a href="#cb52-4" tabindex="-1"></a>                                                 <span class="at">workers =</span> <span class="dv">4</span>,  <span class="co"># 根据比对数量和电脑性能调整</span></span>
 <span id="cb52-5"><a href="#cb52-5" tabindex="-1"></a>                                                 <span class="at">force =</span> <span class="cn">TRUE</span>)</span>
 <span id="cb52-6"><a href="#cb52-6" tabindex="-1"></a></span>
-<span id="cb52-7"><a href="#cb52-7" tabindex="-1"></a><span class="co"># DESeq2 SummarizedExperiment workflow</span></span>
+<span id="cb52-7"><a href="#cb52-7" tabindex="-1"></a><span class="co"># DESeq2 SummarizedExperiment 流程</span></span>
 <span id="cb52-8"><a href="#cb52-8" tabindex="-1"></a>gsea_res_se <span class="ot">&lt;-</span> GSEAlens<span class="sc">::</span><span class="fu">batch_calc_gsea</span>(gseadata_se, </span>
 <span id="cb52-9"><a href="#cb52-9" tabindex="-1"></a>                                          <span class="at">custom_series_name =</span> <span class="st">&quot;dds_se_data&quot;</span>, </span>
 <span id="cb52-10"><a href="#cb52-10" tabindex="-1"></a>                                          <span class="at">workers =</span> <span class="dv">4</span>,</span>
 <span id="cb52-11"><a href="#cb52-11" tabindex="-1"></a>                                          <span class="at">force =</span> <span class="cn">TRUE</span>)</span>
 <span id="cb52-12"><a href="#cb52-12" tabindex="-1"></a></span>
-<span id="cb52-13"><a href="#cb52-13" tabindex="-1"></a><span class="co"># DESeq2 Count matrix workflow</span></span>
+<span id="cb52-13"><a href="#cb52-13" tabindex="-1"></a><span class="co"># DESeq2 Count matrix 流程</span></span>
 <span id="cb52-14"><a href="#cb52-14" tabindex="-1"></a>gsea_res_dds <span class="ot">&lt;-</span> GSEAlens<span class="sc">::</span><span class="fu">batch_calc_gsea</span>(gseadata_dds, </span>
 <span id="cb52-15"><a href="#cb52-15" tabindex="-1"></a>                                           <span class="at">custom_series_name =</span> <span class="st">&quot;dds_data&quot;</span>, </span>
 <span id="cb52-16"><a href="#cb52-16" tabindex="-1"></a>                                           <span class="at">workers =</span> <span class="dv">4</span>,</span>
 <span id="cb52-17"><a href="#cb52-17" tabindex="-1"></a>                                           <span class="at">force =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
 </div>
-<div id="interactive-analysis-and-viewing" class="section level3">
-<h3>Interactive Analysis and Viewing</h3>
-<p>After running <code>batch_calc_gsea</code>, an RDS file will be
-generated in the corresponding directory. Load this file or use
-<code>import_gsea_capsule</code> to read it. The
-<code>import_gsea_capsule</code> function can automatically organize
-relevant files into the folder where your RMD file or R script is
-located, and provide data inspection results.</p>
+<div id="交互式分析与查看" class="section level3" number="2.2.4">
+<h3><span class="header-section-number">2.2.4</span>
+交互式分析与查看</h3>
+<p>运行<code>batch_calc_gsea</code>之后，在对应目录下会生成一个RDS文件，读入该文件，或者使用<code>import_gsea_capsule</code>读取，<code>import_gsea_capsule</code>函数可以在读取的时候，自动将相关文件整理到使用的RMD文件或者R脚本的文件夹中，并且给出数据的检视情况。</p>
 <div class="sourceCode" id="cb53"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" tabindex="-1"></a>gsea_res <span class="ot">&lt;-</span> <span class="fu">import_gsea_capsule</span>(<span class="st">&quot;/path/to/your/files/&quot;</span>)</span>
-<span id="cb53-2"><a href="#cb53-2" tabindex="-1"></a><span class="co"># Or directly read the RDS file</span></span>
+<span id="cb53-2"><a href="#cb53-2" tabindex="-1"></a><span class="co"># 或直接读取 RDS 文件</span></span>
 <span id="cb53-3"><a href="#cb53-3" tabindex="-1"></a><span class="co"># gsea_res &lt;- readRDS(&quot;/path/of/your/file/&quot;)</span></span></code></pre></div>
-<p>After loading the data, you can use <code>launch_gsea_app</code> for
-interactive viewing.</p>
+<p>数据载入后，就可以使用<code>launch_gsea_app</code>进行交互式查看</p>
 <div class="sourceCode" id="cb54"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" tabindex="-1"></a><span class="fu">launch_gsea_app</span>(gsea_res)</span></code></pre></div>
 </div>
 </div>
 </div>
-<div id="package-intermediate-object-descriptions" class="section level1">
-<h1>Package Intermediate Object Descriptions</h1>
-<div id="gseaenv-object" class="section level2">
-<h2>GseaEnv Object</h2>
-<p>The <code>GseaEnv</code> object returned by the
-<code>setup_gsea_env</code> function contains the following
-components:</p>
-<table>
-<colgroup>
-<col width="23%" />
-<col width="76%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th>Component</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td><code>backend_info</code></td>
-<td>Backend type information (limma-voom or DESeq2)</td>
-</tr>
-<tr class="even">
-<td><code>contrast_registry</code></td>
-<td>Contrast registry containing all pairwise comparison
-information</td>
-</tr>
-<tr class="odd">
-<td><code>de_store</code></td>
-<td>Differential expression analysis results storage</td>
-</tr>
-<tr class="even">
-<td><code>expr_bundle</code></td>
-<td>Expression data bundle (raw counts, normalized matrix, sample
-metadata)</td>
-</tr>
-<tr class="odd">
-<td><code>geneset</code></td>
-<td>Geneset information (TERM2GENE, metadata dictionary, species)</td>
-</tr>
-</tbody>
-</table>
+<div id="r包中间对象说明" class="section level1" number="3">
+<h1><span class="header-section-number">3</span> R包中间对象说明</h1>
+<div id="gseaenv-对象" class="section level2" number="3.1">
+<h2><span class="header-section-number">3.1</span> GseaEnv 对象</h2>
+<p><code>setup_gsea_env</code> 函数返回的 <code>GseaEnv</code>
+对象包含以下组件： | 组件 | 说明 | |——|——| | <code>backend_info</code> |
+后端类型信息（limma-voom 或 DESeq2） | | <code>contrast_registry</code>
+| 对比组注册表，包含所有成对比较信息 | | <code>de_store</code> |
+差异分析结果存储 | | <code>expr_bundle</code> |
+表达数据封装（原始计数、标准化矩阵、样本元数据） | |
+<code>geneset</code> | 基因集信息（TERM2GENE、元数据字典、物种） |</p>
 </div>
-<div id="gseares-object" class="section level2">
-<h2>GseaRes Object</h2>
-<p>The <code>GseaRes</code> object returned by the
-<code>batch_calc_gsea</code> function contains the following
-components:</p>
-<table>
-<colgroup>
-<col width="23%" />
-<col width="76%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th>Component</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td><code>metadata</code></td>
-<td>Computation metadata (runtime, cores used, parameter settings)</td>
-</tr>
-<tr class="even">
-<td><code>backend_info</code></td>
-<td>Backend type information</td>
-</tr>
-<tr class="odd">
-<td><code>contrast_registry</code></td>
-<td>Contrast registry</td>
-</tr>
-<tr class="even">
-<td><code>de_store</code></td>
-<td>Differential expression analysis results storage</td>
-</tr>
-<tr class="odd">
-<td><code>expr_bundle</code></td>
-<td>Expression data bundle</td>
-</tr>
-<tr class="even">
-<td><code>geneset_info</code></td>
-<td>Geneset information</td>
-</tr>
-<tr class="odd">
-<td><code>results</code></td>
-<td>GSEA results list, one entry per contrast</td>
-</tr>
-</tbody>
-</table>
+<div id="gseares-对象" class="section level2" number="3.2">
+<h2><span class="header-section-number">3.2</span> GseaRes 对象</h2>
+<p><code>batch_calc_gsea</code> 函数返回的 <code>GseaRes</code>
+对象包含以下组件： | 组件 | 说明 | |——|——| | <code>metadata</code> |
+计算元数据（运行时间、使用的核心数、参数设置） | |
+<code>backend_info</code> | 后端类型信息 | |
+<code>contrast_registry</code> | 对比组注册表 | | <code>de_store</code>
+| 差异分析结果存储 | | <code>expr_bundle</code> | 表达数据封装 | |
+<code>geneset_info</code> | 基因集信息 | | <code>results</code> | GSEA
+结果列表，每个对比组对应一个条目 |</p>
 </div>
-<div id="gseatask-object" class="section level2">
-<h2>GseaTask Object</h2>
-<p>The <code>GseaTask</code> object returned by the
-<code>extract_gsea_task</code> function is used for single-contrast
-analysis:</p>
+<div id="gseatask-对象" class="section level2" number="3.3">
+<h2><span class="header-section-number">3.3</span> GseaTask 对象</h2>
+<p><code>extract_gsea_task</code> 函数返回的 <code>GseaTask</code>
+对象用于单对比分析：</p>
 <table>
-<colgroup>
-<col width="22%" />
-<col width="77%" />
-</colgroup>
 <thead>
 <tr class="header">
-<th>Component</th>
-<th>Description</th>
+<th>组件</th>
+<th>说明</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
 <td><code>gsea_res</code></td>
-<td>GSEA result object</td>
+<td>GSEA result 对象</td>
 </tr>
 <tr class="even">
 <td><code>meta</code></td>
-<td>Metadata (contrast information, geneset name, expression data)</td>
+<td>元信息（对比组信息、基因集名称、表达数据）</td>
 </tr>
 </tbody>
 </table>
 </div>
 </div>
-<div id="session-info" class="section level1">
-<h1>Session Info</h1>
+<div id="session-info" class="section level1" number="4">
+<h1><span class="header-section-number">4</span> Session info</h1>
 <div class="sourceCode" id="cb55"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span></code></pre></div>
 <pre><code>## R version 4.5.3 (2026-03-11 ucrt)
 ## Platform: x86_64-w64-mingw32/x64
@@ -775,57 +724,82 @@ analysis:</p>
 ##   LAPACK version 3.12.1
 ## 
 ## locale:
-## [1] LC_COLLATE=Chinese (Simplified)_China.utf8  LC_CTYPE=Chinese (Simplified)_China.utf8   
-## [3] LC_MONETARY=Chinese (Simplified)_China.utf8 LC_NUMERIC=C                               
+## [1] LC_COLLATE=C                               
+## [2] LC_CTYPE=Chinese (Simplified)_China.utf8   
+## [3] LC_MONETARY=Chinese (Simplified)_China.utf8
+## [4] LC_NUMERIC=C                               
 ## [5] LC_TIME=Chinese (Simplified)_China.utf8    
 ## 
 ## time zone: Asia/Shanghai
 ## tzcode source: internal
 ## 
 ## attached base packages:
-## [1] stats4    stats     graphics  grDevices utils     datasets  methods   base     
+## [1] stats4    stats     graphics  grDevices utils     datasets  methods  
+## [8] base     
 ## 
 ## other attached packages:
-##  [1] DESeq2_1.50.2               edgeR_4.8.2                 limma_3.66.0                airway_1.30.0              
-##  [5] SummarizedExperiment_1.40.0 Biobase_2.70.0              GenomicRanges_1.62.1        Seqinfo_1.0.0              
-##  [9] IRanges_2.44.0              S4Vectors_0.48.1            BiocGenerics_0.56.0         generics_0.1.4             
-## [13] MatrixGenerics_1.22.0       matrixStats_1.5.0           GSEAlens_0.99.0            
+##  [1] DESeq2_1.50.2               edgeR_4.8.2                
+##  [3] limma_3.66.0                airway_1.30.0              
+##  [5] SummarizedExperiment_1.40.0 Biobase_2.70.0             
+##  [7] GenomicRanges_1.62.1        Seqinfo_1.0.0              
+##  [9] IRanges_2.44.0              S4Vectors_0.48.1           
+## [11] BiocGenerics_0.56.0         generics_0.1.4             
+## [13] MatrixGenerics_1.22.0       matrixStats_1.5.0          
+## [15] GSEAlens_0.99.0            
 ## 
 ## loaded via a namespace (and not attached):
-##   [1] later_1.4.8             splines_4.5.3           ggplotify_0.1.3         tibble_3.3.1            R.oo_1.27.1            
-##   [6] polyclip_1.10-7         lifecycle_1.0.5         doParallel_1.0.17       globals_0.19.1          lattice_0.22-9         
-##  [11] MASS_7.3-65             magrittr_2.0.4          plotly_4.12.0           sass_0.4.10             rmarkdown_2.31         
-##  [16] jquerylib_0.1.4         yaml_2.3.12             remotes_2.5.0           httpuv_1.6.17           otel_0.2.0             
-##  [21] ggtangle_0.1.1          sessioninfo_1.2.3       pkgbuild_1.4.8          cowplot_1.2.0           DBI_1.3.0              
-##  [26] RColorBrewer_1.1-3      abind_1.4-8             pkgload_1.5.1           purrr_1.2.1             R.utils_2.13.0         
-##  [31] msigdbr_26.1.0          yulab.utils_0.2.4       tweenr_2.0.3            rappdirs_0.3.4          gdtools_0.5.0          
-##  [36] circlize_0.4.18         enrichplot_1.30.5       ggrepel_0.9.8           listenv_0.10.1          tidytree_0.4.7         
-##  [41] parallelly_1.46.1       codetools_0.2-20        DelayedArray_0.36.1     DOSE_4.4.0              DT_0.34.0              
-##  [46] ggforce_0.5.0           tidyselect_1.2.1        shape_1.4.6.1           aplot_0.2.9             farver_2.1.2           
-##  [51] jsonlite_2.0.0          GetoptLong_1.1.1        progressr_0.19.0        ellipsis_0.3.3          iterators_1.0.14       
-##  [56] systemfonts_1.3.2       foreach_1.5.2           tools_4.5.3             ggnewscale_0.5.2        treeio_1.34.0          
-##  [61] Rcpp_1.1.1              glue_1.8.0              SparseArray_1.10.10     xfun_0.57               qvalue_2.42.0          
-##  [66] usethis_3.2.1           dplyr_1.2.1             withr_3.0.2             fastmap_1.2.0           digest_0.6.39          
-##  [71] mime_0.13               R6_2.6.1                gridGraphics_0.5-1      colorspace_2.1-2        GO.db_3.22.0           
-##  [76] RSQLite_2.4.6           R.methodsS3_1.8.2       tidyr_1.3.2             fontLiberation_0.1.0    data.table_1.18.2.1    
-##  [81] httr_1.4.8              htmlwidgets_1.6.4       S4Arrays_1.10.1         scatterpie_0.2.6        pkgconfig_2.0.3        
-##  [86] gtable_0.3.6            rsconnect_1.7.0         blob_1.3.0              ComplexHeatmap_2.26.1   S7_0.2.1               
-##  [91] XVector_0.50.0          clusterProfiler_4.18.4  htmltools_0.5.9         fontBitstreamVera_0.1.1 fgsea_1.36.2           
-##  [96] clue_0.3-68             scales_1.4.0            png_0.1-9               ggfun_0.2.0             knitr_1.51             
-## [101] rstudioapi_0.18.0       reshape2_1.4.5          rjson_0.2.23            nlme_3.1-169            curl_7.0.0             
-## [106] cachem_1.1.0            GlobalOptions_0.1.4     stringr_1.6.0           shinycssloaders_1.1.0   parallel_4.5.3         
-## [111] AnnotationDbi_1.72.0    pillar_1.11.1           grid_4.5.3              vctrs_0.7.2             promises_1.5.0         
-## [116] tidydr_0.0.6            xtable_1.8-8            cluster_2.1.8.2         evaluate_1.0.5          cli_3.6.5              
-## [121] locfit_1.5-9.12         compiler_4.5.3          rlang_1.1.7             crayon_1.5.3            future.apply_1.20.2    
-## [126] plyr_1.8.9              fs_2.0.1                ggiraph_0.9.6           stringi_1.8.7           viridisLite_0.4.3      
-## [131] BiocParallel_1.44.0     babelgene_22.9          assertthat_0.2.1        Biostrings_2.78.0       lazyeval_0.2.3         
-## [136] devtools_2.5.0          GOSemSim_2.36.0         fontquiver_0.2.1        Matrix_1.7-5            patchwork_1.3.2        
-## [141] bit64_4.6.0-1           future_1.70.0           ggplot2_4.0.2           shiny_1.13.0            KEGGREST_1.50.0        
-## [146] statmod_1.5.1           clipr_0.8.0             igraph_2.2.3            memoise_2.0.1           bslib_0.10.0           
-## [151] ggtree_4.0.5            fastmatch_1.1-8         bit_4.6.0               ape_5.8-1               gson_0.1.0</code></pre>
+##   [1] splines_4.5.3           later_1.4.8             ggplotify_0.1.3        
+##   [4] tibble_3.3.1            R.oo_1.27.1             polyclip_1.10-7        
+##   [7] lifecycle_1.0.5         doParallel_1.0.17       globals_0.19.1         
+##  [10] lattice_0.22-9          MASS_7.3-65             magrittr_2.0.4         
+##  [13] plotly_4.12.0           sass_0.4.10             rmarkdown_2.31         
+##  [16] jquerylib_0.1.4         yaml_2.3.12             httpuv_1.6.17          
+##  [19] otel_0.2.0              ggtangle_0.1.1          cowplot_1.2.0          
+##  [22] DBI_1.3.0               RColorBrewer_1.1-3      abind_1.4-8            
+##  [25] purrr_1.2.1             R.utils_2.13.0          msigdbr_26.1.0         
+##  [28] yulab.utils_0.2.4       tweenr_2.0.3            rappdirs_0.3.4         
+##  [31] gdtools_0.5.0           circlize_0.4.18         enrichplot_1.30.5      
+##  [34] ggrepel_0.9.8           listenv_0.10.1          tidytree_0.4.7         
+##  [37] parallelly_1.46.1       codetools_0.2-20        DelayedArray_0.36.1    
+##  [40] DOSE_4.4.0              DT_0.34.0               ggforce_0.5.0          
+##  [43] tidyselect_1.2.1        shape_1.4.6.1           aplot_0.2.9            
+##  [46] farver_2.1.2            jsonlite_2.0.0          GetoptLong_1.1.1       
+##  [49] iterators_1.0.14        systemfonts_1.3.2       foreach_1.5.2          
+##  [52] tools_4.5.3             ggnewscale_0.5.2        treeio_1.34.0          
+##  [55] Rcpp_1.1.1              glue_1.8.0              SparseArray_1.10.10    
+##  [58] xfun_0.57               qvalue_2.42.0           dplyr_1.2.1            
+##  [61] withr_3.0.2             fastmap_1.2.0           digest_0.6.39          
+##  [64] R6_2.6.1                mime_0.13               gridGraphics_0.5-1     
+##  [67] colorspace_2.1-2        GO.db_3.22.0            RSQLite_2.4.6          
+##  [70] R.methodsS3_1.8.2       tidyr_1.3.2             fontLiberation_0.1.0   
+##  [73] data.table_1.18.2.1     httr_1.4.8              htmlwidgets_1.6.4      
+##  [76] S4Arrays_1.10.1         scatterpie_0.2.6        pkgconfig_2.0.3        
+##  [79] gtable_0.3.6            blob_1.3.0              ComplexHeatmap_2.26.1  
+##  [82] S7_0.2.1                XVector_0.50.0          clusterProfiler_4.18.4 
+##  [85] htmltools_0.5.9         fontBitstreamVera_0.1.1 fgsea_1.36.2           
+##  [88] clue_0.3-68             scales_1.4.0            png_0.1-9              
+##  [91] ggfun_0.2.0             knitr_1.51              rstudioapi_0.18.0      
+##  [94] reshape2_1.4.5          rjson_0.2.23            nlme_3.1-169           
+##  [97] curl_7.0.0              cachem_1.1.0            GlobalOptions_0.1.4    
+## [100] stringr_1.6.0           parallel_4.5.3          shinycssloaders_1.1.0  
+## [103] AnnotationDbi_1.72.0    pillar_1.11.1           grid_4.5.3             
+## [106] vctrs_0.7.2             promises_1.5.0          tidydr_0.0.6           
+## [109] xtable_1.8-8            cluster_2.1.8.2         evaluate_1.0.5         
+## [112] cli_3.6.5               locfit_1.5-9.12         compiler_4.5.3         
+## [115] rlang_1.1.7             crayon_1.5.3            future.apply_1.20.2    
+## [118] plyr_1.8.9              fs_2.0.1                ggiraph_0.9.6          
+## [121] stringi_1.8.7           viridisLite_0.4.3       BiocParallel_1.44.0    
+## [124] assertthat_0.2.1        babelgene_22.9          Biostrings_2.78.0      
+## [127] lazyeval_0.2.3          GOSemSim_2.36.0         fontquiver_0.2.1       
+## [130] Matrix_1.7-5            patchwork_1.3.2         bit64_4.6.0-1          
+## [133] future_1.70.0           ggplot2_4.0.2           KEGGREST_1.50.0        
+## [136] statmod_1.5.1           shiny_1.13.0            clipr_0.8.0            
+## [139] igraph_2.2.3            memoise_2.0.1           bslib_0.10.0           
+## [142] ggtree_4.0.5            fastmatch_1.1-8         bit_4.6.0              
+## [145] ape_5.8-1               gson_0.1.0</code></pre>
 </div>
-<div id="references" class="section level1">
-<h1>References</h1>
+<div id="references" class="section level1" number="5">
+<h1><span class="header-section-number">5</span> References</h1>
 </div>
 
 
