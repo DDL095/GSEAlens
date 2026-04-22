@@ -36,7 +36,6 @@ Imports:
     circlize,
     grid,
     clusterProfiler,
-    GseaVis,
     limma,
     edgeR,
     DESeq2,

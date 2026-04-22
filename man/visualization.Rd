@@ -5,4 +5,6 @@
 \title{GSEA Visualization and Report Generation}
 \description{
 Provides static plotting functions and interactive HTML report generation capabilities.
+
+Provides static plotting functions and interactive HTML report generation capabilities.
 }
