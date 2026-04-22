@@ -11,8 +11,7 @@ Based on the reference `Fast gene set enrichment analysis`,`https://www.biorxiv.
 package install 
 
 ```
-if (!requireNamespace("devtools", quietly = TRUE)) {
-    install.packages("devtools")
-}
-devtools::install_github("DDL095/GSEAlens")
+install.packages("pak")
+#pak::pkg_install("path_to_GSEAlens_0.99.0.tar.gz") or 
+pak::pkg_install("DDL095/GSEAlens")
 ```
