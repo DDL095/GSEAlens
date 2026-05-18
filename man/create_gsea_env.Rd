@@ -2,7 +2,7 @@
 % Please edit documentation in R/00_class_validations.R
 \name{create_gsea_env}
 \alias{create_gsea_env}
-\title{定义 GseaEnv 类}
+\title{Define GseaEnv Class}
 \usage{
 create_gsea_env(
   backend_info,
@@ -14,5 +14,5 @@ create_gsea_env(
 )
 }
 \description{
-标准化的 GSEA 输入环境对象。
+Standardized GSEA input environment object.
 }

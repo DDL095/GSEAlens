@@ -2,19 +2,19 @@
 % Please edit documentation in R/01_backends.R
 \name{.extract_limma_data}
 \alias{.extract_limma_data}
-\title{提取 Limma-Voom 数据}
+\title{Extract Limma-Voom Data}
 \usage{
 .extract_limma_data(fit, expr_data = NULL)
 }
 \arguments{
-\item{fit}{MArrayLM 对象 (必须经过 eBayes)}
+\item{fit}{MArrayLM object (must have been processed with eBayes)}
 
-\item{expr_data}{可选。DGEList 或表达矩阵。}
+\item{expr_data}{Optional. DGEList or expression matrix.}
 }
 \value{
-包含 contrast_registry, de_store, expr_bundle 的列表
+A list containing contrast_registry, de_store, and expr_bundle
 }
 \description{
-从 MArrayLM 对象提取对比组和差异分析结果。
+Extract contrast groups and differential analysis results from MArrayLM object.
 }
 \keyword{internal}

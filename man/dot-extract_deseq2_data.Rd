@@ -2,19 +2,19 @@
 % Please edit documentation in R/01_backends.R
 \name{.extract_deseq2_data}
 \alias{.extract_deseq2_data}
-\title{提取 DESeq2 数据}
+\title{Extract DESeq2 Data}
 \usage{
 .extract_deseq2_data(dds, target_factor = NULL)
 }
 \arguments{
-\item{dds}{DESeqDataSet 对象 (必须已运行 DESeq())}
+\item{dds}{DESeqDataSet object (must have been processed with DESeq())}
 
-\item{target_factor}{字符串。目标因子。若为 NULL，自动推断为设计公式最后一项。}
+\item{target_factor}{Character. Target factor. If NULL, automatically inferred as the last term in the design formula.}
 }
 \value{
-包含 contrast_registry, de_store, expr_bundle 的列表
+A list containing contrast_registry, de_store, and expr_bundle
 }
 \description{
-从 DESeqDataSet 对象提取对比组和差异分析结果。
+Extract contrast groups and differential analysis results from DESeqDataSet object.
 }
 \keyword{internal}

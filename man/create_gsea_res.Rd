@@ -2,7 +2,7 @@
 % Please edit documentation in R/00_class_validations.R
 \name{create_gsea_res}
 \alias{create_gsea_res}
-\title{定义 GseaRes 类}
+\title{Define GseaRes Class}
 \usage{
 create_gsea_res(
   metadata,
@@ -15,5 +15,5 @@ create_gsea_res(
 )
 }
 \description{
-GSEA 计算结果胶囊。
+GSEA computation result capsule.
 }

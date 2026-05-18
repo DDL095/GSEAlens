@@ -2,11 +2,21 @@
 % Please edit documentation in R/10_shiny_mod_quadrant.R
 \name{mod_quadrant_server}
 \alias{mod_quadrant_server}
-\title{四重联动 Server（连续点击多选 + 排序根治版）}
+\title{Quadrant Linkage Server}
 \usage{
-mod_quadrant_server(id, data_prep_list, gsea_res)
+mod_quadrant_server(id, data_prep_list, gsea_res, table_controller)
+}
+\arguments{
+\item{id}{Module ID}
+
+\item{data_prep_list}{List from data prep module}
+
+\item{gsea_res}{GseaRes object}
+
+\item{table_controller}{Table controller with update_selection method}
 }
 \description{
-支持连续点击标记多个通路，Boxplot排序强制锁定
+Server logic with unified gene pool and bidirectional table-volcano sync.
+  Now properly responds to table selection changes.
 }
 \keyword{internal}

@@ -2,11 +2,11 @@
 % Please edit documentation in R/01_backends.R
 \name{.build_expr_bundle}
 \alias{.build_expr_bundle}
-\title{构建表达数据包}
+\title{Build Expression Data Bundle}
 \usage{
 .build_expr_bundle(obj, backend)
 }
 \description{
-统一封装表达矩阵和元数据
+Uniformly encapsulate expression matrix and metadata
 }
 \keyword{internal}

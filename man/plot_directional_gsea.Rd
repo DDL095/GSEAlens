@@ -2,7 +2,7 @@
 % Please edit documentation in R/06_visualization.R
 \name{plot_directional_gsea}
 \alias{plot_directional_gsea}
-\title{绘制方向性 GSEA 图}
+\title{Plot Directional GSEA}
 \usage{
 plot_directional_gsea(
   directional_gsea_obj,
@@ -11,28 +11,32 @@ plot_directional_gsea(
   subPlot = 3,
   curveCol = NULL,
   add_pval = FALSE,
+  show_contrast_in_axis = FALSE,
   ...
 )
 }
 \arguments{
-\item{directional_gsea_obj}{封装好的 GseaTask 对象 (由 extract_gsea_task 返回)}
+\item{directional_gsea_obj}{A wrapped GseaTask object (returned by extract_gsea_task)}
 
-\item{target_pathways}{需要绘制的通路 ID 向量 (支持单个或多个)}
+\item{target_pathways}{Vector of pathway IDs to plot (supports single or multiple)}
 
-\item{main_title}{主标题名称}
+\item{main_title}{Main title name}
 
-\item{subPlot}{控制 GseaVis 生成的子图数量 (1: 仅富集图; 2: 富集+热图带; 3: 完整带Rank)}
+\item{subPlot}{Controls the number of subplots generated (1: enrichment plot only; 2: enrichment + heatmap track; 3: full rank track)}
 
-\item{curveCol}{自定义曲线颜色向量}
+\item{curveCol}{Custom curve color vector}
 
-\item{add_pval}{是否在图上添加统计学标注。默认 FALSE。}
+\item{add_pval}{Whether to add statistical annotations on the plot. Default FALSE.}
 
-\item{...}{传递给 GseaVis::gseaNb 的额外参数}
+\item{show_contrast_in_axis}{Logical. Whether to display contrast group information on the x-axis of the Rank plot.
+Default FALSE; recommended to set TRUE only in combined canvas mode.}
+
+\item{...}{Additional parameters passed to internal engine}
 }
 \value{
-ggplot2 复合对象
+ggplot2 composite object
 }
 \description{
-极客级 GSEA 绘图引擎，完美兼容单通路/多通路合图。
-自动生成优雅图例、拦截并重绘经典红蓝基因分布带。
+Professional-grade GSEA plotting engine with seamless support for single or multiple pathway visualization.
+  Automatically generates elegant legends and native red-blue gene distribution track.
 }

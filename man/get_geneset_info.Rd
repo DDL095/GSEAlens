@@ -2,10 +2,24 @@
 % Please edit documentation in R/utils-accessors.R
 \name{get_geneset_info}
 \alias{get_geneset_info}
-\title{获取基因集信息}
+\title{Get Gene Set Information}
 \usage{
 get_geneset_info(obj)
 }
+\arguments{
+\item{obj}{A GseaEnv or GseaRes object.}
+}
+\value{
+An object containing geneset_info with pathway definitions and
+  metadata dictionary.
+}
 \description{
-获取基因集信息
+Retrieve gene set collection metadata including pathway definitions
+  and annotation dictionary.
+}
+\examples{
+\dontrun{
+gs_info <- get_geneset_info(gsea_res)
+names(gs_info)
+}
 }

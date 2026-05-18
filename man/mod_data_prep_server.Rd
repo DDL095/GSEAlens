@@ -2,11 +2,37 @@
 % Please edit documentation in R/08_shiny_mod_data_prep.R
 \name{mod_data_prep_server}
 \alias{mod_data_prep_server}
-\title{数据预处理模块 Server（动态表达类型 + 根治排序）}
+\title{Data Preprocessing Module Server}
 \usage{
 mod_data_prep_server(id, gsea_res)
 }
+\arguments{
+\item{id}{Module namespace ID}
+
+\item{gsea_res}{GSEA results object containing contrast registry and backend info}
+}
+\value{
+A list of reactive functions and values:
+\itemize{
+  \item \code{data}: Reactive data object with processed GSEA results
+  \item \code{highlight_genes}: Reactive character vector of confirmed gene markers
+  \item \code{boxplot_order}: Reactive value for boxplot group ordering
+  \item \code{joint_contrasts}: Reactive vector of contrasts for joint canvas
+  \item \code{joint_ncol}: Reactive number of columns for joint canvas
+  \item \code{joint_generate}: Event reactive for canvas regeneration trigger
+  \item \code{update_pending_genes}: Function to update pending genes from modal
+  \item \code{get_pending_genes}: Function to retrieve current pending genes
+}
+}
 \description{
-数据预处理模块 Server（动态表达类型 + 根治排序）
+Server logic for the data preprocessing module. Handles:
+\itemize{
+  \item Contrast and gene set selection
+  \item Data processing and sorting
+  \item Gene marker management (add, confirm, clear)
+  \item Boxplot ordering configuration
+  \item Joint canvas parameter passing
+  \item Expression data type selection based on backend
+}
 }
 \keyword{internal}

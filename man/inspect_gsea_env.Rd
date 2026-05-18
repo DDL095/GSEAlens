@@ -2,13 +2,14 @@
 % Please edit documentation in R/02_setup.R
 \name{inspect_gsea_env}
 \alias{inspect_gsea_env}
-\title{查看 GSEA 环境对象概览}
+\title{View GSEA Environment Object Overview}
 \usage{
 inspect_gsea_env(env_obj)
 }
 \arguments{
-\item{env_obj}{GseaEnv 对象}
+\item{env_obj}{GseaEnv object}
 }
 \description{
-在控制台打印 GseaEnv 对象的详细信息，包括后端类型、对比组列表和基因集状态。
+Print detailed information about the GseaEnv object to the console, including backend type,
+contrast list, and gene set status.
 }

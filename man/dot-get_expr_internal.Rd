@@ -2,11 +2,13 @@
 % Please edit documentation in R/utils-accessors.R
 \name{.get_expr_internal}
 \alias{.get_expr_internal}
-\title{内部表达矩阵提取逻辑}
+\title{Internal Expression Matrix Extraction Logic}
 \usage{
 .get_expr_internal(expr_bundle, backend_info, type = "default", ...)
 }
 \description{
-修复DESeq2后端表达矩阵与样本元数据匹配问题
+Core logic for extracting and computing expression matrices.
+  Handles backend-specific computations (DESeq2, limma-voom) and normalizes
+  sample ordering between expression matrices and metadata.
 }
 \keyword{internal}

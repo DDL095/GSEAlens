@@ -2,20 +2,40 @@
 % Please edit documentation in R/utils-accessors.R
 \name{get_expr_matrix}
 \alias{get_expr_matrix}
-\title{获取表达矩阵}
+\title{Get Expression Matrix}
 \usage{
 get_expr_matrix(obj, type = "default", ...)
 }
 \arguments{
-\item{obj}{GseaEnv 或 GseaRes 对象}
+\item{obj}{A GseaEnv or GseaRes object.}
 
-\item{type}{字符串。可选值："default" (默认展示), "raw", "cpm", "logcpm", "vst", "fpkm", "tpm"。}
+\item{type}{Character string specifying the type of expression values to return.
+Options include: \code{"default"} (default display matrix), \code{"raw"}
+(raw counts), \code{"cpm"} (counts per million), \code{"logcpm"}
+(log2-transformed CPM), \code{"vst"} (variance stabilizing transformation,
+DESeq2 only), \code{"fpkm"} (fragments per kilobase per million),
+\code{"tpm"} (transcripts per million), and \code{"lognorm"} (log2 of
+normalized counts).}
 
-\item{...}{额外参数}
+\item{...}{Additional arguments passed to backend-specific methods.}
 }
 \value{
-表达矩阵 (基因 x 样本)
+A numeric matrix with genes as rows and samples as columns.
 }
 \description{
-从 GseaEnv 或 GseaRes 中提取表达矩阵，支持多种标准化方式。
+Extract expression matrix from GseaEnv or GseaRes object, supporting
+  multiple normalization methods including raw counts, CPM, logCPM, VST, FPKM,
+  TPM, and log-normalized counts.
+}
+\examples{
+\dontrun{
+# Get default expression matrix
+expr <- get_expr_matrix(gsea_res)
+
+# Get log2 CPM values
+expr <- get_expr_matrix(gsea_res, type = "logcpm")
+
+# Get variance stabilizing transformed values (DESeq2 only)
+expr <- get_expr_matrix(gsea_res, type = "vst")
+}
 }

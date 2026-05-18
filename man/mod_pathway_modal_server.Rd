@@ -2,20 +2,31 @@
 % Please edit documentation in R/11_shiny_mod_modal.R
 \name{mod_pathway_modal_server}
 \alias{mod_pathway_modal_server}
-\title{详情弹窗 Server}
+\title{Pathway Detail Modal Server}
 \usage{
-mod_pathway_modal_server(id, data_prep, trigger_event, gsea_res)
+mod_pathway_modal_server(
+  id,
+  data_prep,
+  trigger_event,
+  gsea_res,
+  pending_genes_reactive,
+  update_pending_genes
+)
 }
 \arguments{
-\item{id}{模块 ID}
+\item{id}{Module ID}
 
-\item{data_prep}{数据流}
+\item{data_prep}{Reactive data from data prep module}
 
-\item{trigger_event}{来自表格的点击事件 (reactive)}
+\item{trigger_event}{Event that triggers modal opening}
 
-\item{gsea_res}{GseaRes 对象 (用于获取表达矩阵)}
+\item{gsea_res}{GseaRes object}
+
+\item{pending_genes_reactive}{Function to get current pending genes}
+
+\item{update_pending_genes}{Function to update pending genes list}
 }
 \description{
-ComplexHeatmap重构：Leading Edge间隙、动态排序、无高度限制、基因名颜色区分
+Modal with checkbox selection using standard DT approach.
 }
 \keyword{internal}

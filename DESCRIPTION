@@ -1,14 +1,17 @@
 Package: GSEAlens
 Type: Package
 Title: Gene Set Enrichment Analysis Interactive Explorer
-Version: 0.0.2
-Author: Dudali
-Maintainer: Dudali <your.email@example.com>
+Version: 0.99.0
+Maintainer: Dudali<sealgod@qq.com>
+Authors@R:person("Dudali", role = c("aut", "cre"), email = "sealgod@qq.com",comment = c(ORCID = "0000-0002-1825-0097"))
 Description: Interactive GSEA exploration and visualization platform supporting both Limma-Voom and DESeq2 backends.
 License: MIT + file LICENSE
+URL: https://github.com/DDL095/GSEAlens
+BugReports: https://github.com/DDL095/GSEAlens/issues
 Encoding: UTF-8
 LazyData: false
 RoxygenNote: 7.3.3
+biocViews: GeneSetEnrichment, Visualization, ShinyApps, Software
 Imports: 
     stats,
     utils,
@@ -22,6 +25,8 @@ Imports:
     DT,
     plotly,
     ggplot2,
+    rlang,
+    igraph,
     dplyr,
     tidyr,
     tibble,
@@ -31,7 +36,6 @@ Imports:
     circlize,
     grid,
     clusterProfiler,
-    GseaVis,
     limma,
     edgeR,
     DESeq2,
@@ -44,11 +48,14 @@ Imports:
     htmlwidgets,
     jsonlite,
     clipr,
+    progressr,
+    plyr,
+    visNetwork,
+    shinyjs,
     BiocParallel
-Suggests:
-    testthat (>= 3.0.0),
+Suggests: testthat (>= 3.0.0),
     knitr,
     rmarkdown,
     shinytest2
-Depends: 
-    R (>= 4.2.0)
+Depends: R (>= 4.5.0)
+VignetteBuilder: knitr

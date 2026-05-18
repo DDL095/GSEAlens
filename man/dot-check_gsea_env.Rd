@@ -2,17 +2,17 @@
 % Please edit documentation in R/00_class_validations.R
 \name{.check_gsea_env}
 \alias{.check_gsea_env}
-\title{校验 GseaEnv 对象完整性}
+\title{Validate GseaEnv Object Integrity}
 \usage{
 .check_gsea_env(env_obj)
 }
 \arguments{
-\item{env_obj}{GseaEnv 对象}
+\item{env_obj}{GseaEnv object to validate}
 }
 \value{
-TRUE 或抛出错误
+TRUE if validation passes, otherwise stops with an error
 }
 \description{
-内部函数，确保对象结构符合规范。
+Internal function to ensure object structure conforms to specification.
 }
 \keyword{internal}

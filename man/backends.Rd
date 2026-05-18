@@ -2,8 +2,8 @@
 % Please edit documentation in R/01_backends.R
 \name{backends}
 \alias{backends}
-\title{后端数据提取器}
+\title{Backend Data Extractor}
 \description{
-从 limma 或 DESeq2 对象中提取标准化数据结构。
+Extract standardized data structures from limma or DESeq2 objects.
 }
 \keyword{internal}

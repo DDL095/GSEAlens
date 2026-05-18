@@ -4,8 +4,9 @@
 .httr-oauth
 .DS_Store
 .quarto
-2026-03-21-010309 GSEAlens全量R代码.txt
-2026-03-21-014559 GSEAlens全量R代码.txt
-2026-03-21-020411 GSEAlens全量R代码.txt
-2026-03-21-022251 GSEAlens全量R代码.txt
-2026-03-21-025205 GSEAlens全量R代码.txt
+R汇总.py
+*.txt
+重命名R脚本.py
+fledge更新脚本.Rmd
+GSEAlens.Rproj
+fledge更新脚本.R

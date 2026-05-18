@@ -2,10 +2,10 @@
 % Please edit documentation in R/00_class_validations.R
 \name{create_gsea_task}
 \alias{create_gsea_task}
-\title{定义 GseaTask 类}
+\title{Define GseaTask Class}
 \usage{
 create_gsea_task(gsea_res, meta)
 }
 \description{
-单个对比组的提取结果对象。
+Single contrast extraction result object.
 }

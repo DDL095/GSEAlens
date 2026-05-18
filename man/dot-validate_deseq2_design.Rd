@@ -2,19 +2,19 @@
 % Please edit documentation in R/00_class_validations.R
 \name{.validate_deseq2_design}
 \alias{.validate_deseq2_design}
-\title{校验 DESeq2 目标因子}
+\title{Validate DESeq2 Target Factor}
 \usage{
 .validate_deseq2_design(dds, target_factor)
 }
 \arguments{
-\item{dds}{DESeqDataSet 对象}
+\item{dds}{DESeqDataSet object}
 
-\item{target_factor}{字符串，指定的目标因子}
+\item{target_factor}{String, the target factor to validate}
 }
 \value{
-TRUE 或抛出错误
+TRUE if validation passes, otherwise stops with an error
 }
 \description{
-检查 target_factor 是否存在于 colData 中。
+Check if target_factor exists in colData and is properly formatted.
 }
 \keyword{internal}

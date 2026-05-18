@@ -1,16 +1,17 @@
-#' @title 批量并行 GSEA 计算
-#' @description 消费标准 GseaEnv 对象，执行并行 GSEA 计算。
-#' 自动从 de_store 中提取统计量进行排序，支持双向对比生成。
-#' @param gsea_env GseaEnv 对象 (由 setup_gsea_env 生成)
-#' @param custom_series_name 字符串。分析系列名称，用于结果存档。
-#' @param output_dir 字符串。结果输出路径，默认 "./GSEA_Output"。
-#' @param workers 并行核心数。默认 4。
-#' @param bidirectional 逻辑值。是否自动生成反向对比，默认 TRUE。
-#' @param minGSSize 最小基因集大小，默认 10。
-#' @param maxGSSize 最大基因集大小，默认 500。
-#' @param pvalueCutoff P 值阈值，默认 1 (保留全量结果)。
-#' @param force 逻辑值。是否强制重新计算，默认 FALSE。
-#' @return GseaRes 对象。
+#' @title Batch Parallel GSEA Calculation
+#' @description Consumes a standard GseaEnv object and performs efficient parallel GSEA calculation.
+#' @param gsea_env GseaEnv object
+#' @param custom_series_name String. Analysis series name
+#' @param output_dir String. Output directory for results, default "./GSEA_Output"
+#' @param workers Number of parallel cores. Default 4
+#' @param bidirectional Logical. Whether to automatically generate reverse contrasts, default TRUE
+#' @param minGSSize Minimum gene set size, default 10
+#' @param maxGSSize Maximum gene set size, default 500
+#' @param pvalueCutoff P-value threshold, default 1
+#' @param force Logical. Whether to force recalculation, default FALSE
+#' @param use_progress Logical. Whether to show progress bar, default TRUE
+#' @param chunk_size Integer. Number of tasks per worker per chunk, default NULL (auto)
+#' @return GseaRes object
 #' @export
 batch_calc_gsea <- function(gsea_env,
                             custom_series_name = "Auto_Analysis",
@@ -20,159 +21,283 @@ batch_calc_gsea <- function(gsea_env,
                             minGSSize = 10,
                             maxGSSize = 500,
                             pvalueCutoff = 1,
-                            force = FALSE) {
-
-  # 1. 校验输入
+                            force = FALSE,
+                            use_progress = FALSE,
+                            chunk_size = NULL) {
   .check_gsea_env(gsea_env)
 
-  # 2. 智能缓存拦截
-  series_dir <- file.path(output_dir, custom_series_name)
-  if (!dir.exists(series_dir)) dir.create(series_dir, recursive = TRUE, showWarnings = FALSE)
+  start_time <- Sys.time()
+  start_ms <- as.numeric(start_time) * 1000
 
-  rds_name <- sprintf("GSEA_Capsule_[%s]_[%s].rds", custom_series_name, gsea_env$geneset$name)
+  series_dir <- file.path(output_dir, custom_series_name)
+  if (!dir.exists(series_dir)) {
+    dir.create(series_dir, recursive = TRUE, showWarnings = FALSE)
+  }
+
+  rds_name <- sprintf(
+    "GSEA_Capsule_[%s]_[%s].rds",
+    custom_series_name, gsea_env$geneset$name
+  )
   rds_path <- file.path(series_dir, rds_name)
 
   if (file.exists(rds_path) && !force) {
-    message(sprintf("✅ 命中缓存！检测到已存在的 GSEA 胶囊: %s", rds_name))
+    message(sprintf("Cache hit! Existing GSEA capsule detected: %s", rds_name))
     return(readRDS(rds_path))
   }
 
-  # 3. 准备任务列表
-  # 从 contrast_registry 获取任务
   registry <- gsea_env$contrast_registry
   de_store <- gsea_env$de_store
 
-  # 构建任务映射表
-  tasks <- list()
-
-  for (i in 1:nrow(registry)) {
+  task_metadata <- list()
+  for (i in seq_len(nrow(registry))) {
     row <- registry[i, ]
     cid <- row$contrast_id
-
-    # 正向任务
-    tasks[[cid]] <- list(
-      contrast_id = cid,
-      left = row$left_group,
-      right = row$right_group,
-      reverse = FALSE
+    task_metadata[[cid]] <- list(
+      task_id = cid,
+      left_group = row$left_group,
+      right_group = row$right_group,
+      is_reversed = FALSE
     )
-
-    # 反向任务
     if (bidirectional) {
       rev_cid <- paste(row$right_group, row$left_group, sep = "_vs_")
-      tasks[[rev_cid]] <- list(
-        contrast_id = rev_cid,
-        left = row$right_group,
-        right = row$left_group,
-        reverse = TRUE
+      task_metadata[[rev_cid]] <- list(
+        task_id = rev_cid,
+        left_group = row$right_group,
+        right_group = row$left_group,
+        is_reversed = TRUE
       )
     }
   }
 
-  message(sprintf("🚀 准备就绪：共 %d 个对比任务待计算...", length(tasks)))
+  total_tasks <- length(task_metadata)
+  message(sprintf("Ready: %d contrast tasks pending calculation...", total_tasks))
 
-  # 4. 并行计算设置
+  options(future.globals.maxSize = 192 * 1024^3)
+
   total_cores <- parallel::detectCores(logical = TRUE)
   use_cores <- min(total_cores, max(1, workers))
-  message(sprintf("🖥️ 硬件调度: 使用 %d 核进行并行计算...", use_cores))
+  message(sprintf("Hardware scheduling: Using %d cores for parallel computation...", use_cores))
 
-  options(future.globals.maxSize = 32000 * 1024^2)
+  if (is.null(chunk_size)) {
+    chunk_size <- max(1, ceiling(total_tasks / (use_cores * 4)))
+  }
+
   future::plan(future::multisession, workers = use_cores)
 
-  # 5. 核心计算循环
-  term2gene <- gsea_env$geneset$term2gene
-  meta_dict <- gsea_env$geneset$meta_dict
-
-  res_list <- future.apply::future_lapply(names(tasks), function(task_name) {
-
-    task_info <- tasks[[task_name]]
-    cid <- task_info$contrast_id
-
-    # 获取 DE 表
-    # 如果是反向任务，需要找到原始的正向 ID 来获取 DE 表
-    original_cid <- if (task_info$reverse) {
-      paste(task_info$left, task_info$right, sep = "_vs_") # 反向任务的 original 是反向的
-      # 注意：这里逻辑需要修正。
-      # 如果任务是 B_vs_A (reverse=TRUE)，那么原始数据是 A_vs_B。
-      # task_info$left 是 B, right 是 A。
-      # 所以原始 ID 应该是 A_vs_B。
-      paste(task_info$right, task_info$left, sep = "_vs_")
-    } else {
-      cid
+  if (use_progress) {
+    if (!requireNamespace("progressr", quietly = TRUE)) {
+      stop("Please install progressr package: install.packages('progressr')")
     }
+    progressr::handlers(global = TRUE)
+    progressr::handlers("progress")
+  }
 
-    de_table <- de_store[[original_cid]]
+  worker_term2gene <- gsea_env$geneset$term2gene
+  worker_meta_dict <- gsea_env$geneset$meta_dict
+  worker_de_list <- as.list(de_store)
 
-    if (is.null(de_table)) {
-      warning(sprintf("无法找到 %s 的差异分析表，跳过。", original_cid))
-      return(list(name = cid, status = "Failed", data = NULL, genelist = c()))
-    }
+  task_names <- names(task_metadata)
+  task_chunks <- split(task_names, ceiling(seq_along(task_names) / chunk_size))
 
-    # 准备 Rank Vector
-    # 使用统一的 .prepare_rank_vector 函数
-    genelist <- .prepare_rank_vector(de_table, flip = task_info$reverse)
+  message(sprintf(
+    "Chunk strategy: %d chunks, up to %d tasks per chunk",
+    length(task_chunks), chunk_size
+  ))
 
-    if (length(genelist) == 0) {
-      return(list(name = cid, status = "Failed", data = NULL, genelist = c()))
-    }
+  p <- progressr::progressor(steps = total_tasks, enable = use_progress)
 
-    # 运行 GSEA
-    set.seed(123)
-    gsea_res <- tryCatch({
-      clusterProfiler::GSEA(
-        geneList = genelist,
-        TERM2GENE = term2gene,
-        minGSSize = minGSSize,
-        maxGSSize = maxGSSize,
-        pvalueCutoff = pvalueCutoff,
-        pAdjustMethod = "BH",
-        verbose = FALSE,
-        seed = 123,
-        eps = 0
-      )
-    }, error = function(e) NULL)
+  res_list <- future.apply::future_lapply(
+    X = task_chunks,
+    FUN = function(chunk_task_names,
+                   task_metadata,
+                   de_list,
+                   term2gene,
+                   meta_dict,
+                   minGSSize,
+                   maxGSSize,
+                   pvalueCutoff,
+                   progressor_fn) {
+      if (!requireNamespace("clusterProfiler", quietly = TRUE) ||
+        !requireNamespace("dplyr", quietly = TRUE)) {
+        stop("Worker missing required packages")
+      }
 
-    status <- if (!is.null(gsea_res) && nrow(gsea_res@result) > 0) "Success" else "Failed/NoEnrich"
+      chunk_results <- list()
 
-    # 注入元数据
-    if (status == "Success" && !is.null(meta_dict)) {
-      res_df <- as.data.frame(gsea_res@result)
-      if ("Description" %in% colnames(res_df)) res_df <- dplyr::select(res_df, -Description)
+      for (task_name in chunk_task_names) {
+        task_info <- task_metadata[[task_name]]
+        task_id <- task_info$task_id
 
-      res_df <- res_df %>%
-        dplyr::left_join(as.data.frame(meta_dict), by = "ID") %>%
-        dplyr::mutate(
-          Display_Collection = if("Combo_Name" %in% names(.)) Combo_Name else if("Collection" %in% names(.)) Collection else "Unknown",
-          Display_Collection = as.factor(ifelse(is.na(Display_Collection), "Unknown", Display_Collection)),
-          Pathway_Link = if("URL" %in% names(.)) {
-            ifelse(is.na(URL) | URL == "", sprintf("<b>%s</b>", ID),
-                   sprintf('<a href="%s" target="_blank">%s</a>', URL, ID))
-          } else { sprintf("<b>%s</b>", ID) },
-          Description = if("Description.y" %in% names(.)) Description.y else ID # 优先使用字典里的描述
+        if (task_info$is_reversed) {
+          original_cid <- paste(task_info$right_group, task_info$left_group, sep = "_vs_")
+        } else {
+          original_cid <- task_id
+        }
+
+        de_table <- de_list[[original_cid]]
+
+        if (is.null(de_table) || nrow(de_table) == 0) {
+          chunk_results[[task_name]] <- list(
+            name = task_id,
+            status = "Failed",
+            data = NULL,
+            genelist = c()
+          )
+          if (!is.null(progressor_fn)) progressor_fn()
+          next
+        }
+
+        genelist <- tryCatch(
+          {
+            .prepare_rank_vector_fast(de_table, flip = task_info$is_reversed)
+          },
+          error = function(e) {
+            c()
+          }
         )
 
-      rownames(res_df) <- res_df$ID
-      gsea_res@result <- res_df
-    }
+        if (length(genelist) == 0) {
+          chunk_results[[task_name]] <- list(
+            name = task_id,
+            status = "Failed",
+            data = NULL,
+            genelist = c()
+          )
+          if (!is.null(progressor_fn)) progressor_fn()
+          next
+        }
 
-    return(list(name = cid, status = status, data = gsea_res, genelist = genelist))
+        detect_case_format <- function(genes) {
+          sample <- head(unique(genes), 100)
+          sample_filtered <- sample[!grepl("^[0-9]", sample)]
+          if (length(sample_filtered) == 0) {
+            return("mixed")
+          }
+          n_title <- sum(grepl("^[A-Z][a-z]", sample_filtered))
+          n_upper <- sum(grepl("^[A-Z]{2,}$", sample_filtered))
+          if (n_title > n_upper) {
+            return("title_case")
+          }
+          if (n_upper > n_title) {
+            return("upper_case")
+          }
+          return("mixed")
+        }
 
-  }, future.seed = TRUE)
+        geneset_species <- gsea_env$geneset$species %||% "HS"
+        term2gene_format <- detect_case_format(term2gene$gene_symbol)
+        de_format <- detect_case_format(names(genelist))
 
-  names(res_list) <- names(tasks)
+        if (term2gene_format == "upper_case") {
+          if (de_format == "title_case") {
+            names(genelist) <- toupper(names(genelist))
+          }
+        } else if (term2gene_format == "title_case") {
+          if (de_format == "upper_case") {
+            stop(paste0(
+              "[Species Mismatch Error]\n",
+              "Gene set species: Mouse (MM) - requires title case gene symbols\n",
+              "DE gene format: Uppercase (e.g., GAPDH, IRF7) - appears to be human data\n\n",
+              "Please use human gene sets (species='HS') for uppercase DE data,\n",
+              "or provide mouse DE data with title case gene symbols (e.g., Gapdh, Irf7)."
+            ))
+          }
+        }
+
+        gsea_res <- tryCatch(
+          {
+            clusterProfiler::GSEA(
+              geneList = genelist,
+              TERM2GENE = term2gene,
+              minGSSize = minGSSize,
+              maxGSSize = maxGSSize,
+              pvalueCutoff = pvalueCutoff,
+              pAdjustMethod = "BH",
+              verbose = FALSE,
+              seed = 123,
+              eps = 0
+            )
+          },
+          error = function(e) {
+            NULL
+          }
+        )
+
+        status <- if (!is.null(gsea_res) && nrow(gsea_res@result) > 0) "Success" else "Failed/NoEnrich"
+
+        if (status == "Success" && !is.null(meta_dict)) {
+          gsea_res@result <- .enrich_gsea_result(gsea_res@result, meta_dict)
+        }
+
+        chunk_results[[task_name]] <- list(
+          name = task_id,
+          status = status,
+          data = gsea_res,
+          genelist = genelist
+        )
+
+        if (!is.null(progressor_fn)) progressor_fn()
+      }
+
+      return(chunk_results)
+    },
+    task_metadata = task_metadata,
+    de_list = worker_de_list,
+    term2gene = worker_term2gene,
+    meta_dict = worker_meta_dict,
+    minGSSize = minGSSize,
+    maxGSSize = maxGSSize,
+    pvalueCutoff = pvalueCutoff,
+    progressor_fn = if (use_progress) p else NULL,
+    future.seed = TRUE,
+    future.scheduling = 1.0
+  )
+
   future::plan(future::sequential)
 
-  # 6. 封装结果对象
+  all_cons <- showConnections(all = TRUE)
+  if (nrow(all_cons) > 1) {
+    for (con_idx in as.integer(rownames(all_cons))) {
+      if (con_idx > 2) {
+        try(suppressWarnings(close.connection(getConnection(con_idx))), silent = TRUE)
+      }
+    }
+  }
+
+  invisible(gc(verbose = FALSE, full = TRUE))
+
+  res_list_flat <- do.call(c, res_list)
+  names(res_list_flat) <- names(task_metadata)
+
+  end_time <- Sys.time()
+  end_ms <- as.numeric(end_time) * 1000
+
   final_obj <- create_gsea_res(
     metadata = list(
       run_time = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
       workers_used = use_cores,
-      parameters = list(bidirectional = bidirectional, minGSSize = minGSSize),
+      chunk_size = chunk_size,
+      parameters = list(
+        bidirectional = bidirectional,
+        minGSSize = minGSSize,
+        maxGSSize = maxGSSize,
+        pvalueCutoff = pvalueCutoff
+      ),
       project_info = list(
         custom_series_name = custom_series_name,
         output_dir = normalizePath(output_dir, mustWork = FALSE),
         series_dir = normalizePath(series_dir, mustWork = FALSE),
         rds_path = normalizePath(rds_path, mustWork = FALSE)
+      ),
+      gsea_benchmark = list(
+        start_time = format(start_time, "%Y-%m-%d %H:%M:%OS3"),
+        start_ms = start_ms,
+        end_time = format(end_time, "%Y-%m-%d %H:%M:%OS3"),
+        end_ms = end_ms,
+        duration_sec = round((end_ms - start_ms) / 1000, 3),
+        workers = use_cores,
+        total_tasks = length(task_metadata),
+        successful_tasks = sum(sapply(res_list_flat, function(x) x$status == "Success"))
       )
     ),
     backend_info = gsea_env$backend_info,
@@ -180,49 +305,296 @@ batch_calc_gsea <- function(gsea_env,
     de_store = gsea_env$de_store,
     expr_bundle = gsea_env$expr_bundle,
     geneset_info = gsea_env$geneset,
-    results = res_list
+    results = res_list_flat
   )
 
-  # 7. 保存结果
   saveRDS(final_obj, rds_path)
-  message(sprintf("\n✅ 计算完成！结果已保存至: %s", rds_path))
+
+  success_count <- final_obj$metadata$gsea_benchmark$successful_tasks
+
+  message(sprintf(
+    "\nCalculation complete! Time elapsed: %.2f seconds",
+    final_obj$metadata$gsea_benchmark$duration_sec
+  ))
+  message(sprintf("   Successfully analyzed: %d/%d contrasts", success_count, total_tasks))
+  message(sprintf("   Results saved to: %s", rds_path))
 
   return(final_obj)
 }
 
 
-# 内部辅助函数
-
-
-#' @title 准备排序向量
-#' @description 从 DE 表中提取 stat 列，进行清洗和排序。
-#' @param de_table 差异分析表 (必须包含 gene_symbol 和 stat 列)
-#' @param flip 是否翻转符号 (用于反向对比)
-#' @return 排序后的命名向量
+#' @title Process Single GSEA Chunk
+#' @param chunk_task_names Character vector
+#' @param task_metadata Task metadata list
+#' @param de_list DE data in list form
+#' @param term2gene Gene set mapping dataframe
+#' @param meta_dict Metadata dictionary
+#' @param minGSSize Minimum gene set size
+#' @param maxGSSize Maximum gene set size
+#' @param pvalueCutoff P-value threshold
+#' @return Result list for current chunk
 #' @keywords internal
-.prepare_rank_vector <- function(de_table, flip = FALSE) {
-
-  # 1. 清洗
-  df <- de_table %>%
-    dplyr::filter(!is.na(gene_symbol) & gene_symbol != "") %>%
-    dplyr::mutate(gene_symbol = toupper(gene_symbol)) # 统一转大写
-
-  # 2. 去重 (按 stat 绝对值最大的保留)
-  df <- df %>%
-    dplyr::arrange(dplyr::desc(abs(stat))) %>%
-    dplyr::distinct(gene_symbol, .keep_all = TRUE)
-
-  # 3. 提取向量
-  vals <- df$stat
-  names(vals) <- df$gene_symbol
-
-  # 4. 翻转 (如果是反向对比)
-  if (flip) {
-    vals <- -vals
+.process_gsea_chunk <- function(chunk_task_names,
+                                task_metadata,
+                                de_list,
+                                term2gene,
+                                meta_dict,
+                                minGSSize,
+                                maxGSSize,
+                                pvalueCutoff) {
+  if (!requireNamespace("clusterProfiler", quietly = TRUE) ||
+    !requireNamespace("dplyr", quietly = TRUE)) {
+    stop("Worker missing required packages: clusterProfiler or dplyr")
   }
 
-  # 5. 降序排序
-  vals <- sort(vals, decreasing = TRUE)
+  chunk_results <- list()
 
-  return(vals)
+  for (task_name in chunk_task_names) {
+    task_info <- task_metadata[[task_name]]
+    task_id <- task_info$task_id
+
+    if (task_info$is_reversed) {
+      original_cid <- paste(task_info$right_group, task_info$left_group, sep = "_vs_")
+    } else {
+      original_cid <- task_id
+    }
+
+    de_table <- de_list[[original_cid]]
+
+    if (is.null(de_table) || nrow(de_table) == 0) {
+      chunk_results[[task_name]] <- list(
+        name = task_id,
+        status = "Failed",
+        data = NULL,
+        genelist = c()
+      )
+      next
+    }
+
+    genelist <- tryCatch(
+      {
+        .prepare_rank_vector_fast(de_table, flip = task_info$is_reversed)
+      },
+      error = function(e) {
+        warning(sprintf("Rank vector preparation failed: %s", e$message))
+        c()
+      }
+    )
+
+    if (length(genelist) == 0) {
+      chunk_results[[task_name]] <- list(
+        name = task_id,
+        status = "Failed",
+        data = NULL,
+        genelist = c()
+      )
+      next
+    }
+
+    gsea_res <- tryCatch(
+      {
+        clusterProfiler::GSEA(
+          geneList = genelist,
+          TERM2GENE = term2gene,
+          minGSSize = minGSSize,
+          maxGSSize = maxGSSize,
+          pvalueCutoff = pvalueCutoff,
+          pAdjustMethod = "BH",
+          verbose = FALSE,
+          seed = 123,
+          eps = 0
+        )
+      },
+      error = function(e) {
+        warning(sprintf("GSEA calculation failed [%s]: %s", task_id, e$message))
+        NULL
+      }
+    )
+
+    status <- if (!is.null(gsea_res) && nrow(gsea_res@result) > 0) {
+      "Success"
+    } else {
+      "Failed/NoEnrich"
+    }
+
+    if (status == "Success" && !is.null(meta_dict)) {
+      gsea_res@result <- .enrich_gsea_result(gsea_res@result, meta_dict)
+    }
+
+    chunk_results[[task_name]] <- list(
+      name = task_id,
+      status = status,
+      data = gsea_res,
+      genelist = genelist
+    )
+  }
+
+  return(chunk_results)
+}
+
+
+#' @title Fast Rank Vector Preparation
+#' @param de_table DE result table
+#' @param flip Whether to flip sign
+#' @return Named numeric vector
+#' @keywords internal
+.prepare_rank_vector_fast <- function(de_table, flip = FALSE) {
+  # Preserve original case; format standardization is performed in worker function
+  # based on TERM2GENE
+  vals <- de_table %>%
+    dplyr::filter(!is.na(gene_symbol), gene_symbol != "") %>%
+    dplyr::mutate(abs_stat = abs(stat)) %>%
+    dplyr::arrange(dplyr::desc(abs_stat)) %>%
+    dplyr::distinct(gene_symbol, .keep_all = TRUE) %>%
+    {
+      vec <- .$stat
+      names(vec) <- .$gene_symbol
+      vec
+    }
+
+  if (flip) vals <- -vals
+  sort(vals, decreasing = TRUE)
+}
+
+
+#' @title GSEA Result Metadata Injection
+#' @param result_df GSEA result dataframe
+#' @param meta_dict Metadata dictionary
+#' @return Enriched dataframe
+#' @keywords internal
+.enrich_gsea_result <- function(result_df, meta_dict) {
+  if (!is.data.frame(result_df) || nrow(result_df) == 0) {
+    warning("result_df is invalid or empty")
+    return(result_df)
+  }
+
+  if (!is.data.frame(meta_dict) || nrow(meta_dict) == 0) {
+    warning("meta_dict is empty, cannot enrich results")
+    return(result_df)
+  }
+
+  if (!"ID" %in% colnames(result_df) || !"ID" %in% colnames(meta_dict)) {
+    stop("Both result_df and meta_dict must contain 'ID' column")
+  }
+
+  original_rownames <- rownames(result_df)
+  original_ids <- result_df$ID
+
+  required_cols <- c("ID", "Description", "URL", "Collection", "Subcollection", "Combo_Name")
+
+  for (col in required_cols) {
+    if (!col %in% colnames(meta_dict)) {
+      warning(sprintf("meta_dict missing column '%s', creating placeholder", col))
+      meta_dict[[col]] <- NA_character_
+    }
+  }
+
+  if (all(is.na(meta_dict$Subcollection)) || is.null(meta_dict$Subcollection)) {
+    meta_dict$Subcollection <- ""
+  }
+
+  if (all(is.na(meta_dict$Combo_Name))) {
+    meta_dict$Combo_Name <- ifelse(
+      is.na(meta_dict$Subcollection) | meta_dict$Subcollection == "",
+      meta_dict$Collection,
+      paste0(meta_dict$Collection, ":", meta_dict$Subcollection)
+    )
+  }
+
+  core_stat_cols <- c(
+    "ID", "setSize", "enrichmentScore", "NES", "pvalue",
+    "p.adjust", "qvalue", "rank", "leading_edge", "core_enrichment"
+  )
+
+  conflict_cols <- c("Description", "URL", "Collection", "Subcollection", "Combo_Name")
+
+  cols_to_keep <- setdiff(colnames(result_df), conflict_cols)
+  result_work <- result_df[, cols_to_keep, drop = FALSE]
+
+  meta_subset <- meta_dict[, required_cols, drop = FALSE]
+
+  merged_df <- result_work %>%
+    dplyr::left_join(
+      meta_subset,
+      by = "ID",
+      suffix = c("", "_meta")
+    )
+
+  if (nrow(merged_df) != nrow(result_work)) {
+    warning(sprintf(
+      "Row count changed during merge: %d -> %d",
+      nrow(result_work), nrow(merged_df)
+    ))
+  }
+
+  merged_df$Display_Collection <- dplyr::coalesce(
+    merged_df$Combo_Name,
+    merged_df$Collection,
+    "Unknown"
+  )
+  merged_df$Display_Collection <- as.factor(merged_df$Display_Collection)
+
+  merged_df$Pathway_Link <- ifelse(
+    is.na(merged_df$URL) | merged_df$URL == "",
+    sprintf("<b>%s</b>", merged_df$ID),
+    sprintf('<a href="%s" target="_blank">%s</a>', merged_df$URL, merged_df$ID)
+  )
+
+  if ("Description_meta" %in% colnames(merged_df)) {
+    merged_df$Description <- dplyr::coalesce(
+      merged_df$Description_meta,
+      merged_df$ID
+    )
+    merged_df$Description_meta <- NULL
+  } else if (!"Description" %in% colnames(merged_df)) {
+    merged_df$Description <- merged_df$ID
+  }
+
+  merged_df$Description[is.na(merged_df$Description)] <- merged_df$ID[is.na(merged_df$Description)]
+
+  meta_temp_cols <- grep("_meta$", colnames(merged_df), value = TRUE)
+  if (length(meta_temp_cols) > 0) {
+    merged_df <- merged_df[, !(colnames(merged_df) %in% meta_temp_cols), drop = FALSE]
+  }
+
+  merged_df <- as.data.frame(merged_df)
+  if ("ID" %in% colnames(merged_df)) {
+    if (any(duplicated(merged_df$ID))) {
+      warning("Duplicate IDs found in result, using original rownames")
+      rownames(merged_df) <- original_rownames
+    } else {
+      rownames(merged_df) <- merged_df$ID
+    }
+  } else {
+    rownames(merged_df) <- original_rownames
+  }
+
+  standard_cols <- c(
+    "ID", "setSize", "enrichmentScore", "NES", "pvalue",
+    "p.adjust", "qvalue", "rank", "leading_edge", "core_enrichment",
+    "Description", "URL", "Collection", "Subcollection", "Combo_Name",
+    "Display_Collection", "Pathway_Link"
+  )
+
+  missing_standard <- setdiff(standard_cols, colnames(merged_df))
+  if (length(missing_standard) > 0) {
+    warning(sprintf(
+      "Final result missing standard columns: %s",
+      paste(missing_standard, collapse = ", ")
+    ))
+    for (col in missing_standard) {
+      merged_df[[col]] <- NA_character_
+    }
+  }
+
+  present_cols <- intersect(standard_cols, colnames(merged_df))
+  extra_cols <- setdiff(colnames(merged_df), standard_cols)
+  merged_df <- merged_df[, c(present_cols, extra_cols), drop = FALSE]
+
+  message(sprintf(
+    "[.enrich_gsea_result] Successfully enriched: %d rows x %d columns",
+    nrow(merged_df), ncol(merged_df)
+  ))
+
+  return(merged_df)
 }

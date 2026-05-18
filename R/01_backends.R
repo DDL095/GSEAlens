@@ -1,21 +1,26 @@
-#' @title 后端数据提取器
-#' @description 从 limma 或 DESeq2 对象中提取标准化数据结构。
+if (!exists("%||%", mode = "function")) {
+  `%||%` <- function(x, y) {
+    if (is.null(x) || length(x) == 0 || all(is.na(x))) y else x
+  }
+}
+#' @title Backend Data Extractor
+#' @description Extract standardized data structures from limma or DESeq2 objects.
 #' @keywords internal
 #' @name backends
+
 NULL
 
 
 # 1. Limma 后端提取器
 
 
-#' @title 提取 Limma-Voom 数据
-#' @description 从 MArrayLM 对象提取对比组和差异分析结果。
-#' @param fit MArrayLM 对象 (必须经过 eBayes)
-#' @param expr_data 可选。DGEList 或表达矩阵。
-#' @return 包含 contrast_registry, de_store, expr_bundle 的列表
+#' @title Extract Limma-Voom Data
+#' @description Extract contrast groups and differential analysis results from MArrayLM object.
+#' @param fit MArrayLM object (must have been processed with eBayes)
+#' @param expr_data Optional. DGEList or expression matrix.
+#' @return A list containing contrast_registry, de_store, and expr_bundle
 #' @keywords internal
 .extract_limma_data <- function(fit, expr_data = NULL) {
-
   # 1. 强制校验：无截距设计
   .validate_limma_design(fit)
 
@@ -27,9 +32,9 @@ NULL
 
   if (!is_contrast_obj) {
     stop(
-      "\n❌ [Limma 输入错误] 检测到设计矩阵列名为组名 (如 'GroupA', 'GroupB')，而非对比 (如 'GroupA - GroupB')。\n",
-      "GSEAlens 要求传入已经定义好对比的 fit 对象。\n",
-      "请使用 makeContrasts 和 contrasts.fit 定义您的比较组。"
+      "\n[Limma Input Error] Design matrix column names detected as group names (e.g., 'GroupA', 'GroupB') instead of contrasts (e.g., 'GroupA - GroupB').\n",
+      "GSEAlens requires a fit object with contrasts already defined.\n",
+      "Please use makeContrasts and contrasts.fit to define your comparison groups."
     )
   }
 
@@ -74,21 +79,21 @@ NULL
 # 2. DESeq2 后端提取器
 
 
-#' @title 提取 DESeq2 数据
-#' @description 从 DESeqDataSet 对象提取对比组和差异分析结果。
-#' @param dds DESeqDataSet 对象 (必须已运行 DESeq())
-#' @param target_factor 字符串。目标因子。若为 NULL，自动推断为设计公式最后一项。
-#' @return 包含 contrast_registry, de_store, expr_bundle 的列表
+#' @title Extract DESeq2 Data
+#' @description Extract contrast groups and differential analysis results from DESeqDataSet object.
+#' @param dds DESeqDataSet object (must have been processed with DESeq())
+#' @param target_factor Character. Target factor. If NULL, automatically inferred as the last term in the design formula.
+#' @return A list containing contrast_registry, de_store, and expr_bundle
 #' @keywords internal
-.extract_deseq2_data <- function(dds, target_factor = NULL) {
 
+.extract_deseq2_data <- function(dds, target_factor = NULL) {
   # 1. 确定 target_factor
   design_formula <- DESeq2::design(dds)
   design_terms <- attr(terms(design_formula), "term.labels")
 
   if (is.null(target_factor)) {
     target_factor <- utils::tail(design_terms, 1)
-    message(sprintf("🔍 [DESeq2] 未指定 target_factor，自动推断为: '%s'", target_factor))
+    message(sprintf("[DESeq2] target_factor not specified, automatically inferred as: '%s'", target_factor))
   }
 
   # 校验 target_factor
@@ -99,7 +104,7 @@ NULL
   factor_levels <- levels(col_data[[target_factor]])
 
   if (length(factor_levels) < 2) {
-    stop(sprintf("因子 '%s' 的水平数少于 2，无法进行比较。", target_factor))
+    stop(sprintf("Factor '%s' has fewer than 2 levels, cannot perform comparison.", target_factor))
   }
 
   # 3. 生成所有成对比较
@@ -117,12 +122,15 @@ NULL
     contrast_vec <- c(target_factor, left, right)
 
     # 提取结果
-    res <- tryCatch({
-      DESeq2::results(dds, contrast = contrast_vec)
-    }, error = function(e) {
-      warning(sprintf("提取对比 %s 时出错: %s", contrast_id, e$message))
-      return(NULL)
-    })
+    res <- tryCatch(
+      {
+        DESeq2::results(dds, contrast = contrast_vec)
+      },
+      error = function(e) {
+        warning(sprintf("Error extracting contrast %s: %s", contrast_id, e$message))
+        return(NULL)
+      }
+    )
 
     if (!is.null(res)) {
       # 添加到 registry
@@ -156,51 +164,53 @@ NULL
 }
 
 
-# 3. 辅助函数
-
-
-#' @title 标准化差异分析表列名
-#' @description 将不同后端的列名统一为: gene_symbol, logFC, stat, pvalue, padj
+#' @title Standardize Differential Expression Table Column Names
+#' @description Unify column names from different backends to: gene_symbol, logFC, stat, pvalue, padj
 #' @keywords internal
 .standardize_de_columns <- function(df, backend) {
-
-  # 添加基因名列
+  # 添加基因名列（保持大小写敏感，但确保存在）
   if ("gene_symbol" %in% colnames(df)) {
-    # pass
+    # 保持原样
   } else if ("SYMBOL" %in% colnames(df)) {
     df$gene_symbol <- df$SYMBOL
+  } else if ("row.names" %in% colnames(df)) {
+    df$gene_symbol <- df$row.names
   } else {
     df$gene_symbol <- rownames(df)
   }
 
-  if (backend == "limma_voom") {
-    df$stat <- df$t
-    df$logFC <- df$logFC
-    df$pvalue <- df$P.Value
-    df$padj <- df$adj.P.Val
-
-  } else if (backend == "deseq2") {
-    df$stat <- df$stat
-    df$logFC <- df$log2FoldChange
-    df$pvalue <- df$pvalue
-    df$padj <- df$padj
+  # 标准化统计列（根据后端类型）
+  if (backend == "deseq2") {
+    # DESeq2: stat, log2FoldChange, pvalue, padj
+    df$stat <- df$stat %||% df$WaldStatistic %||% NA_real_
+    df$logFC <- df$log2FoldChange %||% df$logFC %||% NA_real_
+    df$pvalue <- df$pvalue %||% df$p.value %||% NA_real_
+    df$padj <- df$padj %||% df$adj.P.Val %||% NA_real_
+  } else if (backend == "limma_voom") {
+    # Limma-Voom: t统计量作为stat, P.Value作为pvalue, adj.P.Val作为padj
+    df$stat <- df$stat %||% df$t %||% NA_real_
+    df$logFC <- df$logFC %||% NA_real_
+    df$pvalue <- df$pvalue %||% df$P.Value %||% NA_real_
+    df$padj <- df$padj %||% df$adj.P.Val %||% NA_real_
   }
 
-  # 保留核心列
+  # 核心列检查
   core_cols <- c("gene_symbol", "logFC", "stat", "pvalue", "padj")
-
-  # 确保列存在
   missing <- setdiff(core_cols, colnames(df))
-  if (length(missing) > 0) stop(sprintf("标准化失败，缺失列: %s", paste(missing, collapse=", ")))
+  if (length(missing) > 0) {
+    stop(sprintf("Standardization failed, missing columns: %s", paste(missing, collapse = ", ")))
+  }
 
-  return(df[, c(core_cols, setdiff(colnames(df), core_cols))])
+  # 保留所有原始列，但确保核心列在前
+  other_cols <- setdiff(colnames(df), core_cols)
+  return(df[, c(core_cols, other_cols), drop = FALSE])
 }
 
-#' @title 构建表达数据包
-#' @description 统一封装表达矩阵和元数据
+#' @title Build Expression Data Bundle
+#' @description Uniformly encapsulate expression matrix and metadata
 #' @keywords internal
-.build_expr_bundle <- function(obj, backend) {
 
+.build_expr_bundle <- function(obj, backend) {
   if (is.null(obj)) {
     return(list(
       raw_counts = NULL,
@@ -222,12 +232,10 @@ NULL
       gene_meta <- NULL
       display_expr <- log2(raw_counts + 1)
     }
-
   } else if (backend == "deseq2") {
     raw_counts <- counts(obj, normalized = FALSE)
-    sample_meta <- as.data.frame(colData(obj))
     gene_meta <- as.data.frame(rowData(obj))
-
+    sample_meta <- as.data.frame(colData(obj))
     # 默认展示 log2(normalized counts + 1)
     norm_counts <- counts(obj, normalized = TRUE)
     display_expr <- log2(norm_counts + 1)
@@ -238,7 +246,7 @@ NULL
     display_expr = display_expr,
     sample_meta = sample_meta,
     gene_meta = gene_meta,
-    dge_list = if(backend == "limma_voom" && inherits(obj, "DGEList")) obj else NULL,
-    dds_obj = if(backend == "deseq2") obj else NULL
+    dge_list = if (backend == "limma_voom" && inherits(obj, "DGEList")) obj else NULL,
+    dds_obj = if (backend == "deseq2") obj else NULL
   ))
 }

@@ -2,11 +2,17 @@
 % Please edit documentation in R/00_class_validations.R
 \name{.check_gsea_res}
 \alias{.check_gsea_res}
-\title{校验 GseaRes 对象完整性}
+\title{Validate GseaRes Object Integrity}
 \usage{
 .check_gsea_res(res_obj)
 }
+\arguments{
+\item{res_obj}{GseaRes object to validate}
+}
+\value{
+TRUE if validation passes, otherwise stops with an error
+}
 \description{
-校验 GseaRes 对象完整性
+Internal function to ensure GseaRes object contains required components.
 }
 \keyword{internal}

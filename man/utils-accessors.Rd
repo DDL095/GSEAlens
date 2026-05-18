@@ -2,8 +2,9 @@
 % Please edit documentation in R/utils-accessors.R
 \name{utils-accessors}
 \alias{utils-accessors}
-\title{数据访问器工具函数}
+\title{Data Accessor Utilities}
 \description{
-提供统一的数据提取接口，隔离底层对象结构差异。修复DESeq2样本名匹配问题。
+Provides unified data extraction interface, isolating underlying
+  object structure differences. Fixes DESeq2 sample name matching issues.
 }
 \keyword{internal}

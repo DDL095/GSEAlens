@@ -2,17 +2,17 @@
 % Please edit documentation in R/00_class_validations.R
 \name{.validate_limma_design}
 \alias{.validate_limma_design}
-\title{校验 Limma 设计矩阵}
+\title{Validate Limma Design Matrix}
 \usage{
 .validate_limma_design(fit)
 }
 \arguments{
-\item{fit}{MArrayLM 对象}
+\item{fit}{MArrayLM object from limma}
 }
 \value{
-TRUE 或抛出错误
+TRUE if validation passes, otherwise stops with an error
 }
 \description{
-强制要求无截距设计 (~ 0 + group)，确保对比组解析准确。
+Enforce no-intercept design (~ 0 + group) to ensure accurate contrast parsing.
 }
 \keyword{internal}

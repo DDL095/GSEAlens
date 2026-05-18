@@ -2,11 +2,21 @@
 % Please edit documentation in R/10_shiny_mod_quadrant.R
 \name{mod_quadrant_ui}
 \alias{mod_quadrant_ui}
-\title{四重联动 UI（修复版）}
+\title{Quadrant Linkage Module}
 \usage{
 mod_quadrant_ui(id)
 }
+\arguments{
+\item{id}{Module ID}
+}
+\value{
+Shiny UI tagList
+}
 \description{
-四重联动 UI（修复版）
+Four-quadrant interactive visualization module for pathway and gene analysis.
+  Provides synchronized pathway selection, gene ranking, differential expression volcano,
+  and expression boxplot visualizations with bidirectional table-volcano synchronization.
+
+UI components for the four-quadrant interactive visualization
 }
 \keyword{internal}

@@ -2,19 +2,23 @@
 % Please edit documentation in R/09_shiny_mod_table.R
 \name{mod_master_table_server}
 \alias{mod_master_table_server}
-\title{主工作台表格 Server（Phase 11完整版：CSV集成 + 所有修复）}
+\title{Master Workspace Table Server}
 \usage{
-mod_master_table_server(id, data_prep)
+mod_master_table_server(id, data_prep, addition_data = NULL)
 }
 \arguments{
-\item{id}{模块 ID}
+\item{id}{Module ID}
 
-\item{data_prep}{来自数据预处理模块的响应式数据}
+\item{data_prep}{Reactive data from the data preprocessing module}
+
+\item{addition_data}{Optional. A data frame with pathway annotations to merge.}
 }
 \value{
-列表，包含 selected_pathways 和 show_modal
+List containing selected_pathways, show_modal, and selection control functions
 }
 \description{
-功能：数据展示、CSV注释合并、BLANK列预留、列显示控制
+Provides data display, column display control with decoupled checkbox state.
+  Supports merging addition_data columns into the main table.
+  Includes external selection update capabilities for bidirectional sync.
 }
 \keyword{internal}

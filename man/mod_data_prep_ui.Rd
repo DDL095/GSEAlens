@@ -2,11 +2,21 @@
 % Please edit documentation in R/08_shiny_mod_data_prep.R
 \name{mod_data_prep_ui}
 \alias{mod_data_prep_ui}
-\title{数据预处理模块 UI（动态表达类型版）}
+\title{Data Preprocessing Module UI}
 \usage{
 mod_data_prep_ui(id)
 }
+\arguments{
+\item{id}{Module namespace ID}
+}
 \description{
-数据预处理模块 UI（动态表达类型版）
+User interface for the data preprocessing module, providing controls for:
+\itemize{
+  \item Contrast selection and gene set subgroup filtering
+  \item Joint GSEA canvas for multi-pathway visualization
+  \item Differential expression gene marker selection
+  \item Group display order customization
+  \item Expression metrics configuration
+}
 }
 \keyword{internal}
