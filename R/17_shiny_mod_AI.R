@@ -138,8 +138,6 @@ mod_ai_abs_page_ui <- function(id) {
 #' @param gsea_res GseaRes object
 #' @param data_prep_list Data preprocessing list
 #' @param table_controller Table controller
-#' @keywords internal
-
 mod_ai_abs_page_server <- function(id, gsea_res, data_prep_list, table_controller) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns

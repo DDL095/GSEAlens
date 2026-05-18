@@ -13,20 +13,10 @@ mod_ai_abs_page_server(id, gsea_res, data_prep_list, table_controller)
 
 \item{data_prep_list}{Data preprocessing list}
 
-\item{table_controller}{Table controller}
+\item{table_controller}{Table controller
+Extract Leading Edge genes and format as comma-separated
+Determine confidence level}
 }
 \description{
 AI Interpretation Page Server
 }
-\keyword{Determine}
-\keyword{Edge}
-\keyword{Extract}
-\keyword{Leading}
-\keyword{and}
-\keyword{as}
-\keyword{comma-separated}
-\keyword{confidence}
-\keyword{format}
-\keyword{genes}
-\keyword{internal}
-\keyword{level}

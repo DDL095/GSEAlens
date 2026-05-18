@@ -9,7 +9,8 @@ build_hubgene_network(
   pathway_ids,
   min_hub_degree = 2,
   de_df = NULL,
-  res_df = NULL
+  res_df = NULL,
+  seed = 123
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ build_hubgene_network(
 \item{de_df}{Optional DE data frame containing stat column}
 
 \item{res_df}{Optional pathway result data frame}
+
+\item{seed}{Random seed for reproducibility (default: 123)}
 }
 \value{
 A list with three components:

@@ -6,6 +6,20 @@
 \usage{
 create_gsea_task(gsea_res, meta)
 }
+\arguments{
+\item{gsea_res}{GseaRes object}
+
+\item{meta}{Metadata for the task}
+}
+\value{
+A GseaTask object
+}
 \description{
 Single contrast extraction result object.
+}
+\examples{
+gsea_task <- create_gsea_task(
+  gsea_res = NULL,
+  meta = data.frame()
+)
 }

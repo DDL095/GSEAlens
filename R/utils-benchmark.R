@@ -130,6 +130,7 @@ plot_gsea_memory <- function(aligned_data, highlight_phases = TRUE) {
 #' @param ... Additional arguments passed to print
 #' @return The input object x (invisibly)
 #' @noRd
+#' @exportS3Method
 #' @examples
 #' \dontrun{
 #' data <- align_benchmark_data(gsea_res, "system_monitor.csv")

@@ -13,6 +13,32 @@ create_gsea_env(
   raw_obj
 )
 }
+\arguments{
+\item{backend_info}{Backend information object}
+
+\item{contrast_registry}{Contrast registry}
+
+\item{de_store}{Differential expression store}
+
+\item{expr_bundle}{Expression data bundle}
+
+\item{geneset}{Gene set collection}
+
+\item{raw_obj}{Raw data object}
+}
+\value{
+A GseaEnv object
+}
 \description{
 Standardized GSEA input environment object.
+}
+\examples{
+gsea_env <- create_gsea_env(
+  backend_info = list(),
+  contrast_registry = data.frame(),
+  de_store = data.frame(),
+  expr_bundle = list(),
+  geneset = character(),
+  raw_obj = NULL
+)
 }

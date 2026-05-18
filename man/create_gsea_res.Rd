@@ -14,6 +14,35 @@ create_gsea_res(
   results
 )
 }
+\arguments{
+\item{metadata}{Metadata information}
+
+\item{backend_info}{Backend information object}
+
+\item{contrast_registry}{Contrast registry}
+
+\item{de_store}{Differential expression store}
+
+\item{expr_bundle}{Expression data bundle}
+
+\item{geneset_info}{Gene set information}
+
+\item{results}{GSEA results}
+}
+\value{
+A GseaRes object
+}
 \description{
 GSEA computation result capsule.
+}
+\examples{
+gsea_res <- create_gsea_res(
+  metadata = list(),
+  backend_info = list(),
+  contrast_registry = data.frame(),
+  de_store = data.frame(),
+  expr_bundle = list(),
+  geneset_info = list(),
+  results = list()
+)
 }
