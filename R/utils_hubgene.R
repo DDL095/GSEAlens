@@ -17,6 +17,7 @@
 #' @param min_hub_degree Minimum degree threshold for hub genes (default: 2)
 #' @param de_df Optional DE data frame containing stat column
 #' @param res_df Optional pathway result data frame
+#' @param seed Random seed for reproducibility (default: 123)
 #'
 #' @return A list with three components:
 #'   \item{nodes}{A list containing pathway and gene data frames}
@@ -27,7 +28,8 @@
 build_hubgene_network <- function(gsea_task, pathway_ids,
                                   min_hub_degree = 2,
                                   de_df = NULL,
-                                  res_df = NULL) {
+                                  res_df = NULL,
+                                  seed = 123) {
   # Extract hub genes (now includes leading edge info)
   # Fixed: Properly pass de_df parameter
   hub_df <- extract_hub_genes(gsea_task, pathway_ids, min_hub_degree, de_df = de_df)

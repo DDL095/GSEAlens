@@ -380,7 +380,7 @@ mod_data_prep_server <- function(id, gsea_res) {
       return(perms)
     }
 
-    generate_limited_perms <- function(groups, max_perms = 100) {
+    generate_limited_perms <- function(groups, max_perms = 100, seed = 123) {
       perms <- list()
       n <- length(groups)
       count <- 0
@@ -399,8 +399,7 @@ mod_data_prep_server <- function(id, gsea_res) {
       }
 
       if (count < max_perms) {
-        # TODO: BiocCheck: set.seed accepted for reproducibility
-        set.seed(123)
+        set.seed(seed)
         for (i in 1:(max_perms - count)) {
           shuffled <- sample(groups)
           perm_str <- paste(shuffled, collapse = ",")

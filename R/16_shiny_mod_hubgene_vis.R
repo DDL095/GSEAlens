@@ -337,7 +337,8 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
         pathway_ids = pathway_ids,
         min_hub_degree = input$vis_min_hub,
         de_df = NULL,
-        res_df = data_list$df
+        res_df = data_list$df,
+        seed = input$vis_seed
       )
 
       if (is.null(net)) {

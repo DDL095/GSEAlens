@@ -11,6 +11,22 @@ NULL
 
 #' @title Define GseaEnv Class
 #' @description Standardized GSEA input environment object.
+#' @param backend_info Backend information object
+#' @param contrast_registry Contrast registry
+#' @param de_store Differential expression store
+#' @param expr_bundle Expression data bundle
+#' @param geneset Gene set collection
+#' @param raw_obj Raw data object
+#' @return A GseaEnv object
+#' @examples
+#' gsea_env <- create_gsea_env(
+#'   backend_info = list(),
+#'   contrast_registry = data.frame(),
+#'   de_store = data.frame(),
+#'   expr_bundle = list(),
+#'   geneset = character(),
+#'   raw_obj = NULL
+#' )
 #' @export
 
 create_gsea_env <- function(backend_info, contrast_registry, de_store, expr_bundle, geneset, raw_obj) {
@@ -29,6 +45,24 @@ create_gsea_env <- function(backend_info, contrast_registry, de_store, expr_bund
 
 #' @title Define GseaRes Class
 #' @description GSEA computation result capsule.
+#' @param metadata Metadata information
+#' @param backend_info Backend information object
+#' @param contrast_registry Contrast registry
+#' @param de_store Differential expression store
+#' @param expr_bundle Expression data bundle
+#' @param geneset_info Gene set information
+#' @param results GSEA results
+#' @return A GseaRes object
+#' @examples
+#' gsea_res <- create_gsea_res(
+#'   metadata = list(),
+#'   backend_info = list(),
+#'   contrast_registry = data.frame(),
+#'   de_store = data.frame(),
+#'   expr_bundle = list(),
+#'   geneset_info = list(),
+#'   results = list()
+#' )
 #' @export
 
 create_gsea_res <- function(metadata, backend_info, contrast_registry, de_store, expr_bundle, geneset_info, results) {
@@ -48,6 +82,14 @@ create_gsea_res <- function(metadata, backend_info, contrast_registry, de_store,
 
 #' @title Define GseaTask Class
 #' @description Single contrast extraction result object.
+#' @param gsea_res GseaRes object
+#' @param meta Metadata for the task
+#' @return A GseaTask object
+#' @examples
+#' gsea_task <- create_gsea_task(
+#'   gsea_res = NULL,
+#'   meta = data.frame()
+#' )
 #' @export
 
 create_gsea_task <- function(gsea_res, meta) {

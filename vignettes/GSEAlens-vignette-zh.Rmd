@@ -79,7 +79,7 @@ gsea_limma_voom_data <- edgeR::DGEList(
   genes = genes_df,
   norm.factors = NULL,
   group = group_level,
-  remove.zeros = T
+  remove.zeros = TRUE
 )
 
 total_counts <- edgeR::cpm(gsea_limma_voom_data) |> rowSums()  
