@@ -5,13 +5,13 @@
 
 #' @title Internal GSEA Data Extractor
 #' @description Extract running score data from gseaResult object.
-#'   Adapted from GseaVis::gsInfo, using enrichplot::gseaScores internally.
+#'   Adapted from GseaVis::gsInfo, using enrichit::gseaScores internally.
 #' @param object A gseaResult object.
 #' @param geneSetID Character, gene set ID.
 #' @return data.frame with runningScore, position, geneList, etc.
 #' @keywords internal
 .gs_info <- function(object, geneSetID) {
-  gseaScores <- utils::getFromNamespace("gseaScores", "enrichplot")
+  gseaScores <- utils::getFromNamespace("gseaScores", "enrichit")
 
   geneList <- object@geneList
 

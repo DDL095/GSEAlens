@@ -15,6 +15,7 @@ Imports:
     stats,
     utils,
     enrichplot,
+    enrichit,
     grDevices,
     magrittr,
     graphics,
