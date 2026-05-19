@@ -148,6 +148,7 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
 #' @param p_adjust_cutoff FDR filtering threshold, default 1
 #' @param top_plots Number of pathways to plot detailed sub-pages, format c(positive_count, negative_count)
 #' @param dpi Resolution for GSEA enrichment plots, default 200
+#' @return Path to the generated HTML report (invisible)
 #' @importFrom ComplexHeatmap Heatmap HeatmapAnnotation draw
 #' @importFrom circlize colorRamp2
 #' @importFrom grid gpar

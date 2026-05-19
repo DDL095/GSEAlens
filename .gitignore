@@ -4,9 +4,10 @@
 .httr-oauth
 .DS_Store
 .quarto
-R姹囨€?py
+R汇总.py
 *.txt
-閲嶅懡鍚峈鑴氭湰.py
-fledge鏇存柊鑴氭湰.Rmd
-fledge鏇存柊鑴氭湰.R
+重命名R脚本.py
+fledge更新脚本.Rmd
+GSEAlens.Rproj
+fledge更新脚本.R
 GSEAlens.BiocCheck

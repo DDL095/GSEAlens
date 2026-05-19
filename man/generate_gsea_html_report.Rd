@@ -23,6 +23,9 @@ generate_gsea_html_report(
 
 \item{dpi}{Resolution for GSEA enrichment plots, default 200}
 }
+\value{
+Path to the generated HTML report (invisible)
+}
 \description{
 Automatically avoids column name contamination, intelligently extracts expression matrices from objects,
 and outputs comfortable web reports with dual p-value display and heatmaps.
