@@ -70,7 +70,7 @@ mod_quadrant_ui <- function(id) {
     shiny::fluidRow(
       shiny::column(12, shiny::div(
         class = "white-box",
-        shiny::h4("Gene Expression Table (Click View to display boxplot | Click X to remove)"),
+        shiny::h4("Gene Expression Table"),
         shiny::div(
           style = "margin-bottom: 10px;",
           shiny::actionButton(ns("clear_all_genes_btn_quadrant"), label = "Clear Table", class = "btn-warning btn-sm"),
