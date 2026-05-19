@@ -1,4 +1,4 @@
-# Section: Pathway Database Builder ----
+﻿# Section: Pathway Database Builder ----
 
 #' @title Build GSEA Pathway Database with Interactive Selection
 #' @description Provides an interactive or automated gene set selection interface
@@ -26,7 +26,7 @@
 #'   }
 #' @export
 #' @examples
-#' \dontrun{
+#' if(interactive()){
 #' # Human mode (default)
 #' pathways <- build_gsea_pathways(species = "HS")
 #'
@@ -47,7 +47,7 @@ build_gsea_pathways <- function(species = "HS", auto_select = NULL) {
 
   species <- toupper(trimws(as.character(species)))
 
-  # 物种配置表
+  # 鐗╃閰嶇疆琛?
   species_config <- list(
     "HS" = list(
       db_species = "HS",
@@ -161,10 +161,10 @@ build_gsea_pathways <- function(species = "HS", auto_select = NULL) {
       # Display info
       short_tag <- mapped$tag
       display_desc <- mapped$desc
-      combo_name <- mm_key # 保持 MM 代码格式
+      combo_name <- mm_key # 淇濇寔 MM 浠ｇ爜鏍煎紡
       # Combined name (for auto_select matching)
     } else {
-      # 人类模式：直接使用
+      # 浜虹被妯″紡锛氱洿鎺ヤ娇鐢?
       human_coll <- row$gs_collection
       human_subcoll <- row$gs_subcollection
       short_tag <- paste0(

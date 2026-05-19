@@ -28,7 +28,7 @@ Extract expression matrix from GseaEnv or GseaRes object, supporting
   TPM, and log-normalized counts.
 }
 \examples{
-\dontrun{
+if(interactive()){
 # Get default expression matrix
 expr <- get_expr_matrix(gsea_res)
 

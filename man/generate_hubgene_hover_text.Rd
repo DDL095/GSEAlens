@@ -26,3 +26,8 @@ Character string with HTML content for hover tooltip
 \description{
 Generate HTML text for plotly hover tooltips.
 }
+\examples{
+if(interactive()){
+# Placeholder for function example
+}
+}

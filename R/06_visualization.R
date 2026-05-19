@@ -1,4 +1,4 @@
-# Section: Visualization and Report Generation ----
+﻿# Section: Visualization and Report Generation ----
 
 #' @title GSEA Visualization and Report Generation
 #' @description Provides static plotting functions and interactive HTML report generation capabilities.
@@ -32,19 +32,24 @@ NULL
 #' @importFrom patchwork plot_annotation wrap_plots
 #' @importFrom stringr str_to_title str_wrap
 #' @export
+
+#' @examples
+#' if(interactive()){
+#' # Placeholder for function example
+#' }
 plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
                                   main_title = "GSEA Plot", subPlot = 3,
                                   curveCol = NULL, add_pval = FALSE,
                                   show_contrast_in_axis = FALSE,
                                   ...) {
-  # 1. 解析对象与提取基础数据
+  # 1. 瑙ｆ瀽瀵硅薄涓庢彁鍙栧熀纭€鏁版嵁
   res <- directional_gsea_obj$gsea_res
   res@result$Description <- res@result$ID
   meta <- directional_gsea_obj$meta
   df <- as.data.frame(res)
   n_lines <- length(target_pathways)
 
-  # 2. 高级颜色池分配逻辑
+  # 2. 楂樼骇棰滆壊姹犲垎閰嶉€昏緫
   if (is.null(curveCol) || length(curveCol) < n_lines) {
     base_colors <- c(
       "#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00",
@@ -63,7 +68,7 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
     curveCol_gsea <- c(curveCol_use[1], curveCol_use[1])
   }
 
-  # 3. 核心绘图（原生引擎）
+  # 3. 鏍稿績缁樺浘锛堝師鐢熷紩鎿庯級
   p_list <- .gsea_nb_core(
     object = res,
     geneSetID = target_pathways,
@@ -76,7 +81,7 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
     ...
   )
 
-  # 4. 终极图例拦截与覆写逻辑
+  # 4. 缁堟瀬鍥句緥鎷︽埅涓庤鍐欓€昏緫
   if (n_lines > 1) {
     df_sub <- df[match(target_pathways, df$ID), ]
     raw_desc <- df_sub$Description
@@ -106,7 +111,7 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
     }
   }
 
-  # 5. 组合子图
+  # 5. 缁勫悎瀛愬浘
   plots <- list(p_list$p1)
   if (subPlot >= 2 && !is.null(p_list$p2)) {
     plots[[2]] <- p_list$p2
@@ -119,7 +124,7 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
 
   p_base <- patchwork::wrap_plots(plots, ncol = 1, heights = heights)
 
-  # 6. 添加结构化大标题
+  # 6. 娣诲姞缁撴瀯鍖栧ぇ鏍囬
   p_final <- p_base + patchwork::plot_annotation(
     title = main_title,
     subtitle = sprintf("<- %s | %s ->", meta$left_group, meta$right_group),
@@ -147,6 +152,11 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
 #' @importFrom circlize colorRamp2
 #' @importFrom grid gpar
 #' @export
+
+#' @examples
+#' if(interactive()){
+#' # Placeholder for function example
+#' }
 generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
                                       p_adjust_cutoff = 1, top_plots = c(15, 15),
                                       dpi = 200) {
@@ -158,7 +168,7 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
   res <- res_obj$gsea_res
   df <- as.data.frame(res)
 
-  # 1. 自动寻路逻辑
+  # 1. 鑷姩瀵昏矾閫昏緫
   if (is.null(output_base_dir)) {
     if (!is.null(meta$project_info) && !is.null(meta$project_info$series_dir)) {
       output_base_dir <- file.path(
@@ -177,7 +187,7 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
 
   main_html_path <- file.path(bundle_dir, paste0(basename(bundle_dir), ".html"))
 
-  # 2. 核心清洗区
+  # 2. 鏍稿績娓呮礂鍖?
   if (!is.null(meta$meta_dict)) {
     dict_cols <- colnames(meta$meta_dict)
     df_cols <- colnames(df)
@@ -213,7 +223,7 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
     return(invisible(NULL))
   }
 
-  # 3. 表达矩阵智能雷达
+  # 3. 琛ㄨ揪鐭╅樀鏅鸿兘闆疯揪
   message("[Smart Radar] Detecting expression matrix for heatmap plotting...")
   expr_mat <- NULL
   cpm_mat <- NULL
@@ -235,14 +245,14 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
           meta$left_group, length(left_samples), meta$right_group, length(right_samples)
         ))
 
-        # 获取 display_expr (Z-score 底图)
+        # 鑾峰彇 display_expr (Z-score 搴曞浘)
         if (!is.null(expr_bundle$display_expr)) {
           expr_mat <- expr_bundle$display_expr[, target_samples, drop = FALSE]
         } else if (!is.null(expr_bundle$raw_counts)) {
           expr_mat <- log2(expr_bundle$raw_counts[, target_samples, drop = FALSE] + 1)
         }
 
-        # 获取 raw_counts (用于显示数值)
+        # 鑾峰彇 raw_counts (鐢ㄤ簬鏄剧ず鏁板€?
         if (!is.null(expr_bundle$raw_counts)) {
           cpm_mat <- edgeR::cpm(expr_bundle$raw_counts[, target_samples, drop = FALSE], log = FALSE)
         }
@@ -253,7 +263,7 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
     }
   }
 
-  # 4. 遍历生成子图与详情页
+  # 4. 閬嶅巻鐢熸垚瀛愬浘涓庤鎯呴〉
   pos_plot_ids <- df_clean %>%
     dplyr::filter(NES > 0) %>%
     dplyr::arrange(desc(NES)) %>%
@@ -281,7 +291,7 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
     gsea_png_name <- sprintf("GSEA_Rank%03d_%s.png", i, safe_pw_name)
     heat_png_name <- sprintf("Heatmap_Rank%03d_%s.png", i, safe_pw_name)
 
-    # 绘制 GSEA 主图
+    # 缁樺埗 GSEA 涓诲浘
     tryCatch(
       {
         p_gsea <- plot_directional_gsea(res_obj, target_pathways = pw_id, main_title = pw_id, subPlot = 3, add_pval = FALSE)
@@ -292,7 +302,7 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
       }
     )
 
-    # 绘制热图 (ComplexHeatmap 升级版)
+    # 缁樺埗鐑浘 (ComplexHeatmap 鍗囩骇鐗?
     heat_html_tag <- "<p class='text-muted' style='margin-top:20px;'>No expression data available for visualization.</p>"
     if (!is.null(expr_mat)) {
       all_genes <- res@geneSets[[pw_id]]
@@ -304,20 +314,20 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
         plot_mat <- plot_mat[apply(plot_mat, 1, var) > 1e-6, , drop = FALSE]
 
         if (nrow(plot_mat) >= 2) {
-          # Z-score 标准化
+          # Z-score 鏍囧噯鍖?
           z_mat <- t(scale(t(plot_mat)))
           z_mat[is.na(z_mat)] <- 0
           z_mat[z_mat > 1] <- 1
           z_mat[z_mat < -1] <- -1
 
-          # 提取 CPM 数值 (用于显示)
+          # 鎻愬彇 CPM 鏁板€?(鐢ㄤ簬鏄剧ず)
           display_numbers <- round(cpm_mat[rownames(z_mat), , drop = FALSE])
 
-          # ComplexHeatmap 配置
-          # 1. 颜色映射 (复刻 pheatmap 的淡蓝-白-亮粉橙)
+          # ComplexHeatmap 閰嶇疆
+          # 1. 棰滆壊鏄犲皠 (澶嶅埢 pheatmap 鐨勬贰钃?鐧?浜矇姗?
           col_fun <- circlize::colorRamp2(c(-1, 0, 1), c("#67a9cf", "#f7f7f7", "#ef8a62"))
 
-          # 2. 列注释 (分组条)
+          # 2. 鍒楁敞閲?(鍒嗙粍鏉?
           grp_col <- c("#E41A1C", "#377EB8")
           names(grp_col) <- c(meta$left_group, meta$right_group)
 
@@ -328,18 +338,18 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
             simple_anno_size = grid::unit(0.6, "cm")
           )
 
-          # 3. 行注释 (Leading Edge, 可选)
+          # 3. 琛屾敞閲?(Leading Edge, 鍙€?
           # leading_status <- ifelse(toupper(rownames(z_mat)) %in% toupper(core_genes), "YES", "NO")
           # right_ann <- rowAnnotation(LeadingEdge = leading_status, ...)
 
-          # 4. 单元格渲染函数 (绘制数值)
+          # 4. 鍗曞厓鏍兼覆鏌撳嚱鏁?(缁樺埗鏁板€?
           cell_fun <- function(j, i, x, y, width, height, fill) {
             val <- display_numbers[i, j]
-            # 保持原有设置：固定黑色字体，字号 13
+            # 淇濇寔鍘熸湁璁剧疆锛氬浐瀹氶粦鑹插瓧浣擄紝瀛楀彿 13
             grid::grid.text(val, x, y, gp = grid::gpar(fontsize = 13, col = "black", fontface = "bold"))
           }
 
-          # 5. 构建 Heatmap 对象
+          # 5. 鏋勫缓 Heatmap 瀵硅薄
           ht <- ComplexHeatmap::Heatmap(
             z_mat,
             name = "Z-Score",
@@ -358,7 +368,7 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
             height = NULL
           )
 
-          # 6. 保存图片
+          # 6. 淇濆瓨鍥剧墖
           png(file.path(details_dir, heat_png_name),
             width = 800, height = 600, res = 100
           )
@@ -376,7 +386,7 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
       }
     }
 
-    # 拼接 HTML
+    # 鎷兼帴 HTML
     html_content <- sprintf('
       <!DOCTYPE html><html><head><meta charset="utf-8"><title>Detail: %s</title>
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"></head>
@@ -394,7 +404,7 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
 
   df_clean$Detail_Page <- detail_links
 
-  # 5. 生成主交互式数据表
+  # 5. 鐢熸垚涓讳氦浜掑紡鏁版嵁琛?
   display_df <- df_clean %>%
     dplyr::select(Rank, Detail_Page, Pathway = Pathway_Link, Collection = Display_Collection, Enriched_In, Size = setSize, NES, pvalue, p.adjust, Description)
 

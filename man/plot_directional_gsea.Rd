@@ -40,3 +40,8 @@ ggplot2 composite object
 Professional-grade GSEA plotting engine with seamless support for single or multiple pathway visualization.
   Automatically generates elegant legends and native red-blue gene distribution track.
 }
+\examples{
+if(interactive()){
+# Placeholder for function example
+}
+}

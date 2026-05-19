@@ -24,3 +24,8 @@ Safely load a computation capsule. If the file is moved from its
   restore the standard folder structure in the current working directory and
   relocate the capsule. Fully compatible with GseaEnv and GseaRes objects.
 }
+\examples{
+if(interactive()){
+# Placeholder for function example
+}
+}

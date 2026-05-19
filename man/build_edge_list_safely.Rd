@@ -21,3 +21,8 @@ Safely construct edge list for pathway network based on Jaccard
   Now includes Overlap Coefficient and Dice Coefficient for comprehensive
   similarity assessment.
 }
+\examples{
+if(interactive()){
+# Placeholder for function example
+}
+}

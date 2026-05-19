@@ -28,3 +28,8 @@ Automatically avoids column name contamination, intelligently extracts expressio
 and outputs comfortable web reports with dual p-value display and heatmaps.
 Uses the ComplexHeatmap engine to draw high-quality heatmaps, perfectly replicating pheatmap aesthetics.
 }
+\examples{
+if(interactive()){
+# Placeholder for function example
+}
+}

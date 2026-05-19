@@ -21,3 +21,8 @@ GseaTask object.
 Extract results for a specified contrast from a GseaRes capsule.
   Supports subsetting by gene set collection and automatically recalculates FDR.
 }
+\examples{
+if(interactive()){
+task <- extract_gsea_task(gsea_res, contrast_id = "Treatment_vs_Control")
+}
+}

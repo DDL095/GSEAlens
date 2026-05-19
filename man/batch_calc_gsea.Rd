@@ -47,3 +47,9 @@ GseaRes object
 \description{
 Consumes a standard GseaEnv object and performs efficient parallel GSEA calculation.
 }
+\examples{
+if(interactive()){
+# Assuming gsea_env is a valid GseaEnv object
+gsea_res <- batch_calc_gsea(gsea_env, workers = 2)
+}
+}

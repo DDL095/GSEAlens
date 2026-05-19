@@ -17,3 +17,8 @@ Character vector
 \description{
 Extract complete gene list for a pathway from geneset_info.
 }
+\examples{
+if(interactive()){
+# Placeholder for function example
+}
+}

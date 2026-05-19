@@ -36,3 +36,8 @@ A list with three components:
 Build complete network data with leading edge information for edges.
 Now properly passes de_df to extract_hub_genes for stat extraction.
 }
+\examples{
+if(interactive()){
+# Placeholder for function example
+}
+}

@@ -30,3 +30,8 @@ Validated value
 Unified handling of invalid parameters (e.g., ncol <= 0) to ensure
   03/04 module stability.
 }
+\examples{
+if(interactive()){
+# Placeholder for function example
+}
+}

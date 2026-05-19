@@ -25,3 +25,8 @@ Numeric, ratio value
 Calculate overlap ratio between pathway genes and differentially
   expressed genes.
 }
+\examples{
+if(interactive()){
+# Placeholder for function example
+}
+}

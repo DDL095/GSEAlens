@@ -1,4 +1,4 @@
-# Section: Data Accessor Utilities ----
+﻿# Section: Data Accessor Utilities ----
 
 #' @title Data Accessor Utilities
 #' @description Provides unified data extraction interface, isolating underlying
@@ -29,7 +29,7 @@ NULL
 #' @export
 #'
 #' @examples
-#' \dontrun{
+#' if(interactive()){
 #' # Get default expression matrix
 #' expr <- get_expr_matrix(gsea_res)
 #'
@@ -228,7 +228,7 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
 #' @export
 #'
 #' @examples
-#' \dontrun{
+#' if(interactive()){
 #' # Get results for a specific contrast
 #' de_result <- get_de_table(gsea_res, contrast_id = "Treatment_vs_Control")
 #'
@@ -292,7 +292,7 @@ get_de_table.GseaRes <- function(obj, contrast_id) {
 #' @export
 #'
 #' @examples
-#' \dontrun{
+#' if(interactive()){
 #' # Get processed sample metadata
 #' meta <- get_sample_meta(gsea_res)
 #' head(meta)
@@ -546,7 +546,7 @@ get_sample_meta.GseaRes <- function(obj) {
 #' @export
 #'
 #' @examples
-#' \dontrun{
+#' if(interactive()){
 #' registry <- get_contrast_registry(gsea_res)
 #' names(registry)
 #' }
@@ -573,7 +573,7 @@ get_contrast_registry.GseaRes <- function(obj) {
 #' @export
 #'
 #' @examples
-#' \dontrun{
+#' if(interactive()){
 #' gs_info <- get_geneset_info(gsea_res)
 #' names(gs_info)
 #' }
@@ -611,7 +611,7 @@ get_geneset_info.GseaEnv <- function(obj) {
 #' @export
 #'
 #' @examples
-#' \dontrun{
+#' if(interactive()){
 #' # Read from CSV
 #' add_data <- read_addition_data("pathway_annotations.csv")
 #'
@@ -701,7 +701,7 @@ read_addition_data <- function(file_path) {
 #' @export
 #'
 #' @examples
-#' \dontrun{
+#' if(interactive()){
 #' # Convert CSV to RDS in current directory
 #' creat_addition_data_rdsfile("my_annotations.csv")
 #'
@@ -788,7 +788,7 @@ creat_addition_data_rdsfile <- function(csv_path,
 #' @export
 #'
 #' @examples
-#' \dontrun{
+#' if(interactive()){
 #' # Create template with all pathway IDs
 #' create_addition_template(gsea_res, "my_template.csv")
 #'

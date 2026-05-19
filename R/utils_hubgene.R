@@ -1,4 +1,4 @@
-# ==============================================================================
+﻿# ==============================================================================
 # File: R/utils_hubgene.R
 # Purpose: HubGene network construction and visualization utilities
 # ==============================================================================
@@ -25,6 +25,11 @@
 #'   \item{hub_df}{Hub gene data frame from extraction}
 #'
 #' @export
+
+#' @examples
+#' if(interactive()){
+#' # Placeholder for function example
+#' }
 build_hubgene_network <- function(gsea_task, pathway_ids,
                                   min_hub_degree = 2,
                                   de_df = NULL,
@@ -154,6 +159,11 @@ build_hubgene_network <- function(gsea_task, pathway_ids,
 #'   \item{pathway_leading_edges}{List column with per-pathway leading edge status}
 #'
 #' @export
+
+#' @examples
+#' if(interactive()){
+#' # Placeholder for function example
+#' }
 extract_hub_genes <- function(gsea_task, pathway_ids, min_degree = 2, de_df = NULL) {
   # Validate inputs
   if (is.null(pathway_ids) || length(pathway_ids) == 0) {
@@ -350,6 +360,11 @@ extract_hub_genes <- function(gsea_task, pathway_ids, min_degree = 2, de_df = NU
 #'   \item{all}{Combined node data frame}
 #'
 #' @export
+
+#' @examples
+#' if(interactive()){
+#' # Placeholder for function example
+#' }
 prepare_hubgene_nodes <- function(network_data, layout = "fr", seed = 42) {
   if (is.null(network_data) || is.null(network_data$nodes)) {
     return(NULL)
@@ -437,6 +452,11 @@ prepare_hubgene_nodes <- function(network_data, layout = "fr", seed = 42) {
 #' @return Node data with added color and color_label columns
 #'
 #' @export
+
+#' @examples
+#' if(interactive()){
+#' # Placeholder for function example
+#' }
 color_by_direction <- function(node_data, color_mode = "logFC",
                                left_group = "A", right_group = "B") {
   # Define color palette (consistent with volcano/NES plots)
@@ -525,6 +545,11 @@ color_by_direction <- function(node_data, color_mode = "logFC",
 #' @return Character string with HTML content for hover tooltip
 #'
 #' @export
+
+#' @examples
+#' if(interactive()){
+#' # Placeholder for function example
+#' }
 generate_hubgene_hover_text <- function(node, node_type,
                                         left_group = "A",
                                         right_group = "B") {
@@ -639,6 +664,11 @@ generate_hubgene_hover_text <- function(node, node_type,
 #'   \item{labels}{Named list of legend labels}
 #'
 #' @export
+
+#' @examples
+#' if(interactive()){
+#' # get_hubgene_legend example
+#' }
 get_hubgene_legend <- function(left_group = "A", right_group = "B") {
   list(
     pathway_up = "#E41A1C",

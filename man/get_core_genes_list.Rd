@@ -17,3 +17,8 @@ Named list, names = pathway_id, values = core_genes vector
 \description{
 Batch data preparation for 03 module Network/UpSet/Chord visualizations.
 }
+\examples{
+if(interactive()){
+# Placeholder for function example
+}
+}

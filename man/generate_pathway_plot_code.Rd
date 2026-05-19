@@ -32,3 +32,8 @@ A character string containing executable R code
 \description{
 Generate Pathway Plotting Code
 }
+\examples{
+if(interactive()){
+# Placeholder for function example
+}
+}

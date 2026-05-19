@@ -23,3 +23,8 @@ A named list with three components:
 \description{
 Prepare node data with layout positions for plotly visualization.
 }
+\examples{
+if(interactive()){
+# Placeholder for function example
+}
+}

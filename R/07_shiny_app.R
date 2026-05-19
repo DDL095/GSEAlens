@@ -1,4 +1,4 @@
-# GSEAlens Interactive Analysis Workstation ---------------------------------------------------
+﻿# GSEAlens Interactive Analysis Workstation ---------------------------------------------------
 #' @title GSEAlens Interactive Analysis Workstation
 #' @description Modular Shiny application based on GseaRes object, supporting
 #'   Limma and DESeq2 dual backends. Provides interactive visualization for
@@ -17,7 +17,7 @@
 #' @return Shiny application object
 #' @export
 #' @examples
-#' \dontrun{
+#' if(interactive()){
 #' # Basic usage
 #' gsea_res <- batch_calc_gsea(gsea_env)
 #' launch_gsea_app(gsea_res)

@@ -1,4 +1,4 @@
-#' @title Initialize GSEA Environment Object
+﻿#' @title Initialize GSEA Environment Object
 #' @description Unified entry point supporting limma-voom (no intercept design) and DESeq2 objects.
 #' Automatically extracts contrasts, differential analysis results, and expression matrices to generate
 #' a standardized GseaEnv object.
@@ -9,7 +9,7 @@
 #' @return Returns a standardized object of class \code{GseaEnv}.
 #' @export
 #' @examples
-#' \dontrun{
+#' if(interactive()){
 #' # Limma workflow
 #' design <- model.matrix(~ 0 + group, data = samples)
 #' fit <- lmFit(expr, design) %>%
@@ -25,34 +25,34 @@
 setup_gsea_env <- function(fit, pathway_obj, expr_data = NULL, target_factor = NULL) {
   message("\nStarting GSEAlens engine...")
 
-  # 1. 校验基因集对象
+  # 1. 鏍￠獙鍩哄洜闆嗗璞?
   if (is.null(pathway_obj) || is.null(pathway_obj$TERM2GENE)) {
     stop("Invalid pathway_obj! Please use build_gsea_pathways() to generate a valid gene set object.")
   }
 
-  # 2. 识别后端类型并分发提取
+  # 2. 璇嗗埆鍚庣绫诲瀷骞跺垎鍙戞彁鍙?
   backend_data <- NULL
   backend_info <- NULL
 
   if (inherits(fit, "MArrayLM")) {
     message("Detected input type: [Limma-Voom]")
 
-    # 调用 Limma 提取器
+    # 璋冪敤 Limma 鎻愬彇鍣?
     backend_data <- .extract_limma_data(fit, expr_data)
 
     backend_info <- list(
       backend = "limma_voom",
       input_class = "MArrayLM",
-      design_formula = NULL, # Limma fit 对象通常不直接保留公式
+      design_formula = NULL, # Limma fit 瀵硅薄閫氬父涓嶇洿鎺ヤ繚鐣欏叕寮?
       target_factor = NA
     )
   } else if (inherits(fit, "DESeqDataSet")) {
     message("Detected input type: [DESeq2]")
 
-    # 调用 DESeq2 提取器
+    # 璋冪敤 DESeq2 鎻愬彇鍣?
     backend_data <- .extract_deseq2_data(fit, target_factor)
 
-    # 记录实际使用的 target_factor
+    # 璁板綍瀹為檯浣跨敤鐨?target_factor
     actual_factor <- if (is.null(target_factor)) {
       utils::tail(attr(terms(DESeq2::design(fit)), "term.labels"), 1)
     } else {
@@ -69,7 +69,7 @@ setup_gsea_env <- function(fit, pathway_obj, expr_data = NULL, target_factor = N
     stop("Unsupported input type! Please provide MArrayLM (limma) or DESeqDataSet (DESeq2) object.")
   }
 
-  # 3. 组装基因集信息
+  # 3. 缁勮鍩哄洜闆嗕俊鎭?
   #
   geneset_info <- list(
     name = pathway_obj$SuperTag %||% pathway_obj$name,
@@ -90,20 +90,20 @@ setup_gsea_env <- function(fit, pathway_obj, expr_data = NULL, target_factor = N
       md
     },
     used_collections = pathway_obj$collections_used %||% pathway_obj$used_collections,
-    species = pathway_obj$species %||% "HS" # 新增
+    species = pathway_obj$species %||% "HS" # 鏂板
   )
 
-  # 4. 构建最终对象
+  # 4. 鏋勫缓鏈€缁堝璞?
   env_obj <- create_gsea_env(
     backend_info = backend_info,
     contrast_registry = backend_data$contrast_registry,
     de_store = backend_data$de_store,
     expr_bundle = backend_data$expr_bundle,
     geneset = geneset_info,
-    raw_obj = list(fit = fit) # 保留原始对象引用
+    raw_obj = list(fit = fit) # 淇濈暀鍘熷瀵硅薄寮曠敤
   )
 
-  # 5. 最终校验
+  # 5. 鏈€缁堟牎楠?
   .check_gsea_env(env_obj)
 
   message("GseaEnv object built successfully!")
@@ -114,7 +114,7 @@ setup_gsea_env <- function(fit, pathway_obj, expr_data = NULL, target_factor = N
 }
 
 
-# 查看函数
+# 鏌ョ湅鍑芥暟
 
 
 #' @title View GSEA Environment Object Overview
@@ -122,21 +122,26 @@ setup_gsea_env <- function(fit, pathway_obj, expr_data = NULL, target_factor = N
 #' contrast list, and gene set status.
 #' @param env_obj GseaEnv object
 #' @export
+
+#' @examples
+#' if(interactive()){
+#' # Placeholder for function example
+#' }
 inspect_gsea_env <- function(env_obj) {
   if (!inherits(env_obj, "GseaEnv")) stop("Input object is not of class GseaEnv.")
 
-  # 解析信息
+  # 瑙ｆ瀽淇℃伅
   bi <- env_obj$backend_info
   reg <- env_obj$contrast_registry
   gs <- env_obj$geneset
   expr <- env_obj$expr_bundle
 
-  # 控制台输出
+  # 鎺у埗鍙拌緭鍑?
   cat("\n", rep("=", 60), "\n", sep = "")
   cat("       GSEAlens Environment Summary\n")
   cat(rep("=", 60), "\n\n", sep = "")
 
-  # 1. 后端信息
+  # 1. 鍚庣淇℃伅
   cat("[1] Backend Information\n")
   cat(sprintf("   Type        : %s\n", bi$backend))
   cat(sprintf("   Input Class : %s\n", bi$input_class))
@@ -145,10 +150,10 @@ inspect_gsea_env <- function(env_obj) {
   }
   cat("\n")
 
-  # 2. 对比组注册表
+  # 2. 瀵规瘮缁勬敞鍐岃〃
   cat("[2] Contrast Registry (", nrow(reg), " comparisons)\n", sep = "")
   if (nrow(reg) > 0) {
-    # 打印前几个，防止刷屏
+    # 鎵撳嵃鍓嶅嚑涓紝闃叉鍒峰睆
     print_head <- utils::head(reg[, c("contrast_id", "left_group", "right_group")], 5)
     for (i in 1:nrow(print_head)) {
       cat(sprintf(
@@ -163,13 +168,13 @@ inspect_gsea_env <- function(env_obj) {
   }
   cat("\n")
 
-  # 3. 基因集信息
+  # 3. 鍩哄洜闆嗕俊鎭?
   cat("[3] Gene Set Database\n")
   cat(sprintf("   Name        : %s\n", gs$name))
   cat(sprintf("   Pathways    : %d\n", nrow(gs$meta_dict)))
   cat("\n")
 
-  # 4. 表达数据状态
+  # 4. 琛ㄨ揪鏁版嵁鐘舵€?
   cat("[4] Expression Data Status\n")
   if (!is.null(expr$raw_counts)) {
     cat(sprintf(
@@ -182,7 +187,7 @@ inspect_gsea_env <- function(env_obj) {
   }
   cat("\n")
 
-  # 5. 下一步指引
+  # 5. 涓嬩竴姝ユ寚寮?
   cat("[5] Next Step\n")
   cat("   Please run the computation engine:\n")
   cat("   > res <- batch_calc_gsea(env_obj)\n")

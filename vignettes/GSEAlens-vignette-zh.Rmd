@@ -35,16 +35,7 @@ devtools::install_github("DDL095/GSEAlens")
 
 ```{r 环境准备, results='hide'}
 library(GSEAlens)
-# 先检查是否已安装 airway
-if (!requireNamespace("airway", quietly = TRUE)) {
-  # 如果未安装，先检查并安装 BiocManager
-  if (!requireNamespace("BiocManager", quietly = TRUE)) {
-    install.packages("BiocManager")
-  }
-  # 通过 BiocManager 安装 airway
-  BiocManager::install("airway")
-}
-library("airway")
+library(airway)
 data(airway)
 expression_data <- airway
 ```

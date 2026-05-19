@@ -17,7 +17,7 @@ Retrieve the registered contrasts used for differential expression
   analysis, including contrast definitions and metadata.
 }
 \examples{
-\dontrun{
+if(interactive()){
 registry <- get_contrast_registry(gsea_res)
 names(registry)
 }

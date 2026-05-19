@@ -18,7 +18,7 @@ A ggplot object
 Generates a standard memory usage curve plot for publication.
 }
 \examples{
-\dontrun{
+if(interactive()){
 data <- align_benchmark_data(gsea_res, "system_monitor.csv")
 plot_gsea_memory(data)
 plot_gsea_memory(data, highlight_phases = FALSE)

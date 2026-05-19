@@ -28,3 +28,8 @@ A data frame with columns:
 Extract hub genes with their leading edge status for each pathway.
 A gene is considered a hub if it appears in at least min_degree pathways.
 }
+\examples{
+if(interactive()){
+# Placeholder for function example
+}
+}

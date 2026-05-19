@@ -1,4 +1,4 @@
-#' @title Batch Parallel GSEA Calculation
+﻿#' @title Batch Parallel GSEA Calculation
 #' @description Consumes a standard GseaEnv object and performs efficient parallel GSEA calculation.
 #' @param gsea_env GseaEnv object
 #' @param custom_series_name String. Analysis series name
@@ -12,6 +12,11 @@
 #' @param use_progress Logical. Whether to show progress bar, default TRUE
 #' @param chunk_size Integer. Number of tasks per worker per chunk, default NULL (auto)
 #' @return GseaRes object
+#' @examples
+#' if(interactive()){
+#' # Assuming gsea_env is a valid GseaEnv object
+#' gsea_res <- batch_calc_gsea(gsea_env, workers = 2)
+#' }
 #' @export
 batch_calc_gsea <- function(gsea_env,
                             custom_series_name = "Auto_Analysis",

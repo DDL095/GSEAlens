@@ -28,7 +28,7 @@ Generate a template CSV file containing all pathway IDs from
   such as Brief_Description, Custom_Category, Custom_Tag, and User_Notes.
 }
 \examples{
-\dontrun{
+if(interactive()){
 # Create template with all pathway IDs
 create_addition_template(gsea_res, "my_template.csv")
 

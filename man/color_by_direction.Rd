@@ -26,3 +26,8 @@ Node data with added color and color_label columns
 \description{
 Assign colors based on NES (pathways) or log2FC (genes).
 }
+\examples{
+if(interactive()){
+# Placeholder for function example
+}
+}

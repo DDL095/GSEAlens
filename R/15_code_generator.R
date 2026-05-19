@@ -1,4 +1,4 @@
-#' @title Generate Pathway Plotting Code
+﻿#' @title Generate Pathway Plotting Code
 #' @param GSEAlens_res GseaRes object
 #' @param contrast_id Character. Contrast ID
 #' @param target_pathways Character vector. Pathway IDs
@@ -7,6 +7,11 @@
 #' @param expr_type Character. Expression type
 #' @return A character string containing executable R code
 #' @export
+
+#' @examples
+#' if(interactive()){
+#' # Placeholder for function example
+#' }
 generate_pathway_plot_code <- function(GSEAlens_res,
                                        contrast_id,
                                        target_pathways,
@@ -214,6 +219,11 @@ print(GSEAlens_volcano_plot)
 #' @param ncol Integer. Number of columns
 #' @return A character string containing executable R code
 #' @export
+
+#' @examples
+#' if(interactive()){
+#' # Placeholder for function example
+#' }
 generate_joint_canvas_code <- function(GSEAlens_res,
                                        contrast_ids,
                                        target_pathways,

@@ -13,3 +13,8 @@ inspect_gsea_env(env_obj)
 Print detailed information about the GseaEnv object to the console, including backend type,
 contrast list, and gene set status.
 }
+\examples{
+if(interactive()){
+# Placeholder for function example
+}
+}

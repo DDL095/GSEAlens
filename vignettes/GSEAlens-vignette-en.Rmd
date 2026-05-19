@@ -35,16 +35,7 @@ Using the `airway` package as an example, this R package contains two groups wit
 
 ```{r setup-environment, results='hide'}
 library(GSEAlens)
-# First check if airway is already installed
-if (!requireNamespace("airway", quietly = TRUE)) {
-  # If not installed, check and install BiocManager first
-  if (!requireNamespace("BiocManager", quietly = TRUE)) {
-    install.packages("BiocManager")
-  }
-  # Install airway through BiocManager
-  BiocManager::install("airway")
-}
-library("airway")
+library(airway)
 data(airway)
 expression_data <- airway
 ```

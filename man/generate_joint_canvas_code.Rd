@@ -26,3 +26,8 @@ A character string containing executable R code
 \description{
 Generate Joint Canvas Code
 }
+\examples{
+if(interactive()){
+# Placeholder for function example
+}
+}
