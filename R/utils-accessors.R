@@ -286,6 +286,7 @@ get_de_table.GseaRes <- function(obj, contrast_id) {
 #' @title Get Sample Metadata
 #' @description Extract and process sample metadata, handling DFrame conversion
 #'   from DESeq2 and unifying group column naming conventions across backends.
+#' @param obj GseaEnv or GseaRes object
 #' @return A data frame with sample metadata. Includes a standardized 'group'
 #'   column derived from the target factor (inferred from dds_obj@design for
 #'   DESeq2 workflows). Sample row names are preserved for downstream matching.

@@ -6,6 +6,9 @@
 \usage{
 get_sample_meta(obj)
 }
+\arguments{
+\item{obj}{GseaEnv or GseaRes object}
+}
 \value{
 A data frame with sample metadata. Includes a standardized 'group'
   column derived from the target factor (inferred from dds_obj@design for
