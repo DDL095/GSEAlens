@@ -105,6 +105,15 @@ mod_multi_plot_server <- function(id, data_prep, table_controller) {
 
       tryCatch(
         {
+          # Single pathway: show pathway name; multiple: show combined count
+          if (length(sel) == 1) {
+            res_df <- as.data.frame(data_list$gsea_res@result)
+            desc <- res_df$Description[res_df$ID == sel[1]]
+            if (length(desc) == 0 || is.na(desc[1])) desc <- sel[1]
+            plot_title <- desc[1]
+          } else {
+            plot_title <- sprintf("Combined Display: %d Pathway(s)", length(sel))
+          }
           print(plot_directional_gsea(
             directional_gsea_obj = list(
               gsea_res = data_list$gsea_res,
@@ -116,7 +125,7 @@ mod_multi_plot_server <- function(id, data_prep, table_controller) {
             target_pathways = sel,
             subPlot = data_list$plot_subtype,
             curveCol = colors,
-            main_title = sprintf("Combined Display: %d Pathway(s)", length(sel))
+            main_title = plot_title
           ))
         },
         error = function(e) {
