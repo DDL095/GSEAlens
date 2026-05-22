@@ -215,6 +215,7 @@ extract_gsea_task <- function(gsea_res, contrast_id, target_collection = "ALL") 
 #' @title View GSEA Result Overview
 #' @description Print detailed summary of GseaRes object to console.
 #' @param gsea_res GseaRes object
+#' @return Invisibly returns the input object (for chaining).
 #' @export
 
 #' @examples
@@ -227,47 +228,48 @@ inspect_gsea_res <- function(gsea_res) {
   bi <- gsea_res$backend_info
   results <- gsea_res$results
 
-  cat("\n", rep("=", 60), "\n", sep = "")
-  cat("       GSEAlens Result Summary\n")
-  cat(rep("=", 60), "\n\n", sep = "")
+  message("")
+  message(paste(rep("=", 60), collapse = ""))
+  message("       GSEAlens Result Summary")
+  message(paste(rep("=", 60), collapse = ""))
 
   # 1. 鍚庣淇℃伅
-  cat("[1] Backend\n")
-  cat(sprintf("   Type       : %s\n", bi$backend))
-  cat(sprintf("   Run Time   : %s\n", gsea_res$metadata$run_time))
-  cat("\n")
+  message("[1] Backend")
+  message(sprintf("   Type       : %s", bi$backend))
+  message(sprintf("   Run Time   : %s", gsea_res$metadata$run_time))
+  message("")
 
   # 2. 璁＄畻鐘舵€佺粺璁?
-  cat("[2] Calculation Status\n")
-  status_count <- table(sapply(results, function(x) x$status))
+  message("[2] Calculation Status")
+  status_count <- table(vapply(results, function(x) x$status, character(1)))
   for (name in names(status_count)) {
     icon <- if (name == "Success") "OK" else "FAIL"
-    cat(sprintf("   %s %s : %d\n", icon, name, status_count[[name]]))
+    message(sprintf("   %s %s : %d", icon, name, status_count[[name]]))
   }
-  cat("\n")
+  message("")
 
   # 3. 璇︾粏鍒楄〃锛屼慨鏀逛负鍏ㄩ儴鏄剧ず
-  cat("[3] Contrast Details \n")
+  message("[3] Contrast Details ")
   n_show <- length(results)
-  for (i in 1:n_show) {
+  for (i in seq_len(n_show)) {
     task_name <- names(results)[i]
     task <- results[[i]]
 
     if (task$status == "Success") {
       n_sig <- sum(task$data@result$p.adjust < 0.05, na.rm = TRUE)
-      cat(sprintf("   [%d] %-20s | FDR<0.05: %d\n", i, task_name, n_sig))
+      message(sprintf("   [%d] %-20s | FDR<0.05: %d", i, task_name, n_sig))
     } else {
-      cat(sprintf("   [%d] %-20s | Failed\n", i, task_name))
+      message(sprintf("   [%d] %-20s | Failed", i, task_name))
     }
   }
-  cat("\n")
+  message("")
 
   # 4. 涓嬩竴姝ユ寚寮?
-  cat("[4] Next Step\n")
-  cat("   Extract specific results for visualization:\n")
-  cat(sprintf('   > task <- extract_gsea_task(gsea_res, "%s")\n', names(results)[1]))
-  cat("   > plot_directional_gsea(task, ...)\n")
-  cat(rep("=", 60), "\n\n", sep = "")
+  message("[4] Next Step")
+  message("   Extract specific results for visualization:")
+  message(sprintf('   > task <- extract_gsea_task(gsea_res, "%s")', names(results)[1]))
+  message("   > plot_directional_gsea(task, ...)")
+  message(paste(rep("=", 60), collapse = ""))
 
   invisible(gsea_res)
 }

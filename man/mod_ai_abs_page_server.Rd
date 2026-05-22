@@ -13,10 +13,13 @@ mod_ai_abs_page_server(id, gsea_res, data_prep_list, table_controller)
 
 \item{data_prep_list}{Data preprocessing list}
 
-\item{table_controller}{Table controller
+\item{table_controller}{Table controller}
+}
+\value{
+No return value; called for side effects within a Shiny module.
 Extract Leading Edge genes and format as comma-separated
-Determine confidence level}
+Determine confidence level
 }
 \description{
-AI Interpretation Page Server
+AI Interpretation Page Server. Called for side effects within a Shiny module.
 }

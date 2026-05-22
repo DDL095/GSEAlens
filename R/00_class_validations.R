@@ -120,12 +120,7 @@ create_gsea_task <- function(gsea_res, meta) {
 
   if (has_intercept) {
     stop(
-      "\n[Limma Design Error] Intercept term detected!\n",
-      "GSEAlens requires a no-intercept design matrix.\n",
-      "Please modify your design formula, e.g.:\n",
-      "  design <- model.matrix(~ 0 + group, data = samples)\n",
-      "  fit <- lmFit(expr, design)\n",
-      "Reason: No-intercept design ensures colnames(fit) directly correspond to group names, enabling precise contrast construction."
+      "\n[Limma Design Error] Intercept term detected!\nGSEAlens requires a no-intercept design matrix.\nPlease modify your design formula, e.g.:\n  design <- model.matrix(~ 0 + group, data = samples)\n  fit <- lmFit(expr, design)\nReason: No-intercept design ensures colnames(fit) directly correspond to group names, enabling precise contrast construction."
     )
   }
 
@@ -148,10 +143,10 @@ create_gsea_task <- function(gsea_res, meta) {
   col_data <- as.data.frame(SummarizedExperiment::colData(dds))
 
   if (!target_factor %in% colnames(col_data)) {
-    stop(
-      sprintf("\n[DESeq2 Design Error] Specified target_factor '%s' not found in colData!\n", target_factor),
-      "Available column names: ", paste(colnames(col_data), collapse = ", ")
-    )
+    stop(sprintf(
+      "\n[DESeq2 Design Error] Specified target_factor '%s' not found in colData!\nAvailable column names: %s",
+      target_factor, paste(colnames(col_data), collapse = ", ")
+    ))
   }
 
   # 检查是否为因子

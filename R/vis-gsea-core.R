@@ -11,7 +11,7 @@
 #' @return data.frame with runningScore, position, geneList, etc.
 #' @keywords internal
 .gs_info <- function(object, geneSetID) {
-  gseaScores <- utils::getFromNamespace("gseaScores", "enrichit")
+  gseaScores <- enrichit::gseaScores
 
   geneList <- object@geneList
 
@@ -186,21 +186,21 @@
 
     df_rank <- df_rank %>%
       dplyr::mutate(fc = dplyr::case_when(
-        fc >= qt[2] ~ qt[2],
-        fc <= qt[1] ~ qt[1],
-        .default = fc
+        .data$fc >= qt[2] ~ qt[2],
+        .data$fc <= qt[1] ~ qt[1],
+        .default = .data$fc
       ))
 
     break_intervals <- cut(df_rank$fc, breaks = 10, include.lowest = TRUE)
     intervals <- levels(break_intervals)
 
     interval_bounds <- data.frame(do.call(rbind, strsplit(gsub("[()\\[\\]]", "", intervals), ",")))
-    interval_bounds$X1 <- as.numeric(sapply(strsplit(interval_bounds$X1, split = "\\[|\\("), "[", 2))
-    interval_bounds$X2 <- as.numeric(sapply(strsplit(interval_bounds$X2, split = "\\]|\\)"), "[", 1))
+    interval_bounds$X1 <- as.numeric(vapply(strsplit(interval_bounds$X1, split = "\\[|\\("), "[", character(1), 2))
+    interval_bounds$X2 <- as.numeric(vapply(strsplit(interval_bounds$X2, split = "\\]|\\)"), "[", character(1), 1))
 
-    start_positions <- sapply(interval_bounds[, 1], function(bound) which.min(abs(df_rank$fc - bound)))
+    start_positions <- vapply(interval_bounds[, 1], function(bound) which.min(abs(df_rank$fc - bound)), integer(1))
     start_positions[1] <- nrow(df_rank)
-    end_positions <- sapply(interval_bounds[, 2], function(bound) which.min(abs(df_rank$fc - bound)))
+    end_positions <- vapply(interval_bounds[, 2], function(bound) which.min(abs(df_rank$fc - bound)), integer(1))
     interval_means <- tapply(df_rank$fc, break_intervals, mean)
 
     result_df <- data.frame(

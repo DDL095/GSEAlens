@@ -3,6 +3,7 @@
 #' @title GSEA Visualization and Report Generation
 #' @description Provides static plotting functions and interactive HTML report generation capabilities.
 #' @name visualization
+#' @return The pipe operator `%>%` from magrittr, enabling function chaining.
 
 NULL
 
@@ -11,6 +12,7 @@ NULL
 #' @title GSEA Visualization and Report Generation
 #' @description Provides static plotting functions and interactive HTML report generation capabilities.
 #' @name visualization
+#' @return The pipe operator `%>%` from magrittr, enabling function chaining.
 
 NULL
 
@@ -87,7 +89,7 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
     raw_desc <- df_sub$Description
     name_id <- df_sub$ID
 
-    nice_labels <- sapply(name_id, function(x) {
+    nice_labels <- vapply(name_id, function(x) {
       tit <- unlist(strsplit(x, split = "_"))
       if (length(tit) > 1) {
         formatted_text <- paste(stringr::str_to_title(tit[seq(2, length(tit))]), collapse = " ")
@@ -95,7 +97,7 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
         formatted_text <- paste(stringr::str_to_title(tit), collapse = " ")
       }
       stringr::str_wrap(formatted_text, width = 45)
-    })
+    }, character(1))
 
     names(curveCol_use) <- raw_desc
     override_scale <- ggplot2::scale_color_manual(

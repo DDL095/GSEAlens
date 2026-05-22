@@ -20,13 +20,12 @@ GSEAlens provides a web-based interactive platform for displaying pathway introd
 
 ## Installation
 
-```{r, eval=FALSE}
-# Install using devtools
-if (!requireNamespace("devtools", quietly = TRUE)) {
-    install.packages("devtools")
+```{r install-package, eval=FALSE}
+# Install using pak (faster alternative to devtools)
+if (!requireNamespace("pak", quietly = TRUE)) {
+    install.packages("pak")
 }
-devtools::install_github("DDL095/GSEAlens")
-
+pak::pkg_install("DDL095/GSEAlens")
 ```
 
 # Example Code
@@ -197,7 +196,7 @@ coldata$dex <- factor(coldata$dex)
 
 Assemble into DDS object and process.
 
-```{r, results='hide'}
+```{r create-dds-object, results='hide'}
 dds <- DESeqDataSetFromMatrix(countData = cts,
                               colData = coldata,
                               design = ~ dex)
@@ -210,7 +209,7 @@ dds <- DESeq(dds)
 
 Use the `build_gsea_pathways` function to construct a pathway object for GSEA enrichment analysis.
 
-```{r}
+```{r build-gsea-pathways}
 gsea_pathwaysets <- GSEAlens::build_gsea_pathways(species = "HS",auto_select = c(17,18,19,20,26))
 ```
 
@@ -220,19 +219,19 @@ Through the `setup_gsea_env` function, assemble a `GSEAEnv` object for computati
 
 Assemble the limma-voom workflow object for analysis.
 
-```{r}
+```{r setup-gsea-limma}
 gseadata_limmavoom <- GSEAlens::setup_gsea_env(fit = fit,pathway_obj = gsea_pathwaysets,expr_data = gsea_limma_voom_data)
 ```
 
 Assemble the DESeq2 SummarizedExperiment object for analysis.
 
-```{r}
+```{r setup-gsea-se}
 gseadata_se <- GSEAlens::setup_gsea_env(fit = dds_se,pathway_obj = gsea_pathwaysets)
 ```
 
 Assemble the DESeq2 Count matrix workflow object for analysis.
 
-```{r}
+```{r setup-gsea-dds}
 gseadata_dds <- GSEAlens::setup_gsea_env(fit = dds,pathway_obj = gsea_pathwaysets)
 ```
 
@@ -242,7 +241,7 @@ All objects are processed using the `batch_calc_gsea` function with no differenc
 
 Parallel computing note: Adjust the `workers` option based on your computer's performance to set the number of cores for computation. More contrasts recommend higher core settings for better computational efficiency.
 
-```{r, eval=FALSE}
+```{r batch-calc-limma, eval=FALSE}
 # limma-voom workflow
 gsea_res_limmavoom <- GSEAlens::batch_calc_gsea(gseadata_limmavoom, 
                                                  custom_series_name = "limmavoom_data", 
@@ -266,7 +265,7 @@ gsea_res_dds <- GSEAlens::batch_calc_gsea(gseadata_dds,
 
 After running `batch_calc_gsea`, an RDS file will be generated in the corresponding directory. Load this file or use `import_gsea_capsule` to read it. The `import_gsea_capsule` function can automatically organize relevant files into the folder where your RMD file or R script is located, and provide data inspection results.
 
-```{r, eval=FALSE}
+```{r import-capsule, eval=FALSE}
 gsea_res <- import_gsea_capsule("/path/to/your/files/")
 # Or directly read the RDS file
 # gsea_res <- readRDS("/path/of/your/file/")
@@ -274,7 +273,7 @@ gsea_res <- import_gsea_capsule("/path/to/your/files/")
 
 After loading the data, you can use `launch_gsea_app` for interactive viewing.
 
-```{r, eval=FALSE}
+```{r launch-app, eval=FALSE}
 launch_gsea_app(gsea_res)
 ```
 

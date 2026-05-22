@@ -144,7 +144,7 @@ build_gsea_pathways <- function(species = "HS", auto_select = NULL) {
   # === Section: Build Menu Dataframe === ----
 
   # For MM mode, map MM codes to human codes and display info
-  menu_df <- lapply(1:nrow(avail_colls), function(i) {
+  menu_df <- lapply(seq_len(nrow(avail_colls)), function(i) {
     row <- avail_colls[i, ]
     mm_key <- paste0(
       row$gs_collection,
@@ -208,9 +208,9 @@ build_gsea_pathways <- function(species = "HS", auto_select = NULL) {
     message(sprintf("%-6s %-18s %s", "Tag", "Code", "Description"))
     message(rep("-", 70))
 
-    for (i in 1:nrow(menu_df)) {
-      cat(sprintf(
-        "[%2d] %-6s | %-18s | %s\n",
+    for (i in seq_len(nrow(menu_df))) {
+      message(sprintf(
+        "[%2d] %-6s | %-18s | %s",
         i, menu_df$short_tag[i], menu_df$combo_name[i], menu_df$description[i]
       ))
     }
@@ -228,7 +228,7 @@ build_gsea_pathways <- function(species = "HS", auto_select = NULL) {
     # Auto-select mode
     if (length(auto_select) == 1 && toupper(auto_select) == "ALL") {
       message(sprintf("Loading complete MSigDB database for %s...", cfg$display_name))
-      selected_idx <- 1:nrow(menu_df)
+      selected_idx <- seq_len(nrow(menu_df))
     } else if (is.character(auto_select)) {
       # === Section: Auto-Select Mode === ----
 
@@ -249,14 +249,14 @@ build_gsea_pathways <- function(species = "HS", auto_select = NULL) {
           "C4" = "M4", "C5" = "M5", "C6" = "M6", "C7" = "M7", "C8" = "M8"
         )
         still_missing <- auto_select[is.na(matched)]
-        converted <- sapply(still_missing, function(x) {
+        converted <- vapply(still_missing, function(x) {
           if (x %in% names(human_to_mm_map)) {
             converted_code <- human_to_mm_map[[x]]
             message(sprintf("[build_gsea_pathways] Converted '%s' -> '%s' for MM mode", x, converted_code))
             return(converted_code)
           }
           return(x)
-        })
+        }, character(1))
         matched3 <- match(converted, menu_df$combo_name)
         still_na <- which(is.na(matched))
         matched[still_na] <- matched3
@@ -303,7 +303,7 @@ build_gsea_pathways <- function(species = "HS", auto_select = NULL) {
 
   # === Section: Core Extraction Using Correct Species and Codes === ----
 
-  pathway_list <- lapply(1:nrow(selected_rows), function(i) {
+  pathway_list <- lapply(seq_len(nrow(selected_rows)), function(i) {
     row <- selected_rows[i, ]
 
     # Use human codes to call msigdbr

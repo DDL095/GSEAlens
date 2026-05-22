@@ -235,7 +235,7 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
     add_debug <- function(msg, level = "INFO") {
       timestamp <- format(Sys.time(), "%H:%M:%S")
       new_entry <- sprintf("[%s] [%s] %s", timestamp, level, msg)
-      session$userData$debug_log <- c(new_entry, session$userData$debug_log)[1:50]
+      session$userData$debug_log <- c(new_entry, session$userData$debug_log)[seq_len(min(50, length(session$userData$debug_log) + 1L))]
       message(sprintf("[HubGene-vis] %s", new_entry))
     }
 
@@ -270,7 +270,7 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
       top_n <- input$vis_topN
       if (is.null(top_n)) top_n <- 5
       top_n <- max(3, min(top_n, nrow(df)))
-      df[1:top_n, "ID"]
+      df[seq_len(top_n), "ID"]
     })
 
     select_candidates <- shiny::reactive({
@@ -456,7 +456,7 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
               if (length(pw_labels) <= 5) {
                 pw_str <- paste(pw_labels, collapse = ", ")
               } else {
-                pw_str <- paste(pw_labels[1:5], collapse = ", ")
+                pw_str <- paste(pw_labels[seq_len(5)], collapse = ", ")
                 pw_str <- paste0(pw_str, sprintf(" (+%d)", length(pw_labels) - 5))
               }
             }

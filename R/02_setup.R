@@ -121,6 +121,7 @@ setup_gsea_env <- function(fit, pathway_obj, expr_data = NULL, target_factor = N
 #' @description Print detailed information about the GseaEnv object to the console, including backend type,
 #' contrast list, and gene set status.
 #' @param env_obj GseaEnv object
+#' @return Invisibly returns the input object (for chaining).
 #' @export
 
 #' @examples
@@ -137,61 +138,62 @@ inspect_gsea_env <- function(env_obj) {
   expr <- env_obj$expr_bundle
 
   # 鎺у埗鍙拌緭鍑?
-  cat("\n", rep("=", 60), "\n", sep = "")
-  cat("       GSEAlens Environment Summary\n")
-  cat(rep("=", 60), "\n\n", sep = "")
+  message("")
+  message(paste(rep("=", 60), collapse = ""))
+  message("       GSEAlens Environment Summary")
+  message(paste(rep("=", 60), collapse = ""))
 
   # 1. 鍚庣淇℃伅
-  cat("[1] Backend Information\n")
-  cat(sprintf("   Type        : %s\n", bi$backend))
-  cat(sprintf("   Input Class : %s\n", bi$input_class))
+  message("[1] Backend Information")
+  message(sprintf("   Type        : %s", bi$backend))
+  message(sprintf("   Input Class : %s", bi$input_class))
   if (bi$backend == "deseq2") {
-    cat(sprintf("   Target Factor: %s\n", bi$target_factor))
+    message(sprintf("   Target Factor: %s", bi$target_factor))
   }
-  cat("\n")
+  message("")
 
   # 2. 瀵规瘮缁勬敞鍐岃〃
-  cat("[2] Contrast Registry (", nrow(reg), " comparisons)\n", sep = "")
+  message(sprintf("[2] Contrast Registry (%d comparisons)", nrow(reg)))
   if (nrow(reg) > 0) {
     # 鎵撳嵃鍓嶅嚑涓紝闃叉鍒峰睆
     print_head <- utils::head(reg[, c("contrast_id", "left_group", "right_group")], 5)
-    for (i in 1:nrow(print_head)) {
-      cat(sprintf(
-        "   [%d] %s  ( %s vs %s )\n",
+    for (i in seq_len(nrow(print_head))) {
+      message(sprintf(
+        "   [%d] %s  ( %s vs %s )",
         i, print_head$contrast_id[i],
         print_head$left_group[i], print_head$right_group[i]
       ))
     }
-    if (nrow(reg) > 5) cat("   ... (remaining omitted)\n")
+    if (nrow(reg) > 5) message("   ... (remaining omitted)")
   } else {
-    cat("   No contrasts detected!\n")
+    message("   No contrasts detected!")
   }
-  cat("\n")
+  message("")
 
   # 3. 鍩哄洜闆嗕俊鎭?
-  cat("[3] Gene Set Database\n")
-  cat(sprintf("   Name        : %s\n", gs$name))
-  cat(sprintf("   Pathways    : %d\n", nrow(gs$meta_dict)))
-  cat("\n")
+  message("[3] Gene Set Database")
+  message(sprintf("   Name        : %s", gs$name))
+  message(sprintf("   Pathways    : %d", nrow(gs$meta_dict)))
+  message("")
 
   # 4. 琛ㄨ揪鏁版嵁鐘舵€?
-  cat("[4] Expression Data Status\n")
+  message("[4] Expression Data Status")
   if (!is.null(expr$raw_counts)) {
-    cat(sprintf(
-      "   Raw Counts  : %d genes x %d samples\n",
+    message(sprintf(
+      "   Raw Counts  : %d genes x %d samples",
       nrow(expr$raw_counts), ncol(expr$raw_counts)
     ))
-    cat(sprintf("   Display Mat : %s\n", ifelse(!is.null(expr$display_expr), "Ready", "Missing")))
+    message(sprintf("   Display Mat : %s", ifelse(!is.null(expr$display_expr), "Ready", "Missing")))
   } else {
-    cat("   Expression matrix not included (heatmap functionality will be unavailable)\n")
+    message("   Expression matrix not included (heatmap functionality will be unavailable)")
   }
-  cat("\n")
+  message("")
 
   # 5. 涓嬩竴姝ユ寚寮?
-  cat("[5] Next Step\n")
-  cat("   Please run the computation engine:\n")
-  cat("   > res <- batch_calc_gsea(env_obj)\n")
-  cat(rep("=", 60), "\n\n", sep = "")
+  message("[5] Next Step")
+  message("   Please run the computation engine:")
+  message("   > res <- batch_calc_gsea(env_obj)")
+  message(paste(rep("=", 60), collapse = ""))
 
   invisible(env_obj)
 }

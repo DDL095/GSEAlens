@@ -274,7 +274,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       annotations_list <- list()
       if (length(current_selections) > 0) {
         selected_df <- df[df$ID %in% current_selections, ]
-        for (i in 1:nrow(selected_df)) {
+        for (i in seq_len(nrow(selected_df))) {
           row <- selected_df[i, ]
           ax_offset <- ifelse(i %% 2 == 1, 0, 50)
           annotations_list[[i]] <- list(
@@ -554,7 +554,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
       user_genes_df <- de_df[de_df$is_user, ]
       if (nrow(user_genes_df) > 0) {
-        for (i in 1:min(nrow(user_genes_df), 20)) {
+        for (i in seq_len(min(nrow(user_genes_df), 20))) {
           gene <- user_genes_df[i, ]
           gene_color <- if (gene$is_user && gene$is_pathway) COLOR_BOTH else COLOR_USER
           annotations_list[[length(annotations_list) + 1]] <- list(
@@ -1080,7 +1080,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
             group_colors <- c(
               "#E41A1C", "#377EB8", "#4DAF4A", "#984EA3",
               "#FF7F00", "#A65628", "#F781BF", "#999999"
-            )[1:length(unique_groups)]
+            )[seq_along(unique_groups)]
             names(group_colors) <- unique_groups
           }
 
@@ -1160,7 +1160,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       shiny::req(data_list)
 
       target_pw <- if (nrow(data_list$df) > 0) {
-        data_list$df$ID[1:min(5, nrow(data_list$df))]
+        data_list$df$ID[seq_len(min(5, nrow(data_list$df)))]
       } else {
         character(0)
       }

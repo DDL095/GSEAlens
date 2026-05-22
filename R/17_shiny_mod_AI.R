@@ -134,10 +134,12 @@ mod_ai_abs_page_ui <- function(id) {
 
 
 #' @title AI Interpretation Page Server
+#' @description AI Interpretation Page Server. Called for side effects within a Shiny module.
 #' @param id Module ID
 #' @param gsea_res GseaRes object
 #' @param data_prep_list Data preprocessing list
 #' @param table_controller Table controller
+#' @return No return value; called for side effects within a Shiny module.
 mod_ai_abs_page_server <- function(id, gsea_res, data_prep_list, table_controller) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
@@ -224,7 +226,7 @@ As your GSEA enrichment direction interpretation expert, I am ready. Please anal
       genes <- genes[genes != ""]
       count <- length(genes)
       if (count > max_genes) {
-        display <- paste(paste(genes[1:max_genes], collapse = ", "),
+        display <- paste(paste(genes[seq_len(max_genes)], collapse = ", "),
           paste0("(+", count - max_genes, " more)"),
           sep = " "
         )
@@ -361,7 +363,7 @@ As your GSEA enrichment direction interpretation expert, I am ready. Please anal
 
       # If none selected, use Top 30
       if (length(selected_ids) == 0) {
-        selected_ids <- data_list$df$ID[1:min(30, nrow(data_list$df))]
+        selected_ids <- data_list$df$ID[seq_len(min(30, nrow(data_list$df)))]
         shiny::showNotification(
           "No pathways selected - using Top 15 by |NES|",
           type = "warning", duration = 3
@@ -375,7 +377,7 @@ As your GSEA enrichment direction interpretation expert, I am ready. Please anal
       # Limit count
       max_pathways <- 20
       if (nrow(df_subset) > max_pathways) {
-        df_subset <- df_subset[1:max_pathways, ]
+        df_subset <- df_subset[seq_len(max_pathways), ]
       }
 
       # Basic info
@@ -385,12 +387,12 @@ As your GSEA enrichment direction interpretation expert, I am ready. Please anal
 
       # Statistics
       n_total <- nrow(df_subset)
-      n_high <- sum(sapply(seq_len(n_total), function(i) {
+      n_high <- sum(vapply(seq_len(n_total), function(i) {
         get_confidence(df_subset$NES[i], df_subset$p.adjust[i]) == "High confidence"
-      }))
-      n_mod <- sum(sapply(seq_len(n_total), function(i) {
+      }, logical(1)))
+      n_mod <- sum(vapply(seq_len(n_total), function(i) {
         get_confidence(df_subset$NES[i], df_subset$p.adjust[i]) == "Medium confidence"
-      }))
+      }, logical(1)))
       n_low <- n_total - n_high - n_mod
 
       # ============================================================

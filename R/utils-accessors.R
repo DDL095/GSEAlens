@@ -169,7 +169,7 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
             SummarizedExperiment::assay(DESeq2::vst(expr_bundle$dds_obj, blind = FALSE))
           },
           error = function(e) {
-            warning("VST calculation failed, falling back to logCPM: ", e$message)
+            warning(sprintf("VST calculation failed, falling back to logCPM: %s", e$message))
             counts <- DESeq2::counts(expr_bundle$dds_obj, normalized = FALSE)
             log2(t(t(counts) / colSums(counts)) * 1e6 + 1)
           }
@@ -417,8 +417,8 @@ get_sample_meta.GseaRes <- function(obj) {
       warning("[SampleMeta] Could not determine target_factor from dds_obj, using first valid factor")
     }
 
-    factor_cols <- names(sample_meta)[sapply(sample_meta, is.factor)]
-    valid_factors <- factor_cols[sapply(sample_meta[factor_cols], function(x) length(levels(x)) > 1)]
+    factor_cols <- names(sample_meta)[vapply(sample_meta, is.factor, logical(1))]
+    valid_factors <- factor_cols[vapply(sample_meta[factor_cols], function(x) length(levels(x)) > 1, logical(1))]
     if (length(valid_factors) > 0) {
       target_factor <- valid_factors[1]
     }
@@ -451,9 +451,9 @@ get_sample_meta.GseaRes <- function(obj) {
         sample_meta$group <- sample_meta[[target_factor]]
         message(sprintf("[SampleMeta] Using inferred factor '%s' as 'group'", target_factor))
       } else {
-        factor_cols <- names(sample_meta)[sapply(sample_meta, is.factor)]
+        factor_cols <- names(sample_meta)[vapply(sample_meta, is.factor, logical(1))]
         if (length(factor_cols) > 0) {
-          valid_factors <- factor_cols[sapply(sample_meta[factor_cols], function(x) length(levels(x)) > 1)]
+          valid_factors <- factor_cols[vapply(sample_meta[factor_cols], function(x) length(levels(x)) > 1, logical(1))]
           if (length(valid_factors) > 0) {
             sample_meta$group <- as.character(sample_meta[[valid_factors[1]]])
             warning(sprintf("[SampleMeta] Using first valid factor '%s' as group", valid_factors[1]))
@@ -473,7 +473,7 @@ get_sample_meta.GseaRes <- function(obj) {
         tryCatch(
           {
             original_colData <- as.data.frame(SummarizedExperiment::colData(expr_bundle$dds_obj))
-            factor_cols <- names(original_colData)[sapply(original_colData, is.factor)]
+            factor_cols <- names(original_colData)[vapply(original_colData, is.factor, logical(1))]
 
             for (fc in factor_cols) {
               if (length(levels(original_colData[[fc]])) > 1) {
@@ -628,7 +628,7 @@ get_geneset_info.GseaEnv <- function(obj) {
 #' }
 read_addition_data <- function(file_path) {
   if (!file.exists(file_path)) {
-    stop("File not found: ", file_path)
+    stop(sprintf("File not found: %s", file_path))
   }
 
   ext <- tools::file_ext(file_path)
@@ -650,21 +650,20 @@ read_addition_data <- function(file_path) {
       )
     }
   } else {
-    stop(
-      "Unsupported file format: ", ext,
-      "\nSupported formats: .csv, .csv.gz, .rds, .rds.gz"
-    )
+    stop(sprintf(
+      "Unsupported file format: %s\nSupported formats: .csv, .csv.gz, .rds, .rds.gz", ext
+    ))
   }
 
   if (!is.data.frame(data)) {
-    stop("Input file must contain a data.frame, got: ", class(data)[1])
+    stop(sprintf("Input file must contain a data.frame, got: %s", class(data)[1]))
   }
 
   if (!"ID" %in% colnames(data)) {
-    stop(
-      "Data frame must contain 'ID' column as the primary key. ",
-      "Available columns: ", paste(colnames(data), collapse = ", ")
-    )
+    stop(sprintf(
+      "Data frame must contain 'ID' column as the primary key. Available columns: %s",
+      paste(colnames(data), collapse = ", ")
+    ))
   }
 
   data$ID <- as.character(data$ID)
@@ -722,7 +721,7 @@ creat_addition_data_rdsfile <- function(csv_path,
                                         output_name = "addition_data_gsealens.rds",
                                         overwrite = FALSE) {
   if (!file.exists(csv_path)) {
-    stop("CSV file not found: ", csv_path)
+    stop(sprintf("CSV file not found: %s", csv_path))
   }
 
   message("[creat_addition_data_rdsfile] Reading: ", csv_path)
@@ -732,14 +731,14 @@ creat_addition_data_rdsfile <- function(csv_path,
   )
 
   if (!is.data.frame(data)) {
-    stop("CSV content must be a data.frame, got: ", class(data)[1])
+    stop(sprintf("CSV content must be a data.frame, got: %s", class(data)[1]))
   }
 
   if (!"ID" %in% colnames(data)) {
-    stop(
-      "CSV must contain 'ID' column as the primary key. ",
-      "Available columns: ", paste(colnames(data), collapse = ", ")
-    )
+    stop(sprintf(
+      "CSV must contain 'ID' column as the primary key. Available columns: %s",
+      paste(colnames(data), collapse = ", ")
+    ))
   }
 
   data$ID <- as.character(data$ID)
@@ -978,7 +977,7 @@ DETECTION_PROBES <- c(
 #' @keywords internal
 #'
 .get_display_symbols <- function(genes, symbol_map) {
-  sapply(genes, function(g) .get_display_symbol(g, symbol_map), USE.NAMES = FALSE)
+  vapply(genes, function(g) .get_display_symbol(g, symbol_map), character(1), USE.NAMES = FALSE)
 }
 
 

@@ -9,6 +9,9 @@ inspect_gsea_res(gsea_res)
 \arguments{
 \item{gsea_res}{GseaRes object}
 }
+\value{
+Invisibly returns the input object (for chaining).
+}
 \description{
 Print detailed summary of GseaRes object to console.
 }

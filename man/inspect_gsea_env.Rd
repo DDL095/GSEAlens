@@ -9,6 +9,9 @@ inspect_gsea_env(env_obj)
 \arguments{
 \item{env_obj}{GseaEnv object}
 }
+\value{
+Invisibly returns the input object (for chaining).
+}
 \description{
 Print detailed information about the GseaEnv object to the console, including backend type,
 contrast list, and gene set status.

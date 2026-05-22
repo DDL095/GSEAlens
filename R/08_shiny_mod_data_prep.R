@@ -264,7 +264,7 @@ mod_data_prep_server <- function(id, gsea_res) {
       all_contrasts <- list()
 
       # 构建排列：包含正向和反向
-      for (i in 1:nrow(registry)) {
+      for (i in seq_len(nrow(registry))) {
         row <- registry[i, ]
         # 正向
         all_contrasts[[row$contrast_id]] <- paste(row$left_group, "vs", row$right_group)
@@ -289,7 +289,7 @@ mod_data_prep_server <- function(id, gsea_res) {
         session,
         "joint_contrasts",
         choices = choices,
-        selected = names(all_contrasts)[1:min(4, length(all_contrasts))]
+        selected = names(all_contrasts)[seq_len(min(4, length(all_contrasts)))]
       )
     })
 
@@ -392,15 +392,18 @@ mod_data_prep_server <- function(id, gsea_res) {
       count <- count + 1
 
       for (i in 2:min(n, max_perms / 2)) {
-        shifted <- groups[c(i:n, 1:(i - 1))]
+        shifted <- groups[c(i:n, seq_len(i - 1))]
         perms[[paste(shifted, collapse = ",")]] <- paste(shifted, collapse = "->")
         count <- count + 1
         if (count >= max_perms) break
       }
 
       if (count < max_perms) {
+        # set.seed is necessary here to ensure reproducible random permutation sampling
+        # when max_perms exceeds deterministic permutations (shift-based).
+        # The seed is exposed to users via the seed parameter (default 123).
         set.seed(seed)
-        for (i in 1:(max_perms - count)) {
+        for (i in seq_len(max_perms - count)) {
           shuffled <- sample(groups)
           perm_str <- paste(shuffled, collapse = ",")
           if (!(perm_str %in% names(perms))) {
@@ -712,7 +715,7 @@ mod_data_prep_server <- function(id, gsea_res) {
             return()
           }
 
-          counts <- sapply(available, function(x) sum(startsWith(as.character(df_temp$Combo_Name), x)))
+          counts <- vapply(available, function(x) sum(startsWith(as.character(df_temp$Combo_Name), x)), numeric(1))
           min_col <- available[which.min(counts)[1]]
 
           shiny::updateSelectizeInput(
@@ -801,7 +804,7 @@ mod_data_prep_server <- function(id, gsea_res) {
           shiny::isolate(pending_genes_internal())
         },
         error = function(e) {
-          message("[UpdatePending] Error: ", e$message)
+          message(sprintf("[UpdatePending] Error: %s", e$message))
           character(0)
         }
       )
@@ -835,7 +838,7 @@ mod_data_prep_server <- function(id, gsea_res) {
           }
         },
         error = function(e) {
-          message("[UpdatePending] Error getting gene choices: ", e$message)
+          message(sprintf("[UpdatePending] Error getting gene choices: %s", e$message))
         }
       )
 
@@ -864,7 +867,7 @@ mod_data_prep_server <- function(id, gsea_res) {
           message("[UpdatePending] UI refreshed")
         },
         error = function(e) {
-          message("[UpdatePending] UI update error: ", e$message)
+          message(sprintf("[UpdatePending] UI update error: %s", e$message))
         }
       )
 

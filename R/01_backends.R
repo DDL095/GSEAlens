@@ -32,9 +32,7 @@ NULL
 
   if (!is_contrast_obj) {
     stop(
-      "\n[Limma Input Error] Design matrix column names detected as group names (e.g., 'GroupA', 'GroupB') instead of contrasts (e.g., 'GroupA - GroupB').\n",
-      "GSEAlens requires a fit object with contrasts already defined.\n",
-      "Please use makeContrasts and contrasts.fit to define your comparison groups."
+      "\n[Limma Input Error] Design matrix column names detected as group names (e.g., 'GroupA', 'GroupB') instead of contrasts (e.g., 'GroupA - GroupB').\nGSEAlens requires a fit object with contrasts already defined.\nPlease use makeContrasts and contrasts.fit to define your comparison groups."
     )
   }
 
@@ -49,9 +47,9 @@ NULL
   })
 
   contrast_registry <- tibble::tibble(
-    contrast_id = sapply(parsed_contrasts, function(x) paste(x$left, x$right, sep = "_vs_")),
-    left_group = sapply(parsed_contrasts, `[[`, "left"),
-    right_group = sapply(parsed_contrasts, `[[`, "right"),
+    contrast_id = vapply(parsed_contrasts, function(x) paste(x$left, x$right, sep = "_vs_"), character(1)),
+    left_group = vapply(parsed_contrasts, `[[`, character(1), "left"),
+    right_group = vapply(parsed_contrasts, `[[`, character(1), "right"),
     source_name = coef_names,
     backend = "limma_voom"
   )

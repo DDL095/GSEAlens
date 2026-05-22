@@ -1,5 +1,17 @@
 <!-- NEWS.md is maintained by https://cynkra.github.io/fledge, do not edit -->
 
+# GSEAlens 0.99.4
+
+- Fix BiocCheck warnings: replace sapply() with vapply(), 1:... with seq_len/seq_along
+- Fix R CMD check NOTEs: enrichit import, fc global variable, License stub
+- Add @return documentation to man pages
+- Fix vignette chunk labels
+- Replace cat()/print() with message() in inspect functions
+- Add comments to set.seed() and suppressWarnings() usage
+- Update installation method to use pak
+- Bump R version dependency to 4.6.0
+- Add LICENSE.md for GitHub display
+
 # GSEAlens 0.99.0
 
 - Pathway Network module addition

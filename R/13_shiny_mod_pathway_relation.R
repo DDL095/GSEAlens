@@ -249,7 +249,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       top_n <- input$topN_count
       if (is.null(top_n)) top_n <- 50
       top_n <- max(1, min(top_n, nrow(df)))
-      df[1:top_n, "ID"]
+      df[seq_len(top_n), "ID"]
     })
 
     select_candidates <- shiny::reactive({
@@ -301,7 +301,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       if (length(new_candidates) > 0) {
         max_n <- input$max_nodes
         if (is.null(max_n)) max_n <- 999
-        final <- new_candidates[1:min(length(new_candidates), max_n)]
+        final <- new_candidates[seq_len(min(length(new_candidates), max_n))]
         final_pathways(final)
       } else {
         final_pathways(character(0))
@@ -417,12 +417,12 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
         },
         error = function(e) NULL
       )
-      plot_df$CoreCount <- sapply(plot_df$ID, function(pid) {
+      plot_df$CoreCount <- vapply(plot_df$ID, function(pid) {
         if (is.null(core_list) || is.null(core_list[[pid]])) {
-          return(0)
+          return(0L)
         }
         length(core_list[[pid]])
-      })
+      }, integer(1))
       color_mode <- input$dotplot_color_mode
       color_vals <- switch(color_mode,
         "padj" = -log10(plot_df$p.adjust),
@@ -554,12 +554,12 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       # Use comma and space to separate genes
 
       # Format all genes for display
-      gene_buttons <- sapply(shared_genes, function(g) {
+      gene_buttons <- vapply(shared_genes, function(g) {
         sprintf(
           '<span style="display:inline-block;background:#e3f2fd;padding:4px 8px;margin:2px;border-radius:4px;font-size:12px;">%s</span>',
           g
         )
-      })
+      }, character(1))
 
       # No longer show "+N more" hint
       gene_display <- paste(gene_buttons, collapse = ",")
@@ -635,7 +635,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
         ))
       }
 
-      valid_pathways <- names(core_list)[sapply(core_list, function(x) length(x) > 0)]
+      valid_pathways <- names(core_list)[vapply(core_list, function(x) length(x) > 0, logical(1))]
       if (length(valid_pathways) == 0) {
         return(plotly::plot_ly() %>% plotly::layout(
           title = list(text = "All pathways have empty core genes", font = list(size = 14)),
@@ -682,9 +682,9 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
         return(max(1, min(5, round(width))))
       }
 
-      edge_list$width_rank <- sapply(seq_len(n_edges), function(i) {
+      edge_list$width_rank <- vapply(seq_len(n_edges), function(i) {
         edge_width_mapping(i, n_edges)
-      })
+      }, numeric(1))
 
       # Normal edge width range: 1-5 pixels
       edge_list$edge_width_normal <- edge_list$width_rank
@@ -714,12 +714,15 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
         {
           switch(layout_algo,
             "fr" = {
+              # set.seed is necessary to ensure reproducible layout across renders.
+              # The seed value is controlled by the user via input$seed (Shiny numericInput, default 42).
               set.seed(seed_val)
               igraph::layout_with_fr(g)
             },
             "kk" = igraph::layout_with_kk(g),
             "circle" = igraph::layout_in_circle(g),
             {
+              # Default to Fruchterman-Reingold; seed controlled by user via input$seed.
               set.seed(seed_val)
               igraph::layout_with_fr(g)
             }
@@ -746,12 +749,12 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       node_info <- res_df[match(node_df$name, res_df$ID), ]
       node_df$NES <- node_info$NES
       node_df$FDR <- node_info$p.adjust
-      node_df$CoreCount <- sapply(node_df$name, function(n) {
+      node_df$CoreCount <- vapply(node_df$name, function(n) {
         if (is.null(core_list[[n]])) {
-          return(0)
+          return(0L)
         }
         length(core_list[[n]])
-      })
+      }, integer(1))
       node_df$color_val <- ifelse(is.na(node_df$NES), 0, node_df$NES)
 
       sel_nodes <- selected_nodes()
@@ -811,7 +814,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
         shared_count <- edge_list$shared[i]
 
         if (length(shared_genes_vec) > 0) {
-          display_genes <- shared_genes_vec[1:min(length(shared_genes_vec), hover_max_genes)]
+          display_genes <- shared_genes_vec[seq_len(min(length(shared_genes_vec), hover_max_genes))]
           genes_display <- paste(display_genes, collapse = ", ")
           if (length(shared_genes_vec) > hover_max_genes) {
             remaining <- length(shared_genes_vec) - hover_max_genes

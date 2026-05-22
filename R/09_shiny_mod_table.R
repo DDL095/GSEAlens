@@ -261,9 +261,9 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
         if (!is.null(addition_data_validated)) {
           add_cols_display <- setdiff(colnames(addition_data_validated), "ID")
-          add_cols_valid <- add_cols_display[sapply(add_cols_display, function(col) {
+          add_cols_valid <- add_cols_display[vapply(add_cols_display, function(col) {
             !all(is.na(df[[col]]) | df[[col]] == "" | is.null(df[[col]]))
-          })]
+          }, logical(1))]
           base_cols <- c(base_cols, add_cols_valid)
         }
 

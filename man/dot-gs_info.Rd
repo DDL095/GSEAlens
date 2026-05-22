@@ -16,6 +16,6 @@ data.frame with runningScore, position, geneList, etc.
 }
 \description{
 Extract running score data from gseaResult object.
-  Adapted from GseaVis::gsInfo, using DOSE::gseaScores internally.
+  Adapted from GseaVis::gsInfo, using enrichit::gseaScores internally.
 }
 \keyword{internal}

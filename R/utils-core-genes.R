@@ -186,7 +186,7 @@ validate_param <- function(value, default, min_val = 1, max_val = NULL, param_na
     return(default)
   }
 
-  # 杞崲涓烘暟鍊?
+  # suppressWarnings: silence NAs introduced by silent coercion of non-numeric input
   val <- suppressWarnings(as.numeric(value))
   if (is.na(val)) {
     message(sprintf("[Param Check] %s conversion failed, fallback to: %s", param_name, default))
@@ -242,9 +242,9 @@ build_edge_list_safely <- function(core_genes_list, min_shared_genes = 2) {
   }
 
   # 闃插尽2锛氱Щ闄ょ┖鐨勬牳蹇冨熀鍥犲悜閲?
-  valid_idx <- which(sapply(core_genes_list, function(x) {
+  valid_idx <- which(vapply(core_genes_list, function(x) {
     length(x) > 0 && !all(is.na(x))
-  }))
+  }, logical(1)))
 
   if (length(valid_idx) == 0) {
     message("[build_edge_list_safely] All pathways have empty core genes")
@@ -275,7 +275,7 @@ build_edge_list_safely <- function(core_genes_list, min_shared_genes = 2) {
   edge_count <- 0
 
   # 鍙屽眰寰幆璁＄畻 Jaccard 鐩镐技搴?
-  for (i in 1:(n - 1)) {
+  for (i in seq_len(n - 1)) {
     for (j in (i + 1):n) {
       p1 <- pathway_ids[i]
       p2 <- pathway_ids[j]
@@ -340,7 +340,7 @@ build_edge_list_safely <- function(core_genes_list, min_shared_genes = 2) {
   }
 
   # 鍚堝苟杈瑰垪琛?
-  edge_df <- do.call(rbind, edges_list[1:edge_count])
+  edge_df <- do.call(rbind, edges_list[seq_len(edge_count)])
   rownames(edge_df) <- NULL
 
   message(sprintf(

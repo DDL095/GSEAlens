@@ -404,13 +404,13 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
         gene_list <- pdata$data_list$gsea_res@geneList
 
-        gene_metrics <- sapply(rownames(plot_mat), function(g) {
+        gene_metrics <- vapply(rownames(plot_mat), function(g) {
           idx <- match(toupper(g), toupper(names(gene_list)))
           if (is.na(idx)) {
             return(0)
           }
           return(gene_list[idx])
-        })
+        }, numeric(1))
 
         res_df <- as.data.frame(pdata$data_list$gsea_res@result)
         core_str <- res_df$core_enrichment[res_df$ID == pdata$pathway_id]
@@ -568,14 +568,14 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
         # 生成checkbox列 - 使用与主Table完全相同的方式
         # checkbox 使用原始大小写的基因名
-        gene_df$Select <- sapply(seq_len(nrow(gene_df)), function(i) {
+        gene_df$Select <- vapply(seq_len(nrow(gene_df)), function(i) {
           g <- gene_df$Gene[i] # 已经是原始大小写
           is_checked <- ifelse(g %in% current_selection, 'checked="checked"', "")
           sprintf(
             '<input type="checkbox" class="modal-gene-checkbox" data-id="%s" %s onclick="Shiny.setInputValue(\'%s\', {id: \'%s\', checked: this.checked}, {priority: \'event\'});"/>',
             g, is_checked, ns("modal_gene_toggle"), g
           )
-        })
+        }, character(1))
 
         gene_df <- gene_df[, c("Select", "Gene", "Rank_Metric", "Rank_in_List", "Is_Core")]
         colnames(gene_df) <- c("Select", "Gene", "Rank Metric", "Rank in List", "Leading Edge")

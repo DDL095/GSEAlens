@@ -199,13 +199,9 @@ batch_calc_gsea <- function(gsea_env,
           }
         } else if (term2gene_format == "title_case") {
           if (de_format == "upper_case") {
-            stop(paste0(
-              "[Species Mismatch Error]\n",
-              "Gene set species: Mouse (MM) - requires title case gene symbols\n",
-              "DE gene format: Uppercase (e.g., GAPDH, IRF7) - appears to be human data\n\n",
-              "Please use human gene sets (species='HS') for uppercase DE data,\n",
-              "or provide mouse DE data with title case gene symbols (e.g., Gapdh, Irf7)."
-            ))
+            stop(
+              "[Species Mismatch Error]\nGene set species: Mouse (MM) - requires title case gene symbols\nDE gene format: Uppercase (e.g., GAPDH, IRF7) - appears to be human data\n\nPlease use human gene sets (species='HS') for uppercase DE data,\nor provide mouse DE data with title case gene symbols (e.g., Gapdh, Irf7)."
+            )
           }
         }
 
@@ -268,7 +264,8 @@ batch_calc_gsea <- function(gsea_env,
       }
     }
   }
-
+# suppressWarnings: suppress "closing unused connection" noise during cleanup
+        
   invisible(gc(verbose = FALSE, full = TRUE))
 
   res_list_flat <- do.call(c, res_list)
@@ -302,7 +299,7 @@ batch_calc_gsea <- function(gsea_env,
         duration_sec = round((end_ms - start_ms) / 1000, 3),
         workers = use_cores,
         total_tasks = length(task_metadata),
-        successful_tasks = sum(sapply(res_list_flat, function(x) x$status == "Success"))
+        successful_tasks = sum(vapply(res_list_flat, function(x) x$status == "Success", logical(1)))
       )
     ),
     backend_info = gsea_env$backend_info,

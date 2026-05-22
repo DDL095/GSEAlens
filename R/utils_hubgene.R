@@ -67,9 +67,9 @@ build_hubgene_network <- function(gsea_task, pathway_ids,
   pathway_nodes$direction <- ifelse(pathway_nodes$NES > 0, "up", "down")
 
   # Count total genes per pathway
-  pathway_nodes$n_total <- sapply(pathway_ids, function(pw) {
+  pathway_nodes$n_total <- vapply(pathway_ids, function(pw) {
     length(gene_sets[[pw]])
-  })
+  }, FUN.VALUE = integer(1L))
 
   # Calculate core ratio
   pathway_nodes$core_ratio <- pathway_nodes$n_core / pathway_nodes$n_total
@@ -97,7 +97,7 @@ build_hubgene_network <- function(gsea_task, pathway_ids,
     g_upper <- toupper(g)
     leading_edges <- hub_genes$pathway_leading_edges[[i]]
 
-    connected_pws <- names(gene_sets)[sapply(gene_sets, function(x) g_upper %in% toupper(x))]
+    connected_pws <- names(gene_sets)[vapply(gene_sets, function(x) g_upper %in% toupper(x), FUN.VALUE = logical(1L))]
 
     if (length(connected_pws) > 0) {
       edge_info <- lapply(connected_pws, function(pw) {
@@ -122,7 +122,7 @@ build_hubgene_network <- function(gsea_task, pathway_ids,
     }
   })
 
-  if (length(edges_list) > 0 && !all(sapply(edges_list, is.null))) {
+  if (length(edges_list) > 0 && !all(vapply(edges_list, is.null, FUN.VALUE = logical(1L)))) {
     edges <- do.call(plyr::rbind.fill, edges_list)
   } else {
     edges <- NULL
@@ -244,7 +244,7 @@ extract_hub_genes <- function(gsea_task, pathway_ids, min_degree = 2, de_df = NU
     intersect(genes_upper, valid_genes)
   })
 
-  gene_sets <- gene_sets[sapply(gene_sets, length) > 0]
+  gene_sets <- gene_sets[vapply(gene_sets, length, FUN.VALUE = integer(1L)) > 0]
 
   if (length(gene_sets) == 0) {
     return(NULL)
@@ -263,22 +263,22 @@ extract_hub_genes <- function(gsea_task, pathway_ids, min_degree = 2, de_df = NU
     stringsAsFactors = FALSE
   )
 
-  gene_info$pathways <- sapply(gene_info$gene, function(g) {
+  gene_info$pathways <- vapply(gene_info$gene, function(g) {
     g_upper <- toupper(g)
-    pws <- names(gene_sets)[sapply(gene_sets, function(x) g_upper %in% toupper(x))]
+    pws <- names(gene_sets)[vapply(gene_sets, function(x) g_upper %in% toupper(x), FUN.VALUE = logical(1L))]
     paste(pws, collapse = ", ")
-  })
+  }, FUN.VALUE = character(1L))
 
   # Determine leading edge status for each pathway
   gene_info$pathway_leading_edges <- lapply(gene_info$gene, function(g) {
     g_upper <- toupper(g)
-    leading_status <- sapply(pathway_ids, function(pw_id) {
+    leading_status <- vapply(pathway_ids, function(pw_id) {
       if (pw_id %in% names(leading_edge_genes)) {
         g_upper %in% toupper(leading_edge_genes[[pw_id]])
       } else {
         FALSE
       }
-    })
+    }, FUN.VALUE = logical(1L))
     names(leading_status) <- pathway_ids
     return(leading_status)
   })
@@ -389,7 +389,8 @@ prepare_hubgene_nodes <- function(network_data, layout = "fr", seed = 42) {
   )
 
   # Calculate layout
-  # TODO: BiocCheck: set.seed accepted for reproducibility
+  # @note set.seed is required for reproducible layout positions when layout == "fr".
+  # The seed parameter (default 123) is exposed to callers for reproducibility control.
   set.seed(seed)
   if (layout == "fr") {
     coords <- igraph::layout_with_fr(g)
@@ -469,7 +470,7 @@ color_by_direction <- function(node_data, color_mode = "logFC",
     # For gene nodes: color by log2FC
     # For pathway nodes: color by NES
 
-    node_data$color <- sapply(seq_len(nrow(node_data)), function(i) {
+    node_data$color <- vapply(seq_len(nrow(node_data)), function(i) {
       row <- node_data[i, ]
 
       if (row$type == "pathway") {
@@ -495,7 +496,7 @@ color_by_direction <- function(node_data, color_mode = "logFC",
       }
 
       return(color_neutral)
-    })
+    }, FUN.VALUE = character(1L))
   } else if (color_mode == "pathway") {
     # Color genes by which pathway they connect to most
     node_data$color <- color_hub # Default hub color
@@ -505,7 +506,7 @@ color_by_direction <- function(node_data, color_mode = "logFC",
   }
 
   # Add color legend labels
-  node_data$color_label <- sapply(seq_len(nrow(node_data)), function(i) {
+  node_data$color_label <- vapply(seq_len(nrow(node_data)), function(i) {
     row <- node_data[i, ]
 
     if (row$type == "pathway") {
@@ -527,7 +528,7 @@ color_by_direction <- function(node_data, color_mode = "logFC",
       }
       return("Neutral")
     }
-  })
+  }, FUN.VALUE = character(1L))
 
   return(node_data)
 }
