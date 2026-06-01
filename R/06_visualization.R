@@ -40,16 +40,36 @@ NULL
 #' # Placeholder for function example
 #' }
 plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
-                                  main_title = "GSEA Plot", subPlot = 3,
+                                  main_title = NULL, subPlot = 3,
                                   curveCol = NULL, add_pval = FALSE,
                                   show_contrast_in_axis = FALSE,
                                   ...) {
-  # 1. 瑙ｆ瀽瀵硅薄涓庢彁鍙栧熀纭€鏁版嵁
+  # 1. 瑙ｆ瀽瀵硅薄涓庢彁鍙栧硅薄涓庢彁鍙栧熀纭€鏁版嵁
   res <- directional_gsea_obj$gsea_res
   res@result$Description <- res@result$ID
   meta <- directional_gsea_obj$meta
   df <- as.data.frame(res)
   n_lines <- length(target_pathways)
+
+  # 1b. Unified label formatter: strip first "_" prefix, title-case the rest
+  .format_pathway_label <- function(pw_id) {
+    tit <- unlist(strsplit(pw_id, split = "_"))
+    if (length(tit) > 1) {
+      ft <- paste(stringr::str_to_title(tit[seq(2, length(tit))]), collapse = " ")
+    } else {
+      ft <- paste(stringr::str_to_title(tit), collapse = " ")
+    }
+    stringr::str_wrap(ft, width = 45)
+  }
+
+  # 1c. Auto-generate main_title when caller does not provide one
+  if (is.null(main_title)) {
+    main_title <- if (n_lines == 1) {
+      .format_pathway_label(target_pathways[1])
+    } else {
+      sprintf("Combined Display: %d Pathway(s)", n_lines)
+    }
+  }
 
   # 2. 楂樼骇棰滆壊姹犲垎閰嶉€昏緫
   if (is.null(curveCol) || length(curveCol) < n_lines) {
@@ -89,15 +109,7 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
     raw_desc <- df_sub$Description
     name_id <- df_sub$ID
 
-    nice_labels <- vapply(name_id, function(x) {
-      tit <- unlist(strsplit(x, split = "_"))
-      if (length(tit) > 1) {
-        formatted_text <- paste(stringr::str_to_title(tit[seq(2, length(tit))]), collapse = " ")
-      } else {
-        formatted_text <- paste(stringr::str_to_title(tit), collapse = " ")
-      }
-      stringr::str_wrap(formatted_text, width = 45)
-    }, character(1))
+    nice_labels <- vapply(name_id, .format_pathway_label, character(1))
 
     names(curveCol_use) <- raw_desc
     override_scale <- ggplot2::scale_color_manual(

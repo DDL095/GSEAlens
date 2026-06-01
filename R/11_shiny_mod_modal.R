@@ -259,7 +259,6 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
               )
             ),
             target_pathways = pdata$pathway_id,
-            main_title = pdata$pathway_id,
             subPlot = 3,
             add_pval = TRUE
           ))
