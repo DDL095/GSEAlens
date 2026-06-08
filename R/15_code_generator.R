@@ -314,3 +314,212 @@ print(GSEAlens_combined)
 
   return(code)
 }
+
+
+#' @title Generate Boxplot Expression-Data Extraction Code
+#' @description Produce a self-contained, reproducible R script that extracts
+#'   the per-sample expression values (Sample / Group / Expression) of a
+#'   single gene from a \code{GseaRes} object. The returned data frame
+#'   matches exactly what is shown in the Quadrant module's expression
+#'   boxplot (panel 4), so the user can paste it into other software
+#'   (e.g. GraphPad Prism, Excel, R) for downstream plotting.
+#' @param GSEAlens_res A \code{GseaRes} object.
+#' @param contrast_id Character. Contrast ID (e.g. "Treat_vs_Control").
+#' @param gene_symbol Character. Gene symbol as shown in the boxplot title.
+#' @param expr_type Character. Expression matrix type passed to
+#'   \code{get_expr_matrix()} (e.g. "logcpm", "vst", "count"). Default "logcpm".
+#' @param custom_order Character or NULL. Custom group ordering string
+#'   (e.g. "GroupA -> GroupB") or "default" / NULL to use natural order.
+#'   When non-default, the generated code will re-order the \code{Group}
+#'   factor accordingly.
+#' @return A character string of executable R code.
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' if (interactive()) {
+#'   # Show the code in the Shiny app via the "Export Boxplot Data Code" button
+#'   # in the Quadrant module (panel 4).
+#'   code <- generate_boxplot_data_code(
+#'     GSEAlens_res = gsea_res,
+#'     contrast_id = "Treat_vs_Control",
+#'     gene_symbol = "GAPDH",
+#'     expr_type   = "logcpm"
+#'   )
+#'   cat(code)
+#' }
+#' }
+generate_boxplot_data_code <- function(GSEAlens_res,
+                                       contrast_id,
+                                       gene_symbol,
+                                       expr_type = "logcpm",
+                                       custom_order = NULL) {
+  # ---- 1. Pull side-info from the live GseaRes (so the generated code is
+  #         informative even if the user just copy-pastes it). ----
+  # Prefer extract_gsea_task() (same source as generate_pathway_plot_code)
+  # for consistency; fall back to a heuristic split of the contrast ID.
+  left_group  <- NA_character_
+  right_group <- NA_character_
+  gtask <- tryCatch(extract_gsea_task(GSEAlens_res, contrast_id), error = function(e) NULL)
+  if (!is.null(gtask) && !is.null(gtask$meta)) {
+    left_group  <- gtask$meta$left_group  %||% NA_character_
+    right_group <- gtask$meta$right_group %||% NA_character_
+  }
+  if (is.na(left_group) || is.na(right_group)) {
+    if (grepl("_vs_", contrast_id, fixed = TRUE)) {
+      parts <- strsplit(contrast_id, "_vs_", fixed = TRUE)[[1]]
+      left_group  <- parts[1]
+      right_group <- parts[2]
+    }
+  }
+
+  # ---- 2. Determine whether to include the optional ordering block. ----
+  has_custom_order <- !is.null(custom_order) &&
+                      length(custom_order) == 1 &&
+                      nzchar(custom_order) &&
+                      !identical(custom_order, "default")
+
+  # ---- 3. Build the R script as a single string. ----
+  # Use single quotes around user-provided strings; escape any embedded '.
+  safe_gene <- gsub("'", "''", gene_symbol %||% "")
+  safe_contrast <- gsub("'", "''", contrast_id %||% "")
+
+  ordering_block <- if (has_custom_order) {
+    safe_order <- gsub("'", "''", custom_order)
+    paste0(
+      "\n",
+      "# Optional: apply a custom group ordering (matches the Shiny boxplot)\n",
+      "GSEAlens_custom_order <- '", safe_order, "'\n",
+      "if (!is.null(GSEAlens_custom_order) &&\n",
+      "    nzchar(GSEAlens_custom_order) &&\n",
+      "    !identical(GSEAlens_custom_order, 'default')) {\n",
+      "  GSEAlens_sep <- if (grepl('->', GSEAlens_custom_order, fixed = TRUE)) '->' else ','\n",
+      "  GSEAlens_order_parts <- trimws(strsplit(GSEAlens_custom_order, GSEAlens_sep)[[1]])\n",
+      "  GSEAlens_actual_groups <- unique(as.character(GSEAlens_box_data$Group))\n",
+      "  GSEAlens_valid_parts <- GSEAlens_order_parts[GSEAlens_order_parts %in% GSEAlens_actual_groups]\n",
+      "  GSEAlens_x_categories <- c(GSEAlens_valid_parts,\n",
+      "                              setdiff(GSEAlens_actual_groups, GSEAlens_valid_parts))\n",
+      "  GSEAlens_box_data <- GSEAlens_box_data[GSEAlens_box_data$Group %in% GSEAlens_x_categories, ]\n",
+      "  GSEAlens_box_data$Group <- factor(GSEAlens_box_data$Group,\n",
+      "                                     levels = GSEAlens_x_categories,\n",
+      "                                     ordered = TRUE)\n",
+      "} else {\n",
+      "  GSEAlens_box_data$Group <- factor(GSEAlens_box_data$Group)\n",
+      "}\n"
+    )
+  } else {
+    paste0(
+      "\n",
+      "# Optional: order the Group factor (alphabetical by default)\n",
+      "# GSEAlens_box_data$Group <- factor(GSEAlens_box_data$Group)\n"
+    )
+  }
+
+  code <- paste0(
+    '# =============================================================================
+# GSEAlens Boxplot Data Extraction Code
+# Generated by GSEAlens Shiny App
+# =============================================================================
+#
+# What this script does
+# ----------------------
+# Extracts the per-sample expression values of a single gene from a GseaRes
+# object and returns a tidy data frame (columns: Sample, Group, Expression)
+# that exactly matches the values shown in the Quadrant module boxplot
+# (panel 4 "Full Expression Distribution").
+#
+# You can then:
+#   * write.csv(GSEAlens_box_data, "my_gene_box.csv", row.names = FALSE)
+#   * copy GSEAlens_box_data to GraphPad Prism / Excel for further plotting
+#   * ggplot2::ggplot(GSEAlens_box_data, aes(Group, Expression)) +
+#       ggplot2::geom_boxplot() + ggplot2::geom_jitter(width = 0.2)
+
+# Step 1: Load your GseaRes object
+# --------------------------------
+GSEAlens_res <- YOUR_GSEA_RES_OBJECT
+
+GSEAlens_contrast_id <- "', safe_contrast, '"
+GSEAlens_gene_symbol <- "', safe_gene, '"
+GSEAlens_expr_type   <- "', expr_type, '"
+', if (!is.na(left_group) && !is.na(right_group)) {
+  paste0('GSEAlens_left_group  <- "', left_group, '"\n',
+         'GSEAlens_right_group <- "', right_group, '"\n')
+} else {
+  paste0('# (Left/right group labels could not be inferred from the GseaRes.)\n')
+},
+
+    '\n
+# Step 2: Pull the expression matrix and sample metadata
+# ------------------------------------------------------
+GSEAlens_expr_mat    <- GSEAlens::get_expr_matrix(GSEAlens_res, type = GSEAlens_expr_type)
+GSEAlens_sample_meta <- GSEAlens::get_sample_meta(GSEAlens_res)
+
+# Step 3: Locate the gene (handles Ensembl IDs, SYMBOL lookup, case-insensitive)
+# -------------------------------------------------------------------------------
+GSEAlens_target_upper   <- toupper(GSEAlens_gene_symbol)
+GSEAlens_rownames_upper <- toupper(rownames(GSEAlens_expr_mat))
+GSEAlens_match_idx <- which(GSEAlens_rownames_upper == GSEAlens_target_upper)
+
+if (length(GSEAlens_match_idx) == 0 &&
+    !is.null(GSEAlens_res$expr_bundle$gene_meta)) {
+  GSEAlens_gene_meta <- GSEAlens_res$expr_bundle$gene_meta
+  if (is.null(rownames(GSEAlens_gene_meta))) {
+    rownames(GSEAlens_gene_meta) <- rownames(GSEAlens_expr_mat)
+  }
+  GSEAlens_symbol_col <- intersect(
+    c("SYMBOL", "symbol", "Gene", "gene_name", "gene_symbol"),
+    colnames(GSEAlens_gene_meta)
+  )[1]
+  if (!is.na(GSEAlens_symbol_col)) {
+    GSEAlens_meta_upper <- toupper(as.character(GSEAlens_gene_meta[[GSEAlens_symbol_col]]))
+    GSEAlens_meta_idx   <- which(GSEAlens_meta_upper == GSEAlens_target_upper)
+    if (length(GSEAlens_meta_idx) > 0) {
+      GSEAlens_ensembl_id <- rownames(GSEAlens_gene_meta)[GSEAlens_meta_idx[1]]
+      GSEAlens_match_idx  <- which(rownames(GSEAlens_expr_mat) == GSEAlens_ensembl_id)
+    }
+  }
+}
+
+if (length(GSEAlens_match_idx) == 0) {
+  stop(sprintf("Gene \'%s\' was not found in the expression matrix.", GSEAlens_gene_symbol))
+}
+
+# Step 4: Build the per-sample data frame
+# ---------------------------------------
+GSEAlens_actual_gene  <- rownames(GSEAlens_expr_mat)[GSEAlens_match_idx[1]]
+GSEAlens_expr_values  <- GSEAlens_expr_mat[GSEAlens_actual_gene, ]
+GSEAlens_sample_names <- names(GSEAlens_expr_values)
+GSEAlens_group_info   <- GSEAlens_sample_meta$group[
+  match(GSEAlens_sample_names, rownames(GSEAlens_sample_meta))
+]
+
+GSEAlens_box_data <- data.frame(
+  Sample     = GSEAlens_sample_names,
+  Group      = as.character(GSEAlens_group_info),
+  Expression = as.numeric(GSEAlens_expr_values),
+  stringsAsFactors = FALSE
+)
+GSEAlens_box_data <- GSEAlens_box_data[!is.na(GSEAlens_box_data$Group), ]
+', ordering_block, '
+# Step 5: Preview / save
+# ----------------------
+print(GSEAlens_box_data)
+
+# Uncomment to save to CSV (Excel / GraphPad friendly):
+# write.csv(GSEAlens_box_data, "GSEAlens_', safe_gene, '_', safe_contrast, '_box.csv", row.names = FALSE)
+
+# Optional: make a boxplot with ggplot2 (matches the Shiny look-and-feel)
+# GSEAlens_p <- ggplot2::ggplot(GSEAlens_box_data,
+#                               ggplot2::aes(x = Group, y = Expression, fill = Group)) +
+#   ggplot2::geom_boxplot(alpha = 0.7, outlier.shape = NA) +
+#   ggplot2::geom_jitter(width = 0.2, size = 3, alpha = 0.6) +
+#   ggplot2::theme_bw(base_size = 12) +
+#   ggplot2::labs(title = GSEAlens_gene_symbol, y = GSEAlens_expr_type, x = NULL) +
+#   ggplot2::theme(legend.position = "none",
+#                  axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
+# print(GSEAlens_p)
+'
+  )
+
+  return(code)
+}

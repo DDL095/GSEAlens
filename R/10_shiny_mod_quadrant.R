@@ -63,7 +63,23 @@ mod_quadrant_ui <- function(id) {
           shiny::checkboxInput(ns("zero_baseline"), label = "Use 0 as baseline", value = TRUE)
         ),
         plotly::plotlyOutput(ns("gene_expr_box"), height = "400px"),
-        shiny::uiOutput(ns("boxplot_order_status"))
+        shiny::uiOutput(ns("boxplot_order_status")),
+        shiny::div(
+          style = "margin-top: 10px;",
+          shiny::actionButton(
+            ns("export_boxplot_code_btn"),
+            label = "Export Boxplot Data Code",
+            icon = shiny::icon("code"),
+            class = "btn-info btn-sm",
+            style = "width: 100%;"
+          ),
+          shiny::helpText(
+            "Generate a self-contained R script that extracts the per-sample",
+            "expression values (Sample / Group / Expression) for the currently",
+            "selected gene \u2014 paste into your own R session or use the CSV",
+            "hint at the bottom of the generated code for GraphPad / Excel."
+          )
+        )
       ))
     ),
     shiny::hr(),
@@ -1193,5 +1209,135 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
         footer = shiny::modalButton("Close")
       ))
     })
+
+    # ==========================================================================
+    # 7. Export Boxplot Data Code Button (panel 4, "Full Expression Distribution")
+    # --------------------------------------------------------------------------
+    # Self-contained R script that re-creates the per-sample data frame
+    # (Sample / Group / Expression) for the currently selected gene so the user
+    # can reproduce the boxplot outside Shiny (R / GraphPad / Excel).
+    # ==========================================================================
+    current_boxplot_code <- shiny::reactiveVal(NULL)
+
+    # Helper: turn an arbitrary string into a filename-safe token
+    .sanitize_filename <- function(x) {
+      x <- gsub("[^A-Za-z0-9_.-]+", "_", x %||% "gene")
+      x <- gsub("^_+|_+$", "", x)
+      if (!nzchar(x)) x <- "gene"
+      x
+    }
+
+    shiny::observeEvent(input$export_boxplot_code_btn, {
+      data_list <- data_prep_data()
+      shiny::req(data_list)
+
+      current_gene <- current_boxplot_gene()
+      if (is.null(current_gene) || !nzchar(current_gene)) {
+        shiny::showNotification(
+          "No gene selected. Click a gene in the DE volcano or in the gene table first.",
+          type = "warning",
+          duration = 3
+        )
+        return()
+      }
+
+      # Use the same display symbol that the boxplot title shows
+      symbol_map <- .rebuild_symbol_map(gsea_res, data_list$contrast_id)
+      display_gene <- .get_display_symbol(current_gene, symbol_map)
+
+      current_order <- boxplot_order_ref()
+
+      code <- tryCatch(
+        generate_boxplot_data_code(
+          GSEAlens_res = gsea_res,
+          contrast_id  = data_list$contrast_id,
+          gene_symbol  = display_gene,
+          expr_type    = data_list$expression_type,
+          custom_order = current_order
+        ),
+        error = function(e) {
+          sprintf("# Failed to generate boxplot data code: %s", e$message)
+        }
+      )
+
+      current_boxplot_code(code)
+
+      shiny::showModal(shiny::modalDialog(
+        title = sprintf(
+          "R Code: Extract '%s' expression (%s)",
+          display_gene, data_list$contrast_id
+        ),
+        size = "l",
+        easyClose = TRUE,
+        shiny::fluidRow(
+          shiny::column(
+            12,
+            shiny::div(
+              style = "display: flex; gap: 8px; align-items: center; margin-bottom: 10px;",
+              shiny::actionButton(
+                ns("copy_boxplot_code_btn"),
+                label = "Copy to Clipboard",
+                icon = shiny::icon("copy"),
+                class = "btn-success btn-sm"
+              ),
+              shiny::helpText(
+                style = "margin: 0;",
+                "Click to copy the script. Then paste it into your R session or editor."
+              )
+            ),
+            shiny::div(
+              style = "background: #f5f5f5; padding: 15px; border-radius: 5px; max-height: 480px; overflow: auto;",
+              shiny::tags$pre(
+                shiny::code(code),
+                style = "font-size: 11px; white-space: pre-wrap; word-break: break-all;"
+              )
+            )
+          )
+        ),
+        footer = shiny::tagList(
+          shiny::downloadButton(
+            ns("download_boxplot_code_btn"),
+            label = "Download .R",
+            class = "btn-info"
+          ),
+          shiny::modalButton("Close")
+        )
+      ))
+    })
+
+    # Copy boxplot code to clipboard (uses clipr when available)
+    shiny::observeEvent(input$copy_boxplot_code_btn, {
+      code <- current_boxplot_code()
+      if (is.null(code) || !nzchar(code)) {
+        shiny::showNotification("No code to copy!", type = "warning", duration = 2)
+        return()
+      }
+
+      if (requireNamespace("clipr", quietly = TRUE)) {
+        clipr::write_clip(code)
+      } else {
+        con <- file("clipboard", "w")
+        on.exit(close(con), add = TRUE)
+        writeLines(code, con)
+      }
+      shiny::showNotification("Boxplot data code copied to clipboard.", type = "message", duration = 2)
+    })
+
+    # Download the generated code as a stand-alone .R file
+    output$download_boxplot_code_btn <- shiny::downloadHandler(
+      filename = function() {
+        data_list <- data_prep_data()
+        gene <- current_boxplot_gene() %||% "gene"
+        contrast <- if (!is.null(data_list)) (data_list$contrast_id %||% "contrast") else "contrast"
+        sprintf("GSEAlens_%s_%s_box.R", .sanitize_filename(gene), .sanitize_filename(contrast))
+      },
+      content = function(file) {
+        code <- current_boxplot_code()
+        if (is.null(code) || !nzchar(code)) {
+          code <- "# Click 'Export Boxplot Data Code' first to generate the script."
+        }
+        writeLines(code, file, useBytes = TRUE)
+      }
+    )
   })
 }
