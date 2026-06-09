@@ -1,4 +1,4 @@
-﻿#' @title Initialize GSEA Environment Object
+#' @title Initialize GSEA Environment Object
 #' @description Unified entry point supporting limma-voom (no intercept design) and DESeq2 objects.
 #' Automatically extracts contrasts, differential analysis results, and expression matrices to generate
 #' a standardized GseaEnv object.

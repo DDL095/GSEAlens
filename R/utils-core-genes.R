@@ -1,4 +1,4 @@
-﻿#' @title Extract Pathway Core Genes (Leading Edge)
+#' @title Extract Pathway Core Genes (Leading Edge)
 #' @description Parse the core_enrichment field from GSEA results to extract the gene list.
 #'   This is the fundamental data interface for all visualization modules in 03/04.
 #' @param gsea_res_obj GseaRes object or single GSEA result (list(status=, data=, ...))

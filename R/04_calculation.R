@@ -1,4 +1,4 @@
-﻿#' @title Batch Parallel GSEA Calculation
+#' @title Batch Parallel GSEA Calculation
 #' @description Consumes a standard GseaEnv object and performs efficient parallel GSEA calculation.
 #' @param gsea_env GseaEnv object
 #' @param custom_series_name String. Analysis series name

@@ -1,4 +1,4 @@
-﻿# Section: Capsule Import and GSEA Result Extraction ----
+# Section: Capsule Import and GSEA Result Extraction ----
 
 #' @title Load and Smart-Relocate GSEA Computation Capsule
 #' @description Safely load a computation capsule. If the file is moved from its

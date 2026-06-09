@@ -1,4 +1,4 @@
-﻿# Section: Data Accessor Utilities ----
+# Section: Data Accessor Utilities ----
 
 #' @title Data Accessor Utilities
 #' @description Provides unified data extraction interface, isolating underlying

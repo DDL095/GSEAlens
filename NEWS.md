@@ -1,5 +1,11 @@
 <!-- NEWS.md is maintained by https://cynkra.github.io/fledge, do not edit -->
 
+# GSEAlens 0.99.5
+
+- Fix "plotting error: missing value where TRUE/FALSE needed" when switching gene set subgroup (e.g. H -> C2/C5) with stale pathway selections in Joint Plot and Multi-Plot modules. Add defensive guard in `plot_directional_gsea()` to validate pathway IDs against the active GSEA result, and add null check in `.gs_info()` for missing gene sets.
+- Enable cross-collection pathway overlay in Multi-Plot (combined pathway plotting). Multi-Plot now uses the full `gsea_res` (all gene set collections) instead of the sliced subset, allowing pathways from different collections (e.g. H + C2) to be plotted together on the same enrichment chart, consistent with Joint Canvas behavior.
+- Fix UTF-8 BOM (Byte Order Mark) encoding in R source files that caused `parse()` failures on strict parsers. All R/*.R files now use clean UTF-8 without BOM, aligning with R package best practices and BiocCheck requirements (LEVEL: WARNING on BOM-annotated files).
+
 # GSEAlens 0.99.4
 
 - Replace the "Export Boxplot Data Code" button in the Quadrant module (panel 4 "Full Expression Distribution") with an "Export Boxplot Data" modal that directly shows the per-sample expression values in two tab-separated formats: wide (first row = sample IDs, second row = gene expression values, left-most cell = gene name) and long (one row per sample with Sample / Group / Expression). Each table has Copy-to-Clipboard and Download-CSV controls. The previous R-code generator `generate_boxplot_data_code()` is retained for backward compatibility and export to a runnable R script.

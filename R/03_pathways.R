@@ -1,4 +1,4 @@
-﻿# Section: Pathway Database Builder ----
+# Section: Pathway Database Builder ----
 
 #' @title Build GSEA Pathway Database with Interactive Selection
 #' @description Provides an interactive or automated gene set selection interface

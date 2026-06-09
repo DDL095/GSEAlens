@@ -1,4 +1,4 @@
-﻿# Section: Visualization and Report Generation ----
+# Section: Visualization and Report Generation ----
 
 #' @title GSEA Visualization and Report Generation
 #' @description Provides static plotting functions and interactive HTML report generation capabilities.
@@ -49,6 +49,22 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
   res@result$Description <- res@result$ID
   meta <- directional_gsea_obj$meta
   df <- as.data.frame(res)
+
+  # Guard: filter out pathways not present in the current GSEA result
+  # (e.g. stale IDs from a different gene set collection)
+  valid_mask <- target_pathways %in% df$ID
+  if (!all(valid_mask)) {
+    missing_pws <- target_pathways[!valid_mask]
+    warning(sprintf(
+      "Skipping %d pathway(s) not found in GSEA results: %s",
+      length(missing_pws), paste(missing_pws, collapse = ", ")
+    ))
+    target_pathways <- target_pathways[valid_mask]
+    if (length(target_pathways) == 0) {
+      stop("None of the selected pathways exist in the current GSEA result. Please re-select pathways from the active gene set collection.")
+    }
+  }
+
   n_lines <- length(target_pathways)
 
   # 1b. Unified label formatter: strip first "_" prefix, title-case the rest

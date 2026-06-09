@@ -20,6 +20,9 @@
   }
 
   geneSet <- object@geneSets[[geneSetID]]
+  if (is.null(geneSet)) {
+    stop(sprintf("Gene set '%s' not found in the GSEA result object. It may belong to a different gene set collection.", geneSetID))
+  }
   exponent <- object@params[["exponent"]]
 
   df <- gseaScores(geneList, geneSet, exponent, fortify = TRUE)

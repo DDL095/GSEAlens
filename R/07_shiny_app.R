@@ -1,4 +1,4 @@
-﻿# GSEAlens Interactive Analysis Workstation ---------------------------------------------------
+# GSEAlens Interactive Analysis Workstation ---------------------------------------------------
 #' @title GSEAlens Interactive Analysis Workstation
 #' @description Modular Shiny application based on GseaRes object, supporting
 #'   Limma and DESeq2 dual backends. Provides interactive visualization for
@@ -251,8 +251,8 @@ launch_gsea_app <- function(gsea_res, addition_data = NULL) {
     # Module 2: Master table module
     table_result <- mod_master_table_server("master_table", data_prep_list$data, addition_data)
 
-    # Module 3: Combined plotting module
-    mod_multi_plot_server("multi_plot", data_prep_list$data, table_result)
+    # Module 3: Combined plotting module (gsea_res for cross-collection support)
+    mod_multi_plot_server("multi_plot", data_prep_list$data, table_result, gsea_res)
 
     # Module 4: Quadrant linkage module (pass table_controller for bidirectional sync)
     mod_quadrant_server("quadrant", data_prep_list, gsea_res, table_controller = table_result)
