@@ -67,17 +67,16 @@ mod_quadrant_ui <- function(id) {
         shiny::div(
           style = "margin-top: 10px;",
           shiny::actionButton(
-            ns("export_boxplot_code_btn"),
-            label = "Export Boxplot Data Code",
-            icon = shiny::icon("code"),
+            ns("export_boxplot_data_btn"),
+            label = "Export Boxplot Data",
+            icon = shiny::icon("table"),
             class = "btn-info btn-sm",
             style = "width: 100%;"
           ),
           shiny::helpText(
-            "Generate a self-contained R script that extracts the per-sample",
-            "expression values (Sample / Group / Expression) for the currently",
-            "selected gene \u2014 paste into your own R session or use the CSV",
-            "hint at the bottom of the generated code for GraphPad / Excel."
+            "Opens a table of the per-sample expression values (long and wide",
+            "formats) for the currently selected gene \u2014 copy to Excel /",
+            "GraphPad Prism or download as CSV."
           )
         )
       ))
@@ -1211,13 +1210,15 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
     })
 
     # ==========================================================================
-    # 7. Export Boxplot Data Code Button (panel 4, "Full Expression Distribution")
+    # 7. Export Boxplot Data Button (panel 4, "Full Expression Distribution")
     # --------------------------------------------------------------------------
-    # Self-contained R script that re-creates the per-sample data frame
-    # (Sample / Group / Expression) for the currently selected gene so the user
-    # can reproduce the boxplot outside Shiny (R / GraphPad / Excel).
+    # Opens a modal with two TSV tables (long + wide) of the per-sample
+    # expression values for the currently selected gene. Each table has its
+    # own "Copy" / "Download CSV" controls. The user can paste the wide
+    # table directly into GraphPad Prism (Column format) or Excel.
     # ==========================================================================
-    current_boxplot_code <- shiny::reactiveVal(NULL)
+    current_boxplot_data <- shiny::reactiveVal(NULL)
+    current_boxplot_filenames <- shiny::reactiveVal(list(long = "long.csv", wide = "wide.csv"))
 
     # Helper: turn an arbitrary string into a filename-safe token
     .sanitize_filename <- function(x) {
@@ -1227,7 +1228,19 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       x
     }
 
-    shiny::observeEvent(input$export_boxplot_code_btn, {
+    # Helper: write a string to the system clipboard (uses clipr when available)
+    .write_to_clipboard <- function(text) {
+      if (requireNamespace("clipr", quietly = TRUE)) {
+        clipr::write_clip(text)
+        return(invisible(TRUE))
+      }
+      con <- file("clipboard", "w")
+      on.exit(close(con), add = TRUE)
+      writeLines(text, con)
+      invisible(TRUE)
+    }
+
+    shiny::observeEvent(input$export_boxplot_data_btn, {
       data_list <- data_prep_data()
       shiny::req(data_list)
 
@@ -1245,98 +1258,156 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       symbol_map <- .rebuild_symbol_map(gsea_res, data_list$contrast_id)
       display_gene <- .get_display_symbol(current_gene, symbol_map)
 
-      current_order <- boxplot_order_ref()
-
-      code <- tryCatch(
-        generate_boxplot_data_code(
+      result <- tryCatch(
+        extract_boxplot_data(
           GSEAlens_res = gsea_res,
           contrast_id  = data_list$contrast_id,
           gene_symbol  = display_gene,
-          expr_type    = data_list$expression_type,
-          custom_order = current_order
+          expr_type    = data_list$expression_type
         ),
         error = function(e) {
-          sprintf("# Failed to generate boxplot data code: %s", e$message)
+          shiny::showNotification(
+            sprintf("Failed to extract boxplot data: %s", e$message),
+            type = "error",
+            duration = 5
+          )
+          NULL
         }
       )
+      if (is.null(result)) return()
 
-      current_boxplot_code(code)
+      current_boxplot_data(result)
+
+      # Pre-build the two TSV strings and the safe filenames
+      tsv_long <- .serialize_df_tsv(result$long)
+      tsv_wide <- .serialize_df_tsv(result$wide)
+      safe_gene     <- .sanitize_filename(result$gene)
+      safe_contrast <- .sanitize_filename(result$contrast_id)
+      current_boxplot_filenames(list(
+        long = sprintf("GSEAlens_%s_%s_box_long.csv", safe_gene, safe_contrast),
+        wide = sprintf("GSEAlens_%s_%s_box_wide.csv", safe_gene, safe_contrast)
+      ))
+
+      # Format the sample-count line for the header
+      n_samples <- nrow(result$long)
+      group_counts <- table(result$long$Group)
+      group_summary <- paste(
+        sprintf("%s: %d", names(group_counts), as.integer(group_counts)),
+        collapse = ", "
+      )
 
       shiny::showModal(shiny::modalDialog(
         title = sprintf(
-          "R Code: Extract '%s' expression (%s)",
-          display_gene, data_list$contrast_id
+          "Expression Data: %s (n = %d samples; %s)",
+          result$gene, n_samples, group_summary
         ),
         size = "l",
         easyClose = TRUE,
-        shiny::fluidRow(
-          shiny::column(
-            12,
-            shiny::div(
-              style = "display: flex; gap: 8px; align-items: center; margin-bottom: 10px;",
-              shiny::actionButton(
-                ns("copy_boxplot_code_btn"),
-                label = "Copy to Clipboard",
-                icon = shiny::icon("copy"),
-                class = "btn-success btn-sm"
-              ),
-              shiny::helpText(
-                style = "margin: 0;",
-                "Click to copy the script. Then paste it into your R session or editor."
-              )
+        footer = shiny::modalButton("Close"),
+        shiny::tagList(
+          # ---- Section 1: Wide format ------------------------------------
+          shiny::div(
+            style = "margin-top: 4px;",
+            shiny::tags$b("Wide format"),
+            shiny::helpText(
+              style = "margin: 0 0 6px 0;",
+              "First row = sample IDs, second row = expression values. ",
+              "Left-most cell = gene name. Paste into GraphPad Prism (Column data) ",
+              "or Excel."
+            )
+          ),
+          shiny::div(
+            style = "display: flex; gap: 8px; align-items: center; margin-bottom: 6px;",
+            shiny::actionButton(
+              ns("copy_wide_tsv_btn"),
+              label = "Copy Wide",
+              icon = shiny::icon("copy"),
+              class = "btn-success btn-sm"
             ),
-            shiny::div(
-              style = "background: #f5f5f5; padding: 15px; border-radius: 5px; max-height: 480px; overflow: auto;",
-              shiny::tags$pre(
-                shiny::code(code),
-                style = "font-size: 11px; white-space: pre-wrap; word-break: break-all;"
-              )
+            shiny::downloadButton(
+              ns("download_wide_csv_btn"),
+              label = "Download Wide CSV",
+              class = "btn-info btn-sm"
+            )
+          ),
+          shiny::div(
+            style = "background: #f5f5f5; padding: 12px; border-radius: 5px; max-height: 160px; overflow: auto;",
+            shiny::tags$pre(
+              shiny::code(tsv_wide),
+              style = "font-size: 11px; white-space: pre; word-break: keep-all; margin: 0;"
+            )
+          ),
+
+          shiny::hr(),
+
+          # ---- Section 2: Long format ------------------------------------
+          shiny::div(
+            shiny::tags$b("Long format"),
+            shiny::helpText(
+              style = "margin: 0 0 6px 0;",
+              "One row per sample. Suitable for GraphPad Prism (Grouped data) ",
+              "and most R / Python plotting tools."
+            )
+          ),
+          shiny::div(
+            style = "display: flex; gap: 8px; align-items: center; margin-bottom: 6px;",
+            shiny::actionButton(
+              ns("copy_long_tsv_btn"),
+              label = "Copy Long",
+              icon = shiny::icon("copy"),
+              class = "btn-success btn-sm"
+            ),
+            shiny::downloadButton(
+              ns("download_long_csv_btn"),
+              label = "Download Long CSV",
+              class = "btn-info btn-sm"
+            )
+          ),
+          shiny::div(
+            style = "background: #f5f5f5; padding: 12px; border-radius: 5px; max-height: 220px; overflow: auto;",
+            shiny::tags$pre(
+              shiny::code(tsv_long),
+              style = "font-size: 11px; white-space: pre; word-break: keep-all; margin: 0;"
             )
           )
-        ),
-        footer = shiny::tagList(
-          shiny::downloadButton(
-            ns("download_boxplot_code_btn"),
-            label = "Download .R",
-            class = "btn-info"
-          ),
-          shiny::modalButton("Close")
         )
       ))
     })
 
-    # Copy boxplot code to clipboard (uses clipr when available)
-    shiny::observeEvent(input$copy_boxplot_code_btn, {
-      code <- current_boxplot_code()
-      if (is.null(code) || !nzchar(code)) {
-        shiny::showNotification("No code to copy!", type = "warning", duration = 2)
-        return()
-      }
-
-      if (requireNamespace("clipr", quietly = TRUE)) {
-        clipr::write_clip(code)
-      } else {
-        con <- file("clipboard", "w")
-        on.exit(close(con), add = TRUE)
-        writeLines(code, con)
-      }
-      shiny::showNotification("Boxplot data code copied to clipboard.", type = "message", duration = 2)
+    # Copy handlers ---------------------------------------------------------
+    shiny::observeEvent(input$copy_wide_tsv_btn, {
+      result <- current_boxplot_data()
+      shiny::req(result)
+      tsv <- .serialize_df_tsv(result$wide)
+      .write_to_clipboard(tsv)
+      shiny::showNotification("Wide table copied to clipboard.", type = "message", duration = 2)
     })
 
-    # Download the generated code as a stand-alone .R file
-    output$download_boxplot_code_btn <- shiny::downloadHandler(
-      filename = function() {
-        data_list <- data_prep_data()
-        gene <- current_boxplot_gene() %||% "gene"
-        contrast <- if (!is.null(data_list)) (data_list$contrast_id %||% "contrast") else "contrast"
-        sprintf("GSEAlens_%s_%s_box.R", .sanitize_filename(gene), .sanitize_filename(contrast))
-      },
-      content = function(file) {
-        code <- current_boxplot_code()
-        if (is.null(code) || !nzchar(code)) {
-          code <- "# Click 'Export Boxplot Data Code' first to generate the script."
-        }
-        writeLines(code, file, useBytes = TRUE)
+    shiny::observeEvent(input$copy_long_tsv_btn, {
+      result <- current_boxplot_data()
+      shiny::req(result)
+      tsv <- .serialize_df_tsv(result$long)
+      .write_to_clipboard(tsv)
+      shiny::showNotification("Long table copied to clipboard.", type = "message", duration = 2)
+    })
+
+    # Download handlers -----------------------------------------------------
+    output$download_wide_csv_btn <- shiny::downloadHandler(
+      filename = function() current_boxplot_filenames()$wide,
+      content  = function(file) {
+        result <- current_boxplot_data()
+        tsv <- if (is.null(result)) "" else .serialize_df_tsv(result$wide)
+        # writeLines adds a final "\n", matching the modal preview
+        writeLines(if (nzchar(tsv)) tsv else "Gene\t(empty)\n", file, useBytes = TRUE)
+      }
+    )
+
+    output$download_long_csv_btn <- shiny::downloadHandler(
+      filename = function() current_boxplot_filenames()$long,
+      content  = function(file) {
+        result <- current_boxplot_data()
+        tsv <- if (is.null(result)) "" else .serialize_df_tsv(result$long)
+        writeLines(if (nzchar(tsv)) tsv else "Sample\tGroup\tExpression\n", file, useBytes = TRUE)
       }
     )
   })

@@ -523,3 +523,160 @@ print(GSEAlens_box_data)
 
   return(code)
 }
+
+
+
+#' @title Extract Boxplot Data (Long and Wide)
+#' @description Internal helper used by the Quadrant module's "Export Boxplot
+#'   Data" button. Computes the exact per-sample expression data frame that
+#'   the Shiny boxplot (panel 4) is built on, and returns it in two formats:
+#' \describe{
+#'   \item{long}{Tidy data frame with columns \code{Sample}, \code{Group},
+#'     \code{Expression}. One row per sample. Suitable for GraphPad Prism
+#'     ("Grouped" data table) and Excel.}
+#'   \item{wide}{A one-row data frame. The first column holds the gene
+#'     symbol (column name \code{Gene}); the remaining columns hold the
+#'     expression value of that gene in each sample (column names are the
+#'     sample IDs, in the expression matrix's original column order).
+#'     Suitable for direct copy-paste into Prism ("Column" data table) or
+#'     any spreadsheet.}
+#' }
+#' @param GSEAlens_res A \code{GseaRes} object.
+#' @param contrast_id Character. Contrast ID (e.g. \code{"Treat_vs_Control"}).
+#' @param gene_symbol Character. Gene symbol as shown in the boxplot title.
+#' @param expr_type Character. Expression matrix type passed to
+#'   \code{get_expr_matrix()}. Default \code{"logcpm"}.
+#' @return A named list with elements \code{long}, \code{wide}, \code{gene},
+#'   \code{contrast_id}, \code{expr_type}, \code{left_group},
+#'   \code{right_group}, \code{sample_order}.
+#' @keywords internal
+extract_boxplot_data <- function(GSEAlens_res,
+                                 contrast_id,
+                                 gene_symbol,
+                                 expr_type = "logcpm") {
+  # ---- 1. Pull side-info (left/right group labels, with safe fallback) ----
+  left_group  <- NA_character_
+  right_group <- NA_character_
+  gtask <- tryCatch(extract_gsea_task(GSEAlens_res, contrast_id),
+                    error = function(e) NULL)
+  if (!is.null(gtask) && !is.null(gtask$meta)) {
+    left_group  <- gtask$meta$left_group  %||% NA_character_
+    right_group <- gtask$meta$right_group %||% NA_character_
+  }
+  if (is.na(left_group) || is.na(right_group)) {
+    if (grepl("_vs_", contrast_id, fixed = TRUE)) {
+      parts <- strsplit(contrast_id, "_vs_", fixed = TRUE)[[1]]
+      left_group  <- parts[1]
+      right_group <- parts[2]
+    }
+  }
+
+  # ---- 2. Expression matrix and sample metadata ----
+  expr_mat    <- get_expr_matrix(GSEAlens_res, type = expr_type)
+  sample_meta <- get_sample_meta(GSEAlens_res)
+
+  if (is.null(expr_mat)) {
+    stop(sprintf("Expression matrix (type = '%s') is not available.", expr_type))
+  }
+  if (is.null(sample_meta)) {
+    stop("Sample metadata is not available in the GseaRes object.")
+  }
+
+  # ---- 3. Locate the gene (case-insensitive, with SYMBOL/Ensembl fallback) ----
+  target_upper   <- toupper(gene_symbol)
+  rownames_upper <- toupper(rownames(expr_mat))
+  match_idx <- which(rownames_upper == target_upper)
+
+  if (length(match_idx) == 0 && !is.null(GSEAlens_res$expr_bundle$gene_meta)) {
+    gene_meta <- GSEAlens_res$expr_bundle$gene_meta
+    if (is.null(rownames(gene_meta))) {
+      rownames(gene_meta) <- rownames(expr_mat)
+    }
+    symbol_col <- intersect(
+      c("SYMBOL", "symbol", "Gene", "gene_name", "gene_symbol"),
+      colnames(gene_meta)
+    )[1]
+    if (!is.na(symbol_col)) {
+      meta_upper <- toupper(as.character(gene_meta[[symbol_col]]))
+      meta_idx   <- which(meta_upper == target_upper)
+      if (length(meta_idx) > 0) {
+        ensembl_id <- rownames(gene_meta)[meta_idx[1]]
+        match_idx  <- which(rownames(expr_mat) == ensembl_id)
+      }
+    }
+  }
+
+  if (length(match_idx) == 0) {
+    stop(sprintf("Gene '%s' was not found in the expression matrix.", gene_symbol))
+  }
+
+  # ---- 4. Build the per-sample data frame (preserves expr_mat column order) ----
+  actual_gene  <- rownames(expr_mat)[match_idx[1]]
+  expr_values  <- expr_mat[actual_gene, ]
+  sample_names <- names(expr_values)
+  group_info   <- sample_meta$group[match(sample_names, rownames(sample_meta))]
+
+  long_df <- data.frame(
+    Sample     = sample_names,
+    Group      = as.character(group_info),
+    Expression = as.numeric(expr_values),
+    stringsAsFactors = FALSE
+  )
+  # Drop samples without a group assignment
+  long_df <- long_df[!is.na(long_df$Group), , drop = FALSE]
+
+  # ---- 5. Build the wide data frame: first row = gene, columns = samples ----
+  wide_df <- data.frame(
+    Gene = gene_symbol,
+    as.list(setNames(long_df$Expression, long_df$Sample)),
+    check.names = FALSE,
+    stringsAsFactors = FALSE
+  )
+
+  # ---- 6. Return ----
+  list(
+    long         = long_df,
+    wide         = wide_df,
+    gene         = gene_symbol,
+    contrast_id  = contrast_id,
+    expr_type    = expr_type,
+    left_group   = left_group,
+    right_group  = right_group,
+    sample_order = long_df$Sample
+  )
+}
+
+
+#' @title Serialize a Data Frame to TSV
+#' @description Internal helper used by the Quadrant module's "Export Boxplot
+#'   Data" modal. Writes a \code{data.frame} as tab-separated values with a
+#'   header row and \code{NA} rendered as empty strings. Values are quoted
+#'   only when they contain tab / newline / double-quote characters, so
+#'   clean sample IDs stay unquoted.
+#' @param df A \code{data.frame}.
+#' @return A character scalar containing the TSV (no trailing newline).
+#' @keywords internal
+.serialize_df_tsv <- function(df) {
+  if (!is.data.frame(df) || nrow(df) == 0) {
+    return("")
+  }
+
+  needs_quote <- function(s) {
+    !is.na(s) && nzchar(s) && grepl("[\t\n\"]", s)
+  }
+
+  encode_cell <- function(val) {
+    if (is.na(val)) return("")
+    if (is.numeric(val)) return(format(val, trim = TRUE, scientific = FALSE))
+    s <- as.character(val)
+    if (needs_quote(s)) shQuote(s, type = "sh") else s
+  }
+
+  header <- paste(vapply(colnames(df), encode_cell, character(1)), collapse = "\t")
+  body_lines <- vapply(seq_len(nrow(df)), function(i) {
+    paste(vapply(df, function(col) encode_cell(col[i]), character(1)),
+          collapse = "\t")
+  }, character(1))
+
+  paste(c(header, body_lines), collapse = "\n")
+}

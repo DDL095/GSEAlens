@@ -2,6 +2,7 @@
 
 # GSEAlens 0.99.4
 
+- Replace the "Export Boxplot Data Code" button in the Quadrant module (panel 4 "Full Expression Distribution") with an "Export Boxplot Data" modal that directly shows the per-sample expression values in two tab-separated formats: wide (first row = sample IDs, second row = gene expression values, left-most cell = gene name) and long (one row per sample with Sample / Group / Expression). Each table has Copy-to-Clipboard and Download-CSV controls. The previous R-code generator `generate_boxplot_data_code()` is retained for backward compatibility and export to a runnable R script.
 - Add "Export Boxplot Data Code" button to the Quadrant module (panel 4 "Full Expression Distribution"). Generates a self-contained R script that extracts the per-sample expression values (Sample / Group / Expression) of the currently selected gene so users can reproduce the boxplot in R, GraphPad, or Excel. New function `generate_boxplot_data_code()` is exported.
 - Fix BiocCheck warnings: replace sapply() with vapply(), 1:... with seq_len/seq_along
 - Fix R CMD check NOTEs: enrichit import, fc global variable, License stub
