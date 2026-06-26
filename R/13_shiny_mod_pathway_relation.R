@@ -522,6 +522,20 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
         return()
       }
 
+      # Read the current edge list from the reactiveVal. This establishes a
+      # proper reactive dependency on plot_network's computation. If the user
+      # clicks before the network has finished rendering, we degrade gracefully
+      # instead of crashing on `NULL$from`.
+      edge_list <- edge_list_rv()
+      if (is.null(edge_list)) {
+        shiny::showNotification(
+          "Network is still being computed, please wait a moment and try again.",
+          type = "warning",
+          duration = 3
+        )
+        return()
+      }
+
       from_pw <- sel[1]
       to_pw <- sel[2]
 
@@ -592,9 +606,18 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
     # ============================================================
     # 9. Network Rendering Function
     # ============================================================
-
-    edge_list <- NULL
-    node_df <- NULL
+    #
+    # edge_list and node_df are computed inside output$plot_network and read
+    # by observeEvent(input$show_edge_detail). Previously they used `<<-` to
+    # mutate module-scope variables, but this had two problems:
+    #   1. Bioconductor review: `<<-` is discouraged.
+    #   2. Functional bug: `<<-` into a non-reactive variable does NOT trigger
+    #      reactive dependency, so observeEvent could read a stale/NULL value
+    #      during async re-rendering of plot_network.
+    # Using reactiveVal() establishes a proper reactive dependency and lets
+    # observeEvent gracefully degrade when the network is still being computed.
+    edge_list_rv <- shiny::reactiveVal(NULL)
+    node_df_rv <- shiny::reactiveVal(NULL)
     core_list <- NULL
 
     output$plot_network <- plotly::renderPlotly({
@@ -650,13 +673,17 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       hover_max_genes <- input$hover_max_genes
       if (is.null(hover_max_genes)) hover_max_genes <- 10
 
-      # Build edge list (now includes jaccard, overlap_coef, dice_coef)
-      edge_list <<- tryCatch(
+      # Build edge list (now includes jaccard, overlap_coef, dice_coef).
+      # Use a local object for downstream code in this renderPlotly scope,
+      # and push it to the module-scope reactiveVal so observeEvent can read
+      # the latest value with a proper reactive dependency.
+      edge_list <- tryCatch(
         {
           build_edge_list_safely(core_list[valid_pathways], min_shared_genes = min_shared)
         },
         error = function(e) NULL
       )
+      edge_list_rv(edge_list)
 
       if (is.null(edge_list) || nrow(edge_list) == 0) {
         return(plotly::plot_ly() |> plotly::layout(
@@ -714,17 +741,16 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
         {
           switch(layout_algo,
             "fr" = {
-              # set.seed is necessary to ensure reproducible layout across renders.
-              # The seed value is controlled by the user via input$seed (Shiny numericInput, default 42).
-              set.seed(seed_val)
-              igraph::layout_with_fr(g)
+              # Local seed scope: ensures reproducible FR layout across renders
+              # without polluting the caller's RNG state.
+              # seed_val is controlled by the user via input$seed (Shiny numericInput).
+              withr::with_seed(seed_val, igraph::layout_with_fr(g))
             },
             "kk" = igraph::layout_with_kk(g),
             "circle" = igraph::layout_in_circle(g),
             {
-              # Default to Fruchterman-Reingold; seed controlled by user via input$seed.
-              set.seed(seed_val)
-              igraph::layout_with_fr(g)
+              # Default: Fruchterman-Reingold; local seed scope as above.
+              withr::with_seed(seed_val, igraph::layout_with_fr(g))
             }
           )
         },
@@ -738,12 +764,13 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
         ))
       }
 
-      node_df <<- data.frame(
+      node_df <- data.frame(
         name = igraph::V(g)$name,
         x = layout_coords[, 1],
         y = layout_coords[, 2],
         stringsAsFactors = FALSE
       )
+      node_df_rv(node_df)
 
       res_df <- as.data.frame(task$gsea_res@result)
       node_info <- res_df[match(node_df$name, res_df$ID), ]

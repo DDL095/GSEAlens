@@ -358,12 +358,17 @@ mod_data_prep_server <- function(id, gsea_res) {
         return(list(default = "Default Order"))
       }
 
-      perms <- list()
+      # Use an environment as a mutable accumulator to avoid the `<<-` super-assignment.
+      # Semantics are equivalent to the previous recursive <<- pattern, but the
+      # scope of the mutation is explicit and does not leak into parent frames.
+      state <- new.env(parent = emptyenv())
+      state$perms <- list()
+
       permute <- function(arr, l, r) {
         if (l == r) {
           perm_str <- paste(arr, collapse = ",")
           label_str <- paste(arr, collapse = "->")
-          perms[[perm_str]] <<- label_str
+          state$perms[[perm_str]] <- label_str
           return()
         }
         for (i in l:r) {
@@ -377,7 +382,7 @@ mod_data_prep_server <- function(id, gsea_res) {
         }
       }
       permute(groups, 1, n)
-      return(perms)
+      return(as.list(state$perms))
     }
 
     generate_limited_perms <- function(groups, max_perms = 100, seed = 123) {
@@ -399,10 +404,11 @@ mod_data_prep_server <- function(id, gsea_res) {
       }
 
       if (count < max_perms) {
-        # set.seed is necessary here to ensure reproducible random permutation sampling
-        # when max_perms exceeds deterministic permutations (shift-based).
-        # The seed is exposed to users via the seed parameter (default 123).
-        set.seed(seed)
+        # Local RNG scope: seed is required for reproducible random permutation
+        # sampling when max_perms exceeds deterministic (shift-based) permutations.
+        # The seed is exposed to users via the `seed` parameter (default 123).
+        # withr::local_seed restores the caller's RNG state on function exit.
+        withr::local_seed(seed)
         for (i in seq_len(max_perms - count)) {
           shuffled <- sample(groups)
           perm_str <- paste(shuffled, collapse = ",")

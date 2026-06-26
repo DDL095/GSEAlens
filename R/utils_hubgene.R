@@ -389,17 +389,29 @@ prepare_hubgene_nodes <- function(network_data, layout = "fr", seed = 42) {
   )
 
   # Calculate layout
-  # @note set.seed is required for reproducible layout positions when layout == "fr".
+  # Only stochastic layouts (Fruchterman-Reingold) require a seed for reproducibility.
+  # kk and circle are deterministic. withr::with_seed sets the seed locally and
+  # restores the caller's RNG state on exit, so the user's global RNG is not polluted.
   # The seed parameter (default 123) is exposed to callers for reproducibility control.
-  set.seed(seed)
-  if (layout == "fr") {
-    coords <- igraph::layout_with_fr(g)
-  } else if (layout == "kk") {
-    coords <- igraph::layout_with_kk(g)
-  } else if (layout == "circle") {
-    coords <- igraph::layout_in_circle(g)
+  compute_layout <- function() {
+    if (layout == "fr") {
+      igraph::layout_with_fr(g)
+    } else if (layout == "kk") {
+      igraph::layout_with_kk(g)
+    } else if (layout == "circle") {
+      igraph::layout_in_circle(g)
+    } else {
+      igraph::layout_with_fr(g)
+    }
+  }
+
+  # Default empty/null layout falls back to FR (stochastic); otherwise respect the
+  # deterministic algorithm choice.
+  needs_seed <- is.null(layout) || layout == "" || layout == "fr"
+  coords <- if (needs_seed) {
+    withr::with_seed(seed, compute_layout())
   } else {
-    coords <- igraph::layout_with_fr(g)
+    compute_layout()
   }
 
   # Add coordinates to nodes

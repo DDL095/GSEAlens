@@ -77,7 +77,12 @@ batch_calc_gsea <- function(gsea_env,
   total_tasks <- length(task_metadata)
   message(sprintf("Ready: %d contrast tasks pending calculation...", total_tasks))
 
+  # Raise future.globals.maxSize for the duration of this call to accommodate
+  # large globals (full DE table + gene set dictionary). Restore the user's
+  # original option on exit to avoid leaking the inflated limit.
+  old_max_size <- getOption("future.globals.maxSize")
   options(future.globals.maxSize = 192 * 1024^3)
+  on.exit(options(future.globals.maxSize = old_max_size), add = TRUE)
 
   total_cores <- parallel::detectCores(logical = TRUE)
   use_cores <- min(total_cores, max(1, workers))
@@ -87,7 +92,11 @@ batch_calc_gsea <- function(gsea_env,
     chunk_size <- max(1, ceiling(total_tasks / (use_cores * 4)))
   }
 
+  # Set the future backend for this call. on.exit restores sequential plan so
+  # that an error or early return does not leave the user with a stray
+  # multisession worker pool.
   future::plan(future::multisession, workers = use_cores)
+  on.exit(future::plan(future::sequential), add = TRUE)
 
   if (use_progress) {
     if (!requireNamespace("progressr", quietly = TRUE)) {
@@ -254,7 +263,8 @@ batch_calc_gsea <- function(gsea_env,
     future.scheduling = 1.0
   )
 
-  future::plan(future::sequential)
+  # future::plan(future::sequential) is handled by on.exit() above, so that the
+  # plan is restored even if future_lapply throws.
 
   all_cons <- showConnections(all = TRUE)
   if (nrow(all_cons) > 1) {

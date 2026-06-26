@@ -1,5 +1,13 @@
 <!-- NEWS.md is maintained by https://cynkra.github.io/fledge, do not edit -->
 
+# GSEAlens 0.99.7
+
+Bioconductor review Phase 3 completion: scoped RNG, scope-safe mutation, defensive future cleanup.
+
+- Replace all 4 `set.seed()` calls with `withr::local_seed()` / `withr::with_seed()` so that stochastic igraph layouts (Fruchterman-Reingold) remain reproducible without polluting the caller's global RNG state. Locations: `R/08_shiny_mod_data_prep.R` (permutation sampling), `R/13_shiny_mod_pathway_relation.R` (network layout, 2 sites), `R/utils_hubgene.R` (hubgene layout). The seed parameters remain exposed to users (function `seed` argument, Shiny `input$seed`). `withr` is now in `Suggests`.
+- Remove all 3 `<<-` super-assignments. In `R/08_shiny_mod_data_prep.R` the recursive permutation builder now uses an explicit `new.env()` accumulator. In `R/13_shiny_mod_pathway_relation.R` the `edge_list` and `node_df` module-scope variables become `shiny::reactiveVal()` objects: `output$plot_network` writes via `edge_list_rv(...)` / `node_df_rv(...)`, and `observeEvent(input$show_edge_detail)` reads via `edge_list_rv()`. This fixes a latent race condition where the observer could read `NULL` or a stale edge list during async re-rendering; it now degrades gracefully with a "Network is still being computed" notification.
+- Harden the `future` parallel backend lifecycle in `batch_calc_gsea()`. `options(future.globals.maxSize = ...)` and `future::plan(future::multisession, ...)` are now wrapped in `on.exit()` so the user's original options and sequential plan are restored even if `future.apply::future_lapply()` errors out. The trailing `future::plan(future::sequential)` line is removed (now handled by `on.exit`). `future` + `future.apply` are retained (not switched to `BiocParallel`) because GSEAlens routinely serializes > 2 GB of globals (DE table + gene set dictionary + metadata dictionary) on Windows, where `BiocParallel::SnowParam` PSOCK serialization was measured to be 3-5x slower than `future::multisession` for this workload; see `Phase3 专项深度分析` report for the benchmark rationale.
+
 # GSEAlens 0.99.6
 
 Bioconductor review Phase 3 partial: code quality optimizations addressing reviewer comments on pipe operator, signal conditions, and `suppressWarnings`.
