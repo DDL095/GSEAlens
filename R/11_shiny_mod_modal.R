@@ -601,7 +601,7 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
               list(width = "80px", targets = 4, className = "dt-center")
             )
           )
-        ) %>%
+        ) |>
           DT::formatStyle(
             columns = "Leading Edge",
             backgroundColor = DT::styleEqual(c("YES", "-"), c("#FF9800", "transparent")),

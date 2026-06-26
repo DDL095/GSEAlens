@@ -2,205 +2,42 @@
 title: "GSEAlens：基因集富集分析的交互式探索平台"
 author: "Dudali"
 date: "`r Sys.Date()`"
-output: 
-  rmarkdown::html_vignette:
-    toc: true
+output:
+  BiocStyle::html_document:
+    toc_float: true
     number_sections: true
 vignette: >
-  %\VignetteIndexEntry{GSEAlens：基因集富集分析的交互式探索平台}
+  %\VignetteIndexEntry{GSEAlens（中文版）：基因集富集分析的交互式探索平台}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
-# R包简介
+# 快速开始
 
-**GSEAlens** 中的 **Lens**（透镜）象征着这个包如同一个**放大镜**，帮助研究者深入探索 GSEA 富集分析中的关键通路。
+本节使用 `r Biocpkg("airway")` 数据集演示 GSEAlens 的完整工作流。由于 GSEAlens
+**本身不做 DEG 分析**，我们假定输入对象（`fit`、`dds_se`、`dds`）已按照标准
+`r Biocpkg("limma")` / `r Biocpkg("DESeq2")` 流程准备完毕。
 
-GSEAlens 提供了一个基于 Web 界面的交互式平台，用于展示通路的介绍和描述，并集成了 AI 辅助的通路富集结果导出功能。通过封装工作流程和标准化输入格式，这个 R 包简化了 GSEA 富集分析的结果查看和探索过程。
+> **注意**：详细的输入准备步骤（limma-voom 拟合、DESeq2 对象构造、基因过滤）请参阅
+> 补充 vignette：
+>
+> ```r
+> vignette("GSEAlens-preprocessing-zh")
+> ```
 
-## 安装说明
-
-```{r install-package, eval=FALSE}
-# 使用 pak 安装（比 devtools 更快）
-if (!requireNamespace("pak", quietly = TRUE)) {
-    install.packages("pak")
-}
-pak::pkg_install("DDL095/GSEAlens")
-```
-
-# 示例代码
-
-使用`airway`包作为示例运行，这个R包当中包含两组每组4个重复
-
-```{r 环境准备, results='hide'}
+```{r setup-environment, results='hide'}
 library(GSEAlens)
 library(airway)
 data(airway)
 expression_data <- airway
 ```
 
-## 输入数据准备
+在本主 vignette 中，三个输入对象（`fit`、`dds_se`、`dds`）按照预处理 vignette 的
+步骤准备完毕后，传入下方的 GSEAlens 函数。
 
-### limma-voom 流程
-
-首先参考标准流程，使用 edgeR 包组装 DGEList 对象，设计无截距矩阵并重命名行名， 之后制作用于拟合的比对，过滤低表达基因，保留蛋白质编码 RNA，使用 symbol 作为行名。
-
-***注意：GSEAlens 基于无截距设计的 limma-voom 流程 (\~0+group)，以确保列名直接对应组别名称。***
-
-```{r limma-voom 数据准备}
-library(edgeR)
-library(limma)
-group_level <- airway@colData@listData[["dex"]] 
-design <- model.matrix(~0+group_level)
-colnames(design) <- levels(group_level)
-compare_end <- combn(levels(group_level), 2, simplify = FALSE)
-contrast_strings <- sapply(compare_end, function(x) paste(x[2], x[1], sep = " - ")) 
-contrast_matrix <- makeContrasts(contrasts = contrast_strings, levels = design)
-
-genes_df <- data.frame(
-  gene_id = airway@rowRanges@elementMetadata@listData$gene_id,
-  symbol = airway@rowRanges@elementMetadata@listData$symbol,
-  gene_biotype = airway@rowRanges@elementMetadata@listData$gene_biotype
-)
-genes_df$Length <- airway@rowRanges@elementMetadata@listData$gene_seq_end - 
-                   airway@rowRanges@elementMetadata@listData$gene_seq_start + 1
-gsea_limma_voom_data <- edgeR::DGEList(
-  counts = assay(airway, "counts"),
-  genes = genes_df,
-  norm.factors = NULL,
-  group = group_level,
-  remove.zeros = TRUE
-)
-
-total_counts <- edgeR::cpm(gsea_limma_voom_data) |> rowSums()  
-
-dup_symbols <- gsea_limma_voom_data$genes$symbol[duplicated(gsea_limma_voom_data$genes$symbol)]
-
-keep <- rep(TRUE, nrow(gsea_limma_voom_data))
-
-for (gene in dup_symbols) {
-  idx <- which(gsea_limma_voom_data$genes$symbol == gene)  
-  best_idx <- idx[which.max(total_counts[idx])]            
-  remove_idx <- idx[idx != best_idx]                       
-  keep[remove_idx] <- FALSE
-}
-
-gsea_limma_voom_data <- gsea_limma_voom_data[keep, ]
-
-rownames(gsea_limma_voom_data) <- gsea_limma_voom_data$genes$symbol
-
-keep_biotype <- gsea_limma_voom_data$genes$gene_biotype == "protein_coding"
-gsea_limma_voom_data <- gsea_limma_voom_data[keep_biotype,]
-
-gsea_limma_voom_data <- edgeR::normLibSizes(gsea_limma_voom_data, method = "TMM")
-
-isexpr <- rowSums(edgeR::cpm(gsea_limma_voom_data) > 1) >= 3
-gsea_limma_voom_data <- gsea_limma_voom_data[isexpr,]
-```
-
-之后进行limma-voom拟合，获取`fit`对象
-
-```{r limma-voom 处理}
-VoomOutPut <- voom(gsea_limma_voom_data, design)
-
-fit <- lmFit(object = VoomOutPut, design = design) %>% 
-  contrasts.fit(fit = ., contrasts = contrast_matrix) %>% 
-  eBayes(.)
-```
-
-### DESeq2流程
-
-#### SummarizedExperiment input
-
-参考`DESeq2`包的说明文档，进行数据清洗与处理。 首先去除非编码RNA
-
-```{r 仅保留编码蛋白质的RNA}
-library("DESeq2")
-dds_se <- DESeqDataSet(expression_data, design = ~ cell + dex)
-gene_biotypes <- rowData(dds_se)$gene_biotype
-keep_protein_coding <- gene_biotypes == "protein_coding"
-dds_se <- dds_se[keep_protein_coding, ]
-dds_se
-```
-
-之后去除低表达基因，使用symbol作为行名
-
-```{r 去除低表达的RNA}
-smallestGroupSize <- 3
-keep <- rowSums(counts(dds_se) >= 10) >= smallestGroupSize
-dds_se <- dds_se[keep,]
-dds_se
-rownames(dds_se) <- dds_se@rowRanges@elementMetadata@listData[["gene_name"]]
-
-total_counts <- rowSums(SummarizedExperiment::assay(dds_se))
-keep <- rep(TRUE, nrow(dds_se))
-dup_genes <- rownames(dds_se)[duplicated(rownames(dds_se))]
-for (gene in dup_genes) {
-  idx <- which(rownames(dds_se) == gene)  
-  best_idx <- idx[which.max(total_counts[idx])]  
-  remove_idx <- idx[idx != best_idx]  
-  keep[remove_idx] <- FALSE
-}
-dds_se <- dds_se[keep, ]
-
-
-```
-
-运行DESeq2处理
-
-```{r 运行DESeq2, results='hide'}
-dds_se <- DESeq(dds_se)
-```
-
-### Count matrix input
-
-过滤低表达基因，保留仅蛋白质编码RNA，并将矩阵行名修订为symbol
-
-```{r 矩阵修订}
-DDS_rawdata <- expression_data
-
-gene_biotypes_epd <- rowData(DDS_rawdata)$gene_biotype
-keep_protein_coding_epd <- gene_biotypes == "protein_coding"
-DDS_rawdata <- DDS_rawdata[keep_protein_coding, ]
-
-smallestGroupSize <- 3
-keep_epd <- rowSums(assay(DDS_rawdata, "counts") >= 10) >= smallestGroupSize
-DDS_rawdata <- DDS_rawdata[keep_epd,]
-
-rownames(DDS_rawdata) <- DDS_rawdata@rowRanges@elementMetadata@listData[["gene_name"]]
-
-total_counts <- rowSums(SummarizedExperiment::assay(DDS_rawdata))
-keep_name <- rep(TRUE, nrow(DDS_rawdata))
-dup_genes <- rownames(DDS_rawdata)[duplicated(rownames(DDS_rawdata))]
-for (gene in dup_genes) {
-  idx <- which(rownames(DDS_rawdata) == gene)  # 该基因的所有行索引
-  best_idx <- idx[which.max(total_counts[idx])]  # 表达量最高的行
-  remove_idx <- idx[idx != best_idx]  # 要剔除的行（同一基因名下非最高表达）
-  keep_name[remove_idx] <- FALSE
-}
-DDS_rawdata <- DDS_rawdata[keep_name, ]
-
-```
-
-矩阵信息获取
-
-```{r 矩阵提取}
-cts <- assay(DDS_rawdata,"counts")
-coldata <- DDS_rawdata@colData %>% as.data.frame.array()
-coldata <- coldata[,c("cell","dex")]
-coldata$cell <- factor(coldata$cell)
-coldata$dex <- factor(coldata$dex)
-
-
-```
-
-组装为DDS对象并进行处理
-
-```{r create-dds-object, results='hide'}
-dds <- DESeqDataSetFromMatrix(countData = cts,
-                              colData = coldata,
-                              design = ~ dex)
-dds <- DESeq(dds)
+```{r load-prepared-objects, eval=FALSE}
+# 运行预处理 vignette 以获取 fit / dds_se / dds：
+# vignette("GSEAlens-preprocessing-zh")
 ```
 
 ## GSEAlens处理
@@ -242,40 +79,165 @@ gseadata_dds <- GSEAlens::setup_gsea_env(fit = dds,pathway_obj = gsea_pathwayset
 并行计算提示：可根据电脑性能调整 workers 选项，设置计算使用的核心数量。 比对数量越多，建议设置越高的核心数以提升计算效率。
 
 ```{r batch-calc-gsea, eval=FALSE}
+# 将 vignette 输出写入临时目录，避免污染 Bioconductor 构建机器的工作目录。
+out_dir <- tempdir()
+
 # limma-voom 流程
-gsea_res_limmavoom <- GSEAlens::batch_calc_gsea(gseadata_limmavoom, 
-                                                 custom_series_name = "limmavoom_data", 
+gsea_res_limmavoom <- GSEAlens::batch_calc_gsea(gseadata_limmavoom,
+                                                 custom_series_name = "limmavoom_data",
+                                                 output_dir = out_dir,
                                                  workers = 4,  # 根据比对数量和电脑性能调整
                                                  force = TRUE)
 
 # DESeq2 SummarizedExperiment 流程
-gsea_res_se <- GSEAlens::batch_calc_gsea(gseadata_se, 
-                                          custom_series_name = "dds_se_data", 
+gsea_res_se <- GSEAlens::batch_calc_gsea(gseadata_se,
+                                          custom_series_name = "dds_se_data",
+                                          output_dir = out_dir,
                                           workers = 4,
                                           force = TRUE)
 
 # DESeq2 Count matrix 流程
-gsea_res_dds <- GSEAlens::batch_calc_gsea(gseadata_dds, 
-                                           custom_series_name = "dds_data", 
+gsea_res_dds <- GSEAlens::batch_calc_gsea(gseadata_dds,
+                                           custom_series_name = "dds_data",
+                                           output_dir = out_dir,
                                            workers = 4,
                                            force = TRUE)
 ```
 
 ### 交互式分析与查看
 
-运行`batch_calc_gsea`之后，在对应目录下会生成一个RDS文件，读入该文件，或者使用`import_gsea_capsule`读取，`import_gsea_capsule`函数可以在读取的时候，自动将相关文件整理到使用的RMD文件或者R脚本的文件夹中，并且给出数据的检视情况。
+`batch_calc_gsea` 运行后，会在输出目录生成一个 RDS 文件（"GSEA Capsule"）。可以
+直接用 `readRDS` 读取，或使用 `import_gsea_capsule`，后者会自动将相关文件整理到
+您的 `.Rmd` / `.R` 脚本所在目录，并执行数据体检。
 
 ```{r import-capsule, eval=FALSE}
 gsea_res <- import_gsea_capsule("/path/to/your/files/")
-# 或直接读取 RDS 文件
+# 或者直接读取 RDS 文件：
 # gsea_res <- readRDS("/path/of/your/file/")
 ```
 
-数据载入后，就可以使用`launch_gsea_app`进行交互式查看
+## 使用 Shiny 应用进行交互式探索
+
+GSEAlens 提供了一个交互式 Shiny 应用，用于 GSEA 结果的可视化探索。将
+`batch_calc_gsea` 返回的 `GseaRes` 对象（或通过 `import_gsea_capsule` 加载的对象）
+传入 `launch_gsea_app` 即可启动。
+
+### 启动应用
 
 ```{r launch-app, eval=FALSE}
 launch_gsea_app(gsea_res)
 ```
+
+可选：传入 `addition_data` 数据框（或 `.csv` / `.rds` 文件路径），将通路注释合并到
+主表。若为 `NULL`，应用会自动检测工作目录下的 `addition_data_gsealens.rds` 或
+`addition_data_gsealens.csv`。
+
+```{r launch-app-with-data, eval=FALSE}
+launch_gsea_app(gsea_res, addition_data = "pathway_annotations.csv")
+```
+
+### 应用布局
+
+应用采用 **侧边栏 + 主面板** 布局，主面板包含 **6 个 tab**。侧边栏（数据预处理
+模块）提供全局控件；主面板承载六个功能 tab。
+
+#### 侧边栏 -- 数据预处理
+
+提供跨 tab 可见的全局控件：
+
+- **对比选择**：选择要探索的两两比较
+- **基因集子组过滤**：按集合（如 H、C2、C5）子集化通路
+- **DEG marker 选择**：高亮关注的基因
+- **组显示顺序**：自定义因子排序
+- **表达指标**：切换 CPM / logCPM / VST / FPKM
+
+源文件：`R/08_shiny_mod_data_prep.R`
+
+#### Tab 1 -- 主工作区（Main Workspace）
+
+默认起始 tab，整合两个子模块：
+
+- **主表**（`DT::datatable`）：所有富集通路的交互式表格，支持列排序（NES、pvalue、
+  p.adjust、setSize）与 checkbox 选择。选中的行会推送到其他 tab。
+- **组合通路绘图**：将多个选中通路聚合为单张组合图（底层使用 `patchwork`）。
+
+点击任意通路行会打开**通路详情 Modal**，展示完整描述、leading-edge 基因，并提供
+"加入绘图队列"选项。
+
+源文件：`R/09_shiny_mod_table.R`、`R/11_shiny_mod_modal.R`、`R/12_shiny_mod_multi_plot.R`
+
+#### Tab 2 -- 全息四象限联动（Holographic Quadruple Linkage）
+
+四个同步面板：
+
+1. 左上：通路选择器（与主工作区联动）
+2. 右上：基因排名表（按 `|stat|` 排序）
+3. 左下：所选对比的 volcano 图
+4. 右下：所选基因的表达 boxplot
+
+选择**双向同步**——在表中点击基因会在 volcano 中高亮；在 volcano 中点击点会滚动
+表格到对应行。
+
+源文件：`R/10_shiny_mod_quadrant.R`
+
+#### Tab 3 -- 通路关系探索（Pathway Relationship Exploration）
+
+通路间关系的网络可视化，节点为通路，边表示共享基因（Jaccard 相似度）。两种选择
+模式：
+
+- **单选模式**：探索一个通路及其邻居
+- **批量模式**：从主工作区选中多个通路，可视化它们的相互连接
+
+边粗细与重叠比成正比；节点大小反映 `|NES|`。
+
+源文件：`R/13_shiny_mod_pathway_relation.R`、辅助函数 `R/utils_hubgene.R`
+
+#### Tab 4 -- HubGene 网络（HubGene Network）
+
+识别并可视化 HubGene（在多个富集通路中高度连接的基因），使用 `visNetwork` 交互式
+图。可调参数：
+
+- **物理模拟**：开关，调整力导向参数
+- **节点大小**：按 degree / betweenness / page-rank
+- **网络统计**：节点数、边数、密度的汇总面板
+
+源文件：`R/16_shiny_mod_hubgene_vis.R`
+
+#### Tab 5 -- AI 解读（AI Interpretation）
+
+为外部 LLM（如 GPT-4、Claude）生成结构化 prompt，用于解读选中通路。支持自定义
+模板，用户可强制要求特定输出格式（如"生成一段引用 leading-edge 基因的三段式生物学
+解读"）。生成的 prompt 可一键复制到剪贴板。
+
+源文件：`R/17_shiny_mod_AI.R`
+
+> **注意**：本 tab 仅生成 prompt，不直接调用外部 API。作者刻意如此设计，以便用户
+> 自行管控 API key 与网络调用。
+
+#### Tab 6 -- 联合 GSEA 画布（Joint GSEA Canvas）
+
+将多个选中通路的富集 running-score 曲线聚合为单张画布。核心特性是**一键导出可重现
+R 代码**：用户可在侧边栏调整画布参数，然后点击"生成代码"获得一份独立的 R 脚本，
+在 Shiny 环境外重现该图。
+
+源文件：`R/14_shiny_mod_joint_canvas.R`，代码生成器 `R/15_code_generator.R`
+
+### 输出解读指南
+
+| 可视化 | 关注要点 | 生物学含义 |
+|---|---|---|
+| NES（标准化富集得分） | 符号与幅度 | 正 NES -> 该通路在对比右组中上调 |
+| p.adjust | < 0.05 阈值 | BH 校正后的统计显著性 |
+| Volcano（Tab 2） | 对称 / 不对称 | 对称表明全局性变化；不对称表明靶向调控 |
+| 通路网络（Tab 3） | 簇结构 | 紧密连接的簇提示共调控的生物学模块 |
+| HubGene（Tab 4） | 高度数基因 | Hub 基因是潜在的生物标志物或调控节点 |
+| 联合画布（Tab 6） | 曲线重叠 | 重叠的 running-score 曲线提示协同调控 |
+
+### 可重现代码导出
+
+Tab 2、3、6 都包含 **"生成 R 代码"** 按钮，会生成一份独立 R 脚本重现当前可视化。
+这是生成发表级图表的推荐方式：在 Shiny 应用中迭代调整图像，然后导出代码用于最终
+定制。
 
 # R包中间对象说明
 

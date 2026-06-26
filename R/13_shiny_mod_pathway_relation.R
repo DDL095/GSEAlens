@@ -156,7 +156,7 @@ mod_pathway_relation_ui <- function(id) {
                 ),
                 selected = "core_size"
               ),
-              plotly::plotlyOutput(ns("plot_dotplot"), height = "800px") %>%
+              plotly::plotlyOutput(ns("plot_dotplot"), height = "800px") |>
                 shinycssloaders::withSpinner(type = 6, color = "#28a745")
             )
           ),
@@ -202,7 +202,7 @@ mod_pathway_relation_ui <- function(id) {
                   shiny::HTML("<b>Instruction:</b> Click two nodes to select, then click 'Show Edge Detail'")
                 )
               ),
-              plotly::plotlyOutput(ns("plot_network"), height = "1200px") %>%
+              plotly::plotlyOutput(ns("plot_network"), height = "1200px") |>
                 shinycssloaders::withSpinner(type = 6, color = "#28a745")
             )
           )
@@ -390,7 +390,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
     output$plot_dotplot <- plotly::renderPlotly({
       pathways <- final_pathways()
       if (length(pathways) == 0) {
-        return(plotly::plot_ly() %>% plotly::layout(
+        return(plotly::plot_ly() |> plotly::layout(
           title = list(text = "No pathways to display", font = list(size = 14), x = 0.5),
           xaxis = list(showgrid = FALSE), yaxis = list(showgrid = FALSE)
         ))
@@ -400,7 +400,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       df <- data_list$df
       plot_df <- df[df$ID %in% pathways, ]
       if (nrow(plot_df) == 0) {
-        return(plotly::plot_ly() %>% plotly::layout(title = list(text = "No matching pathways", font = list(size = 14))))
+        return(plotly::plot_ly() |> plotly::layout(title = list(text = "No matching pathways", font = list(size = 14))))
       }
       task <- list(
         gsea_res = data_list$gsea_res,
@@ -471,7 +471,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
         text = hover_text,
         hoverinfo = "text",
         hovertemplate = "%{text}<extra></extra>"
-      ) %>%
+      ) |>
         plotly::layout(
           title = list(
             text = sprintf("Pathway DotPlot: %s vs %s", data_list$left_group, data_list$right_group),
@@ -481,7 +481,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
           yaxis = list(title = "", tickmode = "array", tickvals = seq_len(nrow(plot_df)), ticktext = plot_df$ID, tickfont = list(size = 9)),
           margin = list(l = 250, r = 50, t = 80, b = 50),
           showlegend = FALSE
-        ) %>%
+        ) |>
         plotly::config(displayModeBar = TRUE, displaylogo = FALSE)
     })
 
@@ -601,7 +601,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       pathways <- final_pathways()
 
       if (length(pathways) == 0) {
-        return(plotly::plot_ly() %>% plotly::layout(
+        return(plotly::plot_ly() |> plotly::layout(
           title = list(text = "No pathways to display", font = list(size = 14), x = 0.5),
           xaxis = list(showgrid = FALSE, showticklabels = FALSE),
           yaxis = list(showgrid = FALSE, showticklabels = FALSE)
@@ -629,7 +629,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       )
 
       if (is.null(core_list) || length(core_list) == 0) {
-        return(plotly::plot_ly() %>% plotly::layout(
+        return(plotly::plot_ly() |> plotly::layout(
           title = list(text = "No core genes found", font = list(size = 14)),
           xaxis = list(showgrid = FALSE), yaxis = list(showgrid = FALSE)
         ))
@@ -637,7 +637,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
 
       valid_pathways <- names(core_list)[vapply(core_list, function(x) length(x) > 0, logical(1))]
       if (length(valid_pathways) == 0) {
-        return(plotly::plot_ly() %>% plotly::layout(
+        return(plotly::plot_ly() |> plotly::layout(
           title = list(text = "All pathways have empty core genes", font = list(size = 14)),
           xaxis = list(showgrid = FALSE), yaxis = list(showgrid = FALSE)
         ))
@@ -659,7 +659,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       )
 
       if (is.null(edge_list) || nrow(edge_list) == 0) {
-        return(plotly::plot_ly() %>% plotly::layout(
+        return(plotly::plot_ly() |> plotly::layout(
           title = list(text = paste0("No edges found (min_shared=", min_shared, ")"), font = list(size = 14), x = 0.5),
           xaxis = list(showgrid = FALSE, showticklabels = FALSE),
           yaxis = list(showgrid = FALSE, showticklabels = FALSE)
@@ -701,7 +701,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       )
 
       if (is.null(g)) {
-        return(plotly::plot_ly() %>% plotly::layout(
+        return(plotly::plot_ly() |> plotly::layout(
           title = list(text = "Graph construction failed", font = list(size = 14)),
           xaxis = list(showgrid = FALSE), yaxis = list(showgrid = FALSE)
         ))
@@ -732,7 +732,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       )
 
       if (is.null(layout_coords)) {
-        return(plotly::plot_ly() %>% plotly::layout(
+        return(plotly::plot_ly() |> plotly::layout(
           title = list(text = "Layout calculation failed", font = list(size = 14)),
           xaxis = list(showgrid = FALSE), yaxis = list(showgrid = FALSE)
         ))
@@ -791,7 +791,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
           edge_width <- edge_list$edge_width_normal[i]
         }
 
-        p <- p %>% plotly::add_trace(
+        p <- p |> plotly::add_trace(
           type = "scatter", mode = "lines",
           x = c(from_node$x, to_node$x, NA),
           y = c(from_node$y, to_node$y, NA),
@@ -837,7 +837,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
 
         hover_bg <- if (is_selected) "#FF8C00" else "#333"
 
-        p <- p %>% plotly::add_trace(
+        p <- p |> plotly::add_trace(
           type = "scatter", mode = "markers",
           x = c(mean(c(from_node$x, to_node$x))),
           y = c(mean(c(from_node$y, to_node$y))),
@@ -863,7 +863,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       node_sizes <- ifelse(node_df$name %in% sel_nodes, 25, 15)
       node_border <- ifelse(node_df$name %in% sel_nodes, 4, 1.5)
 
-      p <- p %>% plotly::add_trace(
+      p <- p |> plotly::add_trace(
         type = "scatter", mode = "markers",
         x = node_df$x, y = node_df$y,
         marker = list(
@@ -887,7 +887,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       label_color <- ifelse(node_df$name %in% sel_nodes, "#FF6600", "#333")
       label_bold <- ifelse(node_df$name %in% sel_nodes, "bold", "normal")
 
-      p <- p %>% plotly::add_trace(
+      p <- p |> plotly::add_trace(
         type = "scatter", mode = "text",
         x = node_df$x, y = node_df$y + 0.12,
         text = node_df$name,
@@ -899,7 +899,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       x_range <- c(min(layout_coords[, 1]) - 0.5, max(layout_coords[, 1]) + 0.5)
       y_range <- c(min(layout_coords[, 2]) - 0.5, max(layout_coords[, 2]) + 0.5)
 
-      p %>%
+      p |>
         plotly::layout(
           title = list(text = title_text, font = list(size = 12), x = 0.5, xanchor = "center"),
           xaxis = list(
@@ -927,7 +927,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
           paper_bgcolor = "rgba(0,0,0,0)", # Transparent background
           plot_bgcolor = "rgba(0,0,0,0)", # Transparent canvas
           autosize = TRUE # <- Key: auto-resize
-        ) %>%
+        ) |>
         plotly::config(
           displayModeBar = TRUE,
           displaylogo = FALSE,

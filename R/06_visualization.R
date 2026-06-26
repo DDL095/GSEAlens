@@ -3,8 +3,6 @@
 #' @title GSEA Visualization and Report Generation
 #' @description Provides static plotting functions and interactive HTML report generation capabilities.
 #' @name visualization
-#' @return The pipe operator `%>%` from magrittr, enabling function chaining.
-
 NULL
 
 # Section: Visualization and Report Generation ----
@@ -12,8 +10,6 @@ NULL
 #' @title GSEA Visualization and Report Generation
 #' @description Provides static plotting functions and interactive HTML report generation capabilities.
 #' @name visualization
-#' @return The pipe operator `%>%` from magrittr, enabling function chaining.
-
 NULL
 
 #' @title Plot Directional GSEA
@@ -36,8 +32,9 @@ NULL
 #' @export
 
 #' @examples
-#' if(interactive()){
-#' # Placeholder for function example
+#' \dontrun{
+#' plot_directional_gsea(directional_gsea_obj,
+#'                       target_pathways = c("HALLMARK_INFLAMMATORY_RESPONSE"))
 #' }
 plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
                                   main_title = NULL, subPlot = 3,
@@ -185,8 +182,8 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
 #' @export
 
 #' @examples
-#' if(interactive()){
-#' # Placeholder for function example
+#' \dontrun{
+#' generate_gsea_html_report(res_obj, output_base_dir = tempdir())
 #' }
 generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
                                       p_adjust_cutoff = 1, top_plots = c(15, 15),
@@ -223,14 +220,14 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
     dict_cols <- colnames(meta$meta_dict)
     df_cols <- colnames(df)
     cols_to_add <- setdiff(dict_cols, df_cols)
-    safe_dict <- meta$meta_dict %>% dplyr::select(ID, dplyr::any_of(cols_to_add))
-    df_clean <- df %>% dplyr::left_join(safe_dict, by = "ID")
+    safe_dict <- meta$meta_dict |> dplyr::select(ID, dplyr::any_of(cols_to_add))
+    df_clean <- df |> dplyr::left_join(safe_dict, by = "ID")
   } else {
     df_clean <- df
   }
 
-  df_clean <- df_clean %>%
-    dplyr::filter(p.adjust <= p_adjust_cutoff) %>%
+  df_clean <- df_clean |>
+    dplyr::filter(p.adjust <= p_adjust_cutoff) |>
     dplyr::mutate(
       Enriched_In = factor(ifelse(NES > 0, meta$left_group, meta$right_group),
         levels = c(meta$left_group, meta$right_group)
@@ -245,8 +242,8 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
         sprintf("<b>%s</b>", ID)
       },
       Description = if ("Description.y" %in% names(.)) Description.y else Description
-    ) %>%
-    dplyr::arrange(desc(abs(NES))) %>%
+    ) |>
+    dplyr::arrange(desc(abs(NES))) |>
     dplyr::mutate(Rank = dplyr::row_number())
 
   if (nrow(df_clean) == 0) {
@@ -295,15 +292,15 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
   }
 
   # 4. 閬嶅巻鐢熸垚瀛愬浘涓庤鎯呴〉
-  pos_plot_ids <- df_clean %>%
-    dplyr::filter(NES > 0) %>%
-    dplyr::arrange(desc(NES)) %>%
-    head(top_plots[1]) %>%
+  pos_plot_ids <- df_clean |>
+    dplyr::filter(NES > 0) |>
+    dplyr::arrange(desc(NES)) |>
+    head(top_plots[1]) |>
     dplyr::pull(ID)
-  neg_plot_ids <- df_clean %>%
-    dplyr::filter(NES < 0) %>%
-    dplyr::arrange(NES) %>%
-    head(top_plots[2]) %>%
+  neg_plot_ids <- df_clean |>
+    dplyr::filter(NES < 0) |>
+    dplyr::arrange(NES) |>
+    head(top_plots[2]) |>
     dplyr::pull(ID)
   target_plot_ids <- c(pos_plot_ids, neg_plot_ids)
 
@@ -436,7 +433,7 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
   df_clean$Detail_Page <- detail_links
 
   # 5. 鐢熸垚涓讳氦浜掑紡鏁版嵁琛?
-  display_df <- df_clean %>%
+  display_df <- df_clean |>
     dplyr::select(Rank, Detail_Page, Pathway = Pathway_Link, Collection = Display_Collection, Enriched_In, Size = setSize, NES, pvalue, p.adjust, Description)
 
   dt_table <- DT::datatable(
@@ -448,10 +445,10 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
     ),
     extensions = c("Buttons", "Scroller"),
     options = list(dom = "Bfrtip", deferRender = TRUE, scrollY = 600, scroller = TRUE, pageLength = -1, buttons = c("copy", "csv", "excel"), autoWidth = TRUE)
-  ) %>%
-    DT::formatRound(columns = c("NES"), digits = 3) %>%
-    DT::formatSignif(columns = c("pvalue", "p.adjust"), digits = 4) %>%
-    DT::formatStyle("Enriched_In", backgroundColor = DT::styleEqual(c(meta$left_group, meta$right_group), c("#fee0d2", "#deebf7"))) %>%
+  ) |>
+    DT::formatRound(columns = c("NES"), digits = 3) |>
+    DT::formatSignif(columns = c("pvalue", "p.adjust"), digits = 4) |>
+    DT::formatStyle("Enriched_In", backgroundColor = DT::styleEqual(c(meta$left_group, meta$right_group), c("#fee0d2", "#deebf7"))) |>
     DT::formatStyle("NES", color = DT::styleInterval(0, c("blue", "red")), fontWeight = "bold")
 
   old_wd <- getwd()

@@ -9,8 +9,11 @@
 #' @export
 
 #' @examples
-#' if(interactive()){
-#' # Placeholder for function example
+#' \dontrun{
+#' code <- generate_pathway_plot_code(GSEAlens_res = gsea_res,
+#'                                    contrast_id = "Treat_vs_Control",
+#'                                    target_pathways = c("HALLMARK_INFLAMMATORY_RESPONSE"))
+#' cat(code)
 #' }
 generate_pathway_plot_code <- function(GSEAlens_res,
                                        contrast_id,
@@ -221,8 +224,11 @@ print(GSEAlens_volcano_plot)
 #' @export
 
 #' @examples
-#' if(interactive()){
-#' # Placeholder for function example
+#' \dontrun{
+#' code <- generate_joint_canvas_code(GSEAlens_res = gsea_res,
+#'                                    contrast_ids = c("A_vs_B"),
+#'                                    target_pathways = c("HALLMARK_INFLAMMATORY_RESPONSE"))
+#' cat(code)
 #' }
 generate_joint_canvas_code <- function(GSEAlens_res,
                                        contrast_ids,
@@ -337,17 +343,15 @@ print(GSEAlens_combined)
 #'
 #' @examples
 #' \dontrun{
-#' if (interactive()) {
-#'   # Show the code in the Shiny app via the "Export Boxplot Data Code" button
-#'   # in the Quadrant module (panel 4).
-#'   code <- generate_boxplot_data_code(
-#'     GSEAlens_res = gsea_res,
-#'     contrast_id = "Treat_vs_Control",
-#'     gene_symbol = "GAPDH",
-#'     expr_type   = "logcpm"
-#'   )
-#'   cat(code)
-#' }
+#' # Show the code in the Shiny app via the "Export Boxplot Data Code" button
+#' # in the Quadrant module (panel 4).
+#' code <- generate_boxplot_data_code(
+#'   GSEAlens_res = gsea_res,
+#'   contrast_id = "Treat_vs_Control",
+#'   gene_symbol = "GAPDH",
+#'   expr_type   = "logcpm"
+#' )
+#' cat(code)
 #' }
 generate_boxplot_data_code <- function(GSEAlens_res,
                                        contrast_id,

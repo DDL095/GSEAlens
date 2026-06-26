@@ -1,7 +1,7 @@
 Package: GSEAlens
 Type: Package
 Title: Gene Set Enrichment Analysis Interactive Explorer
-Version: 0.99.5
+Version: 0.99.6
 Authors@R: person("Dudali", role = c("aut", "cre"), email = "sealgod@qq.com", comment = c(ORCID = "0000-0002-1825-0097"))
 Description: Interactive GSEA exploration and visualization platform supporting both Limma-Voom and DESeq2 backends.
 License: MIT + file LICENSE
@@ -17,7 +17,6 @@ Imports:
     enrichplot,
     enrichit,
     grDevices,
-    magrittr,
     graphics,
     methods,
     shiny,
@@ -54,6 +53,7 @@ Imports:
     shinyjs,
     BiocParallel
 Suggests: testthat (>= 3.0.0),
+    BiocStyle,
     knitr,
     rmarkdown,
     shinytest2,

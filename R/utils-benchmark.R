@@ -7,8 +7,7 @@
 #' @return A aligned data frame (containing unified time axis fields such as relative_sec)
 #' @noRd
 #' @examples
-#'
-#' if(interactive()){
+#' \dontrun{
 #' res <- readRDS("GSEA_Capsule_[...].rds")
 #' aligned <- align_benchmark_data(res, "system_monitor.csv")
 #' plot(aligned$relative_sec, aligned$rss_mb, type = "l")
@@ -75,7 +74,7 @@ align_benchmark_data <- function(gsea_res, monitor_csv) {
 #' @return A ggplot object
 #' @export
 #' @examples
-#' if(interactive()){
+#' \dontrun{
 #' data <- align_benchmark_data(gsea_res, "system_monitor.csv")
 #' plot_gsea_memory(data)
 #' plot_gsea_memory(data, highlight_phases = FALSE)
@@ -132,7 +131,7 @@ plot_gsea_memory <- function(aligned_data, highlight_phases = TRUE) {
 #' @noRd
 #' @exportS3Method
 #' @examples
-#' if(interactive()){
+#' \dontrun{
 #' data <- align_benchmark_data(gsea_res, "system_monitor.csv")
 #' print(data)
 #' }
@@ -180,7 +179,7 @@ print.GseaBenchmarkAligned <- function(x, ...) {
 #' @return A comparison data frame with columns: run_name, workers, duration_sec, mem_peak_mb (if available), mem_avg_mb (if available)
 #' @noRd
 #' @examples
-#' if(interactive()){
+#' \dontrun{
 #' results <- analyze_scalability(
 #'   gsea_res_list = list("1_core" = res1, "4_core" = res4),
 #'   monitor_csv_list = c("1_core" = "monitor_1.csv", "4_core" = "monitor_4.csv")

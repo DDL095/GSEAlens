@@ -7,7 +7,7 @@
 #' @export
 #'
 #' @examples
-#' if(interactive()){
+#' \dontrun{
 #' core_genes <- get_core_genes_for_pathway(gsea_res, "HALLMARK_OXIDATIVE_PHOSPHORYLATION")
 #' }
 get_core_genes_for_pathway <- function(gsea_res_obj, pathway_id) {
@@ -74,8 +74,8 @@ get_core_genes_for_pathway <- function(gsea_res_obj, pathway_id) {
 #'
 
 #' @examples
-#' if(interactive()){
-#' # Placeholder for function example
+#' \dontrun{
+#' genes <- get_core_genes_list(gsea_task, pathway_ids)
 #' }
 get_core_genes_list <- function(gsea_task_obj, pathway_ids) {
   if (!inherits(gsea_task_obj, "GseaTask")) {
@@ -109,9 +109,7 @@ get_core_genes_list <- function(gsea_task_obj, pathway_ids) {
 #'
 
 #' @examples
-#' if(interactive()){
-#' # Placeholder for function example
-#' }
+#' ratio <- calculate_overlap_ratio(c("GAPDH", "TP53", "MYC"), c("TP53", "MYC", "EGFR"))
 calculate_overlap_ratio <- function(pathway_genes, de_genes, ratio_mode = c("ora", "leading")) {
   ratio_mode <- match.arg(ratio_mode)
 
@@ -146,8 +144,8 @@ calculate_overlap_ratio <- function(pathway_genes, de_genes, ratio_mode = c("ora
 #'
 
 #' @examples
-#' if(interactive()){
-#' # Placeholder for function example
+#' \dontrun{
+#' genes <- get_term_genes(gsea_res, "HALLMARK_INFLAMMATORY_RESPONSE")
 #' }
 get_term_genes <- function(gsea_res, pathway_id) {
   term2gene <- gsea_res$geneset_info$term2gene
@@ -176,24 +174,28 @@ get_term_genes <- function(gsea_res, pathway_id) {
 #'
 
 #' @examples
-#' if(interactive()){
-#' # Placeholder for function example
-#' }
+#' workers <- validate_param(4, default = 2, min_val = 1, max_val = 8, param_name = "workers")
 validate_param <- function(value, default, min_val = 1, max_val = NULL, param_name = "parameter") {
   # 澶勭悊NULL鎴朜A
-  if (is.null(value) || is.na(value)) {
+  if (is.null(value) || (length(value) == 1 && is.na(value))) {
     message(sprintf("[Param Check] %s is NULL/NA, fallback to default: %s", param_name, default))
     return(default)
   }
 
-  # suppressWarnings: silence NAs introduced by silent coercion of non-numeric input
-  val <- suppressWarnings(as.numeric(value))
-  if (is.na(val)) {
-    message(sprintf("[Param Check] %s conversion failed, fallback to: %s", param_name, default))
-    return(default)
+  # 优先 is.numeric 判断，避免触发 as.numeric 的强制转换警告
+  # 仅对非 numeric 输入（如字符串）才走 suppressWarnings 兜底分支
+  val <- if (is.numeric(value)) {
+    as.numeric(value[1])
+  } else {
+    parsed <- suppressWarnings(as.numeric(value[1]))
+    if (is.na(parsed)) {
+      message(sprintf("[Param Check] %s conversion failed, fallback to: %s", param_name, default))
+      return(default)
+    }
+    parsed
   }
 
-  # 妫€鏌ヨ寖鍥?
+  # 检查范围
   if (val < min_val) {
     message(sprintf("[Param Check] %s=%s < min(%s), fallback to: %s", param_name, val, min_val, default))
     return(default)
@@ -229,8 +231,8 @@ validate_param <- function(value, default, min_val = 1, max_val = NULL, param_na
 #'
 
 #' @examples
-#' if(interactive()){
-#' # Placeholder for function example
+#' \dontrun{
+#' edges <- build_edge_list_safely(core_genes_list)
 #' }
 build_edge_list_safely <- function(core_genes_list, min_shared_genes = 2) {
   # ==== 闃插尽鎬ф鏌?====

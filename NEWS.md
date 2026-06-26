@@ -1,5 +1,14 @@
 <!-- NEWS.md is maintained by https://cynkra.github.io/fledge, do not edit -->
 
+# GSEAlens 0.99.6
+
+Bioconductor review Phase 3 partial: code quality optimizations addressing reviewer comments on pipe operator, signal conditions, and `suppressWarnings`.
+
+- Replace all magrittr `%>%` pipe operators with native R pipe `|>` across the entire R/ directory (~90 occurrences in 10 files). Remove the `magrittr` import from DESCRIPTION, drop `export("%>%")` and `importFrom(magrittr, "%>%")` from NAMESPACE, and delete `R/utils-pipe.R` and `man/pipe.Rd`. This eliminates an unnecessary dependency and aligns with modern R (>= 4.1) best practices.
+- Restructure error and warning signals to use `rlang::abort()` / `rlang::warn()` with structured condition classes throughout `R/00_class_validations.R` (9 signals) and `R/utils-accessors.R` (30 signals). Each signal now carries a `.class` suffix (e.g. `"GSEAlens_limma_intercept_detected"`, `"GSEAlens_contrast_not_found"`) for programmatic handling via `tryCatch()`. Removed redundant `[SampleMeta]`, `[GeneDetector]`, `[SymbolMap]`, `[Limma Warning]`, `[DESeq2 Warning]` prefixes from warning text; these categories are now expressed through the condition class instead.
+- Refactor `validate_param()` in `R/utils-core-genes.R` to avoid unnecessary `suppressWarnings()` when input is already numeric. The function now checks `is.numeric(value)` first and only falls back to `suppressWarnings(as.numeric(...))` for string inputs, removing the silent-coercion warning suppression for the common numeric case.
+- Vignette reshaping (continued from 0.99.5): split English/Chinese vignettes into a main `GSEAlens.Rmd` / `GSEAlens-vignette-zh.Rmd` plus supplementary preprocessing vignettes (`GSEAlens-preprocessing.Rmd` / `GSEAlens-preprocessing-zh.Rmd`). Main vignettes now focus on GSEAlens core functionality and add a detailed Shiny app exploration section. All vignettes switched to `BiocStyle::html_document` output, `@`-slot access replaced with `SummarizedExperiment` accessors, and `batch_calc_gsea()` examples write to `tempdir()`.
+
 # GSEAlens 0.99.5
 
 - Fix "plotting error: missing value where TRUE/FALSE needed" when switching gene set subgroup (e.g. H -> C2/C5) with stale pathway selections in Joint Plot and Multi-Plot modules. Add defensive guard in `plot_directional_gsea()` to validate pathway IDs against the active GSEA result, and add null check in `.gs_info()` for missing gene sets.

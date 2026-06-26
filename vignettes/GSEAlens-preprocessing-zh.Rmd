@@ -1,0 +1,182 @@
+---
+title: "GSEAlens：从 limma-voom 和 DESeq2 流程准备输入数据"
+author: "Dudali"
+date: "`r Sys.Date()`"
+output:
+  BiocStyle::html_document:
+    toc_float: true
+    number_sections: true
+vignette: >
+  %\VignetteIndexEntry{GSEAlens：准备输入数据}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+# 简介
+
+本 vignette 描述如何准备 `r Biocpkg("GSEAlens")` 所需的输入对象。**GSEAlens 本身
+不执行差异表达分析（DEG）**；它接收来自 `r Biocpkg("limma")` 的已拟合 `MArrayLM`
+对象或来自 `r Biocpkg("DESeq2")` 的 `DESeqDataSet` 对象。以下步骤基于这些包的标准
+工作流程，此处提供是为了完整性。
+
+完整的 DEG 工作流程文档请参阅：
+
+- `r Biocpkg("limma")` 和 `r Biocpkg("edgeR")` 的 vignette（limma-voom 流程）
+- `r Biocpkg("DESeq2")` 的 vignette
+- `r Biocpkg("airway")` 包提供示例数据集
+
+# 示例数据
+
+我们使用 `r Biocpkg("airway")` 数据集（4 vs 4 样本，dex 处理）。
+
+```{r setup-environment, results='hide'}
+library(airway)
+data(airway)
+expression_data <- airway
+```
+
+# limma-voom 流程
+
+GSEAlens 要求**无截距设计**（`~0+group`），使列名直接对应组别名称，从而精确构建
+对比。
+
+```{r limma-voom-data-preparation}
+library(edgeR)
+library(limma)
+group_level <- expression_data$dex
+design <- model.matrix(~0+group_level)
+colnames(design) <- levels(group_level)
+compare_end <- combn(levels(group_level), 2, simplify = FALSE)
+contrast_strings <- sapply(compare_end, function(x) paste(x[2], x[1], sep = " - "))
+contrast_matrix <- makeContrasts(contrasts = contrast_strings, levels = design)
+
+genes_df <- data.frame(
+  gene_id = SummarizedExperiment::rowData(expression_data)$gene_id,
+  symbol = SummarizedExperiment::rowData(expression_data)$symbol,
+  gene_biotype = SummarizedExperiment::rowData(expression_data)$gene_biotype
+)
+genes_df$Length <- SummarizedExperiment::rowData(expression_data)$gene_seq_end -
+                   SummarizedExperiment::rowData(expression_data)$gene_seq_start + 1
+
+gsea_limma_voom_data <- edgeR::DGEList(
+  counts = SummarizedExperiment::assay(expression_data, "counts"),
+  genes = genes_df,
+  norm.factors = NULL,
+  group = group_level,
+  remove.zeros = TRUE
+)
+
+# 过滤低表达基因，保留蛋白质编码 RNA，去重复 symbol
+total_counts <- edgeR::cpm(gsea_limma_voom_data) |> rowSums()
+dup_symbols <- gsea_limma_voom_data$genes$symbol[duplicated(gsea_limma_voom_data$genes$symbol)]
+keep <- rep(TRUE, nrow(gsea_limma_voom_data))
+for (gene in dup_symbols) {
+  idx <- which(gsea_limma_voom_data$genes$symbol == gene)
+  best_idx <- idx[which.max(total_counts[idx])]
+  remove_idx <- idx[idx != best_idx]
+  keep[remove_idx] <- FALSE
+}
+gsea_limma_voom_data <- gsea_limma_voom_data[keep, ]
+rownames(gsea_limma_voom_data) <- gsea_limma_voom_data$genes$symbol
+
+keep_biotype <- gsea_limma_voom_data$genes$gene_biotype == "protein_coding"
+gsea_limma_voom_data <- gsea_limma_voom_data[keep_biotype, ]
+gsea_limma_voom_data <- edgeR::normLibSizes(gsea_limma_voom_data, method = "TMM")
+isexpr <- rowSums(edgeR::cpm(gsea_limma_voom_data) > 1) >= 3
+gsea_limma_voom_data <- gsea_limma_voom_data[isexpr, ]
+```
+
+进行 limma-voom 拟合，获取 `fit` 对象。
+
+```{r limma-voom-processing}
+VoomOutPut <- voom(gsea_limma_voom_data, design)
+fit <- lmFit(object = VoomOutPut, design = design) |>
+  contrasts.fit(contrasts = contrast_matrix) |>
+  eBayes()
+```
+
+# DESeq2 流程（SummarizedExperiment 输入）
+
+```{r keep-protein-coding-rna}
+library("DESeq2")
+dds_se <- DESeqDataSet(expression_data, design = ~ cell + dex)
+gene_biotypes <- SummarizedExperiment::rowData(dds_se)$gene_biotype
+keep_protein_coding <- gene_biotypes == "protein_coding"
+dds_se <- dds_se[keep_protein_coding, ]
+```
+
+```{r remove-low-expression-rna}
+smallestGroupSize <- 3
+keep <- rowSums(DESeq2::counts(dds_se) >= 10) >= smallestGroupSize
+dds_se <- dds_se[keep, ]
+rownames(dds_se) <- SummarizedExperiment::rowData(dds_se)$gene_name
+
+total_counts <- rowSums(SummarizedExperiment::assay(dds_se))
+dup_genes <- rownames(dds_se)[duplicated(rownames(dds_se))]
+keep <- rep(TRUE, nrow(dds_se))
+for (gene in dup_genes) {
+  idx <- which(rownames(dds_se) == gene)
+  best_idx <- idx[which.max(total_counts[idx])]
+  remove_idx <- idx[idx != best_idx]
+  keep[remove_idx] <- FALSE
+}
+dds_se <- dds_se[keep, ]
+```
+
+```{r run-deseq2, results='hide'}
+dds_se <- DESeq(dds_se)
+```
+
+# DESeq2 流程（Count Matrix 输入）
+
+```{r matrix-modification}
+DDS_rawdata <- expression_data
+gene_biotypes <- SummarizedExperiment::rowData(DDS_rawdata)$gene_biotype
+keep_protein_coding <- gene_biotypes == "protein_coding"
+DDS_rawdata <- DDS_rawdata[keep_protein_coding, ]
+
+smallestGroupSize <- 3
+keep_epd <- rowSums(SummarizedExperiment::assay(DDS_rawdata, "counts") >= 10) >= smallestGroupSize
+DDS_rawdata <- DDS_rawdata[keep_epd, ]
+rownames(DDS_rawdata) <- SummarizedExperiment::rowData(DDS_rawdata)$gene_name
+
+total_counts <- rowSums(SummarizedExperiment::assay(DDS_rawdata))
+keep_name <- rep(TRUE, nrow(DDS_rawdata))
+dup_genes <- rownames(DDS_rawdata)[duplicated(rownames(DDS_rawdata))]
+for (gene in dup_genes) {
+  idx <- which(rownames(DDS_rawdata) == gene)
+  best_idx <- idx[which.max(total_counts[idx])]
+  remove_idx <- idx[idx != best_idx]
+  keep_name[remove_idx] <- FALSE
+}
+DDS_rawdata <- DDS_rawdata[keep_name, ]
+```
+
+```{r matrix-extraction}
+cts <- SummarizedExperiment::assay(DDS_rawdata, "counts")
+coldata <- as.data.frame(SummarizedExperiment::colData(DDS_rawdata))
+coldata <- coldata[, c("cell", "dex")]
+coldata$cell <- factor(coldata$cell)
+coldata$dex <- factor(coldata$dex)
+```
+
+```{r create-dds-object, results='hide'}
+dds <- DESeqDataSetFromMatrix(countData = cts, colData = coldata, design = ~ dex)
+dds <- DESeq(dds)
+```
+
+# 下一步
+
+`fit`、`dds_se` 和 `dds` 准备就绪后，返回主 vignette：
+
+```r
+vignette("GSEAlens")
+```
+
+```{r sessionInfo}
+sessionInfo()
+```

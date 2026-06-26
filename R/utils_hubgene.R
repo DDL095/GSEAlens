@@ -27,8 +27,8 @@
 #' @export
 
 #' @examples
-#' if(interactive()){
-#' # Placeholder for function example
+#' \dontrun{
+#' network <- build_hubgene_network(gsea_task, pathway_ids)
 #' }
 build_hubgene_network <- function(gsea_task, pathway_ids,
                                   min_hub_degree = 2,
@@ -161,8 +161,8 @@ build_hubgene_network <- function(gsea_task, pathway_ids,
 #' @export
 
 #' @examples
-#' if(interactive()){
-#' # Placeholder for function example
+#' \dontrun{
+#' hubs <- extract_hub_genes(gsea_task, pathway_ids)
 #' }
 extract_hub_genes <- function(gsea_task, pathway_ids, min_degree = 2, de_df = NULL) {
   # Validate inputs
@@ -362,8 +362,8 @@ extract_hub_genes <- function(gsea_task, pathway_ids, min_degree = 2, de_df = NU
 #' @export
 
 #' @examples
-#' if(interactive()){
-#' # Placeholder for function example
+#' \dontrun{
+#' nodes <- prepare_hubgene_nodes(network_data)
 #' }
 prepare_hubgene_nodes <- function(network_data, layout = "fr", seed = 42) {
   if (is.null(network_data) || is.null(network_data$nodes)) {
@@ -455,8 +455,8 @@ prepare_hubgene_nodes <- function(network_data, layout = "fr", seed = 42) {
 #' @export
 
 #' @examples
-#' if(interactive()){
-#' # Placeholder for function example
+#' \dontrun{
+#' colored <- color_by_direction(node_data)
 #' }
 color_by_direction <- function(node_data, color_mode = "logFC",
                                left_group = "A", right_group = "B") {
@@ -548,8 +548,8 @@ color_by_direction <- function(node_data, color_mode = "logFC",
 #' @export
 
 #' @examples
-#' if(interactive()){
-#' # Placeholder for function example
+#' \dontrun{
+#' hover <- generate_hubgene_hover_text(node, "gene")
 #' }
 generate_hubgene_hover_text <- function(node, node_type,
                                         left_group = "A",
@@ -667,9 +667,7 @@ generate_hubgene_hover_text <- function(node, node_type,
 #' @export
 
 #' @examples
-#' if(interactive()){
-#' # get_hubgene_legend example
-#' }
+#' legend <- get_hubgene_legend("Control", "Treatment")
 get_hubgene_legend <- function(left_group = "A", right_group = "B") {
   list(
     pathway_up = "#E41A1C",

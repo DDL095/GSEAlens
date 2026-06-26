@@ -328,7 +328,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
         hoverinfo = "text",
         key = ~ID,
         source = ns("pathway_volcano")
-      ) %>%
+      ) |>
         plotly::layout(
           title = list(
             text = sprintf(
@@ -433,7 +433,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
         marker = list(color = ~Color, size = ~Size, opacity = 0.8, line = list(width = 0)),
         text = ~Gene,
         hoverinfo = "text"
-      ) %>%
+      ) |>
         plotly::layout(
           xaxis = list(title = "Gene Rank"),
           yaxis = list(title = "Ranking Metric (Stat)"),
@@ -624,7 +624,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
       # Layer 1: NS (灰色，最底层)
       if (nrow(df_ns) > 0) {
-        p <- p %>% plotly::add_trace(
+        p <- p |> plotly::add_trace(
           data = df_ns,
           x = df_ns$x_axis,
           y = df_ns$y_axis,
@@ -641,7 +641,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
       # Layer 2: UP (红色)
       if (nrow(df_up) > 0) {
-        p <- p %>% plotly::add_trace(
+        p <- p |> plotly::add_trace(
           data = df_up,
           x = df_up$x_axis,
           y = df_up$y_axis,
@@ -658,7 +658,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
       # Layer 3: DOWN (蓝色)
       if (nrow(df_down) > 0) {
-        p <- p %>% plotly::add_trace(
+        p <- p |> plotly::add_trace(
           data = df_down,
           x = df_down$x_axis,
           y = df_down$y_axis,
@@ -675,7 +675,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
       # Layer 4: 仅Pathway (橙色)
       if (nrow(df_pathway) > 0) {
-        p <- p %>% plotly::add_trace(
+        p <- p |> plotly::add_trace(
           data = df_pathway,
           x = df_pathway$x_axis,
           y = df_pathway$y_axis,
@@ -692,7 +692,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
       # Layer 5: 仅User (绿色)
       if (nrow(df_user) > 0) {
-        p <- p %>% plotly::add_trace(
+        p <- p |> plotly::add_trace(
           data = df_user,
           x = df_user$x_axis,
           y = df_user$y_axis,
@@ -709,7 +709,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
       # Layer 6: Both (紫色，最顶层)
       if (nrow(df_both) > 0) {
-        p <- p %>% plotly::add_trace(
+        p <- p |> plotly::add_trace(
           data = df_both,
           x = df_both$x_axis,
           y = df_both$y_axis,
@@ -725,7 +725,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       }
 
       # 布局设置
-      p <- p %>%
+      p <- p |>
         plotly::layout(
           title = list(text = title_text, font = list(size = 14), x = 0.5, xanchor = "center"),
           xaxis = list(title = "logFC", zeroline = FALSE, showgrid = TRUE, gridcolor = "lightgray"),
@@ -908,7 +908,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       )
 
       # Up/Down 列样式
-      dt <- dt %>% DT::formatStyle(
+      dt <- dt |> DT::formatStyle(
         columns = "UpDown",
         backgroundColor = DT::styleEqual(c("UP", "DOWN", "-"), c("#FFCDD2", "#BBDEFB", "transparent")),
         color = DT::styleEqual(c("UP", "DOWN", "-"), c(COLOR_LEFT, COLOR_RIGHT, "#666")),
@@ -916,20 +916,20 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       )
 
       # Significant 列样式
-      dt <- dt %>% DT::formatStyle(
+      dt <- dt |> DT::formatStyle(
         columns = "Significant",
         color = DT::styleEqual(c("upreg", "downreg", "ns"), c("#E41A1C", "#377EB8", "#999999")),
         fontWeight = "bold"
       )
 
       # High In 列样式
-      dt <- dt %>% DT::formatStyle(
+      dt <- dt |> DT::formatStyle(
         columns = "HighIn",
         color = DT::styleEqual(c(left_grp, right_grp, "-"), c("#E41A1C", "#377EB8", "#999999"))
       )
 
       # In Pathway 列样式
-      dt <- dt %>% DT::formatStyle(
+      dt <- dt |> DT::formatStyle(
         columns = "IsPathway",
         backgroundColor = DT::styleEqual(c("Yes", "No"), c("#9C27B0", "transparent")),
         color = DT::styleEqual(c("Yes", "No"), c("#FFFFFF", "#999999")),
@@ -937,14 +937,14 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       )
 
       # P-value 列样式
-      dt <- dt %>% DT::formatStyle(
+      dt <- dt |> DT::formatStyle(
         columns = "Pvalue",
         color = DT::styleInterval(0.001, c("red", "black")),
         fontWeight = DT::styleInterval(0.05, c("bold", "normal"))
       )
 
       # Adj P-value 列样式
-      dt <- dt %>% DT::formatStyle(
+      dt <- dt |> DT::formatStyle(
         columns = "Padjust",
         color = DT::styleInterval(0.001, c("red", "black")),
         fontWeight = DT::styleInterval(0.05, c("bold", "normal"))
@@ -999,7 +999,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       current_gene <- current_boxplot_gene()
 
       if (is.null(current_gene)) {
-        return(plotly::plot_ly() %>% plotly::layout(
+        return(plotly::plot_ly() |> plotly::layout(
           title = list(text = "Click gene in DE volcano or table to view expression", font = list(size = 14))
         ))
       }
@@ -1013,7 +1013,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
           sample_meta <- get_sample_meta(gsea_res)
 
           if (is.null(expr_mat) || is.null(sample_meta)) {
-            return(plotly::plot_ly() %>% plotly::layout(title = "Expression matrix not available"))
+            return(plotly::plot_ly() |> plotly::layout(title = "Expression matrix not available"))
           }
 
           target_gene_upper <- toupper(current_gene)
@@ -1037,7 +1037,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
           }
 
           if (length(match_idx) == 0 || is.na(match_idx)) {
-            return(plotly::plot_ly() %>% plotly::layout(
+            return(plotly::plot_ly() |> plotly::layout(
               title = sprintf("Gene '%s' not found", current_gene)
             ))
           }
@@ -1059,7 +1059,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
           plot_data <- plot_data[!is.na(plot_data$Group), ]
           if (nrow(plot_data) == 0) {
-            return(plotly::plot_ly() %>% plotly::layout(title = "No valid group data"))
+            return(plotly::plot_ly() |> plotly::layout(title = "No valid group data"))
           }
 
           current_confirmed_order <- boxplot_order_ref()
@@ -1143,13 +1143,13 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
           }
 
           ply <- plotly::ggplotly(p, tooltip = "text")
-          ply %>% plotly::layout(
+          ply |> plotly::layout(
             xaxis = list(categoryorder = "array", categoryarray = x_categories, title = ""),
             dragmode = FALSE
           )
         },
         error = function(e) {
-          return(plotly::plot_ly() %>% plotly::layout(
+          return(plotly::plot_ly() |> plotly::layout(
             title = sprintf("Error: %s", e$message)
           ))
         }

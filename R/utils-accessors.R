@@ -29,7 +29,7 @@ NULL
 #' @export
 #'
 #' @examples
-#' if(interactive()){
+#' \dontrun{
 #' # Get default expression matrix
 #' expr <- get_expr_matrix(gsea_res)
 #'
@@ -101,7 +101,7 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
   gene_lengths <- expr_bundle$gene_meta$length
 
   if (is.null(raw_counts)) {
-    warning("Raw count matrix not available in object; cannot compute expression values dynamically.")
+    rlang::warn("Raw count matrix not available; cannot compute expression values dynamically.", .class = "GSEAlens_no_raw_counts")
     return(NULL)
   }
 
@@ -132,7 +132,7 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
     },
     "fpkm" = {
       if (is.null(gene_lengths)) {
-        warning("FPKM calculation requires gene length information (gene_meta$length); falling back to CPM.")
+        rlang::warn("FPKM calculation requires gene length information (gene_meta$length); falling back to CPM.", .class = "GSEAlens_fpkm_no_length")
         t(t(raw_counts) / colSums(raw_counts)) * 1e6
       } else {
         gene_lengths_kb <- gene_lengths / 1000
@@ -142,7 +142,7 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
     },
     "logfpkm" = {
       if (is.null(gene_lengths)) {
-        warning("logFPKM calculation requires gene length information; falling back to logCPM.")
+        rlang::warn("logFPKM calculation requires gene length information; falling back to logCPM.", .class = "GSEAlens_logfpkm_no_length")
         log2(t(t(raw_counts) / colSums(raw_counts)) * 1e6 + 1)
       } else {
         gene_lengths_kb <- gene_lengths / 1000
@@ -155,7 +155,7 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
     # VST (DESeq2-exclusive)
     "vst" = {
       if (backend != "deseq2") {
-        warning(sprintf("VST (variance stabilizing transformation) is a DESeq2-exclusive method; current backend is '%s', falling back to logCPM.", backend))
+        rlang::warn(sprintf("VST is a DESeq2-exclusive method; current backend is '%s', falling back to logCPM.", backend), .class = "GSEAlens_vst_wrong_backend")
         if (backend == "limma_voom" && !is.null(expr_bundle$dge_list)) {
           edgeR::cpm(expr_bundle$dge_list, log = TRUE)
         } else {
@@ -169,13 +169,13 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
             SummarizedExperiment::assay(DESeq2::vst(expr_bundle$dds_obj, blind = FALSE))
           },
           error = function(e) {
-            warning(sprintf("VST calculation failed, falling back to logCPM: %s", e$message))
+            rlang::warn(sprintf("VST calculation failed, falling back to logCPM: %s", e$message), .class = "GSEAlens_vst_failed")
             counts <- DESeq2::counts(expr_bundle$dds_obj, normalized = FALSE)
             log2(t(t(counts) / colSums(counts)) * 1e6 + 1)
           }
         )
       } else {
-        stop("VST matrix was not pre-computed and cannot be computed from dds_obj.")
+        rlang::abort("VST matrix was not pre-computed and cannot be computed from dds_obj.", .class = "GSEAlens_vst_unavailable")
       }
     },
 
@@ -194,14 +194,14 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
     },
 
     # Unknown type
-    stop(sprintf("Unsupported expression value type: %s", type))
+    rlang::abort(sprintf("Unsupported expression value type: %s", type), .class = "GSEAlens_bad_expr_type")
   )
 
   # Align expression matrix column order with sample metadata
   if (!is.null(sample_meta) && !is.null(rownames(sample_meta))) {
     common_samples <- intersect(colnames(res), rownames(sample_meta))
     if (length(common_samples) == 0) {
-      warning("Expression matrix column names do not match sample metadata row names! Please check sample identifiers.")
+      rlang::warn("Expression matrix column names do not match sample metadata row names; please check sample identifiers.", .class = "GSEAlens_sample_mismatch")
     } else {
       res <- res[, common_samples, drop = FALSE]
     }
@@ -228,7 +228,7 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
 #' @export
 #'
 #' @examples
-#' if(interactive()){
+#' \dontrun{
 #' # Get results for a specific contrast
 #' de_result <- get_de_table(gsea_res, contrast_id = "Treatment_vs_Control")
 #'
@@ -271,12 +271,14 @@ get_de_table.GseaRes <- function(obj, contrast_id) {
     }
   }
 
-  stop(sprintf(
-    "Contrast '%s' and its reverse '%s' not found in de_store. Available: %s",
-    contrast_id,
-    ifelse(length(parts) == 2, paste(parts[2], parts[1], sep = "_vs_"), "N/A"),
-    paste(names(obj$de_store), collapse = ", ")
-  ))
+  rlang::abort(
+    c(
+      sprintf("Contrast '%s' and its reverse not found in de_store.", contrast_id),
+      i = sprintf("Available: %s", paste(names(obj$de_store), collapse = ", "))
+    ),
+    contrast_id = contrast_id,
+    .class = "GSEAlens_contrast_not_found"
+  )
 }
 
 
@@ -293,7 +295,7 @@ get_de_table.GseaRes <- function(obj, contrast_id) {
 #' @export
 #'
 #' @examples
-#' if(interactive()){
+#' \dontrun{
 #' # Get processed sample metadata
 #' meta <- get_sample_meta(gsea_res)
 #' head(meta)
@@ -344,10 +346,10 @@ get_sample_meta.GseaRes <- function(obj) {
     }
 
     if (ncol(sample_meta) != original_ncol) {
-      warning(sprintf(
-        "[SampleMeta] Column count mismatch after conversion: %d vs %d",
-        ncol(sample_meta), original_ncol
-      ))
+      rlang::warn(
+        sprintf("Column count mismatch after conversion: %d vs %d", ncol(sample_meta), original_ncol),
+        .class = "GSEAlens_sample_meta_col_mismatch"
+      )
     }
   } else if (!is.data.frame(sample_meta)) {
     sample_meta <- as.data.frame(sample_meta, stringsAsFactors = FALSE)
@@ -414,7 +416,7 @@ get_sample_meta.GseaRes <- function(obj) {
     is_limma_backend <- !is.null(expr_bundle$dge_list) && is.null(expr_bundle$dds_obj)
 
     if (!is_limma_backend) {
-      warning("[SampleMeta] Could not determine target_factor from dds_obj, using first valid factor")
+      rlang::warn("Could not determine target_factor from dds_obj, using first valid factor.", .class = "GSEAlens_sample_meta_factor_fallback")
     }
 
     factor_cols <- names(sample_meta)[vapply(sample_meta, is.factor, logical(1))]
@@ -456,7 +458,7 @@ get_sample_meta.GseaRes <- function(obj) {
           valid_factors <- factor_cols[vapply(sample_meta[factor_cols], function(x) length(levels(x)) > 1, logical(1))]
           if (length(valid_factors) > 0) {
             sample_meta$group <- as.character(sample_meta[[valid_factors[1]]])
-            warning(sprintf("[SampleMeta] Using first valid factor '%s' as group", valid_factors[1]))
+            rlang::warn(sprintf("Using first valid factor '%s' as group.", valid_factors[1]), .class = "GSEAlens_sample_meta_factor_fallback")
           }
         }
       }
@@ -511,7 +513,7 @@ get_sample_meta.GseaRes <- function(obj) {
       }
 
       if (is.numeric(sample_meta$group)) {
-        warning("[SampleMeta] Could not convert numeric group codes to character labels.")
+        rlang::warn("Could not convert numeric group codes to character labels.", .class = "GSEAlens_sample_meta_numeric_group")
       }
     }
 
@@ -522,7 +524,7 @@ get_sample_meta.GseaRes <- function(obj) {
 
   # Final validation and reporting
   if (is.null(rownames(sample_meta)) || all(rownames(sample_meta) == "")) {
-    warning("[SampleMeta] CRITICAL: Failed to recover rownames, sample matching will fail!")
+    rlang::warn("Failed to recover rownames; sample matching will fail.", .class = "GSEAlens_sample_meta_no_rownames")
   } else {
     unique_groups <- if (!is.null(sample_meta$group)) {
       paste(unique(sample_meta$group), collapse = ", ")
@@ -547,7 +549,7 @@ get_sample_meta.GseaRes <- function(obj) {
 #' @export
 #'
 #' @examples
-#' if(interactive()){
+#' \dontrun{
 #' registry <- get_contrast_registry(gsea_res)
 #' names(registry)
 #' }
@@ -574,7 +576,7 @@ get_contrast_registry.GseaRes <- function(obj) {
 #' @export
 #'
 #' @examples
-#' if(interactive()){
+#' \dontrun{
 #' gs_info <- get_geneset_info(gsea_res)
 #' names(gs_info)
 #' }
@@ -612,7 +614,7 @@ get_geneset_info.GseaEnv <- function(obj) {
 #' @export
 #'
 #' @examples
-#' if(interactive()){
+#' \dontrun{
 #' # Read from CSV
 #' add_data <- read_addition_data("pathway_annotations.csv")
 #'
@@ -628,7 +630,7 @@ get_geneset_info.GseaEnv <- function(obj) {
 #' }
 read_addition_data <- function(file_path) {
   if (!file.exists(file_path)) {
-    stop(sprintf("File not found: %s", file_path))
+    rlang::abort(sprintf("File not found: %s", file_path), .class = "GSEAlens_file_not_found")
   }
 
   ext <- tools::file_ext(file_path)
@@ -650,20 +652,21 @@ read_addition_data <- function(file_path) {
       )
     }
   } else {
-    stop(sprintf(
-      "Unsupported file format: %s\nSupported formats: .csv, .csv.gz, .rds, .rds.gz", ext
-    ))
+    rlang::abort(
+      sprintf("Unsupported file format: %s. Supported formats: .csv, .csv.gz, .rds, .rds.gz", ext),
+      .class = "GSEAlens_unsupported_format"
+    )
   }
 
   if (!is.data.frame(data)) {
-    stop(sprintf("Input file must contain a data.frame, got: %s", class(data)[1]))
+    rlang::abort(sprintf("Input file must contain a data.frame, got: %s", class(data)[1]), .class = "GSEAlens_bad_file_format")
   }
 
   if (!"ID" %in% colnames(data)) {
-    stop(sprintf(
-      "Data frame must contain 'ID' column as the primary key. Available columns: %s",
-      paste(colnames(data), collapse = ", ")
-    ))
+    rlang::abort(
+      sprintf("Data frame must contain 'ID' column as the primary key. Available columns: %s", paste(colnames(data), collapse = ", ")),
+      .class = "GSEAlens_missing_id_col"
+    )
   }
 
   data$ID <- as.character(data$ID)
@@ -701,7 +704,7 @@ read_addition_data <- function(file_path) {
 #' @export
 #'
 #' @examples
-#' if(interactive()){
+#' \dontrun{
 #' # Convert CSV to RDS in current directory
 #' creat_addition_data_rdsfile("my_annotations.csv")
 #'
@@ -721,7 +724,7 @@ creat_addition_data_rdsfile <- function(csv_path,
                                         output_name = "addition_data_gsealens.rds",
                                         overwrite = FALSE) {
   if (!file.exists(csv_path)) {
-    stop(sprintf("CSV file not found: %s", csv_path))
+    rlang::abort(sprintf("CSV file not found: %s", csv_path), .class = "GSEAlens_csv_not_found")
   }
 
   message("[creat_addition_data_rdsfile] Reading: ", csv_path)
@@ -731,14 +734,14 @@ creat_addition_data_rdsfile <- function(csv_path,
   )
 
   if (!is.data.frame(data)) {
-    stop(sprintf("CSV content must be a data.frame, got: %s", class(data)[1]))
+    rlang::abort(sprintf("CSV content must be a data.frame, got: %s", class(data)[1]), .class = "GSEAlens_bad_csv_format")
   }
 
   if (!"ID" %in% colnames(data)) {
-    stop(sprintf(
-      "CSV must contain 'ID' column as the primary key. Available columns: %s",
-      paste(colnames(data), collapse = ", ")
-    ))
+    rlang::abort(
+      sprintf("CSV must contain 'ID' column as the primary key. Available columns: %s", paste(colnames(data), collapse = ", ")),
+      .class = "GSEAlens_missing_id_col"
+    )
   }
 
   data$ID <- as.character(data$ID)
@@ -757,9 +760,9 @@ creat_addition_data_rdsfile <- function(csv_path,
 
   if (file.exists(output_path)) {
     if (!overwrite) {
-      stop(
-        "Output file already exists: ", output_path,
-        "\nUse overwrite = TRUE to replace"
+      rlang::abort(
+        sprintf("Output file already exists: %s. Use overwrite = TRUE to replace.", output_path),
+        .class = "GSEAlens_file_exists"
       )
     }
     message("[creat_addition_data_rdsfile] Overwriting existing file...")
@@ -788,7 +791,7 @@ creat_addition_data_rdsfile <- function(csv_path,
 #' @export
 #'
 #' @examples
-#' if(interactive()){
+#' \dontrun{
 #' # Create template with all pathway IDs
 #' create_addition_template(gsea_res, "my_template.csv")
 #'
@@ -807,11 +810,11 @@ create_addition_template <- function(gsea_res,
                                        "User_Notes"
                                      )) {
   if (!inherits(gsea_res, "GseaRes")) {
-    stop("Input must be a GseaRes object")
+    rlang::abort("Input must be a GseaRes object.", .class = "GSEAlens_bad_class")
   }
 
   if (is.null(gsea_res$geneset_info$meta_dict)) {
-    stop("GseaRes object missing geneset_info$meta_dict")
+    rlang::abort("GseaRes object missing geneset_info$meta_dict.", .class = "GSEAlens_missing_meta_dict")
   }
 
   meta_dict <- gsea_res$geneset_info$meta_dict
@@ -912,7 +915,7 @@ DETECTION_PROBES <- c(
     }
   }
 
-  warning("[GeneDetector] Failed to detect gene symbol column in gene_meta")
+  rlang::warn("Failed to detect gene symbol column in gene_meta.", .class = "GSEAlens_no_symbol_col")
   return(NULL)
 }
 
@@ -930,7 +933,7 @@ DETECTION_PROBES <- c(
 .rebuild_symbol_map <- function(gsea_res, contrast_id) {
   de_df <- gsea_res$de_store[[contrast_id]]
   if (is.null(de_df) || !"gene_symbol" %in% colnames(de_df)) {
-    warning(sprintf("[SymbolMap] de_store not available for contrast '%s'", contrast_id))
+    rlang::warn(sprintf("de_store not available for contrast '%s'.", contrast_id), .class = "GSEAlens_no_de_store")
     return(NULL)
   }
 
@@ -938,7 +941,7 @@ DETECTION_PROBES <- c(
   gene_syms <- gene_syms[!is.na(gene_syms) & gene_syms != ""]
 
   if (length(gene_syms) == 0) {
-    warning("[SymbolMap] No valid gene symbols found in de_store")
+    rlang::warn("No valid gene symbols found in de_store.", .class = "GSEAlens_no_symbols")
     return(NULL)
   }
 
@@ -1013,9 +1016,9 @@ DETECTION_PROBES <- c(
   gene_symbol_col <- .detect_gene_symbol_column(gene_meta)
 
   if (is.null(gene_symbol_col)) {
-    stop(
-      "Ensembl IDs detected but gene symbol column not found in gene_meta. ",
-      "Cannot convert row names for heatmap plotting."
+    rlang::abort(
+      "Ensembl IDs detected but gene symbol column not found in gene_meta. Cannot convert row names for heatmap plotting.",
+      .class = "GSEAlens_no_symbol_col_for_ensembl"
     )
   }
 
@@ -1030,9 +1033,12 @@ DETECTION_PROBES <- c(
   }
 
   if (is.null(geneid_col)) {
-    stop(
-      "Ensembl IDs detected but GeneID column not found in gene_meta. ",
-      "Available columns: ", paste(colnames(gm), collapse = ", ")
+    rlang::abort(
+      c(
+        "Ensembl IDs detected but GeneID column not found in gene_meta.",
+        i = sprintf("Available columns: %s", paste(colnames(gm), collapse = ", "))
+      ),
+      .class = "GSEAlens_no_geneid_col"
     )
   }
 
@@ -1049,9 +1055,9 @@ DETECTION_PROBES <- c(
   n_total <- length(current_rownames)
 
   if (n_converted == 0) {
-    stop(
-      "Conversion failed: no genes matched between expr_mat rownames and gene_meta$",
-      geneid_col
+    rlang::abort(
+      sprintf("Conversion failed: no genes matched between expr_mat rownames and gene_meta$%s", geneid_col),
+      .class = "GSEAlens_ensembl_conversion_failed"
     )
   }
 

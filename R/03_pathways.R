@@ -26,7 +26,6 @@
 #'   }
 #' @export
 #' @examples
-#' if(interactive()){
 #' # Human mode (default)
 #' pathways <- build_gsea_pathways(species = "HS")
 #'
@@ -39,7 +38,6 @@
 #'
 #' # Load all collections
 #' pathways <- build_gsea_pathways(species = "HS", auto_select = "ALL")
-#' }
 #' @importFrom dplyr arrange left_join select distinct mutate all_of bind_rows filter
 #' @importFrom msigdbr msigdbr_collections msigdbr
 build_gsea_pathways <- function(species = "HS", auto_select = NULL) {
@@ -138,7 +136,7 @@ build_gsea_pathways <- function(species = "HS", auto_select = NULL) {
 
   # === Section: Dynamically Fetch Available Gene Set Collections === ----
 
-  avail_colls <- msigdbr::msigdbr_collections(db_species = cfg$db_species) %>%
+  avail_colls <- msigdbr::msigdbr_collections(db_species = cfg$db_species) |>
     dplyr::arrange(.data$gs_collection, .data$gs_subcollection)
 
   # === Section: Build Menu Dataframe === ----
@@ -327,20 +325,20 @@ build_gsea_pathways <- function(species = "HS", auto_select = NULL) {
 
   # === Section: Build TERM2GENE Mapping Table === ----
 
-  TERM2GENE <- all_pathways %>%
+  TERM2GENE <- all_pathways |>
     dplyr::select(gs_name, gene_symbol)
 
   # === Section: Build Metadata Dictionary === ----
 
-  TERM2NAME <- all_pathways %>%
+  TERM2NAME <- all_pathways |>
     dplyr::select(
       ID = gs_name,
       Description = gs_description,
       URL = gs_url,
       Collection = dplyr::all_of(cat_col_name),
       Subcollection = dplyr::all_of(subcat_col_name)
-    ) %>%
-    dplyr::distinct(ID, .keep_all = TRUE) %>%
+    ) |>
+    dplyr::distinct(ID, .keep_all = TRUE) |>
     dplyr::mutate(
       Combo_Name = ifelse(
         Subcollection == "" | is.na(Subcollection),

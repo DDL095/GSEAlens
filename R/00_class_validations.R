@@ -119,14 +119,23 @@ create_gsea_task <- function(gsea_res, meta) {
   has_intercept <- any(grepl("Intercept", colnames(design_matrix), ignore.case = TRUE))
 
   if (has_intercept) {
-    stop(
-      "\n[Limma Design Error] Intercept term detected!\nGSEAlens requires a no-intercept design matrix.\nPlease modify your design formula, e.g.:\n  design <- model.matrix(~ 0 + group, data = samples)\n  fit <- lmFit(expr, design)\nReason: No-intercept design ensures colnames(fit) directly correspond to group names, enabling precise contrast construction."
+    rlang::abort(
+      c(
+        "Intercept term detected in limma design matrix.",
+        i = "GSEAlens requires a no-intercept design (~ 0 + group).",
+        i = "Example: design <- model.matrix(~ 0 + group, data = samples); fit <- lmFit(expr, design)",
+        i = "Reason: No-intercept design makes colnames(fit) directly correspond to group names."
+      ),
+      .class = "GSEAlens_limma_intercept_detected"
     )
   }
 
   # 检查是否有足够的列进行对比
   if (ncol(design_matrix) < 2) {
-    warning("[Limma Warning] Design matrix contains only 1 column; no between-group comparisons possible.")
+    rlang::warn(
+      "Design matrix contains only 1 column; no between-group comparisons possible.",
+      .class = "GSEAlens_limma_single_col"
+    )
   }
 
   return(TRUE)
@@ -143,15 +152,22 @@ create_gsea_task <- function(gsea_res, meta) {
   col_data <- as.data.frame(SummarizedExperiment::colData(dds))
 
   if (!target_factor %in% colnames(col_data)) {
-    stop(sprintf(
-      "\n[DESeq2 Design Error] Specified target_factor '%s' not found in colData!\nAvailable column names: %s",
-      target_factor, paste(colnames(col_data), collapse = ", ")
-    ))
+    rlang::abort(
+      c(
+        sprintf("target_factor '%s' not found in colData.", target_factor),
+        i = sprintf("Available column names: %s", paste(colnames(col_data), collapse = ", "))
+      ),
+      target_factor = target_factor,
+      .class = "GSEAlens_deseq2_missing_factor"
+    )
   }
 
   # 检查是否为因子
   if (!is.factor(col_data[[target_factor]])) {
-    warning(sprintf("[DESeq2 Warning] target_factor '%s' is not a factor type; attempting automatic conversion...", target_factor))
+    rlang::warn(
+      sprintf("target_factor '%s' is not a factor type; attempting automatic conversion...", target_factor),
+      .class = "GSEAlens_deseq2_factor_coerce"
+    )
     # 这里不实际转换，只是警告，因为 DESeq2 通常在构建时已处理
   }
 
@@ -165,19 +181,34 @@ create_gsea_task <- function(gsea_res, meta) {
 #' @keywords internal
 
 .check_gsea_env <- function(env_obj) {
-  if (!inherits(env_obj, "GseaEnv")) stop("Input object is not of class GseaEnv.")
+  if (!inherits(env_obj, "GseaEnv")) {
+    rlang::abort(
+      "Input object is not of class GseaEnv.",
+      .class = "GSEAlens_bad_class"
+    )
+  }
 
   required_slots <- c("backend_info", "contrast_registry", "de_store", "expr_bundle", "geneset")
   missing_slots <- setdiff(required_slots, names(env_obj))
 
   if (length(missing_slots) > 0) {
-    stop(sprintf("GseaEnv object structure is incomplete. Missing slots: %s", paste(missing_slots, collapse = ", ")))
+    rlang::abort(
+      c(
+        "GseaEnv object structure is incomplete.",
+        i = sprintf("Missing slots: %s", paste(missing_slots, collapse = ", "))
+      ),
+      missing_slots = missing_slots,
+      .class = "GSEAlens_incomplete_env"
+    )
   }
 
   # 检查 contrast_registry 必要字段
   reg <- env_obj$contrast_registry
   if (!is.data.frame(reg) || !all(c("contrast_id", "left_group", "right_group") %in% colnames(reg))) {
-    stop("contrast_registry must contain columns: contrast_id, left_group, right_group.")
+    rlang::abort(
+      "contrast_registry must contain columns: contrast_id, left_group, right_group.",
+      .class = "GSEAlens_bad_registry"
+    )
   }
 
   return(TRUE)
@@ -190,8 +221,18 @@ create_gsea_task <- function(gsea_res, meta) {
 #' @keywords internal
 
 .check_gsea_res <- function(res_obj) {
-  if (!inherits(res_obj, "GseaRes")) stop("Input object is not of class GseaRes.")
+  if (!inherits(res_obj, "GseaRes")) {
+    rlang::abort(
+      "Input object is not of class GseaRes.",
+      .class = "GSEAlens_bad_class"
+    )
+  }
   # 简单检查 results 列表是否存在
-  if (is.null(res_obj$results)) stop("No computation results in GseaRes object.")
+  if (is.null(res_obj$results)) {
+    rlang::abort(
+      "No computation results in GseaRes object.",
+      .class = "GSEAlens_empty_res"
+    )
+  }
   return(TRUE)
 }

@@ -166,13 +166,13 @@ mod_hubgene_vis_ui <- function(id) {
 
           # ── Statistics ──
           shiny::h5("Network Statistics"),
-          shiny::verbatimTextOutput(ns("vis_stats")) %>%
+          shiny::verbatimTextOutput(ns("vis_stats")) |>
             shiny::tagAppendAttributes(style = "font-size: 10px; max-height: 100px; overflow-y: auto;"),
           shiny::hr(),
 
           # ── Pathway Preview ──
           shiny::h5("Pathways Preview"),
-          shiny::uiOutput(ns("vis_pathway_list")) %>%
+          shiny::uiOutput(ns("vis_pathway_list")) |>
             shiny::tagAppendAttributes(style = "max-height: 150px; overflow-y: auto;")
         )
       ),
@@ -195,7 +195,7 @@ mod_hubgene_vis_ui <- function(id) {
             ns("vis_network"),
             height = "1200px",
             width = "100%"
-          ) %>%
+          ) |>
             shinycssloaders::withSpinner(type = 6, color = "#28a745"),
           shiny::hr()
         )
@@ -565,7 +565,7 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
       central_gravity <- ifelse(is.null(input$vis_central_gravity), 0.3, input$vis_central_gravity)
 
       if (physics_enabled) {
-        vis <- vis %>% visNetwork::visPhysics(
+        vis <- vis |> visNetwork::visPhysics(
           enabled = TRUE,
           solver = "barnesHut",
           barnesHut = list(
@@ -578,16 +578,16 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
         )
         add_debug(sprintf("Physics: ON, solver=barnesHut, grav=%.0f", grav))
       } else {
-        vis <- vis %>% visNetwork::visPhysics(enabled = FALSE)
+        vis <- vis |> visNetwork::visPhysics(enabled = FALSE)
         add_debug("Physics: OFF")
       }
 
       # Layout
       seed <- ifelse(is.null(input$vis_seed), 42, input$vis_seed)
-      vis <- vis %>% visNetwork::visLayout(randomSeed = seed)
+      vis <- vis |> visNetwork::visLayout(randomSeed = seed)
 
       # Interaction
-      vis <- vis %>% visNetwork::visInteraction(
+      vis <- vis |> visNetwork::visInteraction(
         dragNodes = TRUE,
         dragView = TRUE,
         zoomView = TRUE,
@@ -597,13 +597,13 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
       )
 
       # Click to highlight related nodes and edges
-      vis <- vis %>% visNetwork::visOptions(
+      vis <- vis |> visNetwork::visOptions(
         highlightNearest = TRUE,
         nodesIdSelection = TRUE
       )
 
       # Click Event
-      vis <- vis %>% visNetwork::visEvents(
+      vis <- vis |> visNetwork::visEvents(
         click = sprintf("function(props) {
       var n = props.nodes[0];
       if(n) Shiny.setInputValue('%s', {id: n, ts: Date.now()}, {priority:'event'});

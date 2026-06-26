@@ -1,0 +1,183 @@
+---
+title: "GSEAlens: Preparing Input Data from limma-voom and DESeq2 Workflows"
+author: "Dudali"
+date: "`r Sys.Date()`"
+output:
+  BiocStyle::html_document:
+    toc_float: true
+    number_sections: true
+vignette: >
+  %\VignetteIndexEntry{GSEAlens: Preparing Input Data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+# Introduction
+
+This vignette describes how to prepare the input objects that `r Biocpkg("GSEAlens")`
+consumes. **GSEAlens itself does not perform differential expression analysis (DEG)**;
+it accepts already-fitted `MArrayLM` objects from `r Biocpkg("limma")` or `DESeqDataSet`
+objects from `r Biocpkg("DESeq2")`. The following steps are based on the standard
+workflows of those packages and are provided here for completeness.
+
+For full DEG workflow documentation, please consult:
+
+- `r Biocpkg("limma")` and `r Biocpkg("edgeR")` vignettes (limma-voom pipeline)
+- `r Biocpkg("DESeq2")` vignette
+- `r Biocpkg("airway")` package for the example dataset
+
+# Example Data
+
+We use the `r Biocpkg("airway")` dataset (4 vs 4 samples, dex treatment).
+
+```{r setup-environment, results='hide'}
+library(airway)
+data(airway)
+expression_data <- airway
+```
+
+# limma-voom Workflow
+
+GSEAlens requires a **no-intercept design** (`~0+group`) so that column names
+directly correspond to group names, enabling precise contrast construction.
+
+```{r limma-voom-data-preparation}
+library(edgeR)
+library(limma)
+group_level <- expression_data$dex
+design <- model.matrix(~0+group_level)
+colnames(design) <- levels(group_level)
+compare_end <- combn(levels(group_level), 2, simplify = FALSE)
+contrast_strings <- sapply(compare_end, function(x) paste(x[2], x[1], sep = " - "))
+contrast_matrix <- makeContrasts(contrasts = contrast_strings, levels = design)
+
+genes_df <- data.frame(
+  gene_id = SummarizedExperiment::rowData(expression_data)$gene_id,
+  symbol = SummarizedExperiment::rowData(expression_data)$symbol,
+  gene_biotype = SummarizedExperiment::rowData(expression_data)$gene_biotype
+)
+genes_df$Length <- SummarizedExperiment::rowData(expression_data)$gene_seq_end -
+                   SummarizedExperiment::rowData(expression_data)$gene_seq_start + 1
+
+gsea_limma_voom_data <- edgeR::DGEList(
+  counts = SummarizedExperiment::assay(expression_data, "counts"),
+  genes = genes_df,
+  norm.factors = NULL,
+  group = group_level,
+  remove.zeros = TRUE
+)
+
+# Filter low-expression genes, keep protein-coding RNAs, deduplicate symbols
+total_counts <- edgeR::cpm(gsea_limma_voom_data) |> rowSums()
+dup_symbols <- gsea_limma_voom_data$genes$symbol[duplicated(gsea_limma_voom_data$genes$symbol)]
+keep <- rep(TRUE, nrow(gsea_limma_voom_data))
+for (gene in dup_symbols) {
+  idx <- which(gsea_limma_voom_data$genes$symbol == gene)
+  best_idx <- idx[which.max(total_counts[idx])]
+  remove_idx <- idx[idx != best_idx]
+  keep[remove_idx] <- FALSE
+}
+gsea_limma_voom_data <- gsea_limma_voom_data[keep, ]
+rownames(gsea_limma_voom_data) <- gsea_limma_voom_data$genes$symbol
+
+keep_biotype <- gsea_limma_voom_data$genes$gene_biotype == "protein_coding"
+gsea_limma_voom_data <- gsea_limma_voom_data[keep_biotype, ]
+gsea_limma_voom_data <- edgeR::normLibSizes(gsea_limma_voom_data, method = "TMM")
+isexpr <- rowSums(edgeR::cpm(gsea_limma_voom_data) > 1) >= 3
+gsea_limma_voom_data <- gsea_limma_voom_data[isexpr, ]
+```
+
+Perform limma-voom fitting to obtain the `fit` object.
+
+```{r limma-voom-processing}
+VoomOutPut <- voom(gsea_limma_voom_data, design)
+fit <- lmFit(object = VoomOutPut, design = design) |>
+  contrasts.fit(contrasts = contrast_matrix) |>
+  eBayes()
+```
+
+# DESeq2 Workflow (SummarizedExperiment Input)
+
+```{r keep-protein-coding-rna}
+library("DESeq2")
+dds_se <- DESeqDataSet(expression_data, design = ~ cell + dex)
+gene_biotypes <- SummarizedExperiment::rowData(dds_se)$gene_biotype
+keep_protein_coding <- gene_biotypes == "protein_coding"
+dds_se <- dds_se[keep_protein_coding, ]
+```
+
+```{r remove-low-expression-rna}
+smallestGroupSize <- 3
+keep <- rowSums(DESeq2::counts(dds_se) >= 10) >= smallestGroupSize
+dds_se <- dds_se[keep, ]
+rownames(dds_se) <- SummarizedExperiment::rowData(dds_se)$gene_name
+
+total_counts <- rowSums(SummarizedExperiment::assay(dds_se))
+dup_genes <- rownames(dds_se)[duplicated(rownames(dds_se))]
+keep <- rep(TRUE, nrow(dds_se))
+for (gene in dup_genes) {
+  idx <- which(rownames(dds_se) == gene)
+  best_idx <- idx[which.max(total_counts[idx])]
+  remove_idx <- idx[idx != best_idx]
+  keep[remove_idx] <- FALSE
+}
+dds_se <- dds_se[keep, ]
+```
+
+```{r run-deseq2, results='hide'}
+dds_se <- DESeq(dds_se)
+```
+
+# DESeq2 Workflow (Count Matrix Input)
+
+```{r matrix-modification}
+DDS_rawdata <- expression_data
+gene_biotypes <- SummarizedExperiment::rowData(DDS_rawdata)$gene_biotype
+keep_protein_coding <- gene_biotypes == "protein_coding"
+DDS_rawdata <- DDS_rawdata[keep_protein_coding, ]
+
+smallestGroupSize <- 3
+keep_epd <- rowSums(SummarizedExperiment::assay(DDS_rawdata, "counts") >= 10) >= smallestGroupSize
+DDS_rawdata <- DDS_rawdata[keep_epd, ]
+rownames(DDS_rawdata) <- SummarizedExperiment::rowData(DDS_rawdata)$gene_name
+
+total_counts <- rowSums(SummarizedExperiment::assay(DDS_rawdata))
+keep_name <- rep(TRUE, nrow(DDS_rawdata))
+dup_genes <- rownames(DDS_rawdata)[duplicated(rownames(DDS_rawdata))]
+for (gene in dup_genes) {
+  idx <- which(rownames(DDS_rawdata) == gene)
+  best_idx <- idx[which.max(total_counts[idx])]
+  remove_idx <- idx[idx != best_idx]
+  keep_name[remove_idx] <- FALSE
+}
+DDS_rawdata <- DDS_rawdata[keep_name, ]
+```
+
+```{r matrix-extraction}
+cts <- SummarizedExperiment::assay(DDS_rawdata, "counts")
+coldata <- as.data.frame(SummarizedExperiment::colData(DDS_rawdata))
+coldata <- coldata[, c("cell", "dex")]
+coldata$cell <- factor(coldata$cell)
+coldata$dex <- factor(coldata$dex)
+```
+
+```{r create-dds-object, results='hide'}
+dds <- DESeqDataSetFromMatrix(countData = cts, colData = coldata, design = ~ dex)
+dds <- DESeq(dds)
+```
+
+# Next Step
+
+Once `fit`, `dds_se`, and `dds` are prepared, return to the main vignette:
+
+```r
+vignette("GSEAlens")
+```
+
+```{r sessionInfo}
+sessionInfo()
+```

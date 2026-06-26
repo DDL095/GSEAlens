@@ -187,7 +187,7 @@
     df_rank <- data.frame(pos = seq_along(glist), fc = glist)
     qt <- stats::quantile(df_rank$fc, probs = c(0.1, 0.9))
 
-    df_rank <- df_rank %>%
+    df_rank <- df_rank |>
       dplyr::mutate(fc = dplyr::case_when(
         .data$fc >= qt[2] ~ qt[2],
         .data$fc <= qt[1] ~ qt[1],

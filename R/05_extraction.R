@@ -14,8 +14,8 @@
 #' @export
 
 #' @examples
-#' if(interactive()){
-#' # Placeholder for function example
+#' \dontrun{
+#' gsea_res <- import_gsea_capsule("/path/to/GSEA_Capsule.rds")
 #' }
 import_gsea_capsule <- function(file_path, auto_relocate = TRUE, inspect = TRUE) {
   # 1. 鏂囦欢瀛樺湪鎬ф鏌?
@@ -106,7 +106,7 @@ import_gsea_capsule <- function(file_path, auto_relocate = TRUE, inspect = TRUE)
 #'   (e.g., "H", "C2:CP:KEGG_LEGACY"). Default "ALL" means extract all.
 #' @return GseaTask object.
 #' @examples
-#' if(interactive()){
+#' \dontrun{
 #' task <- extract_gsea_task(gsea_res, contrast_id = "Treatment_vs_Control")
 #' }
 #' @export
@@ -219,8 +219,8 @@ extract_gsea_task <- function(gsea_res, contrast_id, target_collection = "ALL") 
 #' @export
 
 #' @examples
-#' if(interactive()){
-#' # Placeholder for function example
+#' \dontrun{
+#' inspect_gsea_res(gsea_res)
 #' }
 inspect_gsea_res <- function(gsea_res) {
   if (!inherits(gsea_res, "GseaRes")) stop("Input object is not of GseaRes class.")

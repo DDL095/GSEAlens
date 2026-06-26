@@ -13,8 +13,8 @@
 #' @param chunk_size Integer. Number of tasks per worker per chunk, default NULL (auto)
 #' @return GseaRes object
 #' @examples
-#' if(interactive()){
-#' # Assuming gsea_env is a valid GseaEnv object
+#' \dontrun{
+#' # batch_calc_gsea is time-consuming; see the vignette for full usage.
 #' gsea_res <- batch_calc_gsea(gsea_env, workers = 2)
 #' }
 #' @export
@@ -443,16 +443,14 @@ batch_calc_gsea <- function(gsea_env,
 .prepare_rank_vector_fast <- function(de_table, flip = FALSE) {
   # Preserve original case; format standardization is performed in worker function
   # based on TERM2GENE
-  vals <- de_table %>%
-    dplyr::filter(!is.na(gene_symbol), gene_symbol != "") %>%
-    dplyr::mutate(abs_stat = abs(stat)) %>%
-    dplyr::arrange(dplyr::desc(abs_stat)) %>%
-    dplyr::distinct(gene_symbol, .keep_all = TRUE) %>%
-    {
-      vec <- .$stat
-      names(vec) <- .$gene_symbol
-      vec
-    }
+  vals_df <- de_table |>
+    dplyr::filter(!is.na(gene_symbol), gene_symbol != "") |>
+    dplyr::mutate(abs_stat = abs(stat)) |>
+    dplyr::arrange(dplyr::desc(abs_stat)) |>
+    dplyr::distinct(gene_symbol, .keep_all = TRUE)
+
+  vals <- vals_df$stat
+  names(vals) <- vals_df$gene_symbol
 
   if (flip) vals <- -vals
   sort(vals, decreasing = TRUE)
@@ -515,7 +513,7 @@ batch_calc_gsea <- function(gsea_env,
 
   meta_subset <- meta_dict[, required_cols, drop = FALSE]
 
-  merged_df <- result_work %>%
+  merged_df <- result_work |>
     dplyr::left_join(
       meta_subset,
       by = "ID",

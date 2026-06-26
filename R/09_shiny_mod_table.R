@@ -397,7 +397,7 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
         )
 
         if ("Enriched In" %in% names(dt_data)) {
-          dt <- dt %>% DT::formatStyle(
+          dt <- dt |> DT::formatStyle(
             columns = "Enriched In",
             backgroundColor = DT::styleEqual(c(left_grp, right_grp), c("#fee0d2", "#deebf7")),
             color = DT::styleEqual(c(left_grp, right_grp), c("#cc212f", "#1052bd")),
@@ -406,7 +406,7 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
         }
 
         if ("NES" %in% names(dt_data)) {
-          dt <- dt %>% DT::formatStyle(
+          dt <- dt |> DT::formatStyle(
             columns = "NES",
             color = DT::styleInterval(0, c("#1052bd", "#cc212f")),
             fontWeight = "bold"
@@ -414,7 +414,7 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
         }
 
         if ("FDR" %in% names(dt_data)) {
-          dt <- dt %>% DT::formatStyle(
+          dt <- dt |> DT::formatStyle(
             columns = "FDR",
             backgroundColor = DT::styleInterval(c(0.01, 0.05, 0.25), c("#fc9272", "#fdb9a2", "#fee0d2", "transparent")),
             fontWeight = DT::styleInterval(0.05, c("bold", "normal"))
@@ -422,7 +422,7 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
         }
 
         if ("P-value" %in% names(dt_data)) {
-          dt <- dt %>% DT::formatStyle(
+          dt <- dt |> DT::formatStyle(
             columns = "P-value",
             backgroundColor = DT::styleInterval(c(0.01, 0.05), c("#fc9272", "#fee0d2", "transparent")),
             fontWeight = DT::styleInterval(0.05, c("bold", "normal"))

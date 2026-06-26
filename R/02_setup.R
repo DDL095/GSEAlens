@@ -9,11 +9,11 @@
 #' @return Returns a standardized object of class \code{GseaEnv}.
 #' @export
 #' @examples
-#' if(interactive()){
+#' \dontrun{
 #' # Limma workflow
 #' design <- model.matrix(~ 0 + group, data = samples)
-#' fit <- lmFit(expr, design) %>%
-#'   contrasts.fit(cont.matrix) %>%
+#' fit <- lmFit(expr, design) |>
+#'   contrasts.fit(contrasts = cont.matrix) |>
 #'   eBayes()
 #' env <- setup_gsea_env(fit, pathway_obj)
 #'
@@ -125,8 +125,9 @@ setup_gsea_env <- function(fit, pathway_obj, expr_data = NULL, target_factor = N
 #' @export
 
 #' @examples
-#' if(interactive()){
-#' # Placeholder for function example
+#' \dontrun{
+#' # Requires a pre-built GseaEnv object
+#' inspect_gsea_env(gsea_env)
 #' }
 inspect_gsea_env <- function(env_obj) {
   if (!inherits(env_obj, "GseaEnv")) stop("Input object is not of class GseaEnv.")
