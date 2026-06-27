@@ -1,5 +1,12 @@
 <!-- NEWS.md is maintained by https://cynkra.github.io/fledge, do not edit -->
 
+# GSEAlens 0.99.8
+
+Follow-up hardening to the scoped RNG work in 0.99.7; no user-facing behavior change.
+
+- Fix a stale comment in `prepare_hubgene_nodes()` (`R/utils_hubgene.R`) that claimed `default 123` for the `seed` parameter while the function signature is `seed = 42`. The comment now reads `default 42`, matching the documented `@param seed` default and the Shiny UI `numericInput(vis_seed, value = 42)`.
+- Add a defensive NULL fallback for `input$seed` in the pathway-relation rendering reactive (`R/13_shiny_mod_pathway_relation.R`). During fast reactive invalidation the Shiny `numericInput` can transiently be `NULL` before its value settles; the renderer now falls back to `42L` so that `withr::with_seed()` always receives an integer, preventing a spurious `"default" layout calculation failed` message. This complements the analogous guard already present in `R/16_shiny_mod_hubgene_vis.R`.
+
 # GSEAlens 0.99.7
 
 Bioconductor review Phase 3 completion: scoped RNG, scope-safe mutation, defensive future cleanup.

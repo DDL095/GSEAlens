@@ -735,7 +735,10 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       }
 
       layout_algo <- input$network_layout
-      seed_val <- input$seed
+      # Defensive default: if input$seed is NULL (e.g. during fast reactive
+      # invalidation before the numericInput has settled), fall back to 42.
+      # This guarantees withr::with_seed() always receives an integer.
+      seed_val <- if (is.null(input$seed)) 42L else as.integer(input$seed)
 
       layout_coords <- tryCatch(
         {

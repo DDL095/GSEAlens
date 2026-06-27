@@ -392,7 +392,7 @@ prepare_hubgene_nodes <- function(network_data, layout = "fr", seed = 42) {
   # Only stochastic layouts (Fruchterman-Reingold) require a seed for reproducibility.
   # kk and circle are deterministic. withr::with_seed sets the seed locally and
   # restores the caller's RNG state on exit, so the user's global RNG is not polluted.
-  # The seed parameter (default 123) is exposed to callers for reproducibility control.
+  # The seed parameter (default 42) is exposed to callers for reproducibility control.
   compute_layout <- function() {
     if (layout == "fr") {
       igraph::layout_with_fr(g)
