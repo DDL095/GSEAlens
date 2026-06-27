@@ -18,7 +18,7 @@ Named list, names = pathway_id, values = core_genes vector
 Batch data preparation for 03 module Network/UpSet/Chord visualizations.
 }
 \examples{
-if(interactive()){
-# Placeholder for function example
+\dontrun{
+genes <- get_core_genes_list(gsea_task, pathway_ids)
 }
 }

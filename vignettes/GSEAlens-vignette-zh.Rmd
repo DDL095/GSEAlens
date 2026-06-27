@@ -12,6 +12,89 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
+# 包简介
+
+**GSEAlens** 的名称源自 **Lens**（透镜），象征本包像 **放大镜** 一样，帮助研究者深入
+探索 GSEA 富集分析中的关键通路。
+
+GSEAlens 提供一个基于 Web 的交互式平台，用于展示通路简介与描述，并集成 AI 辅助的
+通路富集结果导出功能。通过封装工作流并标准化输入格式，本 R 包简化了 GSEA 富集分析
+结果的查看与探索过程。
+
+## 与 Bioconductor 工作流的整合
+
+GSEAlens 作为 **DEG 后探索层（post-DEG exploration layer）**，被设计为可插入标准
+Bioconductor RNA-seq 与功能富集工作流：
+
+- **上游（输入准备）**：GSEAlens 接收来自 `r Biocpkg("limma")` 的已拟合模型对象
+  （`limma::eBayes()` 返回的 `MArrayLM` 对象，基于 `r Biocpkg("edgeR")` + limma-voom
+  流程），或来自 `r Biocpkg("DESeq2")` 的 `DESeqDataSet` 对象。表达矩阵与样本元数据
+  可作为 `r Biocpkg("SummarizedExperiment")` 对象传入，确保与 Bioconductor 核心数据
+  容器的互操作性。
+
+- **富集计算**：在底层，GSEAlens 包装了 `r Biocpkg("clusterProfiler")`（`GSEA()` 函数），
+  并使用来自 `r CRANpkg("msigdbr")` 的基因集集合。因此统计框架通过 `clusterProfiler`
+  继承了 `r Biocpkg("fgsea")` 的方法论。
+
+- **并行化**：GSEAlens 使用 `r CRANpkg("future")`（`future::multisession`）执行多对比
+  并行计算。在并行运行前，用户的原始 `future::plan()` 与 `future.globals.maxSize`
+  选项会被保存，并在函数退出时通过 `on.exit()` 恢复，因此全局状态不会被污染。选择
+  `future` 而非 `r Biocpkg("BiocParallel")` 的依据见 v0.99.7 release notes 的基准测试：
+  对于 GSEAlens 典型工作负载（序列化 > 2 GB 的全局对象：完整 DE 表 + 基因集字典 +
+  元数据字典）在 Windows 平台上，`future::multisession` 比 `BiocParallel::SnowParam`
+  的 PSOCK 序列化快 3--5 倍。
+
+- **可视化**：绘图构建于 `r Biocpkg("enrichplot")`、`r Biocpkg("ComplexHeatmap")`、
+  `r CRANpkg("ggplot2")`、`r CRANpkg("patchwork")`、`r CRANpkg("visNetwork")` 之上，
+  产出的图形与下游发表流程兼容。
+
+- **下游**：Shiny 应用中的"生成 R 代码"功能会输出自包含脚本，可嵌入
+  `r CRANpkg("rmarkdown")` / Quarto 报告或集成到多步骤流水线。
+
+典型的端到端 Bioconductor 工作流因此为：
+
+```
+RNA-seq counts
+   |
+   +--[edgeR + limma-voom]--> MArrayLM fit --+
+   |                                         |
+   +--[DESeq2]--------------> DESeqDataSet --+
+                                             |
+                                             v
+                                   [GSEAlens::setup_gsea_env]
+                                             |
+                                             v
+                                  [GSEAlens::batch_calc_gsea]
+                                             |
+                                             v
+                                    Shiny 应用探索
+                                             |
+                                             v
+                                  可复现 R 代码导出
+```
+
+这使得 GSEAlens 自然地补充了现有 Bioconductor 富集分析包：当 `r Biocpkg("clusterProfiler")`、
+`r Biocpkg("GSVA")`、`r Biocpkg("gprofiler2")` 或 `r Biocpkg("ReactomePA")` 关注于
+**计算**富集时，GSEAlens 关注于对结果通路列表的**交互式解读**。
+
+## 安装
+
+GSEAlens 可从 Bioconductor 安装。使用以下命令安装稳定版本：
+
+```{r install-package, eval=FALSE}
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install("GSEAlens")
+```
+
+开发版本可从 GitHub 安装：
+
+```{r install-github, eval=FALSE}
+if (!requireNamespace("pak", quietly = TRUE))
+    install.packages("pak")
+pak::pkg_install("DDL095/GSEAlens")
+```
+
 # 快速开始
 
 本节使用 `r Biocpkg("airway")` 数据集演示 GSEAlens 的完整工作流。由于 GSEAlens

@@ -19,7 +19,7 @@ Extract and process sample metadata, handling DFrame conversion
   from DESeq2 and unifying group column naming conventions across backends.
 }
 \examples{
-if(interactive()){
+\dontrun{
 # Get processed sample metadata
 meta <- get_sample_meta(gsea_res)
 head(meta)

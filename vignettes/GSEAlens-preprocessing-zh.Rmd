@@ -16,6 +16,24 @@ vignette: >
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 ```
 
+# 安装
+
+GSEAlens 可从 Bioconductor 安装。使用以下命令安装稳定版本：
+
+```{r install-package, eval=FALSE}
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install("GSEAlens")
+```
+
+开发版本可从 GitHub 安装：
+
+```{r install-github, eval=FALSE}
+if (!requireNamespace("pak", quietly = TRUE))
+    install.packages("pak")
+pak::pkg_install("DDL095/GSEAlens")
+```
+
 # 简介
 
 本 vignette 描述如何准备 `r Biocpkg("GSEAlens")` 所需的输入对象。**GSEAlens 本身

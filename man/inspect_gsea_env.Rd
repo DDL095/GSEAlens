@@ -17,7 +17,8 @@ Print detailed information about the GseaEnv object to the console, including ba
 contrast list, and gene set status.
 }
 \examples{
-if(interactive()){
-# Placeholder for function example
+\dontrun{
+# Requires a pre-built GseaEnv object
+inspect_gsea_env(gsea_env)
 }
 }

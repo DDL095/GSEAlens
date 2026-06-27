@@ -37,7 +37,7 @@ Build complete network data with leading edge information for edges.
 Now properly passes de_df to extract_hub_genes for stat extraction.
 }
 \examples{
-if(interactive()){
-# Placeholder for function example
+\dontrun{
+network <- build_hubgene_network(gsea_task, pathway_ids)
 }
 }

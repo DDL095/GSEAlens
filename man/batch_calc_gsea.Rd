@@ -48,8 +48,8 @@ GseaRes object
 Consumes a standard GseaEnv object and performs efficient parallel GSEA calculation.
 }
 \examples{
-if(interactive()){
-# Assuming gsea_env is a valid GseaEnv object
+\dontrun{
+# batch_calc_gsea is time-consuming; see the vignette for full usage.
 gsea_res <- batch_calc_gsea(gsea_env, workers = 2)
 }
 }

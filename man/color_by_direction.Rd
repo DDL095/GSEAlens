@@ -27,7 +27,7 @@ Node data with added color and color_label columns
 Assign colors based on NES (pathways) or log2FC (genes).
 }
 \examples{
-if(interactive()){
-# Placeholder for function example
+\dontrun{
+colored <- color_by_direction(node_data)
 }
 }

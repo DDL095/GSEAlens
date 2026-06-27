@@ -16,7 +16,7 @@ Invisibly returns the input object (for chaining).
 Print detailed summary of GseaRes object to console.
 }
 \examples{
-if(interactive()){
-# Placeholder for function example
+\dontrun{
+inspect_gsea_res(gsea_res)
 }
 }

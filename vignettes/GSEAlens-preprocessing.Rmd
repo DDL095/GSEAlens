@@ -16,6 +16,24 @@ vignette: >
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 ```
 
+# Installation
+
+GSEAlens is available on Bioconductor. Install the stable release with:
+
+```{r install-package, eval=FALSE}
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install("GSEAlens")
+```
+
+The development version can be installed from GitHub:
+
+```{r install-github, eval=FALSE}
+if (!requireNamespace("pak", quietly = TRUE))
+    install.packages("pak")
+pak::pkg_install("DDL095/GSEAlens")
+```
+
 # Introduction
 
 This vignette describes how to prepare the input objects that `r Biocpkg("GSEAlens")`

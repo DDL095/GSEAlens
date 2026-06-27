@@ -33,7 +33,10 @@ A character string containing executable R code
 Generate Pathway Plotting Code
 }
 \examples{
-if(interactive()){
-# Placeholder for function example
+\dontrun{
+code <- generate_pathway_plot_code(GSEAlens_res = gsea_res,
+                                   contrast_id = "Treat_vs_Control",
+                                   target_pathways = c("HALLMARK_INFLAMMATORY_RESPONSE"))
+cat(code)
 }
 }

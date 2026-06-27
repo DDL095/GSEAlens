@@ -19,7 +19,7 @@ Parse the core_enrichment field from GSEA results to extract the gene list.
   This is the fundamental data interface for all visualization modules in 03/04.
 }
 \examples{
-if(interactive()){
+\dontrun{
 core_genes <- get_core_genes_for_pathway(gsea_res, "HALLMARK_OXIDATIVE_PHOSPHORYLATION")
 }
 }

@@ -27,7 +27,7 @@ Character string with HTML content for hover tooltip
 Generate HTML text for plotly hover tooltips.
 }
 \examples{
-if(interactive()){
-# Placeholder for function example
+\dontrun{
+hover <- generate_hubgene_hover_text(node, "gene")
 }
 }

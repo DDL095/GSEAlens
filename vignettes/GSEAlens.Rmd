@@ -35,9 +35,15 @@ enrichment workflows as a **post-DEG exploration layer**:
   collections from `r CRANpkg("msigdbr")`. The statistical framework therefore
   inherits the methodology of `r Biocpkg("fgsea")` via `clusterProfiler`.
 
-- **Parallelization**: GSEAlens uses `r Biocpkg("BiocParallel")` for
-  multi-contrast parallel computation, automatically adapting to the host
-  platform (Windows: `SnowParam`; Linux/macOS: `MulticoreParam`).
+- **Parallelization**: GSEAlens uses `r CRANpkg("future")` (`future::multisession`)
+  for multi-contrast parallel computation. The user's original `future::plan()` and
+  `future.globals.maxSize` option are saved before the parallel run and restored
+  on exit via `on.exit()`, so the global state is never polluted. The choice of
+  `future` over `r Biocpkg("BiocParallel")` is benchmarked in the v0.99.7 release
+  notes: for GSEAlens' typical workload that serializes more than 2 GB of globals
+  (full DE table + gene set dictionary + metadata dictionary) on Windows,
+  `future::multisession` was measured to be 3--5x faster than
+  `BiocParallel::SnowParam` PSOCK serialization for this workload.
 
 - **Visualization**: Plotting builds on `r Biocpkg("enrichplot")`,
   `r Biocpkg("ComplexHeatmap")`, `r CRANpkg("ggplot2")`,

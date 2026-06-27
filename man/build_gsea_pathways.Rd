@@ -37,7 +37,6 @@ Provides an interactive or automated gene set selection interface
   species.
 }
 \examples{
-if(interactive()){
 # Human mode (default)
 pathways <- build_gsea_pathways(species = "HS")
 
@@ -50,5 +49,4 @@ pathways_mm <- build_gsea_pathways(species = "MM", auto_select = c("H", "C5:GO:B
 
 # Load all collections
 pathways <- build_gsea_pathways(species = "HS", auto_select = "ALL")
-}
 }

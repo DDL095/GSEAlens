@@ -22,7 +22,7 @@ Safely construct edge list for pathway network based on Jaccard
   similarity assessment.
 }
 \examples{
-if(interactive()){
-# Placeholder for function example
+\dontrun{
+edges <- build_edge_list_safely(core_genes_list)
 }
 }

@@ -3,11 +3,6 @@
 \name{visualization}
 \alias{visualization}
 \title{GSEA Visualization and Report Generation}
-\value{
-The pipe operator `%>%` from magrittr, enabling function chaining.
-
-The pipe operator `%>%` from magrittr, enabling function chaining.
-}
 \description{
 Provides static plotting functions and interactive HTML report generation capabilities.
 

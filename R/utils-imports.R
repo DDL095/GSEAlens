@@ -95,18 +95,12 @@ NULL
 # GSEA 相关
 
 
-# 找到这一行（约第98行）并删除：
-# @importFrom clusterProfiler enrichplot  <-- 删除这一行
-
-# 改为：
 #' @importFrom clusterProfiler GSEA
 NULL
 
-# 如果您确实需要使用 enrichplot 包的功能，请单独导入：
 #' @importFrom enrichplot dotplot cnetplot heatplot ridgeplot gseaplot upsetplot
 NULL
 
-# 如果需要使用基础 barplot，从 graphics 导入：
 #' @importFrom graphics barplot
 NULL
 
@@ -146,9 +140,6 @@ NULL
 NULL
 
 #' @importFrom msigdbr msigdbr msigdbr_collections
-NULL
-
-#' @importFrom BiocParallel bplapply bpparam
 NULL
 
 #' @importFrom rlang .data

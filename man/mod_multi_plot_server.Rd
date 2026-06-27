@@ -4,7 +4,7 @@
 \alias{mod_multi_plot_server}
 \title{Combined Pathway Plotting Server}
 \usage{
-mod_multi_plot_server(id, data_prep, table_controller)
+mod_multi_plot_server(id, data_prep, table_controller, gsea_res = NULL)
 }
 \description{
 Combined Pathway Plotting Server

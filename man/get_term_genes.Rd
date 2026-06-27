@@ -18,7 +18,7 @@ Character vector
 Extract complete gene list for a pathway from geneset_info.
 }
 \examples{
-if(interactive()){
-# Placeholder for function example
+\dontrun{
+genes <- get_term_genes(gsea_res, "HALLMARK_INFLAMMATORY_RESPONSE")
 }
 }

@@ -24,7 +24,7 @@ A named list with three components:
 Prepare node data with layout positions for plotly visualization.
 }
 \examples{
-if(interactive()){
-# Placeholder for function example
+\dontrun{
+nodes <- prepare_hubgene_nodes(network_data)
 }
 }

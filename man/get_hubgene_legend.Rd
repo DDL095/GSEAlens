@@ -23,7 +23,5 @@ A named list containing:
 Generate color legend data for HubGene network plot.
 }
 \examples{
-if(interactive()){
-# get_hubgene_legend example
-}
+legend <- get_hubgene_legend("Control", "Treatment")
 }

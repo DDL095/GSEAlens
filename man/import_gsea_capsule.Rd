@@ -25,7 +25,7 @@ Safely load a computation capsule. If the file is moved from its
   relocate the capsule. Fully compatible with GseaEnv and GseaRes objects.
 }
 \examples{
-if(interactive()){
-# Placeholder for function example
+\dontrun{
+gsea_res <- import_gsea_capsule("/path/to/GSEA_Capsule.rds")
 }
 }

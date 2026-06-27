@@ -7,7 +7,7 @@
 plot_directional_gsea(
   directional_gsea_obj,
   target_pathways,
-  main_title = "GSEA Plot",
+  main_title = NULL,
   subPlot = 3,
   curveCol = NULL,
   add_pval = FALSE,
@@ -41,7 +41,8 @@ Professional-grade GSEA plotting engine with seamless support for single or mult
   Automatically generates elegant legends and native red-blue gene distribution track.
 }
 \examples{
-if(interactive()){
-# Placeholder for function example
+\dontrun{
+plot_directional_gsea(directional_gsea_obj,
+                      target_pathways = c("HALLMARK_INFLAMMATORY_RESPONSE"))
 }
 }

@@ -25,7 +25,7 @@ Read and validate additional data from CSV or RDS file. Supports
   as the primary key for joining with pathway results.
 }
 \examples{
-if(interactive()){
+\dontrun{
 # Read from CSV
 add_data <- read_addition_data("pathway_annotations.csv")
 

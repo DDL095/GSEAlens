@@ -18,7 +18,7 @@ Retrieve gene set collection metadata including pathway definitions
   and annotation dictionary.
 }
 \examples{
-if(interactive()){
+\dontrun{
 gs_info <- get_geneset_info(gsea_res)
 names(gs_info)
 }

@@ -138,6 +138,9 @@ plot_gsea_memory <- function(aligned_data, highlight_phases = TRUE) {
 print.GseaBenchmarkAligned <- function(x, ...) {
   info <- attr(x, "gsea_info")
 
+  # NOTE: cat() is the idiomatic way to write to stdout inside an S3 print()
+  # method (cf. print.data.frame, print.lm). Do NOT convert to message(),
+  # which would redirect output to stderr and break interactive use.
   cat("========================================\n")
   cat("   GSEA Benchmark Alignment Results\n")
   cat("========================================\n")
