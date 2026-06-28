@@ -16,7 +16,9 @@ Invisibly returns the input object (for chaining).
 Print detailed summary of GseaRes object to console.
 }
 \examples{
-\dontrun{
+# Load a pre-computed GseaRes shipped with the package
+gsea_res <- readRDS(system.file(
+  "extdata", "precomputed_gseares.rds", package = "GSEAlens"
+))
 inspect_gsea_res(gsea_res)
-}
 }

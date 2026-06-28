@@ -12,3 +12,6 @@ GSEAlens.Rproj
 GSEAlen.Rproj
 fledge更新脚本.R
 GSEAlens.BiocCheck
+*.log
+*.Rcheck
+..Rcheck

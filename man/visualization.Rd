@@ -3,8 +3,12 @@
 \name{visualization}
 \alias{visualization}
 \title{GSEA Visualization and Report Generation}
+\value{
+NULL (this is a documentation landing page; individual functions
+  return their own objects, documented separately).
+}
 \description{
-Provides static plotting functions and interactive HTML report generation capabilities.
-
-Provides static plotting functions and interactive HTML report generation capabilities.
+Provides static plotting functions and interactive HTML report generation
+capabilities. This is a documentation landing page for the visualization
+family of functions in this file.
 }

@@ -24,17 +24,17 @@ Automatically extracts contrasts, differential analysis results, and expression 
 a standardized GseaEnv object.
 }
 \examples{
-\dontrun{
-# Limma workflow
-design <- model.matrix(~ 0 + group, data = samples)
-fit <- lmFit(expr, design) |>
-  contrasts.fit(contrasts = cont.matrix) |>
-  eBayes()
-env <- setup_gsea_env(fit, pathway_obj)
-
-# DESeq2 workflow
-dds <- DESeqDataSetFromMatrix(countData, colData, design = ~ batch + group)
-dds <- DESeq(dds)
-env <- setup_gsea_env(dds, pathway_obj, target_factor = "group")
-}
+# Limma-voom workflow using pre-computed inputs shipped with the package
+precomp <- readRDS(system.file(
+  "extdata", "preprocessed_limma.rds", package = "GSEAlens"
+))
+pathways <- readRDS(system.file(
+  "extdata", "gsea_pathwaysets_toy.rds", package = "GSEAlens"
+))
+env <- setup_gsea_env(
+  fit       = precomp$fit,
+  pathway_obj = pathways,
+  expr_data = precomp$gsea_limma_voom_data
+)
+class(env)
 }

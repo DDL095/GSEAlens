@@ -29,16 +29,20 @@ NULL
 #' @export
 #'
 #' @examples
-#' \dontrun{
-#' # Get default expression matrix
-#' expr <- get_expr_matrix(gsea_res)
-#'
-#' # Get log2 CPM values
-#' expr <- get_expr_matrix(gsea_res, type = "logcpm")
-#'
-#' # Get variance stabilizing transformed values (DESeq2 only)
-#' expr <- get_expr_matrix(gsea_res, type = "vst")
-#' }
+#' # Load pre-computed inputs shipped with the package
+#' precomp <- readRDS(system.file(
+#'   "extdata", "preprocessed_limma.rds", package = "GSEAlens"
+#' ))
+#' pathways <- readRDS(system.file(
+#'   "extdata", "gsea_pathwaysets_toy.rds", package = "GSEAlens"
+#' ))
+#' gsea_env <- setup_gsea_env(
+#'   fit = precomp$fit,
+#'   pathway_obj = pathways,
+#'   expr_data = precomp$gsea_limma_voom_data
+#' )
+#' expr <- get_expr_matrix(gsea_env)
+#' dim(expr)
 get_expr_matrix <- function(obj, type = "default", ...) {
   UseMethod("get_expr_matrix")
 }
@@ -228,14 +232,12 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
 #' @export
 #'
 #' @examples
-#' \dontrun{
-#' # Get results for a specific contrast
-#' de_result <- get_de_table(gsea_res, contrast_id = "Treatment_vs_Control")
-#'
-#' # Reverse contrasts are automatically handled
-#' de_result <- get_de_table(gsea_res, contrast_id = "Control_vs_Treatment")
-#' # logFC and stat values will have inverted signs
-#' }
+#' # Load a pre-computed GseaRes shipped with the package
+#' gsea_res <- readRDS(system.file(
+#'   "extdata", "precomputed_gseares.rds", package = "GSEAlens"
+#' ))
+#' de_result <- get_de_table(gsea_res, contrast_id = "untrt_vs_trt")
+#' head(de_result)
 get_de_table <- function(obj, contrast_id) {
   UseMethod("get_de_table")
 }
@@ -295,11 +297,12 @@ get_de_table.GseaRes <- function(obj, contrast_id) {
 #' @export
 #'
 #' @examples
-#' \dontrun{
-#' # Get processed sample metadata
+#' # Load a pre-computed GseaRes shipped with the package
+#' gsea_res <- readRDS(system.file(
+#'   "extdata", "precomputed_gseares.rds", package = "GSEAlens"
+#' ))
 #' meta <- get_sample_meta(gsea_res)
 #' head(meta)
-#' }
 get_sample_meta <- function(obj) {
   UseMethod("get_sample_meta")
 }
@@ -549,10 +552,12 @@ get_sample_meta.GseaRes <- function(obj) {
 #' @export
 #'
 #' @examples
-#' \dontrun{
+#' # Load a pre-computed GseaRes shipped with the package
+#' gsea_res <- readRDS(system.file(
+#'   "extdata", "precomputed_gseares.rds", package = "GSEAlens"
+#' ))
 #' registry <- get_contrast_registry(gsea_res)
-#' names(registry)
-#' }
+#' print(registry)
 get_contrast_registry <- function(obj) {
   UseMethod("get_contrast_registry")
 }
@@ -576,10 +581,12 @@ get_contrast_registry.GseaRes <- function(obj) {
 #' @export
 #'
 #' @examples
-#' \dontrun{
+#' # Load a pre-computed GseaRes shipped with the package
+#' gsea_res <- readRDS(system.file(
+#'   "extdata", "precomputed_gseares.rds", package = "GSEAlens"
+#' ))
 #' gs_info <- get_geneset_info(gsea_res)
 #' names(gs_info)
-#' }
 get_geneset_info <- function(obj) {
   UseMethod("get_geneset_info")
 }
@@ -614,20 +621,19 @@ get_geneset_info.GseaEnv <- function(obj) {
 #' @export
 #'
 #' @examples
-#' \dontrun{
-#' # Read from CSV
-#' add_data <- read_addition_data("pathway_annotations.csv")
+#' # Build a small CSV in a temp directory and read it back.
+#' tmp_csv <- file.path(tempdir(), "pathway_annotations_demo.csv")
+#' utils::write.csv(
+#'   data.frame(
+#'     ID = c("HALLMARK_HYPOXIA", "HALLMARK_INFLAMMATORY_RESPONSE"),
+#'     Brief_Description = c("Hypoxia", "Inflammatory response"),
+#'     stringsAsFactors = FALSE
+#'   ),
+#'   tmp_csv, row.names = FALSE
+#' )
 #'
-#' # Read from compressed CSV
-#' add_data <- read_addition_data("pathway_annotations.csv.gz")
-#'
-#' # Read from RDS
-#' add_data <- read_addition_data("pathway_annotations.rds")
-#'
-#' # Use with GseaRes
-#' add_data <- read_addition_data("my_annotations.rds")
-#' gsea_app <- launch_gsea_app(gsea_res, add_data = add_data)
-#' }
+#' add_data <- read_addition_data(tmp_csv)
+#' add_data
 read_addition_data <- function(file_path) {
   if (!file.exists(file_path)) {
     rlang::abort(sprintf("File not found: %s", file_path), .class = "GSEAlens_file_not_found")
@@ -704,21 +710,25 @@ read_addition_data <- function(file_path) {
 #' @export
 #'
 #' @examples
-#' \dontrun{
-#' # Convert CSV to RDS in current directory
-#' creat_addition_data_rdsfile("my_annotations.csv")
-#'
-#' # Specify output directory and filename
-#' creat_addition_data_rdsfile("annotations.csv",
-#'   output_dir = "/path/to/project",
-#'   output_name = "custom_name.rds"
+#' # Build a small CSV in a temp directory, then convert to RDS.
+#' tmp_csv <- file.path(tempdir(), "annotations_demo.csv")
+#' utils::write.csv(
+#'   data.frame(
+#'     ID = c("HALLMARK_HYPOXIA", "HALLMARK_INFLAMMATORY_RESPONSE"),
+#'     Brief_Description = c("Hypoxia", "Inflammatory response"),
+#'     stringsAsFactors = FALSE
+#'   ),
+#'   tmp_csv, row.names = FALSE
 #' )
 #'
-#' # Overwrite existing file
-#' creat_addition_data_rdsfile("updated_annotations.csv",
+#' out_rds <- file.path(tempdir(), "annotations_demo.rds")
+#' creat_addition_data_rdsfile(
+#'   tmp_csv,
+#'   output_dir = tempdir(),
+#'   output_name = "annotations_demo.rds",
 #'   overwrite = TRUE
 #' )
-#' }
+#' file.exists(out_rds)
 creat_addition_data_rdsfile <- function(csv_path,
                                         output_dir = getwd(),
                                         output_name = "addition_data_gsealens.rds",
@@ -791,16 +801,17 @@ creat_addition_data_rdsfile <- function(csv_path,
 #' @export
 #'
 #' @examples
-#' \dontrun{
-#' # Create template with all pathway IDs
-#' create_addition_template(gsea_res, "my_template.csv")
+#' # Load pre-computed GseaRes shipped with the package and write a template
+#' # CSV to a temporary file (no side effects on the user's filesystem).
+#' gsea_res <- readRDS(system.file(
+#'   "extdata", "precomputed_gseares.rds", package = "GSEAlens"
+#' ))
+#' out_csv <- file.path(tempdir(), "addition_template_demo.csv")
+#' create_addition_template(gsea_res, output_path = out_csv)
 #'
-#' # After editing the CSV with custom annotations, convert to RDS
-#' creat_addition_data_rdsfile("my_template.csv")
-#'
-#' # Then load in GSEAlens
-#' gsea_app <- launch_gsea_app(gsea_res, "my_template.rds")
-#' }
+#' # The template contains one row per pathway ID, ready to edit.
+#' template <- utils::read.csv(out_csv)
+#' utils::head(template)
 create_addition_template <- function(gsea_res,
                                      output_path = "addition_template_gsealens.csv",
                                      include_cols = c(

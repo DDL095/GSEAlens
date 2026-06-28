@@ -13,9 +13,21 @@
 #' @param chunk_size Integer. Number of tasks per worker per chunk, default NULL (auto)
 #' @return GseaRes object
 #' @examples
-#' \dontrun{
-#' # batch_calc_gsea is time-consuming; see the vignette for full usage.
-#' gsea_res <- batch_calc_gsea(gsea_env, workers = 2)
+#' \donttest{
+#' # Build a GseaEnv from pre-computed inputs shipped with the package
+#' precomp <- readRDS(system.file(
+#'   "extdata", "preprocessed_limma.rds", package = "GSEAlens"
+#' ))
+#' pathways <- readRDS(system.file(
+#'   "extdata", "gsea_pathwaysets_toy.rds", package = "GSEAlens"
+#' ))
+#' gsea_env <- setup_gsea_env(
+#'   fit = precomp$fit,
+#'   pathway_obj = pathways,
+#'   expr_data = precomp$gsea_limma_voom_data
+#' )
+#' # Run batch GSEA (writes to a temporary directory; ~20s on the toy set)
+#' gsea_res <- batch_calc_gsea(gsea_env, workers = 2, output_dir = tempdir())
 #' }
 #' @export
 batch_calc_gsea <- function(gsea_env,
@@ -84,7 +96,11 @@ batch_calc_gsea <- function(gsea_env,
   options(future.globals.maxSize = 192 * 1024^3)
   on.exit(options(future.globals.maxSize = old_max_size), add = TRUE)
 
-  total_cores <- parallel::detectCores(logical = TRUE)
+  # Use future::availableCores() instead of parallel::detectCores() so that
+  # the package does not need to declare a dependency on the `parallel`
+  # package. `future` is already in Imports and `availableCores()` honors
+  # future options (e.g. future.availableWorkers) for finer control.
+  total_cores <- as.integer(future::availableCores())
   use_cores <- min(total_cores, max(1, workers))
   message(sprintf("Hardware scheduling: Using %d cores for parallel computation...", use_cores))
 
@@ -205,13 +221,36 @@ batch_calc_gsea <- function(gsea_env,
         if (term2gene_format == "upper_case") {
           if (de_format == "title_case") {
             names(genelist) <- toupper(names(genelist))
+          } else if (de_format == "mixed") {
+            warning(
+              "[Ambiguous Gene Symbol Case]\n",
+              "Gene set format: Uppercase (HS / human); DE gene format: Mixed (cannot be auto-detected).\n",
+              "Common cause: a large fraction of gene symbols start with digits (e.g., '12R5', '7SK'), ",
+              "or symbols are non-standard identifiers.\n",
+              "Case auto-conversion was SKIPPED. If DE genes are actually mouse title case (e.g., Gapdh, Irf7), ",
+              "this may silently return zero enrichments. Please manually verify symbol consistency."
+            )
           }
         } else if (term2gene_format == "title_case") {
           if (de_format == "upper_case") {
             stop(
               "[Species Mismatch Error]\nGene set species: Mouse (MM) - requires title case gene symbols\nDE gene format: Uppercase (e.g., GAPDH, IRF7) - appears to be human data\n\nPlease use human gene sets (species='HS') for uppercase DE data,\nor provide mouse DE data with title case gene symbols (e.g., Gapdh, Irf7)."
             )
+          } else if (de_format == "mixed") {
+            warning(
+              "[Ambiguous Gene Symbol Case]\n",
+              "Gene set format: Title case (MM / mouse); DE gene format: Mixed (cannot be auto-detected).\n",
+              "Case auto-conversion was SKIPPED. If DE genes are actually human uppercase (e.g., GAPDH, IRF7), ",
+              "this may silently return zero enrichments. Please manually verify symbol consistency."
+            )
           }
+        } else if (term2gene_format == "mixed") {
+          warning(
+            "[Ambiguous Gene Symbol Case]\n",
+            "TERM2GENE gene set format could not be auto-detected (possibly contains many non-standard ",
+            "or digit-leading symbols). Case auto-conversion was SKIPPED. ",
+            "Please manually verify that DE gene symbols and gene set symbols use the same convention."
+          )
         }
 
         gsea_res <- tryCatch(
@@ -332,116 +371,6 @@ batch_calc_gsea <- function(gsea_env,
   message(sprintf("   Results saved to: %s", rds_path))
 
   return(final_obj)
-}
-
-
-#' @title Process Single GSEA Chunk
-#' @param chunk_task_names Character vector
-#' @param task_metadata Task metadata list
-#' @param de_list DE data in list form
-#' @param term2gene Gene set mapping dataframe
-#' @param meta_dict Metadata dictionary
-#' @param minGSSize Minimum gene set size
-#' @param maxGSSize Maximum gene set size
-#' @param pvalueCutoff P-value threshold
-#' @return Result list for current chunk
-#' @keywords internal
-.process_gsea_chunk <- function(chunk_task_names,
-                                task_metadata,
-                                de_list,
-                                term2gene,
-                                meta_dict,
-                                minGSSize,
-                                maxGSSize,
-                                pvalueCutoff) {
-  if (!requireNamespace("clusterProfiler", quietly = TRUE) ||
-    !requireNamespace("dplyr", quietly = TRUE)) {
-    stop("Worker missing required packages: clusterProfiler or dplyr")
-  }
-
-  chunk_results <- list()
-
-  for (task_name in chunk_task_names) {
-    task_info <- task_metadata[[task_name]]
-    task_id <- task_info$task_id
-
-    if (task_info$is_reversed) {
-      original_cid <- paste(task_info$right_group, task_info$left_group, sep = "_vs_")
-    } else {
-      original_cid <- task_id
-    }
-
-    de_table <- de_list[[original_cid]]
-
-    if (is.null(de_table) || nrow(de_table) == 0) {
-      chunk_results[[task_name]] <- list(
-        name = task_id,
-        status = "Failed",
-        data = NULL,
-        genelist = c()
-      )
-      next
-    }
-
-    genelist <- tryCatch(
-      {
-        .prepare_rank_vector_fast(de_table, flip = task_info$is_reversed)
-      },
-      error = function(e) {
-        warning(sprintf("Rank vector preparation failed: %s", e$message))
-        c()
-      }
-    )
-
-    if (length(genelist) == 0) {
-      chunk_results[[task_name]] <- list(
-        name = task_id,
-        status = "Failed",
-        data = NULL,
-        genelist = c()
-      )
-      next
-    }
-
-    gsea_res <- tryCatch(
-      {
-        clusterProfiler::GSEA(
-          geneList = genelist,
-          TERM2GENE = term2gene,
-          minGSSize = minGSSize,
-          maxGSSize = maxGSSize,
-          pvalueCutoff = pvalueCutoff,
-          pAdjustMethod = "BH",
-          verbose = FALSE,
-          seed = 123,
-          eps = 0
-        )
-      },
-      error = function(e) {
-        warning(sprintf("GSEA calculation failed [%s]: %s", task_id, e$message))
-        NULL
-      }
-    )
-
-    status <- if (!is.null(gsea_res) && nrow(gsea_res@result) > 0) {
-      "Success"
-    } else {
-      "Failed/NoEnrich"
-    }
-
-    if (status == "Success" && !is.null(meta_dict)) {
-      gsea_res@result <- .enrich_gsea_result(gsea_res@result, meta_dict)
-    }
-
-    chunk_results[[task_name]] <- list(
-      name = task_id,
-      status = status,
-      data = gsea_res,
-      genelist = genelist
-    )
-  }
-
-  return(chunk_results)
 }
 
 

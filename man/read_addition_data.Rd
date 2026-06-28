@@ -25,18 +25,17 @@ Read and validate additional data from CSV or RDS file. Supports
   as the primary key for joining with pathway results.
 }
 \examples{
-\dontrun{
-# Read from CSV
-add_data <- read_addition_data("pathway_annotations.csv")
+# Build a small CSV in a temp directory and read it back.
+tmp_csv <- file.path(tempdir(), "pathway_annotations_demo.csv")
+utils::write.csv(
+  data.frame(
+    ID = c("HALLMARK_HYPOXIA", "HALLMARK_INFLAMMATORY_RESPONSE"),
+    Brief_Description = c("Hypoxia", "Inflammatory response"),
+    stringsAsFactors = FALSE
+  ),
+  tmp_csv, row.names = FALSE
+)
 
-# Read from compressed CSV
-add_data <- read_addition_data("pathway_annotations.csv.gz")
-
-# Read from RDS
-add_data <- read_addition_data("pathway_annotations.rds")
-
-# Use with GseaRes
-add_data <- read_addition_data("my_annotations.rds")
-gsea_app <- launch_gsea_app(gsea_res, add_data = add_data)
-}
+add_data <- read_addition_data(tmp_csv)
+add_data
 }

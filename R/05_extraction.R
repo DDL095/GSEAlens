@@ -14,9 +14,18 @@
 #' @export
 
 #' @examples
-#' \dontrun{
-#' gsea_res <- import_gsea_capsule("/path/to/GSEA_Capsule.rds")
-#' }
+#' # Copy the pre-computed GseaRes capsule shipped with the package to a
+#' # temp file and import it (auto_relocate = FALSE to avoid side effects).
+#' src <- system.file("extdata", "precomputed_gseares.rds", package = "GSEAlens")
+#' tmp_capsule <- file.path(tempdir(), "import_demo.rds")
+#' file.copy(src, tmp_capsule, overwrite = TRUE)
+#'
+#' gsea_res <- import_gsea_capsule(
+#'   tmp_capsule,
+#'   auto_relocate = FALSE,
+#'   inspect = FALSE
+#' )
+#' class(gsea_res)
 import_gsea_capsule <- function(file_path, auto_relocate = TRUE, inspect = TRUE) {
   # 1. 鏂囦欢瀛樺湪鎬ф鏌?
   if (!file.exists(file_path)) {
@@ -106,9 +115,12 @@ import_gsea_capsule <- function(file_path, auto_relocate = TRUE, inspect = TRUE)
 #'   (e.g., "H", "C2:CP:KEGG_LEGACY"). Default "ALL" means extract all.
 #' @return GseaTask object.
 #' @examples
-#' \dontrun{
-#' task <- extract_gsea_task(gsea_res, contrast_id = "Treatment_vs_Control")
-#' }
+#' # Load a pre-computed GseaRes shipped with the package
+#' gsea_res <- readRDS(system.file(
+#'   "extdata", "precomputed_gseares.rds", package = "GSEAlens"
+#' ))
+#' task <- extract_gsea_task(gsea_res, contrast_id = "untrt_vs_trt")
+#' class(task)
 #' @export
 extract_gsea_task <- function(gsea_res, contrast_id, target_collection = "ALL") {
   # 1. 鏍￠獙杈撳叆
@@ -219,9 +231,11 @@ extract_gsea_task <- function(gsea_res, contrast_id, target_collection = "ALL") 
 #' @export
 
 #' @examples
-#' \dontrun{
+#' # Load a pre-computed GseaRes shipped with the package
+#' gsea_res <- readRDS(system.file(
+#'   "extdata", "precomputed_gseares.rds", package = "GSEAlens"
+#' ))
 #' inspect_gsea_res(gsea_res)
-#' }
 inspect_gsea_res <- function(gsea_res) {
   if (!inherits(gsea_res, "GseaRes")) stop("Input object is not of GseaRes class.")
 

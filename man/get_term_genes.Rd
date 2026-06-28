@@ -18,7 +18,11 @@ Character vector
 Extract complete gene list for a pathway from geneset_info.
 }
 \examples{
-\dontrun{
-genes <- get_term_genes(gsea_res, "HALLMARK_INFLAMMATORY_RESPONSE")
-}
+# Load a pre-computed GseaRes shipped with the package
+gsea_res <- readRDS(system.file(
+  "extdata", "precomputed_gseares.rds", package = "GSEAlens"
+))
+pw_id <- gsea_res$geneset_info$term2gene$gs_name[1]
+genes <- get_term_genes(gsea_res, pw_id)
+head(genes)
 }

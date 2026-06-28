@@ -48,8 +48,20 @@ GseaRes object
 Consumes a standard GseaEnv object and performs efficient parallel GSEA calculation.
 }
 \examples{
-\dontrun{
-# batch_calc_gsea is time-consuming; see the vignette for full usage.
-gsea_res <- batch_calc_gsea(gsea_env, workers = 2)
+\donttest{
+# Build a GseaEnv from pre-computed inputs shipped with the package
+precomp <- readRDS(system.file(
+  "extdata", "preprocessed_limma.rds", package = "GSEAlens"
+))
+pathways <- readRDS(system.file(
+  "extdata", "gsea_pathwaysets_toy.rds", package = "GSEAlens"
+))
+gsea_env <- setup_gsea_env(
+  fit = precomp$fit,
+  pathway_obj = pathways,
+  expr_data = precomp$gsea_limma_voom_data
+)
+# Run batch GSEA (writes to a temporary directory; ~20s on the toy set)
+gsea_res <- batch_calc_gsea(gsea_env, workers = 2, output_dir = tempdir())
 }
 }

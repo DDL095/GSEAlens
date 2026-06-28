@@ -111,16 +111,33 @@ pak::pkg_install("DDL095/GSEAlens")
 ```{r setup-environment, results='hide'}
 library(GSEAlens)
 library(airway)
-data(airway)
-expression_data <- airway
 ```
 
 在本主 vignette 中，三个输入对象（`fit`、`dds_se`、`dds`）按照预处理 vignette 的
-步骤准备完毕后，传入下方的 GSEAlens 函数。
+步骤准备完毕。由于在每次编译时重跑 `DESeq2::DESeq()` 与 limma-voom 流程会使
+vignette 变慢，我们在 `inst/extdata/` 中附带了这些对象的**预计算版本**；
+重新生成它们的脚本位于 `inst/scripts/make_preprocessed_inputs.R`，
+完全遵循预处理 vignette 的步骤。
 
-```{r load-prepared-objects, eval=FALSE}
-# 运行预处理 vignette 以获取 fit / dds_se / dds：
-# vignette("GSEAlens-preprocessing-zh")
+```{r load-prepared-objects}
+preproc_limma <- readRDS(system.file(
+  "extdata", "preprocessed_limma.rds", package = "GSEAlens"
+))
+fit                   <- preproc_limma$fit
+gsea_limma_voom_data  <- preproc_limma$gsea_limma_voom_data
+
+dds_se <- readRDS(system.file(
+  "extdata", "preprocessed_dds_se.rds", package = "GSEAlens"
+))
+dds    <- readRDS(system.file(
+  "extdata", "preprocessed_dds.rds", package = "GSEAlens"
+))
+```
+
+若要从自己的数据中准备这些对象，请参阅补充预处理 vignette：
+
+```r
+vignette("GSEAlens-preprocessing-zh")
 ```
 
 ## GSEAlens处理
@@ -129,8 +146,20 @@ expression_data <- airway
 
 使用`build_gsea_pathways`函数构建用于GSEA富集分析的基因集对象
 
-```{r build-gsea-pathways}
-gsea_pathwaysets <- GSEAlens::build_gsea_pathways(species = "HS",auto_select = c(17,18,19,20,26))
+```{r build-gsea-pathways, eval=FALSE}
+# 实际调用（在 Bioconductor 构建机上较慢，因需加载多个 MSigDB 集合；编译时跳过）
+# gsea_pathwaysets <- GSEAlens::build_gsea_pathways(
+#   species = "HS", auto_select = c("H", "C2:CP:REACTOME", "C5:GO:BP")
+# )
+```
+
+```{r load-precomputed-pathways}
+# 为加速 vignette 编译，此处加载预计算的轻量级基因集对象
+# （Hallmark + KEGG_LEGACY，共 236 条通路）。
+# 重新生成方法见 inst/scripts/make_gsea_pathwaysets_toy.R。
+gsea_pathwaysets <- readRDS(system.file(
+  "extdata", "gsea_pathwaysets_toy.rds", package = "GSEAlens"
+))
 ```
 
 ### 组装运算对象

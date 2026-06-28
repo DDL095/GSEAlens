@@ -18,7 +18,13 @@ Named list, names = pathway_id, values = core_genes vector
 Batch data preparation for 03 module Network/UpSet/Chord visualizations.
 }
 \examples{
-\dontrun{
-genes <- get_core_genes_list(gsea_task, pathway_ids)
-}
+# Load a pre-computed GseaRes and extract a task
+gsea_res <- readRDS(system.file(
+  "extdata", "precomputed_gseares.rds", package = "GSEAlens"
+))
+task <- extract_gsea_task(gsea_res, contrast_id = "untrt_vs_trt")
+res_df <- as.data.frame(task$gsea_res)
+pw_ids <- head(res_df$ID, 3)
+genes_list <- get_core_genes_list(task, pw_ids)
+length(genes_list)
 }

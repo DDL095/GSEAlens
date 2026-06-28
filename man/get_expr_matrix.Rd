@@ -28,14 +28,18 @@ Extract expression matrix from GseaEnv or GseaRes object, supporting
   TPM, and log-normalized counts.
 }
 \examples{
-\dontrun{
-# Get default expression matrix
-expr <- get_expr_matrix(gsea_res)
-
-# Get log2 CPM values
-expr <- get_expr_matrix(gsea_res, type = "logcpm")
-
-# Get variance stabilizing transformed values (DESeq2 only)
-expr <- get_expr_matrix(gsea_res, type = "vst")
-}
+# Load pre-computed inputs shipped with the package
+precomp <- readRDS(system.file(
+  "extdata", "preprocessed_limma.rds", package = "GSEAlens"
+))
+pathways <- readRDS(system.file(
+  "extdata", "gsea_pathwaysets_toy.rds", package = "GSEAlens"
+))
+gsea_env <- setup_gsea_env(
+  fit = precomp$fit,
+  pathway_obj = pathways,
+  expr_data = precomp$gsea_limma_voom_data
+)
+expr <- get_expr_matrix(gsea_env)
+dim(expr)
 }

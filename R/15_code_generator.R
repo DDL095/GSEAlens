@@ -9,12 +9,20 @@
 #' @export
 
 #' @examples
-#' \dontrun{
-#' code <- generate_pathway_plot_code(GSEAlens_res = gsea_res,
-#'                                    contrast_id = "Treat_vs_Control",
-#'                                    target_pathways = c("HALLMARK_INFLAMMATORY_RESPONSE"))
+#' # Generate plotting code for the top enriched pathway in a pre-computed task
+#' gsea_res <- readRDS(system.file(
+#'   "extdata", "precomputed_gseares.rds", package = "GSEAlens"
+#' ))
+#' task <- extract_gsea_task(gsea_res, contrast_id = "untrt_vs_trt")
+#' res_df <- as.data.frame(task$gsea_res)
+#' top_pathway <- res_df$ID[1]
+#'
+#' code <- generate_pathway_plot_code(
+#'   GSEAlens_res   = gsea_res,
+#'   contrast_id    = "untrt_vs_trt",
+#'   target_pathways = top_pathway
+#' )
 #' cat(code)
-#' }
 generate_pathway_plot_code <- function(GSEAlens_res,
                                        contrast_id,
                                        target_pathways,

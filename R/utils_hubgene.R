@@ -27,9 +27,19 @@
 #' @export
 
 #' @examples
-#' \dontrun{
-#' network <- build_hubgene_network(gsea_task, pathway_ids)
-#' }
+#' # Load pre-computed GseaRes shipped with the package and pick a task
+#' gsea_res <- readRDS(system.file(
+#'   "extdata", "precomputed_gseares.rds", package = "GSEAlens"
+#' ))
+#' task <- extract_gsea_task(gsea_res, contrast_id = "untrt_vs_trt")
+#'
+#' # Pick top 3 enriched pathway IDs from the task result
+#' res_df <- as.data.frame(task$gsea_res)
+#' top_ids <- utils::head(res_df$ID, 3)
+#'
+#' # Build the hub-gene network from these pathways
+#' network <- build_hubgene_network(task, top_ids)
+#' names(network)
 build_hubgene_network <- function(gsea_task, pathway_ids,
                                   min_hub_degree = 2,
                                   de_df = NULL,
@@ -123,7 +133,12 @@ build_hubgene_network <- function(gsea_task, pathway_ids,
   })
 
   if (length(edges_list) > 0 && !all(vapply(edges_list, is.null, FUN.VALUE = logical(1L)))) {
-    edges <- do.call(plyr::rbind.fill, edges_list)
+    # plyr was removed from DESCRIPTION; dplyr::bind_rows produces an
+    # equivalent result here because every data.frame in edges_list is built
+    # by the same code path above (same columns), so column-set alignment is
+    # guaranteed. For heterogeneous column sets, bind_rows fills missing
+    # columns with NA exactly like plyr::rbind.fill did.
+    edges <- dplyr::bind_rows(edges_list)
   } else {
     edges <- NULL
   }
@@ -161,9 +176,19 @@ build_hubgene_network <- function(gsea_task, pathway_ids,
 #' @export
 
 #' @examples
-#' \dontrun{
-#' hubs <- extract_hub_genes(gsea_task, pathway_ids)
-#' }
+#' # Load pre-computed GseaRes shipped with the package and pick a task
+#' gsea_res <- readRDS(system.file(
+#'   "extdata", "precomputed_gseares.rds", package = "GSEAlens"
+#' ))
+#' task <- extract_gsea_task(gsea_res, contrast_id = "untrt_vs_trt")
+#'
+#' # Pick top 3 enriched pathway IDs from the task result
+#' res_df <- as.data.frame(task$gsea_res)
+#' top_ids <- utils::head(res_df$ID, 3)
+#'
+#' # Extract hub genes appearing in >= 2 of these pathways
+#' hubs <- extract_hub_genes(task, top_ids, min_degree = 2)
+#' utils::head(hubs)
 extract_hub_genes <- function(gsea_task, pathway_ids, min_degree = 2, de_df = NULL) {
   # Validate inputs
   if (is.null(pathway_ids) || length(pathway_ids) == 0) {
@@ -362,9 +387,29 @@ extract_hub_genes <- function(gsea_task, pathway_ids, min_degree = 2, de_df = NU
 #' @export
 
 #' @examples
-#' \dontrun{
-#' nodes <- prepare_hubgene_nodes(network_data)
-#' }
+#' # Build a minimal network_data object (2 pathways + 2 shared genes)
+#' network_data <- list(
+#'   nodes = list(
+#'     pathway = data.frame(
+#'       id = c("PATHWAY_A", "PATHWAY_B"), type = "pathway",
+#'       NES = c(2.0, -1.5), direction = c("up", "down"),
+#'       stringsAsFactors = FALSE
+#'     ),
+#'     gene = data.frame(
+#'       id = c("GENE_X", "GENE_Y"), type = "gene",
+#'       stringsAsFactors = FALSE
+#'     )
+#'   ),
+#'   edges = data.frame(
+#'     from = c("PATHWAY_A", "PATHWAY_A", "PATHWAY_B", "PATHWAY_B"),
+#'     to   = c("GENE_X", "GENE_Y", "GENE_X", "GENE_Y"),
+#'     stringsAsFactors = FALSE
+#'   ),
+#'   hub_df = data.frame(gene = c("GENE_X", "GENE_Y"), degree = c(2, 2),
+#'                       stringsAsFactors = FALSE)
+#' )
+#' nodes <- prepare_hubgene_nodes(network_data, layout = "fr", seed = 42)
+#' if (!is.null(nodes)) head(nodes$all[, c("id", "type")])
 prepare_hubgene_nodes <- function(network_data, layout = "fr", seed = 42) {
   if (is.null(network_data) || is.null(network_data$nodes)) {
     return(NULL)
@@ -467,9 +512,16 @@ prepare_hubgene_nodes <- function(network_data, layout = "fr", seed = 42) {
 #' @export
 
 #' @examples
-#' \dontrun{
-#' colored <- color_by_direction(node_data)
-#' }
+#' # Build a minimal node data frame (pathway + gene nodes)
+#' nodes <- data.frame(
+#'   name   = c("P_POS", "P_NEG", "G_UP", "G_DOWN"),
+#'   type   = c("pathway", "pathway", "gene", "gene"),
+#'   NES    = c( 2.5, -2.0, NA, NA),
+#'   log2FC = c( NA,  NA, 1.5, -1.2),
+#'   stringsAsFactors = FALSE
+#' )
+#' colored <- color_by_direction(nodes, color_mode = "logFC")
+#' head(colored$color)
 color_by_direction <- function(node_data, color_mode = "logFC",
                                left_group = "A", right_group = "B") {
   # Define color palette (consistent with volcano/NES plots)
@@ -560,9 +612,19 @@ color_by_direction <- function(node_data, color_mode = "logFC",
 #' @export
 
 #' @examples
-#' \dontrun{
-#' hover <- generate_hubgene_hover_text(node, "gene")
-#' }
+#' # Example with a pathway node
+#' pathway_node <- list(
+#'   id = "HALLMARK_INFLAMMATORY_RESPONSE",
+#'   NES = 2.3, FDR = 0.001, pvalue = 0.0005,
+#'   n_core = 15, n_total = 50
+#' )
+#' hover_pathway <- generate_hubgene_hover_text(pathway_node, "pathway")
+#' cat(hover_pathway)
+#'
+#' # Example with a gene node
+#' gene_node <- list(id = "GENE_A", log2FC = 1.8)
+#' hover_gene <- generate_hubgene_hover_text(gene_node, "gene")
+#' cat(hover_gene)
 generate_hubgene_hover_text <- function(node, node_type,
                                         left_group = "A",
                                         right_group = "B") {

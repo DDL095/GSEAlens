@@ -18,8 +18,10 @@ Retrieve gene set collection metadata including pathway definitions
   and annotation dictionary.
 }
 \examples{
-\dontrun{
+# Load a pre-computed GseaRes shipped with the package
+gsea_res <- readRDS(system.file(
+  "extdata", "precomputed_gseares.rds", package = "GSEAlens"
+))
 gs_info <- get_geneset_info(gsea_res)
 names(gs_info)
-}
 }

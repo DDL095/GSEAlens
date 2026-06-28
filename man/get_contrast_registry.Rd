@@ -17,8 +17,10 @@ Retrieve the registered contrasts used for differential expression
   analysis, including contrast definitions and metadata.
 }
 \examples{
-\dontrun{
+# Load a pre-computed GseaRes shipped with the package
+gsea_res <- readRDS(system.file(
+  "extdata", "precomputed_gseares.rds", package = "GSEAlens"
+))
 registry <- get_contrast_registry(gsea_res)
-names(registry)
-}
+print(registry)
 }

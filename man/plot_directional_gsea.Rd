@@ -41,8 +41,15 @@ Professional-grade GSEA plotting engine with seamless support for single or mult
   Automatically generates elegant legends and native red-blue gene distribution track.
 }
 \examples{
-\dontrun{
-plot_directional_gsea(directional_gsea_obj,
-                      target_pathways = c("HALLMARK_INFLAMMATORY_RESPONSE"))
-}
+# Load pre-computed GseaRes and pick a task + an enriched pathway ID
+gsea_res <- readRDS(system.file(
+  "extdata", "precomputed_gseares.rds", package = "GSEAlens"
+))
+task <- extract_gsea_task(gsea_res, contrast_id = "untrt_vs_trt")
+res_df <- as.data.frame(task$gsea_res)
+top_pathway <- res_df$ID[1]
+
+# Render the directional GSEA plot (enrichment + rank + heatmap tracks)
+p <- plot_directional_gsea(task, target_pathways = top_pathway)
+class(p)
 }

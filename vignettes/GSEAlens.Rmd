@@ -117,17 +117,36 @@ input objects (`fit`, `dds_se`, `dds`) have been prepared according to standard
 ```{r setup-environment, results='hide'}
 library(GSEAlens)
 library(airway)
-data(airway)
-expression_data <- airway
 ```
 
 For reproducibility in this main vignette, the three input objects (`fit`,
-`dds_se`, `dds`) are prepared following the preprocessing vignette, then passed
-to GSEAlens functions below.
+`dds_se`, `dds`) are prepared following the preprocessing vignette. Because
+re-running `DESeq2::DESeq()` and the limma-voom pipeline on every build would
+make the vignette slow, we ship **pre-computed** versions of those objects in
+`inst/extdata/`; the script that regenerates them lives in
+`inst/scripts/make_preprocessed_inputs.R` and follows the preprocessing
+vignette exactly.
 
-```{r load-prepared-objects, eval=FALSE}
-# Run the preprocessing vignette to obtain fit / dds_se / dds:
-# vignette("GSEAlens-preprocessing")
+```{r load-prepared-objects}
+preproc_limma <- readRDS(system.file(
+  "extdata", "preprocessed_limma.rds", package = "GSEAlens"
+))
+fit                   <- preproc_limma$fit
+gsea_limma_voom_data  <- preproc_limma$gsea_limma_voom_data
+
+dds_se <- readRDS(system.file(
+  "extdata", "preprocessed_dds_se.rds", package = "GSEAlens"
+))
+dds    <- readRDS(system.file(
+  "extdata", "preprocessed_dds.rds", package = "GSEAlens"
+))
+```
+
+To prepare these objects from your own data, follow the supplementary
+preprocessing vignette:
+
+```r
+vignette("GSEAlens-preprocessing")
 ```
 
 ## GSEAlens Processing
@@ -136,8 +155,21 @@ to GSEAlens functions below.
 
 Use the `build_gsea_pathways` function to construct a pathway object for GSEA enrichment analysis.
 
-```{r build-gsea-pathways}
-gsea_pathwaysets <- GSEAlens::build_gsea_pathways(species = "HS",auto_select = c(17,18,19,20,26))
+```{r build-gsea-pathways, eval=FALSE}
+# Real call (slow on the Bioconductor build machine because it loads
+# multiple MSigDB collections; skipped during build).
+# gsea_pathwaysets <- GSEAlens::build_gsea_pathways(
+#   species = "HS", auto_select = c("H", "C2:CP:REACTOME", "C5:GO:BP")
+# )
+```
+
+```{r load-precomputed-pathways}
+# For the vignette we load a pre-computed lightweight pathway object
+# (Hallmark + KEGG_LEGACY, 236 pathways). See
+# inst/scripts/make_gsea_pathwaysets_toy.R for regeneration instructions.
+gsea_pathwaysets <- readRDS(system.file(
+  "extdata", "gsea_pathwaysets_toy.rds", package = "GSEAlens"
+))
 ```
 
 ### Assembling Computation Object

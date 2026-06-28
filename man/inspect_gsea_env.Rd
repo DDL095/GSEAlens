@@ -17,8 +17,17 @@ Print detailed information about the GseaEnv object to the console, including ba
 contrast list, and gene set status.
 }
 \examples{
-\dontrun{
-# Requires a pre-built GseaEnv object
-inspect_gsea_env(gsea_env)
-}
+# Build a GseaEnv from pre-computed inputs shipped with the package
+precomp <- readRDS(system.file(
+  "extdata", "preprocessed_limma.rds", package = "GSEAlens"
+))
+pathways <- readRDS(system.file(
+  "extdata", "gsea_pathwaysets_toy.rds", package = "GSEAlens"
+))
+env <- setup_gsea_env(
+  fit       = precomp$fit,
+  pathway_obj = pathways,
+  expr_data = precomp$gsea_limma_voom_data
+)
+inspect_gsea_env(env)
 }

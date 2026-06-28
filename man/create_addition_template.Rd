@@ -28,14 +28,15 @@ Generate a template CSV file containing all pathway IDs from
   such as Brief_Description, Custom_Category, Custom_Tag, and User_Notes.
 }
 \examples{
-\dontrun{
-# Create template with all pathway IDs
-create_addition_template(gsea_res, "my_template.csv")
+# Load pre-computed GseaRes shipped with the package and write a template
+# CSV to a temporary file (no side effects on the user's filesystem).
+gsea_res <- readRDS(system.file(
+  "extdata", "precomputed_gseares.rds", package = "GSEAlens"
+))
+out_csv <- file.path(tempdir(), "addition_template_demo.csv")
+create_addition_template(gsea_res, output_path = out_csv)
 
-# After editing the CSV with custom annotations, convert to RDS
-creat_addition_data_rdsfile("my_template.csv")
-
-# Then load in GSEAlens
-gsea_app <- launch_gsea_app(gsea_res, "my_template.rds")
-}
+# The template contains one row per pathway ID, ready to edit.
+template <- utils::read.csv(out_csv)
+utils::head(template)
 }

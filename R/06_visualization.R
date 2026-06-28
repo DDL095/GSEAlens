@@ -1,14 +1,13 @@
 # Section: Visualization and Report Generation ----
 
-#' @title GSEA Visualization and Report Generation
-#' @description Provides static plotting functions and interactive HTML report generation capabilities.
-#' @name visualization
-NULL
-
-# Section: Visualization and Report Generation ----
-
-#' @title GSEA Visualization and Report Generation
-#' @description Provides static plotting functions and interactive HTML report generation capabilities.
+#' GSEA Visualization and Report Generation
+#'
+#' Provides static plotting functions and interactive HTML report generation
+#' capabilities. This is a documentation landing page for the visualization
+#' family of functions in this file.
+#'
+#' @return NULL (this is a documentation landing page; individual functions
+#'   return their own objects, documented separately).
 #' @name visualization
 NULL
 
@@ -32,10 +31,17 @@ NULL
 #' @export
 
 #' @examples
-#' \dontrun{
-#' plot_directional_gsea(directional_gsea_obj,
-#'                       target_pathways = c("HALLMARK_INFLAMMATORY_RESPONSE"))
-#' }
+#' # Load pre-computed GseaRes and pick a task + an enriched pathway ID
+#' gsea_res <- readRDS(system.file(
+#'   "extdata", "precomputed_gseares.rds", package = "GSEAlens"
+#' ))
+#' task <- extract_gsea_task(gsea_res, contrast_id = "untrt_vs_trt")
+#' res_df <- as.data.frame(task$gsea_res)
+#' top_pathway <- res_df$ID[1]
+#'
+#' # Render the directional GSEA plot (enrichment + rank + heatmap tracks)
+#' p <- plot_directional_gsea(task, target_pathways = top_pathway)
+#' class(p)
 plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
                                   main_title = NULL, subPlot = 3,
                                   curveCol = NULL, add_pval = FALSE,

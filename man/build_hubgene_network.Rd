@@ -37,7 +37,17 @@ Build complete network data with leading edge information for edges.
 Now properly passes de_df to extract_hub_genes for stat extraction.
 }
 \examples{
-\dontrun{
-network <- build_hubgene_network(gsea_task, pathway_ids)
-}
+# Load pre-computed GseaRes shipped with the package and pick a task
+gsea_res <- readRDS(system.file(
+  "extdata", "precomputed_gseares.rds", package = "GSEAlens"
+))
+task <- extract_gsea_task(gsea_res, contrast_id = "untrt_vs_trt")
+
+# Pick top 3 enriched pathway IDs from the task result
+res_df <- as.data.frame(task$gsea_res)
+top_ids <- utils::head(res_df$ID, 3)
+
+# Build the hub-gene network from these pathways
+network <- build_hubgene_network(task, top_ids)
+names(network)
 }

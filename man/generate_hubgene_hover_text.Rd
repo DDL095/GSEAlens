@@ -27,7 +27,17 @@ Character string with HTML content for hover tooltip
 Generate HTML text for plotly hover tooltips.
 }
 \examples{
-\dontrun{
-hover <- generate_hubgene_hover_text(node, "gene")
-}
+# Example with a pathway node
+pathway_node <- list(
+  id = "HALLMARK_INFLAMMATORY_RESPONSE",
+  NES = 2.3, FDR = 0.001, pvalue = 0.0005,
+  n_core = 15, n_total = 50
+)
+hover_pathway <- generate_hubgene_hover_text(pathway_node, "pathway")
+cat(hover_pathway)
+
+# Example with a gene node
+gene_node <- list(id = "GENE_A", log2FC = 1.8)
+hover_gene <- generate_hubgene_hover_text(gene_node, "gene")
+cat(hover_gene)
 }

@@ -7,9 +7,15 @@
 #' @export
 #'
 #' @examples
-#' \dontrun{
-#' core_genes <- get_core_genes_for_pathway(gsea_res, "HALLMARK_OXIDATIVE_PHOSPHORYLATION")
-#' }
+#' # Load a pre-computed GseaRes and extract a task
+#' gsea_res <- readRDS(system.file(
+#'   "extdata", "precomputed_gseares.rds", package = "GSEAlens"
+#' ))
+#' task <- extract_gsea_task(gsea_res, contrast_id = "untrt_vs_trt")
+#' res_df <- as.data.frame(task$gsea_res)
+#' pw_id <- res_df$ID[1]
+#' core_genes <- get_core_genes_for_pathway(task, pw_id)
+#' head(core_genes)
 get_core_genes_for_pathway <- function(gsea_res_obj, pathway_id) {
   # 缁熶竴澶勭悊杈撳叆锛氬彲鑳芥槸GseaRes瀵硅薄鎴栧凡鎻愬彇鐨則ask缁撴灉
   if (inherits(gsea_res_obj, "GseaRes")) {
@@ -74,9 +80,15 @@ get_core_genes_for_pathway <- function(gsea_res_obj, pathway_id) {
 #'
 
 #' @examples
-#' \dontrun{
-#' genes <- get_core_genes_list(gsea_task, pathway_ids)
-#' }
+#' # Load a pre-computed GseaRes and extract a task
+#' gsea_res <- readRDS(system.file(
+#'   "extdata", "precomputed_gseares.rds", package = "GSEAlens"
+#' ))
+#' task <- extract_gsea_task(gsea_res, contrast_id = "untrt_vs_trt")
+#' res_df <- as.data.frame(task$gsea_res)
+#' pw_ids <- head(res_df$ID, 3)
+#' genes_list <- get_core_genes_list(task, pw_ids)
+#' length(genes_list)
 get_core_genes_list <- function(gsea_task_obj, pathway_ids) {
   if (!inherits(gsea_task_obj, "GseaTask")) {
     stop("Must pass a GseaTask object")
@@ -144,9 +156,13 @@ calculate_overlap_ratio <- function(pathway_genes, de_genes, ratio_mode = c("ora
 #'
 
 #' @examples
-#' \dontrun{
-#' genes <- get_term_genes(gsea_res, "HALLMARK_INFLAMMATORY_RESPONSE")
-#' }
+#' # Load a pre-computed GseaRes shipped with the package
+#' gsea_res <- readRDS(system.file(
+#'   "extdata", "precomputed_gseares.rds", package = "GSEAlens"
+#' ))
+#' pw_id <- gsea_res$geneset_info$term2gene$gs_name[1]
+#' genes <- get_term_genes(gsea_res, pw_id)
+#' head(genes)
 get_term_genes <- function(gsea_res, pathway_id) {
   term2gene <- gsea_res$geneset_info$term2gene
   genes <- term2gene$gene_symbol[term2gene$gs_name == pathway_id]
@@ -231,9 +247,13 @@ validate_param <- function(value, default, min_val = 1, max_val = NULL, param_na
 #'
 
 #' @examples
-#' \dontrun{
-#' edges <- build_edge_list_safely(core_genes_list)
-#' }
+#' # Build edges from two pathways sharing 2 core genes
+#' core_genes <- list(
+#'   PATHWAY_A = c("GENE_A", "GENE_B", "GENE_C"),
+#'   PATHWAY_B = c("GENE_B", "GENE_C", "GENE_D")
+#' )
+#' edges <- build_edge_list_safely(core_genes, min_shared_genes = 2)
+#' print(edges)
 build_edge_list_safely <- function(core_genes_list, min_shared_genes = 2) {
   # ==== 闃插尽鎬ф鏌?====
 

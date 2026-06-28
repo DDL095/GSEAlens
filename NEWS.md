@@ -1,5 +1,28 @@
 <!-- NEWS.md is maintained by https://cynkra.github.io/fledge, do not edit -->
 
+# GSEAlens 0.99.10
+
+BiocCheck compliance: clear the ">= 80% runnable examples" ERROR, plus
+provenance documentation for shipped pre-computed RDS objects.
+
+- Convert 10 exported functions from `\dontrun{}` examples to truly runnable examples by loading shipped pre-computed RDS objects (`precomputed_gseares.rds`, `preprocessed_limma.rds`, `gsea_pathwaysets_toy.rds`) or writing demo files to `tempdir()`. Functions updated: `setup_gsea_env`, `inspect_gsea_env`, `import_gsea_capsule`, `plot_directional_gsea`, `generate_pathway_plot_code`, `build_hubgene_network`, `extract_hub_genes`, `read_addition_data`, `creat_addition_data_rdsfile`, `create_addition_template`. This raises runnable example coverage from 57% (21/37) to 84% (31/37) and clears the BiocCheck ERROR "At least 80% of man pages documenting exported objects must have runnable examples".
+- Fix BiocCheck WARNING on `man/visualization.Rd`: the roxygen block for the `visualization` documentation landing page had a duplicate `@name` / `NULL` section, which suppressed the `\value{}` block and left the Rd without a value section. Consolidated to a single roxygen block with `@return NULL` so the generated Rd has a proper `\value{}`.
+- Fix BiocCheck NOTE "Use accessors; don't access S4 class slots via '@' in examples": replaced `task$gsea_res@result$ID[1]` with `as.data.frame(task$gsea_res)$ID[1]` in `get_core_genes_for_pathway()` and `get_core_genes_list()` examples (`R/utils-core-genes.R`). The `clusterProfiler::gseaResult` class has an `as.data.frame()` method that exposes the `@result` slot without direct S4 slot access.
+- Add `inst/scripts/make_precomputed_gseares.R`, the maintainer-only generator script for `inst/extdata/precomputed_gseares.rds`. Documents the exact inputs (`preprocessed_limma.rds` + `gsea_pathwaysets_toy.rds`), clusterProfiler/fgsea versions, and the `batch_calc_gsea()` call used to produce the shipped object, so the artefact is reproducible when upstream packages bump. Update `inst/scripts/README.md` with the new file's row in the regeneration table and the dependency order note.
+- Remove stale `tests/testthat/test-run_app.R.placeholder.bak` (renamed backup of the placeholder test retired in 0.99.9). Remove misspelled `GSEAlen.Rproj` (duplicate of `GSEAlens.Rproj`); also drop its line from `.Rbuildignore`.
+
+# GSEAlens 0.99.9
+
+Bioconductor review Phase 4: dependency hygiene, import hardening, and the first real test suite.
+
+- Replace `parallel::detectCores()` with `future::availableCores()` in `batch_calc_gsea()` (`R/04_calculation.R`) so that the worker count honors `future` backend configuration (e.g. `future.cores` option, `CIRCLE_NODE_TOTAL`, Slurm env vars) instead of always reading hardware cores. This removes the last direct `parallel::` call from the package and aligns with Bioconductor guidance to defer parallelization decisions to the user-selected backend (`future` / `BiocParallel`).
+- Replace `plyr::rbind.fill()` with `dplyr::bind_rows()` in `build_hubgene_network()` (`R/utils_hubgene.R`). The two are semantically equivalent for the homogeneous data-frame list used here (both fill missing columns with `NA`), but `dplyr::bind_rows()` is actively maintained and avoids the superseded `plyr` dependency. Verified behavior parity with a targeted R check on heterogeneous-column inputs.
+- Move `withr` from `Suggests` to `Imports` and add explicit `importFrom(withr, with_seed)` / `importFrom(withr, local_seed)` to `NAMESPACE`. `withr` is now used unconditionally in production code (RNG scoping in 4 sites since 0.99.7), so it must be a hard dependency.
+- Add 23 explicit `importFrom` declarations covering `tools` (1), `withr` (2), `enrichit` (1), `igraph` (7), `visNetwork` (8), `shinyjs` (2), and `progressr` (2) to `NAMESPACE` via `R/utils-imports.R`. This eliminates all residual `pkg::fun()` calls for these packages so that `R CMD check` reports zero "undeclared package usage" notes and downstream code is robust to masked search-path changes.
+- Add the first real `testthat` suite: 73 tests across 6 files (`tests/testthat/test-calculate_overlap_ratio.R`, `test-color_by_direction.R`, `test-build_edge_list_safely.R`, `test-validate_param.R`, `test-build_gsea_pathways.R`, `test-setup_gsea_env.R`). The previous `test-run_app.R` placeholder (`expect_equal(2 * 2, 4)`, unchanged since v0.99.0) is preserved as `.placeholder.bak`. The new suite covers 5 exported functions and the `setup_gsea_env()` input-validation gateway; all tests pass cleanly under `R CMD check --as-cran`. Closes Bioconductor reviewer comment #11 ("add real tests").
+- Wrap the two interactive `build_gsea_pathways()` examples (those relying on `readline()`) in `\dontrun{}` and correct the MM-species example to use the M-prefixed collection codes (`c("MH", "M5:GO:BP")`) instead of the human codes. This resolves a long-standing `R CMD check` ERROR where the example called `readline()` in a non-interactive session.
+- Translate 7 Chinese code comments in `R/09_shiny_mod_table.R` (JS debounce logic and Shiny input-handler semantics) to English to eliminate the `R CMD check` "non-ASCII characters in R code" WARNING.
+
 # GSEAlens 0.99.8
 
 Follow-up hardening to the scoped RNG work in 0.99.7; no user-facing behavior change.

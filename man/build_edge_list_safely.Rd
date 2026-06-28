@@ -22,7 +22,11 @@ Safely construct edge list for pathway network based on Jaccard
   similarity assessment.
 }
 \examples{
-\dontrun{
-edges <- build_edge_list_safely(core_genes_list)
-}
+# Build edges from two pathways sharing 2 core genes
+core_genes <- list(
+  PATHWAY_A = c("GENE_A", "GENE_B", "GENE_C"),
+  PATHWAY_B = c("GENE_B", "GENE_C", "GENE_D")
+)
+edges <- build_edge_list_safely(core_genes, min_shared_genes = 2)
+print(edges)
 }

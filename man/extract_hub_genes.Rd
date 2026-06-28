@@ -29,7 +29,17 @@ Extract hub genes with their leading edge status for each pathway.
 A gene is considered a hub if it appears in at least min_degree pathways.
 }
 \examples{
-\dontrun{
-hubs <- extract_hub_genes(gsea_task, pathway_ids)
-}
+# Load pre-computed GseaRes shipped with the package and pick a task
+gsea_res <- readRDS(system.file(
+  "extdata", "precomputed_gseares.rds", package = "GSEAlens"
+))
+task <- extract_gsea_task(gsea_res, contrast_id = "untrt_vs_trt")
+
+# Pick top 3 enriched pathway IDs from the task result
+res_df <- as.data.frame(task$gsea_res)
+top_ids <- utils::head(res_df$ID, 3)
+
+# Extract hub genes appearing in >= 2 of these pathways
+hubs <- extract_hub_genes(task, top_ids, min_degree = 2)
+utils::head(hubs)
 }

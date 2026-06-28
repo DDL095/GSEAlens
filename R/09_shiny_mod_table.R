@@ -17,8 +17,10 @@ mod_master_table_ui <- function(id) {
           var checkboxes = document.querySelectorAll('.joint-plot-checkbox');
           var now = Date.now();
           checkboxes.forEach(function(cb) {
-            // 跳过最近 800ms 内用户刚操作的 cb，避免回写覆盖浏览器原生状态
-            // （解决快速点击时 R->JS 回写把用户已勾上的 cb 重置为 unchecked 的问题）
+            // Skip checkboxes the user clicked within the last 800ms to avoid
+            // server write-back overwriting native browser state.
+            // (fixes the issue where fast R->JS write-back resets user-checked
+            //  boxes to unchecked)
             if (cb._lastUserClick && (now - cb._lastUserClick) < 800) return;
             var id = cb.getAttribute('data-id');
             var shouldBeChecked = ids.indexOf(id) !== -1;
@@ -243,7 +245,8 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
         current_selection <- isolate(joint_selected())
 
         # Interactive columns
-        # onclick 中先记录时间戳到 cb._lastUserClick，message 带 ts 字段防止 Shiny 内部去重
+        # onclick first stamps cb._lastUserClick; the message carries a ts field
+        # to prevent Shiny internal input deduplication
         df$Select_for_Plot <- sprintf(
           '<input type="checkbox" class="joint-plot-checkbox" data-id="%s" %s onclick="this._lastUserClick=Date.now();Shiny.setInputValue(\'%s\', {id: \'%s\', checked: this.checked, ts: Date.now()}, {priority: \'event\'});"/>',
           df$Safe_ID,
@@ -440,10 +443,12 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
     )
 
     # Sync checkbox state
-    # 用 debounce(250ms) 合并连续快速点击产生的多次 joint_selected 变化，
-    # 避免快速点击 N 次触发 N 次全量 DOM 回写，减少延迟积累。
-    # 注意：外部 API（update_selection/remove_pathways/clear_selection）的 UI 反馈
-    # 仍由各自的 externalUpdate 消息即时同步，不受 debounce 影响。
+    # Use debounce(250ms) to coalesce multiple joint_selected changes from rapid
+    # clicks, preventing N clicks from triggering N full DOM write-backs and
+    # reducing accumulated latency.
+    # Note: UI feedback from external APIs (update_selection / remove_pathways /
+    # clear_selection) is still synchronized immediately by their respective
+    # externalUpdate messages and is NOT affected by debounce.
     joint_selected_d <- shiny::debounce(joint_selected, 250)
     shiny::observe({
       sel <- joint_selected_d()

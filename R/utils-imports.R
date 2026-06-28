@@ -145,6 +145,53 @@ NULL
 #' @importFrom rlang .data
 NULL
 
+
+# ---- Native R utilities (base packages) -------------------------------------
+# `tools` ships with base R but Bioconductor requires explicit importFrom
+# for any `::` access in package code. See utils-accessors.R ::file_ext use.
+#' @importFrom tools file_ext
+NULL
+
+
+# ---- RNG encapsulation ------------------------------------------------------
+# withr::with_seed / local_seed replace set.seed() (reviewer comment #4).
+# Declared in Imports (not Suggests) because R/ code calls them directly.
+#' @importFrom withr with_seed local_seed
+NULL
+
+
+# ---- GSEA scoring helper ----------------------------------------------------
+# enrichit::gseaScores is the GSEA running-score core used by vis-gsea-core.R.
+#' @importFrom enrichit gseaScores
+NULL
+
+
+# ---- Network / graph --------------------------------------------------------
+# igraph powers the Pathway Relation module and Hubgene Network layouts.
+#' @importFrom igraph graph_from_data_frame layout_with_fr layout_with_kk
+#' @importFrom igraph layout_in_circle V vcount ecount
+NULL
+
+
+# ---- Interactive network rendering ------------------------------------------
+# visNetwork powers the Hubgene Network shiny module.
+#' @importFrom visNetwork visNetwork visNetworkOutput renderVisNetwork
+#' @importFrom visNetwork visPhysics visLayout visInteraction visOptions visEvents
+NULL
+
+
+# ---- Shiny UI helpers -------------------------------------------------------
+# shinyjs powers enable/disable of the edge-detail control in Pathway Relation.
+#' @importFrom shinyjs enable disable
+NULL
+
+
+# ---- Progress reporting -----------------------------------------------------
+# progressr powers the progressor inside batch_calc_gsea.
+#' @importFrom progressr handlers progressor
+NULL
+
+
 utils::globalVariables(c(
   ".", "gene_symbol", "stat", "abs_stat", "ID", "NES", "Collection",
   "Combo_Name", "Display_Collection", "Enriched_In", "Expression",

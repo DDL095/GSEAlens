@@ -27,7 +27,14 @@ Node data with added color and color_label columns
 Assign colors based on NES (pathways) or log2FC (genes).
 }
 \examples{
-\dontrun{
-colored <- color_by_direction(node_data)
-}
+# Build a minimal node data frame (pathway + gene nodes)
+nodes <- data.frame(
+  name   = c("P_POS", "P_NEG", "G_UP", "G_DOWN"),
+  type   = c("pathway", "pathway", "gene", "gene"),
+  NES    = c( 2.5, -2.0, NA, NA),
+  log2FC = c( NA,  NA, 1.5, -1.2),
+  stringsAsFactors = FALSE
+)
+colored <- color_by_direction(nodes, color_mode = "logFC")
+head(colored$color)
 }

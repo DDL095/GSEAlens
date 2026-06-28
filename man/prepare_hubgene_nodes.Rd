@@ -24,7 +24,27 @@ A named list with three components:
 Prepare node data with layout positions for plotly visualization.
 }
 \examples{
-\dontrun{
-nodes <- prepare_hubgene_nodes(network_data)
-}
+# Build a minimal network_data object (2 pathways + 2 shared genes)
+network_data <- list(
+  nodes = list(
+    pathway = data.frame(
+      id = c("PATHWAY_A", "PATHWAY_B"), type = "pathway",
+      NES = c(2.0, -1.5), direction = c("up", "down"),
+      stringsAsFactors = FALSE
+    ),
+    gene = data.frame(
+      id = c("GENE_X", "GENE_Y"), type = "gene",
+      stringsAsFactors = FALSE
+    )
+  ),
+  edges = data.frame(
+    from = c("PATHWAY_A", "PATHWAY_A", "PATHWAY_B", "PATHWAY_B"),
+    to   = c("GENE_X", "GENE_Y", "GENE_X", "GENE_Y"),
+    stringsAsFactors = FALSE
+  ),
+  hub_df = data.frame(gene = c("GENE_X", "GENE_Y"), degree = c(2, 2),
+                      stringsAsFactors = FALSE)
+)
+nodes <- prepare_hubgene_nodes(network_data, layout = "fr", seed = 42)
+if (!is.null(nodes)) head(nodes$all[, c("id", "type")])
 }

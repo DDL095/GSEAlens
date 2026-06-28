@@ -19,9 +19,10 @@ Extract and process sample metadata, handling DFrame conversion
   from DESeq2 and unifying group column naming conventions across backends.
 }
 \examples{
-\dontrun{
-# Get processed sample metadata
+# Load a pre-computed GseaRes shipped with the package
+gsea_res <- readRDS(system.file(
+  "extdata", "precomputed_gseares.rds", package = "GSEAlens"
+))
 meta <- get_sample_meta(gsea_res)
 head(meta)
-}
 }

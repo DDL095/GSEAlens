@@ -26,15 +26,18 @@
 #'   }
 #' @export
 #' @examples
-#' # Human mode (default)
+#' \dontrun{
+#' # Human mode (default) -- launches interactive menu, do not run in tests
 #' pathways <- build_gsea_pathways(species = "HS")
 #'
-#' # Mouse mode
+#' # Mouse mode -- also interactive
 #' pathways <- build_gsea_pathways(species = "MM")
+#' }
 #'
-#' # Automated selection by name
+#' # Automated selection by name (safe for non-interactive use)
 #' pathways <- build_gsea_pathways(species = "HS", auto_select = c("H", "C5:GO:BP"))
-#' pathways_mm <- build_gsea_pathways(species = "MM", auto_select = c("H", "C5:GO:BP"))
+#' # MM uses M-prefixed collection codes (MH, M5:GO:BP, ...)
+#' pathways_mm <- build_gsea_pathways(species = "MM", auto_select = c("MH", "M5:GO:BP"))
 #'
 #' # Load all collections
 #' pathways <- build_gsea_pathways(species = "HS", auto_select = "ALL")
@@ -45,7 +48,7 @@ build_gsea_pathways <- function(species = "HS", auto_select = NULL) {
 
   species <- toupper(trimws(as.character(species)))
 
-  # 鐗╃閰嶇疆琛?
+  # 物种配置表
   species_config <- list(
     "HS" = list(
       db_species = "HS",

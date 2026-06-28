@@ -19,7 +19,13 @@ Parse the core_enrichment field from GSEA results to extract the gene list.
   This is the fundamental data interface for all visualization modules in 03/04.
 }
 \examples{
-\dontrun{
-core_genes <- get_core_genes_for_pathway(gsea_res, "HALLMARK_OXIDATIVE_PHOSPHORYLATION")
-}
+# Load a pre-computed GseaRes and extract a task
+gsea_res <- readRDS(system.file(
+  "extdata", "precomputed_gseares.rds", package = "GSEAlens"
+))
+task <- extract_gsea_task(gsea_res, contrast_id = "untrt_vs_trt")
+res_df <- as.data.frame(task$gsea_res)
+pw_id <- res_df$ID[1]
+core_genes <- get_core_genes_for_pathway(task, pw_id)
+head(core_genes)
 }

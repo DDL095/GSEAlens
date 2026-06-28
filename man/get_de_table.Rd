@@ -24,12 +24,10 @@ Extract differential expression results for a specific contrast
   B_vs_A) by retrieving the forward contrast and flipping the sign of logFC.
 }
 \examples{
-\dontrun{
-# Get results for a specific contrast
-de_result <- get_de_table(gsea_res, contrast_id = "Treatment_vs_Control")
-
-# Reverse contrasts are automatically handled
-de_result <- get_de_table(gsea_res, contrast_id = "Control_vs_Treatment")
-# logFC and stat values will have inverted signs
-}
+# Load a pre-computed GseaRes shipped with the package
+gsea_res <- readRDS(system.file(
+  "extdata", "precomputed_gseares.rds", package = "GSEAlens"
+))
+de_result <- get_de_table(gsea_res, contrast_id = "untrt_vs_trt")
+head(de_result)
 }

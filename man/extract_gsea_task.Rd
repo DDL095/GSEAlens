@@ -22,7 +22,10 @@ Extract results for a specified contrast from a GseaRes capsule.
   Supports subsetting by gene set collection and automatically recalculates FDR.
 }
 \examples{
-\dontrun{
-task <- extract_gsea_task(gsea_res, contrast_id = "Treatment_vs_Control")
-}
+# Load a pre-computed GseaRes shipped with the package
+gsea_res <- readRDS(system.file(
+  "extdata", "precomputed_gseares.rds", package = "GSEAlens"
+))
+task <- extract_gsea_task(gsea_res, contrast_id = "untrt_vs_trt")
+class(task)
 }
