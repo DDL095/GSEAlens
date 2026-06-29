@@ -721,13 +721,38 @@ mod_data_prep_server <- function(id, gsea_res) {
             return()
           }
 
-          counts <- vapply(available, function(x) sum(startsWith(as.character(df_temp$Combo_Name), x)), numeric(1))
-          min_col <- available[which.min(counts)[1]]
+          # Sort collections: Hallmark (H/MH) first, then by main code
+          # (C1/M1, C2/M2, ...) in natural numeric order; within the same
+          # main code the main collection precedes its sub-collections
+          # (e.g. C2 before C2:CGP, C2 before C2:CP:REACTOME).
+          avail_chr <- as.character(available)
+          main_code <- sub(":.*$", "", avail_chr)
+          coll_num <- ifelse(
+            main_code %in% c("H", "MH"), 0L,
+            suppressWarnings(as.integer(gsub("[^0-9]", "", main_code)))
+          )
+          coll_num[is.na(coll_num)] <- 99L
+          has_sub <- grepl(":", avail_chr)
+          sub_part <- ifelse(has_sub, sub("^[^:]+:", "", avail_chr), "")
+          ord <- order(coll_num, has_sub, sub_part)
+          sorted_available <- avail_chr[ord]
+
+          # Default to Hallmark when present; otherwise fall back to the
+          # collection with the fewest entries (original heuristic).
+          hallmark <- intersect(c("H", "MH"), sorted_available)
+          if (length(hallmark) > 0) {
+            min_col <- hallmark[1]
+          } else {
+            counts <- vapply(sorted_available, function(x) {
+              sum(startsWith(as.character(df_temp$Combo_Name), x))
+            }, numeric(1))
+            min_col <- sorted_available[which.min(counts)[1]]
+          }
 
           shiny::updateSelectizeInput(
             session,
             "selected_collections",
-            choices = c("ALL", sort(available)),
+            choices = c("ALL", sorted_available),
             selected = min_col
           )
 
