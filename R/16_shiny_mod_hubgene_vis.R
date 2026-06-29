@@ -940,7 +940,11 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
       content = function(file) {
         code <- .hubgene_export_code()
         if (!nzchar(code)) return()
-        eval_env <- new.env(parent = baseenv())
+        # parent MUST be globalenv() so lexical lookup resolves attached
+        # packages (ggplot2, igraph etc.). baseenv() skips them and the eval
+        # fails with "could not find function 'ggplot'" / 'graph_from_data_frame',
+        # leaving p=NULL and the browser falling back to "<inputId>.htm".
+        eval_env <- new.env(parent = globalenv())
         eval_env$p <- NULL
         tryCatch(eval(parse(text = code), envir = eval_env),
                  error = function(e) shiny::showNotification(

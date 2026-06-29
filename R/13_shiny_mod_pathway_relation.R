@@ -510,9 +510,22 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
         (sqrt(pmax(size_vals, 0)) - sqrt_lo) / (sqrt_hi - sqrt_lo) *
         (size_range[2] - size_range[1])
       size_scaled <- pmin(pmax(size_scaled, size_range[1]), size_range[2])
-      plot_df <- plot_df[order(plot_df$NES, decreasing = TRUE), ]
-      size_scaled <- size_scaled[order(plot_df$NES, decreasing = TRUE)]
-      color_vals <- color_vals[order(plot_df$NES, decreasing = TRUE)]
+      # IRON FIX (2026-06-29): compute sort_idx ONCE on the ORIGINAL plot_df,
+      # then reorder plot_df / size_scaled / color_vals by the SAME index.
+      #
+      # Previous bug:
+      #   plot_df <- plot_df[order(plot_df$NES, decreasing = TRUE), ]
+      #   size_scaled <- size_scaled[order(plot_df$NES, decreasing = TRUE)]  # WRONG
+      #   color_vals  <- color_vals[order(plot_df$NES, decreasing = TRUE)]   # WRONG
+      # The second call to order() ran on the ALREADY-SORTED plot_df$NES, so
+      # when the source df was not pre-sorted by NES, size_scaled/color_vals
+      # got permuted inconsistent with the new plot_df row order. Symptom:
+      # "Color by switch has no visible effect" because the misalignment was
+      # invariant across color_mode changes.
+      sort_idx <- order(plot_df$NES, decreasing = TRUE)
+      plot_df    <- plot_df[sort_idx, ]
+      size_scaled <- size_scaled[sort_idx]
+      color_vals  <- color_vals[sort_idx]
       # Hover shows BOTH size dimensions; bold the one currently driving
       # dot size so the user can correlate visual size with the value.
       core_fmt <- if (size_mode == "core_size") "<b>Core Genes: %d</b>" else "Core Genes: %d"
@@ -1246,7 +1259,22 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
         # the ggplot object `p`, then ggsave it. This guarantees the static
         # figure is byte-for-byte identical to what the user would get by
         # running the copied code.
-        eval_env <- new.env(parent = baseenv())
+        #
+        # IRON FIX (2026-06-29): parent MUST be globalenv(), NOT baseenv().
+        # Reason: lexical lookup from eval_env walks parent chain only.
+        #   parent=baseenv() -> eval_env -> baseenv -> emptyenv
+        #     (skips ALL attached packages -> "could not find function 'ggplot'",
+        #      "could not find function 'graph_from_data_frame'", even though
+        #      library(ggplot2) is called inside the code, because library()
+        #      attaches to the search path which is reachable only from
+        #      globalenv's parent chain, not from baseenv's).
+        #   parent=globalenv() -> eval_env -> globalenv -> package:ggplot2 ...
+        #     (correctly resolves all attached namespaces).
+        # Side effect: eval_env$p is NULL on error -> content() returns without
+        # writing `file` -> Shiny sends empty response -> browser saves as
+        # "<inputId>.htm" (e.g. exp_download_img.htm). This explains the
+        # "downloaded file is .htm" symptom reported by users.
+        eval_env <- new.env(parent = globalenv())
         eval_env$p <- NULL
         tryCatch({
           eval(parse(text = code), envir = eval_env)

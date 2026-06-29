@@ -810,7 +810,6 @@ generate_volcano_code <- function(plot_df,
 # =============================================================================
 
 library(ggplot2)
-library(ggrepel)
 
 # --- Data --------------------------------------------------------------------
 df <- %s
@@ -909,7 +908,6 @@ generate_network_code <- function(edge_df, node_df,
 
 library(igraph)
 library(ggplot2)
-library(ggrepel)
 
 # --- Data --------------------------------------------------------------------
 edge_df <- %s
@@ -949,9 +947,11 @@ p <- ggplot() +
   scale_fill_manual(values = c("Up" = "#E41A1C", "Down" = "#377EB8"),
                     name = "Direction") +
   scale_size_continuous(range = c(3, 9), name = "-log10(FDR)") +
-  geom_text_repel(data = node_df,
-                  aes(x = x, y = y, label = sub("^[^_]*_", "", name)),
-                  size = 3, max.overlaps = 50, box.padding = 0.4) +
+  geom_text(data = node_df,
+            aes(x = x, y = y, label = sub("^[^_]*_", "", name)),
+            size = 3, check_overlap = TRUE) +
+  # Tip: install ggrepel and replace geom_text with ggrepel::geom_text_repel
+  # for non-overlapping labels in dense networks.
   theme_void(base_size = %g) +
   theme(legend.position = "right") +
   labs(title = "Pathway Relationship Network")
@@ -1012,7 +1012,6 @@ generate_hubgene_code <- function(pathway_nodes, gene_nodes, edge_df,
 
 library(igraph)
 library(ggplot2)
-library(ggrepel)
 
 # --- Data --------------------------------------------------------------------
 pw    <- %s
@@ -1071,9 +1070,11 @@ p <- ggplot() +
   geom_point(data = pw,
              aes(x = x, y = y, size = size),
              shape = 23, fill = "#FFC107", color = "black", stroke = 0.5) +
-  geom_text_repel(data = pw,
-                  aes(x = x, y = y, label = sub("^[^_]*_", "", id)),
-                  size = 3, fontface = "bold", max.overlaps = 30) +
+  geom_text(data = pw,
+            aes(x = x, y = y, label = sub("^[^_]*_", "", id)),
+            size = 3, fontface = "bold", check_overlap = TRUE) +
+  # Tip: install ggrepel and replace geom_text with ggrepel::geom_text_repel
+  # for non-overlapping labels when pathway count is large.
   theme_void(base_size = %g) +
   theme(legend.position = "right") +
   labs(title = "HubGene Pathway-Gene Network")

@@ -1484,7 +1484,11 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
                                     if (is.null(input$vol_exp_format)) "pdf" else input$vol_exp_format),
       content = function(file) {
         code <- .volcano_export_code()
-        eval_env <- new.env(parent = baseenv())
+        # parent MUST be globalenv() so lexical lookup resolves attached
+        # packages (ggplot2 etc.). baseenv() skips them and the eval fails
+        # with "could not find function 'ggplot'", leaving p=NULL and the
+        # browser falling back to "<inputId>.htm" as the saved filename.
+        eval_env <- new.env(parent = globalenv())
         eval_env$p <- NULL
         tryCatch(eval(parse(text = code), envir = eval_env),
                  error = function(e) shiny::showNotification(
