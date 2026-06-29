@@ -20,14 +20,31 @@ mod_joint_canvas_ui <- function(id) {
     shiny::fluidRow(
       shiny::column(12, shiny::div(
         class = "white-box",
-        shiny::h4("Export Code"),
-        shiny::actionButton(
-          ns("export_code_btn"),
-          label = "Export Joint Canvas Code",
-          class = "btn-secondary",
-          style = "width: 100%;"
-        ),
-        shiny::helpText("Generate R code for reproducing the joint canvas")
+        shiny::h4("Export Image / Code"),
+        shiny::fluidRow(
+          shiny::column(3,
+            shiny::actionButton(
+              ns("open_export_modal"),
+              label = "Export Publication Plot",
+              class = "btn-success",
+              icon  = shiny::icon("file-image"),
+              style = "width: 100%;"
+            )
+          ),
+          shiny::column(3,
+            shiny::actionButton(
+              ns("export_code_btn"),
+              label = "Export Joint Canvas Code",
+              class = "btn-secondary",
+              icon  = shiny::icon("code"),
+              style = "width: 100%;"
+            )
+          ),
+          shiny::column(6,
+            shiny::helpText("Image export uses ggplot2::ggsave (PDF/PNG/SVG/TIFF). ",
+                            "Code export generates a self-contained R script for reproduction.")
+          )
+        )
       ))
     )
   )
@@ -195,6 +212,120 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
       shiny::incProgress(1.0, detail = "Done!")
     })
 
+
+    # Subsection: Export Image Modal ----
+    # ------------------------------------------------------------
+    # Joint Canvas is a patchwork object (canvas_result()$plot), so we can
+    # ggsave it directly without any code generation. This mirrors the
+    # export centers in modules 10/13/16 but is simpler because the plot
+    # object already exists (no eval() needed).
+    # ------------------------------------------------------------
+    .build_canvas_export_modal <- function() {
+      shiny::modalDialog(
+        title = "Export Publication Plot - Joint Canvas",
+        size = "l", footer = NULL, easyClose = TRUE,
+        shiny::fluidRow(
+          shiny::column(5,
+            shiny::h5("Dimensions"),
+            shiny::fluidRow(
+              shiny::column(6,
+                shiny::numericInput(ns("jc_width"),  "Width (inch)",  value = 16, min = 4, max = 40)
+              ),
+              shiny::column(6,
+                shiny::numericInput(ns("jc_height"), "Height (inch)", value = 12, min = 4, max = 40)
+              )
+            ),
+            shiny::numericInput(ns("jc_dpi"), "DPI", value = 300, min = 72, max = 600),
+            shiny::hr(),
+            shiny::h5("Download"),
+            shiny::fluidRow(
+              shiny::column(6,
+                shiny::downloadButton(ns("jc_download_pdf"),
+                  "Download PDF",
+                  class = "btn-danger btn-block",
+                  icon  = shiny::icon("file-pdf"))
+              ),
+              shiny::column(6,
+                shiny::downloadButton(ns("jc_download_png"),
+                  "Download PNG",
+                  class = "btn-primary btn-block",
+                  icon  = shiny::icon("file-image"))
+              )
+            ),
+            shiny::hr(),
+            shiny::fluidRow(
+              shiny::column(6,
+                shiny::selectInput(ns("jc_format"), "Other format",
+                  choices = c("SVG" = "svg", "TIFF" = "tiff"),
+                  selected = "svg")
+              ),
+              shiny::column(6,
+                shiny::div(style = "margin-top: 22px;",
+                  shiny::downloadButton(ns("jc_download_other"),
+                    "Download", class = "btn-default btn-block")
+                )
+              )
+            ),
+            shiny::hr(),
+            shiny::actionButton(ns("jc_dismiss"), "Close",
+                                class = "btn-default btn-block")
+          ),
+          shiny::column(7,
+            shiny::h5("Live Preview"),
+            shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px;",
+              shiny::plotOutput(ns("jc_preview"), height = "460px") |>
+                shinycssloaders::withSpinner(type = 6, color = "#28a745")
+            ),
+            shiny::tags$small(style = "color: #666; display:block; margin-top:6px;",
+              "The Joint Canvas is a patchwork of GSEA sub-plots. ",
+              "Larger widths are recommended for multi-contrast layouts.")
+          )
+        )
+      )
+    }
+
+    shiny::observeEvent(input$open_export_modal, {
+      if (is.null(canvas_result()) || is.null(canvas_result()$plot)) {
+        shiny::showNotification("Generate a canvas first.", type = "warning"); return()
+      }
+      shiny::showModal(.build_canvas_export_modal())
+    })
+    shiny::observeEvent(input$jc_dismiss, shiny::removeModal())
+
+    output$jc_preview <- shiny::renderPlot({
+      cr <- canvas_result()
+      shiny::req(cr, cr$plot)
+      cr$plot
+    })
+
+    .jc_render_to_file <- function(file, fmt) {
+      cr <- canvas_result()
+      if (is.null(cr) || is.null(cr$plot)) {
+        shiny::showNotification("No canvas to export.", type = "warning"); return()
+      }
+      ggplot2::ggsave(
+        file, cr$plot,
+        width  = if (is.null(input$jc_width))  16 else input$jc_width,
+        height = if (is.null(input$jc_height)) 12 else input$jc_height,
+        dpi    = if (is.null(input$jc_dpi))   300 else input$jc_dpi,
+        device = fmt,
+        limitsize = FALSE
+      )
+    }
+
+    output$jc_download_pdf <- shiny::downloadHandler(
+      filename = function() sprintf("GSEAlens_joint_canvas_%s.pdf", Sys.Date()),
+      content  = function(file) .jc_render_to_file(file, "pdf")
+    )
+    output$jc_download_png <- shiny::downloadHandler(
+      filename = function() sprintf("GSEAlens_joint_canvas_%s.png", Sys.Date()),
+      content  = function(file) .jc_render_to_file(file, "png")
+    )
+    output$jc_download_other <- shiny::downloadHandler(
+      filename = function() sprintf("GSEAlens_joint_canvas_%s.%s", Sys.Date(),
+                                    if (is.null(input$jc_format)) "svg" else input$jc_format),
+      content  = function(file) .jc_render_to_file(file, input$jc_format)
+    )
 
     # Subsection: Export Code Modal ----
 

@@ -1432,31 +1432,74 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
     .build_volcano_export_modal <- function() {
       shiny::modalDialog(
         title = "Export Publication Plot - Pathway Volcano",
-        size = "m", footer = NULL, easyClose = TRUE,
+        size = "l", footer = NULL, easyClose = TRUE,
         shiny::fluidRow(
-          shiny::column(6,
-            shiny::numericInput(ns("vol_exp_width"),  "Width (inch)",  value = 8, min = 2, max = 24),
-            shiny::numericInput(ns("vol_exp_dpi"),    "DPI",           value = 300, min = 72, max = 600)
+          shiny::column(5,
+            shiny::h5("Dimensions"),
+            shiny::fluidRow(
+              shiny::column(6,
+                shiny::numericInput(ns("vol_exp_width"),  "Width (inch)",  value = 8, min = 2, max = 24)
+              ),
+              shiny::column(6,
+                shiny::numericInput(ns("vol_exp_height"), "Height (inch)", value = 6, min = 2, max = 24)
+              )
+            ),
+            shiny::numericInput(ns("vol_exp_dpi"), "DPI", value = 300, min = 72, max = 600),
+            shiny::hr(),
+            shiny::h5("Download"),
+            shiny::fluidRow(
+              shiny::column(6,
+                shiny::downloadButton(ns("vol_exp_download_pdf"),
+                  "Download PDF",
+                  class = "btn-danger btn-block",
+                  icon  = shiny::icon("file-pdf"))
+              ),
+              shiny::column(6,
+                shiny::downloadButton(ns("vol_exp_download_png"),
+                  "Download PNG",
+                  class = "btn-primary btn-block",
+                  icon  = shiny::icon("file-image"))
+              )
+            ),
+            shiny::hr(),
+            shiny::fluidRow(
+              shiny::column(6,
+                shiny::selectInput(ns("vol_exp_format"), "Other format",
+                  choices = c("SVG" = "svg", "TIFF" = "tiff"),
+                  selected = "svg")
+              ),
+              shiny::column(6,
+                shiny::div(style = "margin-top: 22px;",
+                  shiny::downloadButton(ns("vol_exp_download_other"),
+                    "Download", class = "btn-default btn-block")
+                )
+              )
+            ),
+            shiny::hr(),
+            shiny::fluidRow(
+              shiny::column(6,
+                shiny::actionButton(ns("vol_exp_copy_code"),
+                  "Copy R Code",
+                  class = "btn-info btn-block",
+                  icon = shiny::icon("clipboard"))
+              ),
+              shiny::column(6,
+                shiny::actionButton(ns("vol_exp_dismiss"),
+                  "Close",
+                  class = "btn-default btn-block")
+              )
+            )
           ),
-          shiny::column(6,
-            shiny::numericInput(ns("vol_exp_height"), "Height (inch)", value = 6, min = 2, max = 24),
-            shiny::selectInput(ns("vol_exp_format"), "Format",
-              choices = c("PDF" = "pdf", "PNG" = "png", "SVG" = "svg", "TIFF" = "tiff"),
-              selected = "pdf")
+          shiny::column(7,
+            shiny::h5("Live Preview"),
+            shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px;",
+              shiny::plotOutput(ns("vol_exp_preview"), height = "460px") |>
+                shinycssloaders::withSpinner(type = 6, color = "#28a745")
+            ),
+            shiny::tags$small(style = "color: #666; display:block; margin-top:6px;",
+              "X axis: NES | Y axis: -log10(pvalue)")
           )
-        ),
-        shiny::hr(),
-        shiny::fluidRow(
-          shiny::column(4, shiny::downloadButton(ns("vol_exp_download_img"), "Download Image",
-                                                 class = "btn-primary btn-block")),
-          shiny::column(4, shiny::actionButton(ns("vol_exp_copy_code"), "Copy R Code",
-                                                class = "btn-info btn-block")),
-          shiny::column(4, shiny::actionButton(ns("vol_exp_dismiss"), "Close",
-                                                class = "btn-default btn-block"))
-        ),
-        shiny::tags$small(style = "color: #666; display: block; margin-top: 10px;",
-          "Static rendering via ggplot2::ggsave (no external dependencies).",
-          "X axis: NES | Y axis: -log10(pvalue)")
+        )
       )
     }
 
@@ -1471,6 +1514,22 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
     })
     shiny::observeEvent(input$vol_exp_dismiss, shiny::removeModal())
 
+    # Live preview reactive
+    .volcano_preview_plot <- shiny::reactive({
+      code <- .volcano_export_code()
+      if (!nzchar(code)) return(NULL)
+      eval_env <- new.env(parent = globalenv())
+      eval_env$p <- NULL
+      tryCatch(eval(parse(text = code), envir = eval_env),
+               error = function(e) { message("[vol preview] ", e$message); NULL })
+      eval_env$p
+    })
+    output$vol_exp_preview <- shiny::renderPlot({
+      p <- .volcano_preview_plot()
+      shiny::req(p)
+      p
+    })
+
     .volcano_export_code <- function() {
       data_list <- data_prep_data()
       lg <- if (is.null(data_list$left_group))  "Left"  else data_list$left_group
@@ -1479,27 +1538,37 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
                             left_group = lg, right_group = rg)
     }
 
-    output$vol_exp_download_img <- shiny::downloadHandler(
+    .volcano_render_to_file <- function(file, fmt) {
+      code <- .volcano_export_code()
+      if (!nzchar(code)) return()
+      # parent=globalenv() so lexical lookup resolves attached packages.
+      eval_env <- new.env(parent = globalenv())
+      eval_env$p <- NULL
+      tryCatch(eval(parse(text = code), envir = eval_env),
+               error = function(e) shiny::showNotification(
+                 sprintf("Render failed: %s", e$message), type = "error"))
+      if (is.null(eval_env$p)) return()
+      ggplot2::ggsave(file, eval_env$p,
+                      width  = if (is.null(input$vol_exp_width))  8 else input$vol_exp_width,
+                      height = if (is.null(input$vol_exp_height)) 6 else input$vol_exp_height,
+                      dpi    = if (is.null(input$vol_exp_dpi))   300 else input$vol_exp_dpi,
+                      device = fmt)
+    }
+
+    output$vol_exp_download_pdf <- shiny::downloadHandler(
+      filename = function() sprintf("GSEAlens_volcano_%s.pdf", Sys.Date()),
+      content  = function(file) .volcano_render_to_file(file, "pdf")
+    )
+
+    output$vol_exp_download_png <- shiny::downloadHandler(
+      filename = function() sprintf("GSEAlens_volcano_%s.png", Sys.Date()),
+      content  = function(file) .volcano_render_to_file(file, "png")
+    )
+
+    output$vol_exp_download_other <- shiny::downloadHandler(
       filename = function() sprintf("GSEAlens_volcano_%s.%s", Sys.Date(),
-                                    if (is.null(input$vol_exp_format)) "pdf" else input$vol_exp_format),
-      content = function(file) {
-        code <- .volcano_export_code()
-        # parent MUST be globalenv() so lexical lookup resolves attached
-        # packages (ggplot2 etc.). baseenv() skips them and the eval fails
-        # with "could not find function 'ggplot'", leaving p=NULL and the
-        # browser falling back to "<inputId>.htm" as the saved filename.
-        eval_env <- new.env(parent = globalenv())
-        eval_env$p <- NULL
-        tryCatch(eval(parse(text = code), envir = eval_env),
-                 error = function(e) shiny::showNotification(
-                   sprintf("Render failed: %s", e$message), type = "error"))
-        if (is.null(eval_env$p)) return()
-        ggplot2::ggsave(file, eval_env$p,
-                        width  = if (is.null(input$vol_exp_width))  8 else input$vol_exp_width,
-                        height = if (is.null(input$vol_exp_height)) 6 else input$vol_exp_height,
-                        dpi    = if (is.null(input$vol_exp_dpi))   300 else input$vol_exp_dpi,
-                        device = input$vol_exp_format)
-      }
+                                    if (is.null(input$vol_exp_format)) "svg" else input$vol_exp_format),
+      content  = function(file) .volcano_render_to_file(file, input$vol_exp_format)
     )
 
     shiny::observeEvent(input$vol_exp_copy_code, {

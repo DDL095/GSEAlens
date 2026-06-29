@@ -875,31 +875,75 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
     .build_hubgene_export_modal <- function() {
       shiny::modalDialog(
         title = "Export Publication Plot - HubGene Network",
-        size = "m", footer = NULL, easyClose = TRUE,
+        size = "l", footer = NULL, easyClose = TRUE,
         shiny::fluidRow(
-          shiny::column(6,
-            shiny::numericInput(ns("hub_exp_width"),  "Width (inch)",  value = 10, min = 2, max = 24),
-            shiny::numericInput(ns("hub_exp_dpi"),    "DPI",           value = 300, min = 72, max = 600)
+          shiny::column(5,
+            shiny::h5("Dimensions"),
+            shiny::fluidRow(
+              shiny::column(6,
+                shiny::numericInput(ns("hub_exp_width"),  "Width (inch)",  value = 10, min = 2, max = 24)
+              ),
+              shiny::column(6,
+                shiny::numericInput(ns("hub_exp_height"), "Height (inch)", value = 8, min = 2, max = 24)
+              )
+            ),
+            shiny::numericInput(ns("hub_exp_dpi"), "DPI", value = 300, min = 72, max = 600),
+            shiny::hr(),
+            shiny::h5("Download"),
+            shiny::fluidRow(
+              shiny::column(6,
+                shiny::downloadButton(ns("hub_exp_download_pdf"),
+                  "Download PDF",
+                  class = "btn-danger btn-block",
+                  icon  = shiny::icon("file-pdf"))
+              ),
+              shiny::column(6,
+                shiny::downloadButton(ns("hub_exp_download_png"),
+                  "Download PNG",
+                  class = "btn-primary btn-block",
+                  icon  = shiny::icon("file-image"))
+              )
+            ),
+            shiny::hr(),
+            shiny::fluidRow(
+              shiny::column(6,
+                shiny::selectInput(ns("hub_exp_format"), "Other format",
+                  choices = c("SVG" = "svg", "TIFF" = "tiff"),
+                  selected = "svg")
+              ),
+              shiny::column(6,
+                shiny::div(style = "margin-top: 22px;",
+                  shiny::downloadButton(ns("hub_exp_download_other"),
+                    "Download", class = "btn-default btn-block")
+                )
+              )
+            ),
+            shiny::hr(),
+            shiny::fluidRow(
+              shiny::column(6,
+                shiny::actionButton(ns("hub_exp_copy_code"),
+                  "Copy R Code",
+                  class = "btn-info btn-block",
+                  icon = shiny::icon("clipboard"))
+              ),
+              shiny::column(6,
+                shiny::actionButton(ns("hub_exp_dismiss"),
+                  "Close",
+                  class = "btn-default btn-block")
+              )
+            )
           ),
-          shiny::column(6,
-            shiny::numericInput(ns("hub_exp_height"), "Height (inch)", value = 8, min = 2, max = 24),
-            shiny::selectInput(ns("hub_exp_format"), "Format",
-              choices = c("PDF" = "pdf", "PNG" = "png", "SVG" = "svg", "TIFF" = "tiff"),
-              selected = "pdf")
+          shiny::column(7,
+            shiny::h5("Live Preview"),
+            shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px;",
+              shiny::plotOutput(ns("hub_exp_preview"), height = "460px") |>
+                shinycssloaders::withSpinner(type = 6, color = "#28a745")
+            ),
+            shiny::tags$small(style = "color: #666; display:block; margin-top:6px;",
+              "Pathway nodes: diamonds; Gene nodes: circles. ",
+              "No ggraph dependency (igraph + ggplot2).")
           )
-        ),
-        shiny::hr(),
-        shiny::fluidRow(
-          shiny::column(4, shiny::downloadButton(ns("hub_exp_download_img"), "Download Image",
-                                                 class = "btn-primary btn-block")),
-          shiny::column(4, shiny::actionButton(ns("hub_exp_copy_code"), "Copy R Code",
-                                                class = "btn-info btn-block")),
-          shiny::column(4, shiny::actionButton(ns("hub_exp_dismiss"), "Close",
-                                                class = "btn-default btn-block"))
-        ),
-        shiny::tags$small(style = "color: #666; display: block; margin-top: 10px;",
-          "Static rendering via ggplot2::ggsave (no ggraph dependency). ",
-          "Pathway nodes: diamonds; Gene nodes: circles.")
+        )
       )
     }
 
@@ -912,21 +956,50 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
     })
     shiny::observeEvent(input$hub_exp_dismiss, shiny::removeModal())
 
+    # Live preview reactive
+    .hubgene_preview_plot <- shiny::reactive({
+      code <- .hubgene_export_code()
+      if (!nzchar(code)) return(NULL)
+      eval_env <- new.env(parent = globalenv())
+      eval_env$p <- NULL
+      tryCatch(eval(parse(text = code), envir = eval_env),
+               error = function(e) { message("[hub preview] ", e$message); NULL })
+      eval_env$p
+    })
+    output$hub_exp_preview <- shiny::renderPlot({
+      p <- .hubgene_preview_plot()
+      shiny::req(p)
+      p
+    })
+
     .hubgene_export_code <- function() {
       net <- tryCatch(net_data(), error = function(e) NULL)
       if (is.null(net)) return("")
-      pw    <- net$nodes$pathway[, c("id", "NES", "FDR", "setSize")]
+      pw <- net$nodes$pathway[, c("id", "NES", "FDR", "setSize")]
+      # Defensive: ensure numeric columns are actually numeric (some upstream
+      # paths return FDR/setSize as character when subset, which breaks
+      # sqrt()/log10() inside generate_hubgene_code with
+      # "non-numeric argument to mathematical function".
+      pw$NES     <- suppressWarnings(as.numeric(pw$NES))
+      pw$FDR     <- suppressWarnings(as.numeric(pw$FDR))
+      pw$setSize <- suppressWarnings(as.numeric(pw$setSize))
       genes <- if (!is.null(net$nodes$gene)) {
         net$nodes$gene[, c("id", "stat", "degree")]
       } else {
         data.frame(id = character(0), stat = numeric(0), degree = integer(0))
       }
-      edges <- if (!is.null(net$edges)) {
-        net$edges[, c("source", "target")]
+      genes$stat   <- suppressWarnings(as.numeric(genes$stat))
+      genes$degree <- suppressWarnings(as.integer(genes$degree))
+      edges <- if (!is.null(net$edges) && nrow(net$edges) > 0) {
+        # source = gene, target = pathway. Keep these as-is: the generated
+        # code expects (from=gene, to=pathway) which is the convention.
+        data.frame(from = as.character(net$edges$source),
+                   to   = as.character(net$edges$target),
+                   stringsAsFactors = FALSE)
       } else {
-        data.frame(source = character(0), target = character(0))
+        data.frame(from = character(0), to = character(0),
+                   stringsAsFactors = FALSE)
       }
-      colnames(edges) <- c("from", "to")
       seed_val <- if (is.null(input$vis_seed)) 42L else as.integer(input$vis_seed)
       pw_mode <- if (is.null(input$vis_pw_size_mode)) "setsize" else input$vis_pw_size_mode
       generate_hubgene_code(pathway_nodes = pw, gene_nodes = genes,
@@ -934,28 +1007,39 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
                             seed = seed_val)
     }
 
-    output$hub_exp_download_img <- shiny::downloadHandler(
+    .hubgene_render_to_file <- function(file, fmt) {
+      code <- .hubgene_export_code()
+      if (!nzchar(code)) return()
+      # parent=globalenv() so lexical lookup resolves attached packages.
+      # (baseenv() reproduces the v0.99.11 "could not find function" bug +
+      # the .htm fallback symptom; see IRON FIX comment in commit log.)
+      eval_env <- new.env(parent = globalenv())
+      eval_env$p <- NULL
+      tryCatch(eval(parse(text = code), envir = eval_env),
+               error = function(e) shiny::showNotification(
+                 sprintf("Render failed: %s", e$message), type = "error"))
+      if (is.null(eval_env$p)) return()
+      ggplot2::ggsave(file, eval_env$p,
+                      width  = if (is.null(input$hub_exp_width))  10 else input$hub_exp_width,
+                      height = if (is.null(input$hub_exp_height))  8 else input$hub_exp_height,
+                      dpi    = if (is.null(input$hub_exp_dpi))   300 else input$hub_exp_dpi,
+                      device = fmt)
+    }
+
+    output$hub_exp_download_pdf <- shiny::downloadHandler(
+      filename = function() sprintf("GSEAlens_hubgene_%s.pdf", Sys.Date()),
+      content  = function(file) .hubgene_render_to_file(file, "pdf")
+    )
+
+    output$hub_exp_download_png <- shiny::downloadHandler(
+      filename = function() sprintf("GSEAlens_hubgene_%s.png", Sys.Date()),
+      content  = function(file) .hubgene_render_to_file(file, "png")
+    )
+
+    output$hub_exp_download_other <- shiny::downloadHandler(
       filename = function() sprintf("GSEAlens_hubgene_%s.%s", Sys.Date(),
-                                    if (is.null(input$hub_exp_format)) "pdf" else input$hub_exp_format),
-      content = function(file) {
-        code <- .hubgene_export_code()
-        if (!nzchar(code)) return()
-        # parent MUST be globalenv() so lexical lookup resolves attached
-        # packages (ggplot2, igraph etc.). baseenv() skips them and the eval
-        # fails with "could not find function 'ggplot'" / 'graph_from_data_frame',
-        # leaving p=NULL and the browser falling back to "<inputId>.htm".
-        eval_env <- new.env(parent = globalenv())
-        eval_env$p <- NULL
-        tryCatch(eval(parse(text = code), envir = eval_env),
-                 error = function(e) shiny::showNotification(
-                   sprintf("Render failed: %s", e$message), type = "error"))
-        if (is.null(eval_env$p)) return()
-        ggplot2::ggsave(file, eval_env$p,
-                        width  = if (is.null(input$hub_exp_width))  10 else input$hub_exp_width,
-                        height = if (is.null(input$hub_exp_height))  8 else input$hub_exp_height,
-                        dpi    = if (is.null(input$hub_exp_dpi))   300 else input$hub_exp_dpi,
-                        device = input$hub_exp_format)
-      }
+                                    if (is.null(input$hub_exp_format)) "svg" else input$hub_exp_format),
+      content  = function(file) .hubgene_render_to_file(file, input$hub_exp_format)
     )
 
     shiny::observeEvent(input$hub_exp_copy_code, {

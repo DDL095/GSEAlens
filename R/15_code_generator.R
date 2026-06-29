@@ -952,6 +952,16 @@ p <- ggplot() +
             size = 3, check_overlap = TRUE) +
   # Tip: install ggrepel and replace geom_text with ggrepel::geom_text_repel
   # for non-overlapping labels in dense networks.
+  #
+  # Legend sizing: the Direction legend circles were too small because the
+  # size scale range (c(3,9)) controls BOTH the plot points AND the legend
+  # keys; with fill scale driving Direction, the fill legend inherits the
+  # smallest available size. Override to draw fixed-size circles in both
+  # legends so Up/Down colors are clearly visible.
+  guides(
+    fill   = guide_legend(override.aes = list(size = 7, shape = 21, stroke = 1)),
+    size   = guide_legend(override.aes = list(shape = 21, fill = "grey50", stroke = 0.5))
+  ) +
   theme_void(base_size = %g) +
   theme(legend.position = "right") +
   labs(title = "Pathway Relationship Network")
@@ -1024,10 +1034,17 @@ edges <- %s
 # --- Graph + layout ----------------------------------------------------------
 # Use pathway IDs with "pw_" prefix and gene IDs with "gene_" prefix to keep
 # the bipartite namespaces distinct.
+#
+# CRITICAL: edges are oriented as (gene -> pathway). The caller passes
+# edge_df with columns `from`=gene_id and `to`=pathway_id. Therefore the
+# gene_ prefix MUST be applied to `from`, and the pw_ prefix to `to`.
+# (Previous version had these prefixes inverted, which caused
+#  graph_from_data_frame to fail with "Some vertex names in `d` are not
+#  listed in `vertices`", leaving p=NULL and the export silently empty.)
 pw$vname    <- paste0("pw_",    pw$id)
 genes$vname <- paste0("gene_",  genes$id)
-edges$from  <- paste0("pw_",    edges$from)
-edges$to    <- paste0("gene_",  edges$to)
+edges$from  <- paste0("gene_",  edges$from)
+edges$to    <- paste0("pw_",    edges$to)
 
 all_verts <- data.frame(
   name = c(pw$vname, genes$vname),
@@ -1075,6 +1092,14 @@ p <- ggplot() +
             size = 3, fontface = "bold", check_overlap = TRUE) +
   # Tip: install ggrepel and replace geom_text with ggrepel::geom_text_repel
   # for non-overlapping labels when pathway count is large.
+  #
+  # Legend sizing: enlarge Direction (color) legend keys so Up/Down/Neutral
+  # colors are clearly visible (default inherited key size is too small
+  # because both node layers compete for size scale).
+  guides(
+    color = guide_legend(override.aes = list(size = 7)),
+    size  = guide_legend()
+  ) +
   theme_void(base_size = %g) +
   theme(legend.position = "right") +
   labs(title = "HubGene Pathway-Gene Network")

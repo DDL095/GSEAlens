@@ -547,7 +547,18 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
         marker = list(
           size = size_scaled,
           color = color_vals,
-          colorscale = "RdYlBu_r",
+          # IRON FIX (2026-06-29): unify with the PDF/ggplot2 export, which
+          # uses scale_fill_viridis_c(option="D", direction=-1). Previously
+          # the interactive DotPlot used "RdYlBu_r", so switching "Color by"
+          # changed the value mapping but the visual hue was visibly different
+          # from the exported PDF. Viridis-D reversed is perceptually uniform
+          # and colorblind-safe (publication-grade).
+          colorscale = list(
+            list(0.0, "#440154"), list(0.25, "#3B528B"),
+            list(0.5,  "#21918C"), list(0.75, "#5EC962"),
+            list(1.0,  "#FDE725")
+          ),
+          cauto = TRUE,
           showscale = TRUE,
           colorbar = list(title = list(text = color_title, font = list(size = 12))),
           line = list(color = "black", width = 1)
@@ -1010,18 +1021,45 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
 
       # ============================================================
       # Add labels (selected nodes are larger and bolder)
+      # ------------------------------------------------------------
+      # IRON FIX (2026-06-29): Network text rendering improvements.
+      #   * Default label size bumped 9 -> 11 (legibility at small zoom).
+      #   * White "halo" shadow drawn UNDER the label so dark text remains
+      #     readable against clustered nodes / overlapping edges. We achieve
+      #     this by drawing TWO text traces: first a white shadow, then the
+      #     colored label on top. plotly has no native stroke/fill, so the
+      #     two-trace trick is the canonical workaround.
+      #   * Vertical offset 0.12 -> 0.18 to avoid covering the node circle.
+      #   * Display the pathway short name (strip "HALLMARK_" / dataset
+      #     prefix) to reduce horizontal clutter; hover still shows the
+      #     full ID.
       # ============================================================
 
-      label_size <- ifelse(node_df$name %in% sel_nodes, 16, 9) # Changed from 12/9 to 16/9
-      label_color <- ifelse(node_df$name %in% sel_nodes, "#FF6600", "#333")
-      label_bold <- ifelse(node_df$name %in% sel_nodes, "bold", "normal")
+      label_size     <- ifelse(node_df$name %in% sel_nodes, 16, 11)
+      label_color    <- ifelse(node_df$name %in% sel_nodes, "#FF6600", "#222")
+      label_bold     <- ifelse(node_df$name %in% sel_nodes, "bold",   "normal")
+      label_short    <- sub("^[^_]*_", "", node_df$name)
+      label_offset   <- 0.18
 
+      # White shadow trace (drawn first -> underneath the colored label)
       p <- p |> plotly::add_trace(
         type = "scatter", mode = "text",
-        x = node_df$x, y = node_df$y + 0.12,
-        text = node_df$name,
+        x = node_df$x, y = node_df$y + label_offset,
+        text = label_short,
         textposition = "top center",
-        textfont = list(size = label_size, color = label_color, font = label_bold),
+        textfont = list(size = label_size + 1, color = "#FFFFFF",
+                        family = "Arial Black, sans-serif"),
+        hoverinfo = "skip", showlegend = FALSE, inherit = TRUE
+      )
+
+      # Colored label trace on top
+      p <- p |> plotly::add_trace(
+        type = "scatter", mode = "text",
+        x = node_df$x, y = node_df$y + label_offset,
+        text = label_short,
+        textposition = "top center",
+        textfont = list(size = label_size, color = label_color,
+                        family = "Arial, sans-serif", font = label_bold),
         hoverinfo = "skip", showlegend = FALSE, inherit = TRUE
       )
 
@@ -1110,51 +1148,130 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
     # ============================================================
 
     # ----- Shared export modal UI builder -----
+    # ------------------------------------------------------------
+    # Redesign (2026-06-29):
+    #   * Live preview pane reflects the current palette/size/width/height.
+    #   * Download buttons split into "PDF" and "PNG" (the two formats users
+    #     actually use most); SVG/TIFF remain available via the Format
+    #     dropdown for advanced users.
+    #   * Reactive preview re-runs the generator code in a sandboxed env
+    #     (same parent=globalenv() fix used by the download handler).
+    # ------------------------------------------------------------
     .build_export_modal <- function(plot_title) {
       shiny::modalDialog(
         title = sprintf("Export Publication Plot - %s", plot_title),
-        size = "m",
+        size = "l",
         footer = NULL,
         easyClose = TRUE,
         shiny::fluidRow(
-          shiny::column(6,
-            shiny::numericInput(ns("exp_width"),  "Width (inch)",  value = 9, min = 2, max = 24),
-            shiny::numericInput(ns("exp_dpi"),    "DPI",           value = 300, min = 72, max = 600)
-          ),
-          shiny::column(6,
-            shiny::numericInput(ns("exp_height"), "Height (inch)", value = 7, min = 2, max = 24),
-            shiny::selectInput(ns("exp_format"), "Format",
-              choices = c("PDF" = "pdf", "PNG" = "png", "SVG" = "svg", "TIFF" = "tiff"),
-              selected = "pdf")
-          )
-        ),
-        shiny::hr(),
-        shiny::fluidRow(
-          shiny::column(6,
+          # Left column: parameters
+          shiny::column(5,
+            shiny::h5("Dimensions"),
+            shiny::fluidRow(
+              shiny::column(6,
+                shiny::numericInput(ns("exp_width"),  "Width (inch)",  value = 9, min = 2, max = 24)
+              ),
+              shiny::column(6,
+                shiny::numericInput(ns("exp_height"), "Height (inch)", value = 7, min = 2, max = 24)
+              )
+            ),
+            shiny::numericInput(ns("exp_dpi"), "DPI", value = 300, min = 72, max = 600),
+            shiny::hr(),
+            shiny::h5("Aesthetics"),
             shiny::selectInput(ns("exp_palette"), "Color palette",
-              choices = c("Viridis-D" = "D", "Viridis-C" = "C",
-                          "Magma" = "A", "Inferno" = "B"),
-              selected = "D")
-          ),
-          shiny::column(6,
+              choices = c("Viridis-D (default)" = "D",
+                          "Viridis-C"          = "C",
+                          "Magma"               = "A",
+                          "Inferno"             = "B"),
+              selected = "D"),
             shiny::sliderInput(ns("exp_point_range"), "Point size range",
-              min = 1, max = 15, value = c(3, 8))
+              min = 1, max = 15, value = c(3, 8)),
+            shiny::hr(),
+            shiny::h5("Download"),
+            shiny::fluidRow(
+              shiny::column(6,
+                shiny::downloadButton(ns("exp_download_pdf"),
+                  "Download PDF",
+                  class = "btn-danger btn-block",
+                  icon  = shiny::icon("file-pdf"))
+              ),
+              shiny::column(6,
+                shiny::downloadButton(ns("exp_download_png"),
+                  "Download PNG",
+                  class = "btn-primary btn-block",
+                  icon  = shiny::icon("file-image"))
+              )
+            ),
+            shiny::hr(),
+            shiny::fluidRow(
+              shiny::column(6,
+                shiny::selectInput(ns("exp_format"), "Other format",
+                  choices = c("SVG" = "svg", "TIFF" = "tiff"),
+                  selected = "svg")
+              ),
+              shiny::column(6,
+                shiny::div(style = "margin-top: 22px;",
+                  shiny::downloadButton(ns("exp_download_other"),
+                    "Download",
+                    class = "btn-default btn-block")
+                )
+              )
+            ),
+            shiny::hr(),
+            shiny::fluidRow(
+              shiny::column(6,
+                shiny::actionButton(ns("exp_copy_code"),
+                  "Copy R Code",
+                  class = "btn-info btn-block",
+                  icon = shiny::icon("clipboard"))
+              ),
+              shiny::column(6,
+                shiny::actionButton(ns("exp_dismiss"),
+                  "Close",
+                  class = "btn-default btn-block")
+              )
+            )
+          ),
+          # Right column: live preview
+          shiny::column(7,
+            shiny::h5("Live Preview"),
+            shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px;",
+              shiny::plotOutput(ns("exp_preview"), height = "460px") |>
+                shinycssloaders::withSpinner(type = 6, color = "#28a745")
+            ),
+            shiny::tags$small(style = "color: #666; display:block; margin-top:6px;",
+              "Preview reflects the current palette/size settings. ",
+              "Download uses the chosen Width/Height/DPI.")
           )
-        ),
-        shiny::hr(),
-        shiny::fluidRow(
-          shiny::column(4, shiny::downloadButton(ns("exp_download_img"), "Download Image",
-                                                 class = "btn-primary btn-block")),
-          shiny::column(4, shiny::actionButton(ns("exp_copy_code"), "Copy R Code",
-                                                class = "btn-info btn-block")),
-          shiny::column(4, shiny::actionButton(ns("exp_dismiss"), "Close",
-                                                class = "btn-default btn-block"))
-        ),
-        shiny::tags$small(style = "color: #666; display: block; margin-top: 10px;",
-          "Image is rendered via ggplot2::ggsave (no external dependencies). ",
-          "R code is reproducible and self-contained.")
+        )
       )
     }
+
+    # ----- Reactive: live preview ggplot object -----
+    .exp_preview_plot <- shiny::reactive({
+      tgt <- current_export_target()
+      if (is.null(tgt)) return(NULL)
+      # Reuse the exact same code path as the download handler so preview
+      # is byte-identical to what gets saved (modulo rasterization).
+      code <- .current_export_code()
+      if (!nzchar(code)) return(NULL)
+      eval_env <- new.env(parent = globalenv())
+      eval_env$p <- NULL
+      tryCatch(
+        eval(parse(text = code), envir = eval_env),
+        error = function(e) {
+          message("[export preview] ", e$message)
+          NULL
+        }
+      )
+      eval_env$p
+    })
+
+    output$exp_preview <- shiny::renderPlot({
+      p <- .exp_preview_plot()
+      shiny::req(p)
+      p
+    })
 
     # ----- Reactive: current DotPlot data slice -----
     dotplot_export_df <- shiny::reactive({
@@ -1243,52 +1360,54 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       } else ""
     }
 
-    # ----- Download handler: render ggplot2 and save to file -----
-    output$exp_download_img <- shiny::downloadHandler(
-      filename = function() {
-        tgt <- current_export_target()
-        fmt <- if (is.null(input$exp_format)) "pdf" else input$exp_format
-        sprintf("GSEAlens_%s_%s.%s", tgt, Sys.Date(), fmt)
-      },
-      content = function(file) {
-        code <- .current_export_code()
-        if (!nzchar(code)) {
-          shiny::showNotification("Nothing to export.", type = "warning"); return()
-        }
-        # Evaluate the generated code in an isolated environment to obtain
-        # the ggplot object `p`, then ggsave it. This guarantees the static
-        # figure is byte-for-byte identical to what the user would get by
-        # running the copied code.
-        #
-        # IRON FIX (2026-06-29): parent MUST be globalenv(), NOT baseenv().
-        # Reason: lexical lookup from eval_env walks parent chain only.
-        #   parent=baseenv() -> eval_env -> baseenv -> emptyenv
-        #     (skips ALL attached packages -> "could not find function 'ggplot'",
-        #      "could not find function 'graph_from_data_frame'", even though
-        #      library(ggplot2) is called inside the code, because library()
-        #      attaches to the search path which is reachable only from
-        #      globalenv's parent chain, not from baseenv's).
-        #   parent=globalenv() -> eval_env -> globalenv -> package:ggplot2 ...
-        #     (correctly resolves all attached namespaces).
-        # Side effect: eval_env$p is NULL on error -> content() returns without
-        # writing `file` -> Shiny sends empty response -> browser saves as
-        # "<inputId>.htm" (e.g. exp_download_img.htm). This explains the
-        # "downloaded file is .htm" symptom reported by users.
-        eval_env <- new.env(parent = globalenv())
-        eval_env$p <- NULL
-        tryCatch({
-          eval(parse(text = code), envir = eval_env)
-        }, error = function(e) {
-          shiny::showNotification(sprintf("Render failed: %s", e$message),
-                                  type = "error")
-        })
-        if (is.null(eval_env$p)) return()
-        ggplot2::ggsave(file, eval_env$p,
-                        width  = if (is.null(input$exp_width))  9 else input$exp_width,
-                        height = if (is.null(input$exp_height)) 7 else input$exp_height,
-                        dpi    = if (is.null(input$exp_dpi))   300 else input$exp_dpi,
-                        device = input$exp_format)
+    # ----- Internal helper: render to a specific format -----
+    # ------------------------------------------------------------
+    # Three download handlers (exp_download_pdf / _png / _other) below all
+    # delegate to this helper so behavior is identical modulo format.
+    # ------------------------------------------------------------
+    .export_render_to_file <- function(file, fmt) {
+      code <- .current_export_code()
+      if (!nzchar(code)) {
+        shiny::showNotification("Nothing to export.", type = "warning"); return()
       }
+      # parent=globalenv() so lexical lookup resolves attached packages
+      # (see IRON FIX comment in v0.99.11 commit). baseenv() reproduces
+      # "could not find function 'ggplot'" and the .htm fallback symptom.
+      eval_env <- new.env(parent = globalenv())
+      eval_env$p <- NULL
+      tryCatch({
+        eval(parse(text = code), envir = eval_env)
+      }, error = function(e) {
+        shiny::showNotification(sprintf("Render failed: %s", e$message),
+                                type = "error")
+      })
+      if (is.null(eval_env$p)) return()
+      ggplot2::ggsave(
+        file, eval_env$p,
+        width  = if (is.null(input$exp_width))  9 else input$exp_width,
+        height = if (is.null(input$exp_height)) 7 else input$exp_height,
+        dpi    = if (is.null(input$exp_dpi))   300 else input$exp_dpi,
+        device = fmt
+      )
+    }
+
+    output$exp_download_pdf <- shiny::downloadHandler(
+      filename = function() sprintf("GSEAlens_%s_%s.pdf",
+                                    current_export_target() %||% "plot", Sys.Date()),
+      content  = function(file) .export_render_to_file(file, "pdf")
+    )
+
+    output$exp_download_png <- shiny::downloadHandler(
+      filename = function() sprintf("GSEAlens_%s_%s.png",
+                                    current_export_target() %||% "plot", Sys.Date()),
+      content  = function(file) .export_render_to_file(file, "png")
+    )
+
+    output$exp_download_other <- shiny::downloadHandler(
+      filename = function() sprintf("GSEAlens_%s_%s.%s",
+                                    current_export_target() %||% "plot", Sys.Date(),
+                                    if (is.null(input$exp_format)) "svg" else input$exp_format),
+      content  = function(file) .export_render_to_file(file, input$exp_format)
     )
 
     # ----- Copy code to clipboard -----
