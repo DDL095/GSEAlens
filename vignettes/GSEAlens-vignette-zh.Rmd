@@ -300,9 +300,32 @@ launch_gsea_app(gsea_res, addition_data = "pathway_annotations.csv")
 - **单选模式**：探索一个通路及其邻居
 - **批量模式**：从主工作区选中多个通路，可视化它们的相互连接
 
-边粗细与重叠比成正比；节点大小反映 `|NES|`。
+本 Tab 提供两个子面板：
 
-源文件：`R/13_shiny_mod_pathway_relation.R`、辅助函数 `R/utils_hubgene.R`
+- **DotPlot 面板**：横向点图。横轴为 NES，点颜色编码显著性
+  （`-log10(FDR)` / `-log10(P-value)` / `|NES|`，用户可选），点尺寸编码
+  基因集量级。尺寸映射使用**固定域 + sqrt 感知**（而非每次绘制 min-max
+  归一化），这样切换"Core Genes Count"（leading edge 数）与"Set Size"
+  （MSigDB 基因集总数）时点的视觉形态会有明显差异，且跨参数可比较。这与
+  `enrichplot::dotplot` 使用的 `ggplot2::scale_size_continuous(range=...)`
+  语义一致。
+- **Network 面板**：图布局（Fruchterman-Reingold / Kamada-Kawai / 圆形），
+  提供**两种用户可选的边粗细编码**：
+  - *Weight-based*（默认，`emapplot` 范式）：边粗细与 Jaccard 值线性正比，
+    视觉忠实反映相似度量级。推荐用于发表。
+  - *Rank-based*：边粗细按 Jaccard 排名分配，保证所有边在视觉上等距分布，
+    不受绝对权重影响。适合权重方差很小的密集网络。
+  节点大小反映 `|NES|`；节点颜色反映富集方向（红色 = 左组上调，蓝色 = 右组
+  上调）。
+
+**导出中心**（两个面板均有）：点击 "Export Publication Plot" 弹出 modal，
+含宽度 / 高度 / DPI / 格式（PDF、PNG、SVG、TIFF）控件，以及两个动作：通过
+`ggsave` 下载静态 `ggplot2` 渲染图像（不依赖 kaleido/orca 等外部工具），
+或复制完整可复现 R 脚本（`generate_dotplot_code()` / `generate_network_code()`）
+到剪贴板。静态图与复制的代码运行结果字节一致。
+
+源文件：`R/13_shiny_mod_pathway_relation.R`、辅助函数 `R/utils_hubgene.R`，
+代码生成器见 `R/15_code_generator.R`。
 
 #### Tab 4 -- HubGene 网络（HubGene Network）
 
@@ -310,10 +333,22 @@ launch_gsea_app(gsea_res, addition_data = "pathway_annotations.csv")
 图。可调参数：
 
 - **物理模拟**：开关，调整力导向参数
-- **节点大小**：按 degree / betweenness / page-rank
+- **通路节点尺寸编码**：三种用户可选模式
+  - *按基因集大小*（`setSize`，默认）：与 `enrichplot::cnetplot` 范式一致；
+    通路节点大小与基因集基因数（sqrt 缩放）成正比。推荐用于生物学解读。
+  - *按显著性*（`-log10(FDR)`）：突出最值得信任的通路。
+  - *固定大小*：滑块控制的常量大小（旧行为）。
+  滑块值始终作为**基准**尺寸，所选编码在其 `[0.6×, 1.4×]` 区间缩放，以保证
+  visNetwork 力导向布局稳定（尺寸差异超过 ~2.3 倍会导致布局抖动）。
+  基因节点尺寸不受影响（始终为 `base + degree * 3`）。
 - **网络统计**：节点数、边数、密度的汇总面板
 
-源文件：`R/16_shiny_mod_hubgene_vis.R`
+**导出中心**：与 Tab 3 相同的 modal 模式。静态复现使用
+`generate_hubgene_code()`，通过 `igraph` + `ggplot2`（无 `ggraph` 依赖）将
+通路节点绘制为菱形、基因节点绘制为圆形的二分图。当前尺寸编码模式会保留到生成
+的脚本中。
+
+源文件：`R/16_shiny_mod_hubgene_vis.R`，代码生成器见 `R/15_code_generator.R`。
 
 #### Tab 5 -- AI 解读（AI Interpretation）
 

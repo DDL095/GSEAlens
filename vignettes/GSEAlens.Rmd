@@ -319,9 +319,38 @@ modes:
 - **Batch mode**: select multiple pathways from Main Workspace and visualize
   their interconnections
 
-Edge thickness is proportional to overlap ratio; node size reflects `|NES|`.
+Two sub-panels are provided under this tab:
 
-Source: `R/13_shiny_mod_pathway_relation.R`, helper `R/utils_hubgene.R`.
+- **DotPlot panel**: horizontal dot plot where the X axis is NES, dot color
+  encodes significance (`-log10(FDR)` / `-log10(P-value)` / `|NES|`,
+  user-selectable), and dot size encodes gene-set magnitude. A fixed-domain
+  `sqrt` size scale (rather than per-render min-max normalization) is used so
+  that switching between "Core Genes Count" (leading edge) and "Set Size"
+  (MSigDB gene-set total) produces visually distinct dot patterns and remains
+  comparable across parameter changes. This mirrors the
+  `ggplot2::scale_size_continuous(range=...)` semantics used by
+  `enrichplot::dotplot`.
+- **Network panel**: graph layout (Fruchterman-Reingold / Kamada-Kawai /
+  Circle) with **two user-selectable edge-width encodings**:
+  - *Weight-based* (default, `emapplot` convention): edge width is linearly
+    proportional to the Jaccard value, faithfully reflecting the underlying
+    similarity magnitude. Recommended for publication.
+  - *Rank-based*: edge width is assigned by Jaccard rank, guaranteeing uniform
+    visual spacing between edges regardless of absolute weight. Useful for
+    dense networks with low weight variance.
+  Node size reflects `|NES|`; node color reflects enrichment direction
+  (red = up in left group, blue = up in right group).
+
+**Export Center** (both panels): clicking "Export Publication Plot" opens a
+modal with width / height / DPI / format (PDF, PNG, SVG, TIFF) controls and
+two actions: download a static `ggplot2`-rendered image via `ggsave` (no
+external dependencies such as kaleido/orca), or copy a fully reproducible
+R script (`generate_dotplot_code()` / `generate_network_code()`) to the
+clipboard. The static figures are byte-for-byte identical to what the copied
+code would produce.
+
+Source: `R/13_shiny_mod_pathway_relation.R`, helper `R/utils_hubgene.R`,
+code generators in `R/15_code_generator.R`.
 
 #### Tab 4 -- HubGene Network
 
@@ -329,10 +358,27 @@ Identifies and visualizes hub genes (highly connected genes across multiple
 enriched pathways) using a `visNetwork` interactive plot. Adjustable parameters:
 
 - **Physics simulation**: toggle on/off, adjust force-directed parameters
-- **Node sizing**: by degree, betweenness, or page-rank
+- **Pathway node size encoding**: three user-selectable modes
+  - *By gene-set size* (`setSize`, default): matches the `enrichplot::cnetplot`
+    convention; pathway node size is proportional to the number of genes in
+    the set (sqrt-scaled). Recommended for biological interpretation.
+  - *By significance* (`-log10(FDR)`): emphasizes the most statistically
+    trustworthy pathways.
+  - *Fixed size*: constant node size controlled by the slider (legacy behavior).
+  The slider value always acts as the **base** size; the chosen encoding
+  scales around it within `[0.6x, 1.4x]` to keep visNetwork's force-directed
+  layout stable (size variance beyond ~2.3x causes visible layout jitter).
+  Gene-node size is unaffected (always `base + degree * 3`).
 - **Network statistics**: summary panel showing node count, edge count, density
 
-Source: `R/16_shiny_mod_hubgene_vis.R`.
+**Export Center**: same modal pattern as Tab 3. The static reproduction uses
+`generate_hubgene_code()` and renders pathway nodes as diamonds and gene nodes
+as circles in a bipartite layout via `igraph` + `ggplot2` (no `ggraph`
+dependency). The current size-encoding mode is preserved in the generated
+script.
+
+Source: `R/16_shiny_mod_hubgene_vis.R`, code generator in
+`R/15_code_generator.R`.
 
 #### Tab 5 -- AI Interpretation
 

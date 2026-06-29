@@ -137,24 +137,40 @@ mod_pathway_relation_ui <- function(id) {
               class = "white-box",
               style = "padding: 15px; margin-top: 15px;",
               shiny::uiOutput(ns("dotplot_status")),
-              shiny::selectInput(
-                ns("dotplot_color_mode"),
-                label = "Color by:",
-                choices = c(
-                  "-log10(FDR)" = "padj",
-                  "-log10(P-value)" = "pval",
-                  "NES" = "nes"
+              shiny::fluidRow(
+                shiny::column(4,
+                  shiny::selectInput(
+                    ns("dotplot_color_mode"),
+                    label = "Color by:",
+                    choices = c(
+                      "-log10(FDR)" = "padj",
+                      "-log10(P-value)" = "pval",
+                      "NES" = "nes"
+                    ),
+                    selected = "padj"
+                  )
                 ),
-                selected = "padj"
-              ),
-              shiny::selectInput(
-                ns("dotplot_size_mode"),
-                label = "Size by:",
-                choices = c(
-                  "Core Genes Count" = "core_size",
-                  "Set Size" = "setsize"
+                shiny::column(4,
+                  shiny::selectInput(
+                    ns("dotplot_size_mode"),
+                    label = "Size by:",
+                    choices = c(
+                      "Core Genes Count" = "core_size",
+                      "Set Size" = "setsize"
+                    ),
+                    selected = "core_size"
+                  )
                 ),
-                selected = "core_size"
+                shiny::column(4,
+                  shiny::div(style = "margin-top: 22px;",
+                    shiny::actionButton(
+                      ns("open_dotplot_export"),
+                      label = "Export Publication Plot",
+                      class = "btn-success",
+                      style = "width: 100%;"
+                    )
+                  )
+                )
               ),
               plotly::plotlyOutput(ns("plot_dotplot"), height = "800px") |>
                 shinycssloaders::withSpinner(type = 6, color = "#28a745")
@@ -167,6 +183,37 @@ mod_pathway_relation_ui <- function(id) {
               class = "white-box",
               style = "padding: 15px; margin-top: 15px;",
               shiny::uiOutput(ns("network_status")),
+              shiny::fluidRow(
+                shiny::column(4,
+                  shiny::selectInput(
+                    ns("network_edge_width_mode"),
+                    label = "Edge Width Mode:",
+                    choices = c(
+                      "Weight-based (emapplot style)" = "weight",
+                      "Rank-based (uniform spacing)"  = "rank"
+                    ),
+                    selected = "weight"
+                  )
+                ),
+                shiny::column(4,
+                  shiny::div(style = "margin-top: 22px;",
+                    shiny::actionButton(
+                      ns("open_network_export"),
+                      label = "Export Publication Plot",
+                      class = "btn-success",
+                      style = "width: 100%;"
+                    )
+                  )
+                ),
+                shiny::column(4,
+                  shiny::helpText(
+                    style = "margin-top: 22px; color: #666; font-size: 11px;",
+                    "Weight-based: faithful to Jaccard values",
+                    shiny::br(),
+                    "Rank-based: uniform visual spacing"
+                  )
+                )
+              ),
               shiny::div(
                 id = ns("selection_panel"),
                 style = "background: #e8f4fd; padding: 12px; border-radius: 8px; margin-bottom: 15px;",
@@ -441,18 +488,42 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
         "setsize" = plot_df$setSize,
         plot_df$CoreCount
       )
-      size_range <- c(5, 25)
-      if (max(size_vals) > min(size_vals)) {
-        size_scaled <- size_range[1] + (size_vals - min(size_vals)) / (max(size_vals) - min(size_vals)) * (size_range[2] - size_range[1])
-      } else {
-        size_scaled <- mean(size_range)
-      }
+      # ----- enrichplot-style size mapping (IRON FIX) -----
+      # Previous implementation used per-render min-max normalization, which
+      # (a) pinned the smallest/largest pathways to fixed pixel sizes every
+      #     render, hiding absolute magnitude differences between CoreCount
+      #     (typical 5-50) and setSize (typical 50-500), so switching "Size by"
+      #     produced visually identical dot patterns;
+      # (b) made dot sizes incomparable across FDR/TopN parameter changes.
+      # Fix: use a FIXED domain per variable + sqrt perceptual scale, mirroring
+      # ggplot2::scale_size_continuous(range=...) semantics used by
+      # clusterProfiler::dotplot / enrichplot::dotplot.
+      size_range  <- c(5, 25)
+      size_domain <- switch(size_mode,
+        "core_size" = c(0, 50),   # CoreCount (leading edge) typical range
+        "setsize"   = c(0, 500),  # MSigDB gene-set total size typical range
+        c(0, 50)
+      )
+      sqrt_lo <- sqrt(size_domain[1])
+      sqrt_hi <- sqrt(size_domain[2])
+      size_scaled <- size_range[1] +
+        (sqrt(pmax(size_vals, 0)) - sqrt_lo) / (sqrt_hi - sqrt_lo) *
+        (size_range[2] - size_range[1])
+      size_scaled <- pmin(pmax(size_scaled, size_range[1]), size_range[2])
       plot_df <- plot_df[order(plot_df$NES, decreasing = TRUE), ]
       size_scaled <- size_scaled[order(plot_df$NES, decreasing = TRUE)]
       color_vals <- color_vals[order(plot_df$NES, decreasing = TRUE)]
+      # Hover shows BOTH size dimensions; bold the one currently driving
+      # dot size so the user can correlate visual size with the value.
+      core_fmt <- if (size_mode == "core_size") "<b>Core Genes: %d</b>" else "Core Genes: %d"
+      set_fmt  <- if (size_mode == "setsize")  "<b>Set Size: %d</b>"   else "Set Size: %d"
       hover_text <- sprintf(
-        "<b>%s</b><br>FDR: %.2e<br>NES: %.2f<br>Core Genes: %d",
-        plot_df$ID, plot_df$p.adjust, plot_df$NES, plot_df$CoreCount
+        paste0(
+          "<b>%s</b><br>FDR: %.2e<br>P-value: %.2e<br>NES: %.2f<br>",
+          core_fmt, " | ", set_fmt
+        ),
+        plot_df$ID, plot_df$p.adjust, plot_df$pvalue, plot_df$NES,
+        plot_df$CoreCount, plot_df$setSize
       )
       plotly::plot_ly(
         data = plot_df,
@@ -694,26 +765,41 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       }
 
       # ============================================================
-      # Key improvement: map edge thickness based on Jaccard ranking to 1-5 pixels
+      # Edge width mapping (user-selectable via input$network_edge_width_mode)
+      # ------------------------------------------------------------
+      # Two encoding strategies are exposed because they serve different
+      # analytical goals:
+      #   "weight" (default)  -> edge width proportional to Jaccard value.
+      #                          Faithful to the underlying similarity
+      #                          magnitude (matches emapplot / ggraph
+      #                          conventions). Recommended for publication.
+      #   "rank"              -> edge width assigned by Jaccard rank order.
+      #                          Guarantees uniform visual spacing across
+      #                          edges regardless of absolute weight. Useful
+      #                          when the goal is "make every edge visible"
+      #                          (e.g. dense networks with small weight
+      #                          variance). Original behavior.
       # ============================================================
 
       # Sort by Jaccard (weight) in descending order
       edge_list <- edge_list[order(edge_list$weight, decreasing = TRUE), ]
 
-      # Calculate thickness rank
+      width_mode <- if (is.null(input$network_edge_width_mode)) "weight"
+                    else input$network_edge_width_mode
+
       n_edges <- nrow(edge_list)
-      edge_width_mapping <- function(rank, n) {
-        # Assign 1-5 pixels based on ranking
-        # rank 1 -> 5px, rank n -> 1px
-        width <- 5 - (rank - 1) * (4 / max(1, n - 1))
-        return(max(1, min(5, round(width))))
+      if (width_mode == "rank") {
+        # Rank-based: assign 1-5 pixels based on rank (original behavior)
+        edge_list$width_rank <- vapply(seq_len(n_edges), function(i) {
+          width <- 5 - (i - 1) * (4 / max(1, n_edges - 1))
+          max(1, min(5, round(width)))
+        }, numeric(1))
+      } else {
+        # Weight-based: linear mapping of Jaccard in [0,1] to [1,8] pixels
+        edge_list$width_rank <- 1 + edge_list$weight * 7
       }
 
-      edge_list$width_rank <- vapply(seq_len(n_edges), function(i) {
-        edge_width_mapping(i, n_edges)
-      }, numeric(1))
-
-      # Normal edge width range: 1-5 pixels
+      # Normal edge width range: rank->1-5, weight->1-8 pixels
       edge_list$edge_width_normal <- edge_list$width_rank
 
       # Selected edge fixed width: 7-8 pixels thicker than normal thickest (5 + 8 = 13)
@@ -996,7 +1082,210 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
     })
 
     # ============================================================
-    # 11. Return Values
+    # 12. Export Center (DotPlot + Network)
+    # ------------------------------------------------------------
+    # Provides a unified modal for downloading the current view as a
+    # static ggplot2 publication figure (PDF/PNG/SVG/TIFF) and for
+    # copying the corresponding reproducible R code.
+    #
+    # Design decisions:
+    #   * Static rendering uses ggplot2 + ggsave (zero external deps,
+    #     unlike plotly::save_image which requires kaleido/orca).
+    #   * Code is generated via generate_dotplot_code() /
+    #     generate_network_code() in R/15_code_generator.R.
+    #   * Clipboard copy uses clipr (already in Imports).
+    # ============================================================
+
+    # ----- Shared export modal UI builder -----
+    .build_export_modal <- function(plot_title) {
+      shiny::modalDialog(
+        title = sprintf("Export Publication Plot - %s", plot_title),
+        size = "m",
+        footer = NULL,
+        easyClose = TRUE,
+        shiny::fluidRow(
+          shiny::column(6,
+            shiny::numericInput(ns("exp_width"),  "Width (inch)",  value = 9, min = 2, max = 24),
+            shiny::numericInput(ns("exp_dpi"),    "DPI",           value = 300, min = 72, max = 600)
+          ),
+          shiny::column(6,
+            shiny::numericInput(ns("exp_height"), "Height (inch)", value = 7, min = 2, max = 24),
+            shiny::selectInput(ns("exp_format"), "Format",
+              choices = c("PDF" = "pdf", "PNG" = "png", "SVG" = "svg", "TIFF" = "tiff"),
+              selected = "pdf")
+          )
+        ),
+        shiny::hr(),
+        shiny::fluidRow(
+          shiny::column(6,
+            shiny::selectInput(ns("exp_palette"), "Color palette",
+              choices = c("Viridis-D" = "D", "Viridis-C" = "C",
+                          "Magma" = "A", "Inferno" = "B"),
+              selected = "D")
+          ),
+          shiny::column(6,
+            shiny::sliderInput(ns("exp_point_range"), "Point size range",
+              min = 1, max = 15, value = c(3, 8))
+          )
+        ),
+        shiny::hr(),
+        shiny::fluidRow(
+          shiny::column(4, shiny::downloadButton(ns("exp_download_img"), "Download Image",
+                                                 class = "btn-primary btn-block")),
+          shiny::column(4, shiny::actionButton(ns("exp_copy_code"), "Copy R Code",
+                                                class = "btn-info btn-block")),
+          shiny::column(4, shiny::actionButton(ns("exp_dismiss"), "Close",
+                                                class = "btn-default btn-block"))
+        ),
+        shiny::tags$small(style = "color: #666; display: block; margin-top: 10px;",
+          "Image is rendered via ggplot2::ggsave (no external dependencies). ",
+          "R code is reproducible and self-contained.")
+      )
+    }
+
+    # ----- Reactive: current DotPlot data slice -----
+    dotplot_export_df <- shiny::reactive({
+      pathways <- final_pathways()
+      if (length(pathways) == 0) return(NULL)
+      data_list <- data_prep_list$data()
+      shiny::req(data_list)
+      df <- data_list$df
+      plot_df <- df[df$ID %in% pathways, ]
+      if (nrow(plot_df) == 0) return(NULL)
+
+      task <- list(
+        gsea_res = data_list$gsea_res,
+        meta = list(left_group = data_list$left_group,
+                    right_group = data_list$right_group,
+                    contrast_id = data_list$contrast_id)
+      )
+      class(task) <- "GseaTask"
+      core_list <- tryCatch(get_core_genes_list(task, plot_df$ID), error = function(e) NULL)
+      plot_df$CoreCount <- vapply(plot_df$ID, function(pid) {
+        if (is.null(core_list) || is.null(core_list[[pid]])) 0L else length(core_list[[pid]])
+      }, integer(1))
+      plot_df
+    })
+
+    # ----- Reactive: current Network edges + nodes -----
+    network_export_data <- shiny::reactive({
+      el <- edge_list_rv(); nd <- node_df_rv()
+      if (is.null(el) || is.null(nd) || nrow(el) == 0) return(NULL)
+      list(edge_df = el[, c("from", "to", "weight", "shared")],
+           node_df = nd)
+    })
+
+    # ----- Reactive: ggplot object + code string for the OPEN modal -----
+    current_export_target <- shiny::reactiveVal(NULL)
+
+    shiny::observeEvent(input$open_dotplot_export, {
+      if (is.null(dotplot_export_df())) {
+        shiny::showNotification("No pathways to export.", type = "warning"); return()
+      }
+      current_export_target("dotplot")
+      shiny::showModal(.build_export_modal("Pathway DotPlot"))
+    })
+
+    shiny::observeEvent(input$open_network_export, {
+      if (is.null(network_export_data())) {
+        shiny::showNotification("No network to export.", type = "warning"); return()
+      }
+      current_export_target("network")
+      shiny::showModal(.build_export_modal("Pathway Network"))
+    })
+
+    shiny::observeEvent(input$exp_dismiss, shiny::removeModal())
+
+    # ----- Shared code builder (depends on current target) -----
+    .current_export_code <- function() {
+      pal <- if (is.null(input$exp_palette)) "D" else input$exp_palette
+      pr  <- if (is.null(input$exp_point_range)) c(3, 8) else input$exp_point_range
+      data_list <- data_prep_list$data()
+      lg <- if (is.null(data_list$left_group))  "Left"  else data_list$left_group
+      rg <- if (is.null(data_list$right_group)) "Right" else data_list$right_group
+
+      tgt <- current_export_target()
+      if (is.null(tgt)) return("")
+
+      if (tgt == "dotplot") {
+        generate_dotplot_code(
+          plot_df    = dotplot_export_df(),
+          color_mode = input$dotplot_color_mode,
+          size_mode  = input$dotplot_size_mode,
+          left_group = lg, right_group = rg,
+          palette    = pal, point_range = pr)
+      } else if (tgt == "network") {
+        nd <- network_export_data()
+        seed_val <- if (is.null(input$seed)) 42L else as.integer(input$seed)
+        # Merge NES/p.adjust back into node_df from the data prep
+        data_list <- data_prep_list$data()
+        df <- data_list$df
+        nd$node_df <- merge(nd$node_df, df[, c("ID", "NES", "p.adjust")],
+                            by.x = "name", by.y = "ID", all.x = TRUE)
+        generate_network_code(
+          edge_df = nd$edge_df, node_df = nd$node_df,
+          width_mode = if (is.null(input$network_edge_width_mode)) "weight"
+                       else input$network_edge_width_mode,
+          seed = seed_val)
+      } else ""
+    }
+
+    # ----- Download handler: render ggplot2 and save to file -----
+    output$exp_download_img <- shiny::downloadHandler(
+      filename = function() {
+        tgt <- current_export_target()
+        fmt <- if (is.null(input$exp_format)) "pdf" else input$exp_format
+        sprintf("GSEAlens_%s_%s.%s", tgt, Sys.Date(), fmt)
+      },
+      content = function(file) {
+        code <- .current_export_code()
+        if (!nzchar(code)) {
+          shiny::showNotification("Nothing to export.", type = "warning"); return()
+        }
+        # Evaluate the generated code in an isolated environment to obtain
+        # the ggplot object `p`, then ggsave it. This guarantees the static
+        # figure is byte-for-byte identical to what the user would get by
+        # running the copied code.
+        eval_env <- new.env(parent = baseenv())
+        eval_env$p <- NULL
+        tryCatch({
+          eval(parse(text = code), envir = eval_env)
+        }, error = function(e) {
+          shiny::showNotification(sprintf("Render failed: %s", e$message),
+                                  type = "error")
+        })
+        if (is.null(eval_env$p)) return()
+        ggplot2::ggsave(file, eval_env$p,
+                        width  = if (is.null(input$exp_width))  9 else input$exp_width,
+                        height = if (is.null(input$exp_height)) 7 else input$exp_height,
+                        dpi    = if (is.null(input$exp_dpi))   300 else input$exp_dpi,
+                        device = input$exp_format)
+      }
+    )
+
+    # ----- Copy code to clipboard -----
+    shiny::observeEvent(input$exp_copy_code, {
+      code <- .current_export_code()
+      if (!nzchar(code)) {
+        shiny::showNotification("Nothing to copy.", type = "warning"); return()
+      }
+      ok <- tryCatch({ clipr::write_clip(code); TRUE }, error = function(e) FALSE)
+      if (isTRUE(ok)) {
+        shiny::showNotification("R code copied to clipboard.", type = "message")
+      } else {
+        # Fallback: show code in a new modal so the user can manually copy
+        shiny::showModal(shiny::modalDialog(
+          title = "Reproducible R Code (copy manually)",
+          size = "l", easyClose = TRUE,
+          shiny::pre(style = "max-height: 60vh; overflow-y: auto; font-size: 11px;",
+                     code),
+          footer = shiny::modalButton("Close")
+        ))
+      }
+    })
+
+    # ============================================================
+    # 13. Return Values
     # ============================================================
 
     return(list(

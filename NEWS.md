@@ -1,5 +1,19 @@
 <!-- NEWS.md is maintained by https://cynkra.github.io/fledge, do not edit -->
 
+# GSEAlens 0.99.11
+
+Visualization fidelity and publication export. Brings the interactive
+plotly/visNetwork figures in line with `enrichplot` / `clusterProfiler`
+conventions, and adds a unified "Export Publication Plot" workflow that
+produces both static `ggplot2` images and reproducible R scripts.
+
+- **DotPlot size mapping (R/13_shiny_mod_pathway_relation.R)**: replace per-render min-max normalization with a **fixed-domain + sqrt** scale (CoreCount domain `[0, 50]`, setSize domain `[0, 500]`), matching `ggplot2::scale_size_continuous(range=...)` semantics. The previous normalization pinned min/max to fixed pixel sizes every render, hiding the magnitude difference between CoreCount (typical 5-50) and setSize (typical 50-500), so switching "Size by" produced visually identical dot patterns. The new scale also makes dot sizes comparable across FDR/TopN parameter changes. DotPlot hover text now shows both dimensions, with the currently-driven one bolded, plus P-value.
+- **Pathway Volcano Y axis (R/10_shiny_mod_quadrant.R)**: switch from `-log10(p.adjust)` to `-log10(pvalue)`, matching the `EnhancedVolcano` / `clusterProfiler` convention. P-value (rather than FDR) provides the sensitivity needed to expose gradient structure in marginal pathways; FDR compresses most points to the bottom. Hover text and title updated accordingly.
+- **Network edge width (R/13_shiny_mod_pathway_relation.R)**: add a user-selectable **Edge Width Mode** dropdown with two options: *Weight-based* (default; edge width linearly proportional to Jaccard value, `emapplot` convention, faithful to similarity magnitude) and *Rank-based* (legacy behavior; edge width assigned by Jaccard rank for uniform visual spacing). The default Weight-based mode is the standard for publication figures; the Rank-based mode is retained for dense networks with low weight variance.
+- **HubGene pathway node size (R/16_shiny_mod_hubgene_vis.R)**: add a **Pathway Node Size Encoding** dropdown with three modes: *By gene-set size* (`setSize`, default; matches `enrichplot::cnetplot` convention, sqrt-scaled), *By significance* (`-log10(FDR)`), and *Fixed size* (legacy slider-only behavior). The slider value acts as the base size; the chosen encoding scales within `[0.6x, 1.4x]` to keep visNetwork's force-directed layout stable (variance beyond ~2.3x causes layout jitter). Gene-node sizing is unaffected. Pathway hover text now also shows `setSize`.
+- **Export Center (R/13, R/10, R/16, R/15)**: add a unified "Export Publication Plot" modal to the DotPlot/Network/Volcano/HubGene panels. Provides width/height/DPI/format (PDF, PNG, SVG, TIFF) controls and two actions: (1) download a static `ggplot2`-rendered image via `ggsave` (zero external dependencies; no kaleido/orca required, unlike `plotly::save_image`); (2) copy a fully reproducible R script to the clipboard via `clipr`. Four new exported code generators in `R/15_code_generator.R`: `generate_dotplot_code()`, `generate_volcano_code()`, `generate_network_code()`, `generate_hubgene_code()`. Network and HubGene static renderings use `igraph` layouts + base `ggplot2` (no `ggraph` dependency, which is not in DESCRIPTION).
+- Update English and Chinese vignettes (Tab 3 and Tab 4 sections) to document the new sub-panels, encoding modes, and export workflow.
+
 # GSEAlens 0.99.10
 
 BiocCheck compliance: clear the ">= 80% runnable examples" ERROR, plus

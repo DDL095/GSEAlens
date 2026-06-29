@@ -29,7 +29,17 @@ mod_quadrant_ui <- function(id) {
             "Click pathway to highlight | Check 'Joint Plot' in table"
           )
         ),
-        shiny::uiOutput(ns("selected_pathways_display"))
+        shiny::uiOutput(ns("selected_pathways_display")),
+        shiny::div(
+          style = "margin-top: 10px;",
+          shiny::actionButton(
+            ns("open_volcano_export"),
+            label = "Export Publication Plot",
+            icon = shiny::icon("file-image"),
+            class = "btn-success btn-sm",
+            style = "width: 100%;"
+          )
+        )
       )),
       shiny::column(6, shiny::div(
         class = "white-box",
@@ -294,7 +304,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
           ax_offset <- ifelse(i %% 2 == 1, 0, 50)
           annotations_list[[i]] <- list(
             x = row$NES,
-            y = -log10(row$p.adjust),
+            y = -log10(row$pvalue),
             text = row$ID,
             showarrow = TRUE,
             arrowhead = 2,
@@ -315,7 +325,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       plotly::plot_ly(
         data = df,
         x = ~NES,
-        y = ~ -log10(p.adjust),
+        y = ~ -log10(pvalue),
         type = "scatter",
         mode = "markers",
         marker = list(
@@ -324,7 +334,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
           opacity = ~opacity,
           line = list(color = "white", width = ~linewidth)
         ),
-        text = ~ sprintf("%s<br>NES: %.2f<br>FDR: %.2e", ID, NES, p.adjust),
+        text = ~ sprintf("%s<br>NES: %.2f<br>P-value: %.2e<br>FDR: %.2e", ID, NES, pvalue, p.adjust),
         hoverinfo = "text",
         key = ~ID,
         source = ns("pathway_volcano")
@@ -332,7 +342,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
         plotly::layout(
           title = list(
             text = sprintf(
-              "Pathway Volcano: %s vs %s<br><sub>%d pathways | %d selected | %d significant (FDR<0.25)</sub>",
+              "Pathway Volcano: %s vs %s<br><sub>%d pathways | %d selected | %d significant (P<0.05)</sub>",
               data_list$left_group, data_list$right_group,
               nrow(df), length(current_selections), sum(df$p.adjust < 0.25, na.rm = TRUE)
             ),
@@ -341,7 +351,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
             xanchor = "center"
           ),
           xaxis = list(title = "NES", zeroline = FALSE),
-          yaxis = list(title = "-log10 (FDR)", zeroline = FALSE),
+          yaxis = list(title = "-log10 (P-value)", zeroline = FALSE),
           showlegend = FALSE,
           dragmode = "pan",
           annotations = annotations_list
@@ -1410,5 +1420,97 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
         writeLines(if (nzchar(tsv)) tsv else "Sample\tGroup\tExpression\n", file, useBytes = TRUE)
       }
     )
+
+    # ============================================================
+    # Pathway Volcano Export Center
+    # ------------------------------------------------------------
+    # Mirrors the export modal pattern used in mod_pathway_relation:
+    # ggplot2 + ggsave (no kaleido/orca dependency), with a reproducible
+    # R code generator (generate_volcano_code in 15_code_generator.R).
+    # ============================================================
+
+    .build_volcano_export_modal <- function() {
+      shiny::modalDialog(
+        title = "Export Publication Plot - Pathway Volcano",
+        size = "m", footer = NULL, easyClose = TRUE,
+        shiny::fluidRow(
+          shiny::column(6,
+            shiny::numericInput(ns("vol_exp_width"),  "Width (inch)",  value = 8, min = 2, max = 24),
+            shiny::numericInput(ns("vol_exp_dpi"),    "DPI",           value = 300, min = 72, max = 600)
+          ),
+          shiny::column(6,
+            shiny::numericInput(ns("vol_exp_height"), "Height (inch)", value = 6, min = 2, max = 24),
+            shiny::selectInput(ns("vol_exp_format"), "Format",
+              choices = c("PDF" = "pdf", "PNG" = "png", "SVG" = "svg", "TIFF" = "tiff"),
+              selected = "pdf")
+          )
+        ),
+        shiny::hr(),
+        shiny::fluidRow(
+          shiny::column(4, shiny::downloadButton(ns("vol_exp_download_img"), "Download Image",
+                                                 class = "btn-primary btn-block")),
+          shiny::column(4, shiny::actionButton(ns("vol_exp_copy_code"), "Copy R Code",
+                                                class = "btn-info btn-block")),
+          shiny::column(4, shiny::actionButton(ns("vol_exp_dismiss"), "Close",
+                                                class = "btn-default btn-block"))
+        ),
+        shiny::tags$small(style = "color: #666; display: block; margin-top: 10px;",
+          "Static rendering via ggplot2::ggsave (no external dependencies).",
+          "X axis: NES | Y axis: -log10(pvalue)")
+      )
+    }
+
+    volcano_export_df <- shiny::reactive({
+      data_list <- data_prep_data()
+      shiny::req(data_list)
+      data_list$df[, c("ID", "NES", "pvalue", "p.adjust")]
+    })
+
+    shiny::observeEvent(input$open_volcano_export, {
+      shiny::showModal(.build_volcano_export_modal())
+    })
+    shiny::observeEvent(input$vol_exp_dismiss, shiny::removeModal())
+
+    .volcano_export_code <- function() {
+      data_list <- data_prep_data()
+      lg <- if (is.null(data_list$left_group))  "Left"  else data_list$left_group
+      rg <- if (is.null(data_list$right_group)) "Right" else data_list$right_group
+      generate_volcano_code(volcano_export_df(),
+                            left_group = lg, right_group = rg)
+    }
+
+    output$vol_exp_download_img <- shiny::downloadHandler(
+      filename = function() sprintf("GSEAlens_volcano_%s.%s", Sys.Date(),
+                                    if (is.null(input$vol_exp_format)) "pdf" else input$vol_exp_format),
+      content = function(file) {
+        code <- .volcano_export_code()
+        eval_env <- new.env(parent = baseenv())
+        eval_env$p <- NULL
+        tryCatch(eval(parse(text = code), envir = eval_env),
+                 error = function(e) shiny::showNotification(
+                   sprintf("Render failed: %s", e$message), type = "error"))
+        if (is.null(eval_env$p)) return()
+        ggplot2::ggsave(file, eval_env$p,
+                        width  = if (is.null(input$vol_exp_width))  8 else input$vol_exp_width,
+                        height = if (is.null(input$vol_exp_height)) 6 else input$vol_exp_height,
+                        dpi    = if (is.null(input$vol_exp_dpi))   300 else input$vol_exp_dpi,
+                        device = input$vol_exp_format)
+      }
+    )
+
+    shiny::observeEvent(input$vol_exp_copy_code, {
+      code <- .volcano_export_code()
+      ok <- tryCatch({ clipr::write_clip(code); TRUE }, error = function(e) FALSE)
+      if (isTRUE(ok)) {
+        shiny::showNotification("R code copied to clipboard.", type = "message")
+      } else {
+        shiny::showModal(shiny::modalDialog(
+          title = "Reproducible R Code (copy manually)",
+          size = "l", easyClose = TRUE,
+          shiny::pre(style = "max-height: 60vh; overflow-y: auto; font-size: 11px;", code),
+          footer = shiny::modalButton("Close")
+        ))
+      }
+    })
   })
 }

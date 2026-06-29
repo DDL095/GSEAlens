@@ -135,9 +135,24 @@ mod_hubgene_vis_ui <- function(id) {
 
           # ── Node Sizing ──
           shiny::h5("Node Sizing"),
+          shiny::selectInput(
+            ns("vis_pw_size_mode"),
+            label = "Pathway Node Size Encoding:",
+            choices = c(
+              "Fixed size (slider below)"        = "fixed",
+              "By significance (-log10 FDR)"     = "fdr",
+              "By gene-set size (setSize)"       = "setsize"
+            ),
+            selected = "setsize"
+          ),
+          shiny::helpText(
+            style = "color: #666; font-size: 11px;",
+            "setSize mode matches enrichplot::cnetplot convention.",
+            "Size range scales around the slider value [0.6x, 1.4x]."
+          ),
           shiny::sliderInput(
             ns("vis_pw_size"),
-            label = "Pathway Node Size:",
+            label = "Pathway Node Base Size:",
             min = 15,
             max = 60,
             value = 30,
@@ -197,6 +212,17 @@ mod_hubgene_vis_ui <- function(id) {
             width = "100%"
           ) |>
             shinycssloaders::withSpinner(type = 6, color = "#28a745"),
+          shiny::hr(),
+          shiny::div(
+            style = "text-align: center;",
+            shiny::actionButton(
+              ns("open_hubgene_export"),
+              label = "Export Publication Plot",
+              icon = shiny::icon("file-image"),
+              class = "btn-success",
+              style = "width: 60%;"
+            )
+          ),
           shiny::hr()
         )
       )
@@ -390,8 +416,41 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
       }
 
       # Node size parameters
-      pw_size <- ifelse(is.null(input$vis_pw_size), 30, input$vis_pw_size)
+      # ------------------------------------------------------------
+      # Pathway node size is now driven by a user-selectable encoding
+      # (input$vis_pw_size_mode). The slider value (vis_pw_size) acts as
+      # the BASE size; the chosen encoding scales around it within
+      # [0.6x, 1.4x] to keep visNetwork's force-directed layout stable.
+      #   "fixed"   -> constant (legacy behavior)
+      #   "fdr"     -> -log10(FDR) normalized to [0.6x, 1.4x] of base
+      #   "setsize" -> sqrt(setSize) normalized to [0.6x, 1.4x] of base
+      #                (cnetplot convention; sqrt avoids over-weighting
+      #                 large gene sets)
+      # ------------------------------------------------------------
+      pw_base  <- ifelse(is.null(input$vis_pw_size),  30, input$vis_pw_size)
       gene_size <- ifelse(is.null(input$vis_gene_size), 12, input$vis_gene_size)
+      pw_size_mode <- if (is.null(input$vis_pw_size_mode)) "setsize"
+                      else input$vis_pw_size_mode
+
+      # Per-pathway scaled size vector (matches row order of net$nodes$pathway)
+      pw_size <- switch(pw_size_mode,
+        "fdr" = {
+          if (!is.null(net$nodes$pathway) && nrow(net$nodes$pathway) > 0) {
+            fdr_nl <- -log10(pmax(net$nodes$pathway$FDR, 1e-300))
+            r <- range(fdr_nl); if (diff(r) < 1e-6) r <- c(0, 10)
+            pw_base * (0.6 + 0.8 * (fdr_nl - r[1]) / diff(r))
+          } else rep(pw_base, 0)
+        },
+        "setsize" = {
+          if (!is.null(net$nodes$pathway) && nrow(net$nodes$pathway) > 0) {
+            sv <- net$nodes$pathway$setSize
+            r <- range(sv); if (diff(r) < 1) r <- c(0, 200)
+            pw_base * (0.6 + 0.8 * (sqrt(sv) - sqrt(r[1])) /
+                                 (sqrt(r[2]) - sqrt(r[1])))
+          } else rep(pw_base, 0)
+        },
+        rep(pw_base, if (is.null(net$nodes$pathway)) 0 else nrow(net$nodes$pathway))
+      )
 
       # ──────────────────────────────────────────────────────────────
       # Node Construction (add opacity column)
@@ -427,11 +486,11 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
             group = "pathway",
             shape = "diamond",
             color = ifelse(row$NES > 0, "#E41A1C", "#377EB8"),
-            size = pw_size,
+            size = pw_size[i],
             opacity = 1.0,
             title = sprintf(
-              "<b>%s</b><br>Direction: %s<br>NES: %.3f<br>FDR: %.2e<br>LE Genes: %d",
-              row$id, direction, row$NES, row$FDR, le_count
+              "<b>%s</b><br>Direction: %s<br>NES: %.3f<br>FDR: %.2e<br>LE Genes: %d<br>Set Size: %d",
+              row$id, direction, row$NES, row$FDR, le_count, row$setSize
             ),
             stringsAsFactors = FALSE
           ))
@@ -805,6 +864,114 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
     })
 
     add_debug("Ready")
+
+    # ============================================================
+    # HubGene Export Center
+    # ------------------------------------------------------------
+    # Static ggplot2 reproduction of the visNetwork bipartite graph.
+    # Reuses generate_hubgene_code() from 15_code_generator.R.
+    # ============================================================
+
+    .build_hubgene_export_modal <- function() {
+      shiny::modalDialog(
+        title = "Export Publication Plot - HubGene Network",
+        size = "m", footer = NULL, easyClose = TRUE,
+        shiny::fluidRow(
+          shiny::column(6,
+            shiny::numericInput(ns("hub_exp_width"),  "Width (inch)",  value = 10, min = 2, max = 24),
+            shiny::numericInput(ns("hub_exp_dpi"),    "DPI",           value = 300, min = 72, max = 600)
+          ),
+          shiny::column(6,
+            shiny::numericInput(ns("hub_exp_height"), "Height (inch)", value = 8, min = 2, max = 24),
+            shiny::selectInput(ns("hub_exp_format"), "Format",
+              choices = c("PDF" = "pdf", "PNG" = "png", "SVG" = "svg", "TIFF" = "tiff"),
+              selected = "pdf")
+          )
+        ),
+        shiny::hr(),
+        shiny::fluidRow(
+          shiny::column(4, shiny::downloadButton(ns("hub_exp_download_img"), "Download Image",
+                                                 class = "btn-primary btn-block")),
+          shiny::column(4, shiny::actionButton(ns("hub_exp_copy_code"), "Copy R Code",
+                                                class = "btn-info btn-block")),
+          shiny::column(4, shiny::actionButton(ns("hub_exp_dismiss"), "Close",
+                                                class = "btn-default btn-block"))
+        ),
+        shiny::tags$small(style = "color: #666; display: block; margin-top: 10px;",
+          "Static rendering via ggplot2::ggsave (no ggraph dependency). ",
+          "Pathway nodes: diamonds; Gene nodes: circles.")
+      )
+    }
+
+    shiny::observeEvent(input$open_hubgene_export, {
+      net <- tryCatch(net_data(), error = function(e) NULL)
+      if (is.null(net) || (is.null(net$nodes$pathway) && is.null(net$nodes$gene))) {
+        shiny::showNotification("No network to export.", type = "warning"); return()
+      }
+      shiny::showModal(.build_hubgene_export_modal())
+    })
+    shiny::observeEvent(input$hub_exp_dismiss, shiny::removeModal())
+
+    .hubgene_export_code <- function() {
+      net <- tryCatch(net_data(), error = function(e) NULL)
+      if (is.null(net)) return("")
+      pw    <- net$nodes$pathway[, c("id", "NES", "FDR", "setSize")]
+      genes <- if (!is.null(net$nodes$gene)) {
+        net$nodes$gene[, c("id", "stat", "degree")]
+      } else {
+        data.frame(id = character(0), stat = numeric(0), degree = integer(0))
+      }
+      edges <- if (!is.null(net$edges)) {
+        net$edges[, c("source", "target")]
+      } else {
+        data.frame(source = character(0), target = character(0))
+      }
+      colnames(edges) <- c("from", "to")
+      seed_val <- if (is.null(input$vis_seed)) 42L else as.integer(input$vis_seed)
+      pw_mode <- if (is.null(input$vis_pw_size_mode)) "setsize" else input$vis_pw_size_mode
+      generate_hubgene_code(pathway_nodes = pw, gene_nodes = genes,
+                            edge_df = edges, pw_size_mode = pw_mode,
+                            seed = seed_val)
+    }
+
+    output$hub_exp_download_img <- shiny::downloadHandler(
+      filename = function() sprintf("GSEAlens_hubgene_%s.%s", Sys.Date(),
+                                    if (is.null(input$hub_exp_format)) "pdf" else input$hub_exp_format),
+      content = function(file) {
+        code <- .hubgene_export_code()
+        if (!nzchar(code)) return()
+        eval_env <- new.env(parent = baseenv())
+        eval_env$p <- NULL
+        tryCatch(eval(parse(text = code), envir = eval_env),
+                 error = function(e) shiny::showNotification(
+                   sprintf("Render failed: %s", e$message), type = "error"))
+        if (is.null(eval_env$p)) return()
+        ggplot2::ggsave(file, eval_env$p,
+                        width  = if (is.null(input$hub_exp_width))  10 else input$hub_exp_width,
+                        height = if (is.null(input$hub_exp_height))  8 else input$hub_exp_height,
+                        dpi    = if (is.null(input$hub_exp_dpi))   300 else input$hub_exp_dpi,
+                        device = input$hub_exp_format)
+      }
+    )
+
+    shiny::observeEvent(input$hub_exp_copy_code, {
+      code <- .hubgene_export_code()
+      if (!nzchar(code)) {
+        shiny::showNotification("Nothing to copy.", type = "warning"); return()
+      }
+      ok <- tryCatch({ clipr::write_clip(code); TRUE }, error = function(e) FALSE)
+      if (isTRUE(ok)) {
+        shiny::showNotification("R code copied to clipboard.", type = "message")
+      } else {
+        shiny::showModal(shiny::modalDialog(
+          title = "Reproducible R Code (copy manually)",
+          size = "l", easyClose = TRUE,
+          shiny::pre(style = "max-height: 60vh; overflow-y: auto; font-size: 11px;", code),
+          footer = shiny::modalButton("Close")
+        ))
+      }
+    })
+
     return(list(final_pathways = final_pathways))
   })
 }
