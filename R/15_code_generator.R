@@ -729,6 +729,20 @@ library(ggplot2)
 # --- Data (exact subset shown in the interactive view) -----------------------
 df <- %s
 
+# --- Type coercion (defensive) -----------------------------------------------
+# Coerce all columns used in arithmetic to numeric to prevent
+# "non-numeric argument to binary operator" when upstream returns character.
+df$NES      <- suppressWarnings(as.numeric(df$NES))
+df$pvalue   <- suppressWarnings(as.numeric(df$pvalue))
+df$p.adjust <- suppressWarnings(as.numeric(df$p.adjust))
+df$CoreCount <- suppressWarnings(as.integer(df$CoreCount))
+df$setSize  <- suppressWarnings(as.numeric(df$setSize))
+df$NES[is.na(df$NES)]        <- 0
+df$pvalue[is.na(df$pvalue)]   <- 1
+df$p.adjust[is.na(df$p.adjust)] <- 1
+df$CoreCount[is.na(df$CoreCount)] <- 0
+df$setSize[is.na(df$setSize)]  <- 0
+
 # --- Aesthetic mappings ------------------------------------------------------
 color_field <- "%s"
 color_title <- "%s"
@@ -813,6 +827,17 @@ library(ggplot2)
 
 # --- Data --------------------------------------------------------------------
 df <- %s
+
+# --- Type coercion (defensive) -----------------------------------------------
+# Upstream GSEA result objects sometimes return NES/pvalue/p.adjust as
+# character or factor. Coerce to numeric BEFORE any arithmetic to prevent
+# "non-numeric argument to binary operator" at ifelse(NES > 0, ...) below.
+df$NES      <- suppressWarnings(as.numeric(df$NES))
+df$pvalue   <- suppressWarnings(as.numeric(df$pvalue))
+df$p.adjust <- suppressWarnings(as.numeric(df$p.adjust))
+df$NES[is.na(df$NES)]         <- 0
+df$pvalue[is.na(df$pvalue)]   <- 1
+df$p.adjust[is.na(df$p.adjust)] <- 1
 
 # --- Classify direction & significance ---------------------------------------
 df$direction <- with(df, ifelse(NES > 0, "Up in %s", "Up in %s"))
@@ -928,6 +953,12 @@ library(ggplot2)
 de_df <- %s
 user_genes    <- toupper(%s)
 pathway_genes <- toupper(%s)
+
+# --- Type coercion (defensive) -----------------------------------------------
+de_df$logFC  <- suppressWarnings(as.numeric(de_df$logFC))
+de_df$pvalue <- suppressWarnings(as.numeric(de_df$pvalue))
+de_df$logFC[is.na(de_df$logFC)]  <- 0
+de_df$pvalue[is.na(de_df$pvalue)] <- 1
 
 # --- Thresholds --------------------------------------------------------------
 logfc_thresh <- %g
@@ -1046,6 +1077,14 @@ library(ggplot2)
 edge_df <- %s
 node_df <- %s
 
+# --- Type coercion (defensive) -----------------------------------------------
+node_df$NES       <- suppressWarnings(as.numeric(node_df$NES))
+node_df$p.adjust  <- suppressWarnings(as.numeric(node_df$p.adjust))
+edge_df$weight    <- suppressWarnings(as.numeric(edge_df$weight))
+node_df$NES[is.na(node_df$NES)]       <- 0
+node_df$p.adjust[is.na(node_df$p.adjust)] <- 1
+edge_df$weight[is.na(edge_df$weight)]  <- 0
+
 # --- Edge width mapping ------------------------------------------------------
 %s
 
@@ -1162,6 +1201,18 @@ library(ggplot2)
 pw    <- %s
 genes <- %s
 edges <- %s
+
+# --- Type coercion (defensive) -----------------------------------------------
+pw$NES     <- suppressWarnings(as.numeric(pw$NES))
+pw$FDR     <- suppressWarnings(as.numeric(pw$FDR))
+pw$setSize <- suppressWarnings(as.numeric(pw$setSize))
+genes$stat   <- suppressWarnings(as.numeric(genes$stat))
+genes$degree <- suppressWarnings(as.integer(genes$degree))
+pw$NES[is.na(pw$NES)]     <- 0
+pw$FDR[is.na(pw$FDR)]     <- 1
+pw$setSize[is.na(pw$setSize)] <- 100
+genes$stat[is.na(genes$stat)]   <- 0
+genes$degree[is.na(genes$degree)] <- 1
 
 # --- Pathway node sizing -----------------------------------------------------
 %s
