@@ -1010,12 +1010,20 @@ generate_de_volcano_code <- function(de_df,
                          colnames(de_df))
   de_subset <- de_df[, keep_cols, drop = FALSE]
   # Cap at 5000 rows to keep dput output manageable for clipboard copy.
+  # IRON FIX (2026-06-30): unconditionally keep ALL user genes (Confirmed
+  # Gene Markers) and ALL pathway genes, even when non-significant. A non-
+  # significant marker gene would otherwise be treated as plain NS and dropped
+  # before the label layer ever sees it, so it gets no green label. Only pure-
+  # NS genes (not sig, not user, not pathway) are trimmed to 2000 rows.
   if (nrow(de_subset) > 5000) {
-    sig_mask <- !is.na(de_subset$pvalue) & de_subset$pvalue < pval_thresh
-    ns_indices <- which(!sig_mask)
+    gene_upper  <- toupper(de_subset$gene_symbol)
+    user_mask    <- gene_upper %in% toupper(user_genes)
+    pathway_mask <- gene_upper %in% toupper(pathway_genes)
+    sig_mask     <- !is.na(de_subset$pvalue) & de_subset$pvalue < pval_thresh
+    must_keep    <- sig_mask | user_mask | pathway_mask
+    ns_indices <- which(!must_keep)
     ns_keep <- ns_indices[seq_len(min(length(ns_indices), 2000))]
-    sig_indices <- which(sig_mask)
-    keep_idx <- sort(c(sig_indices, ns_keep))
+    keep_idx <- sort(unique(c(which(must_keep), ns_keep)))
     de_subset <- de_subset[keep_idx, , drop = FALSE]
   }
   data_literal <- paste(utils::capture.output(dput(de_subset)), collapse = "\n")
