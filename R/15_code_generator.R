@@ -1145,13 +1145,14 @@ p <- ggplot(de_df, aes(x = logFC, y = -log10(pvalue), color = category)) +
   theme_bw(base_size = %g) +
 %s
 
-# --- ggrepel labels for user/pathway/both genes ------------------------------
-# Mirror the interactive plotly: annotate genes the user selected (green),
-# genes from the active pathway (orange), and both (purple). Uses ggrepel
-# to avoid overlaps; no labels when none of these categories are present.
-de_df_label <- de_df[de_df$category %%in%% c("user", "pathway", "both"), ]
+# --- ggrepel labels for Confirmed Gene Markers ONLY --------------------------
+# Match the interactive plotly: label ONLY genes the user confirmed as markers
+# (green = user-only, purple = user + pathway overlap). Pathway-only genes
+# (orange) are still drawn as colored points but NOT labelled, to avoid
+# labelling every gene of the active pathway. Mirrors de_df[is_user, ].
+de_df_label <- de_df[de_df$category %%in%% c("user", "both"), ]
 if (nrow(de_df_label) > 0) {
-  label_color_map <- c(user = "#4DAF4A", pathway = "#FF9800", both = "#9C27B0")
+  label_color_map <- c(user = "#4DAF4A", both = "#9C27B0")
   library(ggrepel)
   p <- p + ggrepel::geom_label_repel(
     data = de_df_label,
