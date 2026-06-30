@@ -1456,6 +1456,10 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
             ),
             shiny::numericInput(ns("vol_exp_dpi"), "DPI", value = 300, min = 72, max = 600),
             shiny::hr(),
+            shiny::checkboxInput(ns("vol_exp_show_stats"),
+              label = "Show stats subtitle (pathways / selected / significant)",
+              value = FALSE),
+            shiny::hr(),
             shiny::h5("Download"),
             shiny::fluidRow(
               shiny::column(6,
@@ -1583,9 +1587,11 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       lg <- if (is.null(data_list$left_group))  "Left"  else data_list$left_group
       rg <- if (is.null(data_list$right_group)) "Right" else data_list$right_group
       n_sel <- length(selected_pathway_ids())
+      show_stats <- isTRUE(input$vol_exp_show_stats)
       generate_volcano_code(volcano_export_df(),
                             left_group = lg, right_group = rg,
-                            n_selected = n_sel)
+                            n_selected = n_sel,
+                            show_annotations = show_stats)
     }
 
     .volcano_render_to_file <- function(file, fmt) {
@@ -1669,6 +1675,10 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
                                 value = if (is.null(input$volcano_pval_thresh)) 0.05
                                         else input$volcano_pval_thresh,
                                 min = 0.001, max = 1, step = 0.01),
+            shiny::hr(),
+            shiny::checkboxInput(ns("de_exp_show_stats"),
+              label = "Show stats + direction banners (Up/Down | High-in)",
+              value = FALSE),
             shiny::hr(),
             shiny::h5("Download"),
             shiny::fluidRow(
@@ -1757,13 +1767,15 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       pathway_genes <- toupper(selected_pathway_genes())
       logfc_t <- if (is.null(input$de_exp_logfc)) 1 else input$de_exp_logfc
       pval_t  <- if (is.null(input$de_exp_pval))  0.05 else input$de_exp_pval
+      show_stats <- isTRUE(input$de_exp_show_stats)
       generate_de_volcano_code(
         de_df        = de_df,
         user_genes   = user_genes,
         pathway_genes = pathway_genes,
         logfc_thresh = logfc_t,
         pval_thresh  = pval_t,
-        left_group   = lg, right_group = rg
+        left_group   = lg, right_group = rg,
+        show_annotations = show_stats
       )
     }
 

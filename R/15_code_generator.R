@@ -827,8 +827,31 @@ generate_volcano_code <- function(plot_df,
                                   left_group = "Left",
                                   right_group = "Right",
                                   n_selected = 0L,
+                                  show_annotations = FALSE,
                                   base_size = 12) {
   data_literal <- paste(utils::capture.output(dput(plot_df)), collapse = "\n")
+  # IRON FIX (2026-06-30): make subtitle optional via checkbox in export modal.
+  # paste0 avoids nested-sprintf %% escaping headaches by embedding group
+  # names directly as string literals in the generated code.
+  labs_block <- if (show_annotations) {
+    paste0(
+'  labs(\n',
+'    title = sprintf("Pathway Volcano: %s vs %s", "', left_group, '", "', right_group, '"),\n',
+'    subtitle = sprintf("%d pathways | %d selected | %d significant (P<0.25)",\n',
+'                       nrow(df), ', n_selected, ', sum(df$p.adjust < 0.25, na.rm = TRUE)),\n',
+'    x = "NES",\n',
+'    y = "-log10(P-value)"\n',
+'  ) +'
+    )
+  } else {
+    paste0(
+'  labs(\n',
+'    title = sprintf("Pathway Volcano: %s vs %s", "', left_group, '", "', right_group, '"),\n',
+'    x = "NES",\n',
+'    y = "-log10(P-value)"\n',
+'  ) +'
+    )
+  }
   sprintf(
 '# =============================================================================
 # GSEAlens Publication Pathway Volcano Code
@@ -883,14 +906,7 @@ p <- ggplot(df, aes(x = NES, y = -log10(pvalue),
   geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "grey50") +
   geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
   theme_bw(base_size = %g) +
-  labs(
-    title = sprintf("Pathway Volcano: %%s vs %%s", "%s", "%s"),
-    subtitle = sprintf("%%d pathways | %%d selected | %%d significant (P<0.25)",
-                       nrow(df), n_selected,
-                       sum(df$p.adjust < 0.25, na.rm = TRUE)),
-    x = "NES",
-    y = "-log10(P-value)"
-  ) +
+%s
   theme(
     plot.title = element_text(face = "bold", hjust = 0.5),
     legend.position = "right"
@@ -912,7 +928,7 @@ print(p)
     left_group, right_group,
     left_group, right_group,
     base_size,
-    left_group, right_group
+    labs_block
   )
 }
 
@@ -940,6 +956,7 @@ generate_de_volcano_code <- function(de_df,
                                      pval_thresh = 0.05,
                                      left_group = "Left",
                                      right_group = "Right",
+                                     show_annotations = FALSE,
                                      base_size = 12) {
   # Subset to essential columns + trim to top-N by significance to keep the
   # generated script readable and runnable. We keep ALL significant points
@@ -963,6 +980,52 @@ generate_de_volcano_code <- function(de_df,
   pathway_str <- if (length(pathway_genes) > 0) {
     paste0('c(', paste0('"', pathway_genes, '"', collapse = ", "), ')')
   } else "character(0)"
+
+  # IRON FIX (2026-06-30): make subtitle + "High in" banners optional via
+  # checkbox in export modal. paste0 embeds group names directly as string
+  # literals, avoiding nested-sprintf %% escaping. Mirrors the interactive
+  # plotly DE Volcano: right-top red = High in left_group (logFC > 0 side),
+  # left-top blue = High in right_group (logFC < 0 side).
+  labs_annot_block <- if (show_annotations) {
+    paste0(
+'  labs(\n',
+'    title = sprintf("DE Volcano: %s vs %s", "', left_group, '", "', right_group, '"),\n',
+'    subtitle = sprintf(\n',
+'      "Up %d | Down %d | NS %d | Selected %d | Pway %d | Both %d",\n',
+'      sum(de_df$category == "up"),   sum(de_df$category == "down"),\n',
+'      sum(de_df$category == "ns"),   sum(de_df$category == "user"),\n',
+'      sum(de_df$category == "pathway"), sum(de_df$category == "both")),\n',
+'    x = "log2 Fold Change",\n',
+'    y = "-log10(P-value)"\n',
+'  ) +\n',
+'  # "High in" banners mirroring the interactive plotly corner annotations.\n',
+'  annotate("text", x = Inf, y = Inf, color = "#E41A1C",\n',
+'           label = sprintf("High in %s", "', left_group, '"),\n',
+'           hjust = 1.08, vjust = 1.6, fontface = "bold", size = 4.5) +\n',
+'  annotate("text", x = -Inf, y = Inf, color = "#377EB8",\n',
+'           label = sprintf("High in %s", "', right_group, '"),\n',
+'           hjust = -0.08, vjust = 1.6, fontface = "bold", size = 4.5) +\n',
+'  coord_cartesian(clip = "off") +\n',
+'  theme(\n',
+'    plot.title    = element_text(face = "bold", hjust = 0.5),\n',
+'    plot.subtitle = element_text(color = "gray30", hjust = 0.5),\n',
+'    plot.margin   = margin(15, 60, 15, 60),\n',
+'    legend.position = "right"\n',
+'  )'
+    )
+  } else {
+    paste0(
+'  labs(\n',
+'    title = sprintf("DE Volcano: %s vs %s", "', left_group, '", "', right_group, '"),\n',
+'    x = "log2 Fold Change",\n',
+'    y = "-log10(P-value)"\n',
+'  ) +\n',
+'  theme(\n',
+'    plot.title    = element_text(face = "bold", hjust = 0.5),\n',
+'    legend.position = "right"\n',
+'  )'
+    )
+  }
 
   sprintf(
 '# =============================================================================
@@ -1035,31 +1098,7 @@ p <- ggplot(de_df, aes(x = logFC, y = -log10(pvalue), color = category)) +
   geom_hline(yintercept = -log10(pval_thresh),
              linetype = "dashed", color = "grey60") +
   theme_bw(base_size = %g) +
-  labs(
-    title = sprintf("DE Volcano: %%s vs %%s", "%s", "%s"),
-    subtitle = sprintf(
-      "Up %%d | Down %%d | NS %%d | Selected %%d | Pway %%d | Both %%d",
-      sum(de_df$category == "up"),   sum(de_df$category == "down"),
-      sum(de_df$category == "ns"),   sum(de_df$category == "user"),
-      sum(de_df$category == "pathway"), sum(de_df$category == "both")),
-    x = "log2 Fold Change",
-    y = "-log10(P-value)"
-  ) +
-  # Mirror the interactive plotly "High in left/right" corner banners so the
-  # exported figure keeps the directional context without a separate legend.
-  annotate("text", x = Inf, y = Inf, color = "#E41A1C",
-           label = sprintf("High in %%s", "%s"),
-           hjust = 1.08, vjust = 1.6, fontface = "bold", size = 4.5) +
-  annotate("text", x = -Inf, y = Inf, color = "#377EB8",
-           label = sprintf("High in %%s", "%s"),
-           hjust = -0.08, vjust = 1.6, fontface = "bold", size = 4.5) +
-  coord_cartesian(clip = "off") +
-  theme(
-    plot.title    = element_text(face = "bold", hjust = 0.5),
-    plot.subtitle = element_text(color = "gray30", hjust = 0.5),
-    plot.margin   = margin(15, 60, 15, 60),
-    legend.position = "right"
-  )
+%s
 
 print(p)
 
@@ -1070,8 +1109,7 @@ print(p)
     data_literal, user_str, pathway_str,
     logfc_thresh, pval_thresh,
     base_size,
-    left_group, right_group,
-    left_group, right_group
+    labs_annot_block
   )
 }
 
