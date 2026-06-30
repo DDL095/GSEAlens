@@ -433,23 +433,47 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
                       else input$vis_pw_size_mode
 
       # Per-pathway scaled size vector (matches row order of net$nodes$pathway)
+      #
+      # IRON FIX (2026-06-30): build_hubgene_network stores the gene-set
+      # size under column "n_core" (NOT "setSize"). The previous code
+      # unconditionally accessed net$nodes$pathway$setSize, which returned
+      # NULL, breaking sqrt()/range() with
+      # "non-numeric argument to mathematical function".
+      # Now: detect column name setSize -> n_core -> n_total -> fallback,
+      # and coerce all numeric inputs via as.numeric() to defend against
+      # character-typed columns from upstream GSEA objects.
+      pw_pathway <- net$nodes$pathway
+      pw_nrow <- if (is.null(pw_pathway)) 0 else nrow(pw_pathway)
+
       pw_size <- switch(pw_size_mode,
         "fdr" = {
-          if (!is.null(net$nodes$pathway) && nrow(net$nodes$pathway) > 0) {
-            fdr_nl <- -log10(pmax(net$nodes$pathway$FDR, 1e-300))
-            r <- range(fdr_nl); if (diff(r) < 1e-6) r <- c(0, 10)
+          if (pw_nrow > 0) {
+            fdr_vals <- suppressWarnings(as.numeric(pw_pathway$FDR))
+            fdr_vals[is.na(fdr_vals)] <- 1
+            fdr_nl <- -log10(pmax(fdr_vals, 1e-300))
+            r <- range(fdr_nl, na.rm = TRUE); if (diff(r) < 1e-6) r <- c(0, 10)
             pw_base * (0.6 + 0.8 * (fdr_nl - r[1]) / diff(r))
           } else rep(pw_base, 0)
         },
         "setsize" = {
-          if (!is.null(net$nodes$pathway) && nrow(net$nodes$pathway) > 0) {
-            sv <- net$nodes$pathway$setSize
-            r <- range(sv); if (diff(r) < 1) r <- c(0, 200)
+          if (pw_nrow > 0) {
+            # Column-name fallback chain
+            sv <- if ("setSize" %in% colnames(pw_pathway)) {
+              suppressWarnings(as.numeric(pw_pathway$setSize))
+            } else if ("n_core" %in% colnames(pw_pathway)) {
+              suppressWarnings(as.numeric(pw_pathway$n_core))
+            } else if ("n_total" %in% colnames(pw_pathway)) {
+              suppressWarnings(as.numeric(pw_pathway$n_total))
+            } else {
+              rep(100, pw_nrow)
+            }
+            sv[is.na(sv)] <- 100
+            r <- range(sv, na.rm = TRUE); if (diff(r) < 1) r <- c(0, 200)
             pw_base * (0.6 + 0.8 * (sqrt(sv) - sqrt(r[1])) /
                                  (sqrt(r[2]) - sqrt(r[1])))
           } else rep(pw_base, 0)
         },
-        rep(pw_base, if (is.null(net$nodes$pathway)) 0 else nrow(net$nodes$pathway))
+        rep(pw_base, pw_nrow)
       )
 
       # ──────────────────────────────────────────────────────────────

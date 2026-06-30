@@ -470,6 +470,27 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
         }
         length(core_list[[pid]])
       }, integer(1))
+      # IRON FIX (2026-06-30): coerce key columns to numeric BEFORE any
+      # arithmetic. Upstream GSEA result objects sometimes return p.adjust /
+      # pvalue / NES / setSize as character or factor (especially after
+      # dplyr subsetting or tibble round-trips). Without this, -log10() or
+      # sqrt(pmax()) silently receive character vectors and raise either
+      # "non-numeric argument to mathematical function" or
+      # "non-numeric argument to binary operator" depending on which operator
+      # fires first.
+      plot_df$NES       <- suppressWarnings(as.numeric(plot_df$NES))
+      plot_df$p.adjust  <- suppressWarnings(as.numeric(plot_df$p.adjust))
+      plot_df$pvalue    <- suppressWarnings(as.numeric(plot_df$pvalue))
+      plot_df$setSize   <- suppressWarnings(as.numeric(plot_df$setSize))
+      plot_df$CoreCount <- suppressWarnings(as.integer(plot_df$CoreCount))
+      # Guard against NA values that would propagate to NaN/Inf in downstream
+      # log/sqrt operations (these render as blank plotly dots).
+      plot_df$NES[is.na(plot_df$NES)]       <- 0
+      plot_df$p.adjust[is.na(plot_df$p.adjust)] <- 1
+      plot_df$pvalue[is.na(plot_df$pvalue)]     <- 1
+      plot_df$setSize[is.na(plot_df$setSize)]   <- 0
+      plot_df$CoreCount[is.na(plot_df$CoreCount)] <- 0
+
       color_mode <- input$dotplot_color_mode
       color_vals <- switch(color_mode,
         "padj" = -log10(plot_df$p.adjust),
@@ -895,6 +916,13 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
         }
         length(core_list[[n]])
       }, integer(1))
+      # IRON FIX (2026-06-30): coerce to numeric to prevent
+      # "non-numeric argument to binary operator" when NES/FDR arrive as
+      # character from the upstream GSEA result data.frame.
+      node_df$NES <- suppressWarnings(as.numeric(node_df$NES))
+      node_df$FDR <- suppressWarnings(as.numeric(node_df$FDR))
+      node_df$NES[is.na(node_df$NES)] <- 0
+      node_df$FDR[is.na(node_df$FDR)] <- 1
       node_df$color_val <- ifelse(is.na(node_df$NES), 0, node_df$NES)
 
       sel_nodes <- selected_nodes()
