@@ -298,29 +298,18 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
         shiny::req(cr, cr$plot)
         cr$plot
       },
-      res  = function() {
-        v <- input$jc_dpi
-        if (is.null(v) || is.na(v)) 100 else min(suppressWarnings(as.integer(v)), 150)
-      },
+      res  = 100,
       width  = function() {
         w <- input$jc_width
         if (is.null(w) || is.na(w)) w <- 16 else w <- suppressWarnings(as.numeric(w))
         if (is.na(w) || w <= 0) w <- 16
-        res_v <- input$jc_dpi
-        if (is.null(res_v) || is.na(res_v)) res_v <- 100
-        else res_v <- suppressWarnings(min(as.integer(res_v), 150))
-        if (is.na(res_v) || res_v <= 0) res_v <- 100
-        round(min(w * res_v, 720))
+        round(min(w * 100, 720))
       },
       height = function() {
         h <- input$jc_height
         if (is.null(h) || is.na(h)) h <- 12 else h <- suppressWarnings(as.numeric(h))
         if (is.na(h) || h <= 0) h <- 12
-        res_v <- input$jc_dpi
-        if (is.null(res_v) || is.na(res_v)) res_v <- 100
-        else res_v <- suppressWarnings(min(as.integer(res_v), 150))
-        if (is.na(res_v) || res_v <= 0) res_v <- 100
-        round(min(h * res_v, 540))
+        round(min(h * 100, 540))
       }
     )
 

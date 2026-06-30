@@ -1345,38 +1345,32 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
     # IRON FIX (2026-06-30): numericInput returns NA (not NULL) when the
     # user clears the field. The previous `if (is.null(v)) default else ...`
     # check let NA propagate through `w * res_v` -> min(NA, 720) -> NA,
-    # which then made png(width=NA) throw "unable to start png() device"
-    # (sometimes surfacing through downstream geom arithmetic as the
-    # generic "non-numeric argument to binary operator"). Use is.na() too.
+    # which then made png(width=NA) throw "unable to start png() device".
+    #
+    # CRITICAL: renderPlot's `res` parameter does NOT accept a function
+    # (unlike `width`/`height`). Passing res=function(){} makes Shiny's
+    # internal drawPlot compute `res * pixelratio` = `function * number`,
+    # which throws "non-numeric argument to binary operator" from
+    # startPNG. The DPI input only affects the DOWNLOADED file (via
+    # ggsave), so the preview uses a fixed res=100.
     output$exp_preview <- shiny::renderPlot(
       {
         p <- .exp_preview_plot()
         shiny::req(p)
         p
       },
-      res  = function() {
-        v <- input$exp_dpi
-        if (is.null(v) || is.na(v)) 100 else min(suppressWarnings(as.integer(v)), 150)
-      },
+      res  = 100,
       width  = function() {
         w <- input$exp_width
         if (is.null(w) || is.na(w)) w <- 9 else w <- suppressWarnings(as.numeric(w))
         if (is.na(w) || w <= 0) w <- 9
-        res_v <- input$exp_dpi
-        if (is.null(res_v) || is.na(res_v)) res_v <- 100
-        else res_v <- suppressWarnings(min(as.integer(res_v), 150))
-        if (is.na(res_v) || res_v <= 0) res_v <- 100
-        round(min(w * res_v, 720))
+        round(min(w * 100, 720))
       },
       height = function() {
         h <- input$exp_height
         if (is.null(h) || is.na(h)) h <- 7 else h <- suppressWarnings(as.numeric(h))
         if (is.na(h) || h <= 0) h <- 7
-        res_v <- input$exp_dpi
-        if (is.null(res_v) || is.na(res_v)) res_v <- 100
-        else res_v <- suppressWarnings(min(as.integer(res_v), 150))
-        if (is.na(res_v) || res_v <= 0) res_v <- 100
-        round(min(h * res_v, 540))
+        round(min(h * 100, 540))
       }
     )
 

@@ -1065,29 +1065,18 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
         shiny::req(p)
         p
       },
-      res  = function() {
-        v <- input$hub_exp_dpi
-        if (is.null(v) || is.na(v)) 100 else min(suppressWarnings(as.integer(v)), 150)
-      },
+      res  = 100,
       width  = function() {
         w <- input$hub_exp_width
         if (is.null(w) || is.na(w)) w <- 10 else w <- suppressWarnings(as.numeric(w))
         if (is.na(w) || w <= 0) w <- 10
-        res_v <- input$hub_exp_dpi
-        if (is.null(res_v) || is.na(res_v)) res_v <- 100
-        else res_v <- suppressWarnings(min(as.integer(res_v), 150))
-        if (is.na(res_v) || res_v <= 0) res_v <- 100
-        round(min(w * res_v, 720))
+        round(min(w * 100, 720))
       },
       height = function() {
         h <- input$hub_exp_height
         if (is.null(h) || is.na(h)) h <- 8 else h <- suppressWarnings(as.numeric(h))
         if (is.na(h) || h <= 0) h <- 8
-        res_v <- input$hub_exp_dpi
-        if (is.null(res_v) || is.na(res_v)) res_v <- 100
-        else res_v <- suppressWarnings(min(as.integer(res_v), 150))
-        if (is.na(res_v) || res_v <= 0) res_v <- 100
-        round(min(h * res_v, 540))
+        round(min(h * 100, 540))
       }
     )
 
