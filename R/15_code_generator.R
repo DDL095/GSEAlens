@@ -1089,6 +1089,7 @@ generate_network_code <- function(edge_df, node_df,
 
 library(igraph)
 library(ggplot2)
+library(ggrepel)
 
 # --- Data --------------------------------------------------------------------
 edge_df <- %s
@@ -1143,13 +1144,32 @@ p <- ggplot() +
   scale_fill_manual(values = c("Up" = "#F28F8F", "Down" = "#8FB7E8"),
                     name = "Direction") +
   scale_size_continuous(range = c(3, 9), name = "-log10(FDR)") +
-  # Use geom_label (white rounded background) instead of geom_text so labels
-  # remain legible regardless of node color or overlap. This avoids the
-  # ggrepel dependency entirely.
-  geom_label(data = node_df,
-             aes(x = x, y = y, label = sub("^[^_]*_", "", name)),
-             size = 3, alpha = 0.85, label.padding = grid::unit(0.15, "lines"),
-             linewidth = 0.2, fontface = "bold") +
+  # IRON FIX (2026-06-30): replace geom_label (which sat ON TOP of nodes
+  # and hid them entirely) with ggrepel::geom_label_repel. This is the
+  # standard approach used by clusterProfiler::emapplot / enrichplot:
+  #   * labels start nudged ABOVE the node (nudge_y > 0)
+  #   * ggrepel automatically pushes overlapping labels apart
+  #   * a thin segment connects each label back to its node so identity
+  #     is unambiguous when a label is pushed far
+  #   * white background + dark text remains readable on any node color
+  # enrichplot already depends on ggrepel, so no new dependency is added.
+  ggrepel::geom_label_repel(
+    data = node_df,
+    aes(x = x, y = y, label = sub("^[^_]*_", "", name)),
+    size = 3.2, fontface = "bold",
+    fill = "white", color = "#222",
+    alpha = 0.95,
+    box.padding = 0.45,
+    label.padding = 0.18,
+    linewidth = 0.2,
+    min.segment.length = 0,
+    segment.color = "grey55",
+    segment.size = 0.3,
+    segment.alpha = 0.7,
+    max.overlaps = Inf,
+    nudge_y = 0.18,
+    direction = "both"
+  ) +
   # Legend sizing: enlarge Direction legend circles so Up/Down colors are
   # clearly visible (default key size is too small because the size scale
   # range competes with fill legend).
@@ -1217,6 +1237,8 @@ generate_hubgene_code <- function(pathway_nodes, gene_nodes, edge_df,
 
 library(igraph)
 library(ggplot2)
+library(ggrepel)
+
 
 # --- Data --------------------------------------------------------------------
 pw    <- %s
@@ -1302,13 +1324,28 @@ p <- ggplot() +
   geom_point(data = pw,
              aes(x = x, y = y, size = size),
              shape = 23, fill = "#FFC107", color = "black", stroke = 0.5) +
-  # geom_label gives each pathway a white rounded background so its name
-  # is readable regardless of the underlying node color / density. Avoids
-  # the ggrepel dependency entirely.
-  geom_label(data = pw,
-             aes(x = x, y = y, label = sub("^[^_]*_", "", id)),
-             size = 3, fontface = "bold", alpha = 0.85,
-             label.padding = grid::unit(0.15, "lines"), linewidth = 0.2) +
+  # IRON FIX (2026-06-30): switch pathway labels to ggrepel::geom_label_repel
+  # so they sit ABOVE their diamond (nudge_y > 0) instead of on top of it,
+  # and auto-dodge overlapping pathway labels. Matches clusterProfiler /
+  # enrichplot convention. White background keeps the label readable on
+  # any node color.
+  ggrepel::geom_label_repel(
+    data = pw,
+    aes(x = x, y = y, label = sub("^[^_]*_", "", id)),
+    size = 3.2, fontface = "bold",
+    fill = "white", color = "#222",
+    alpha = 0.95,
+    box.padding = 0.45,
+    label.padding = 0.18,
+    linewidth = 0.2,
+    min.segment.length = 0,
+    segment.color = "grey55",
+    segment.size = 0.3,
+    segment.alpha = 0.7,
+    max.overlaps = Inf,
+    nudge_y = 0.18,
+    direction = "both"
+  ) +
   # Legend sizing: enlarge Direction (color) legend keys so Up/Down/Neutral
   # colors are clearly visible (default inherited key size is too small
   # because both node layers compete for size scale).

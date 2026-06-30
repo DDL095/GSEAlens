@@ -1013,13 +1013,13 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
           ),
           shiny::column(7,
             shiny::h5("Live Preview"),
-            shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px;",
-              shiny::plotOutput(ns("hub_exp_preview"), height = "460px") |>
+            shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; overflow:auto; max-height:560px; display:flex; align-items:center; justify-content:center;",
+              shiny::plotOutput(ns("hub_exp_preview"), height = "auto") |>
                 shinycssloaders::withSpinner(type = 6, color = "#28a745")
             ),
             shiny::tags$small(style = "color: #666; display:block; margin-top:6px;",
               "Pathway nodes: diamonds; Gene nodes: circles. ",
-              "No ggraph dependency (igraph + ggplot2).")
+              "Aspect ratio matches saved figure.")
           )
         )
       )
@@ -1038,6 +1038,19 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
     # IRON FIX (2026-06-30): same pattern as pathway/quadrant modules —
     # suppress `print(p)` from opening a separate graphics device, surface
     # errors as notifications, and guard against NA from cleared numericInput.
+    #
+    # Aspect ratio fix (2026-06-30): pin longer side to max_dim and scale
+    # the shorter side proportionally so on-screen preview matches the
+    # saved figure's proportions exactly.
+    .hub_preview_dims <- function(w_in, h_in, max_dim = 720) {
+      if (is.null(w_in) || is.na(w_in) || w_in <= 0) w_in <- 10
+      if (is.null(h_in) || is.na(h_in) || h_in <= 0) h_in <- 8
+      if (w_in >= h_in) {
+        list(width = max_dim, height = round(max_dim * h_in / w_in))
+      } else {
+        list(width = round(max_dim * w_in / h_in), height = max_dim)
+      }
+    }
     .hubgene_preview_plot <- shiny::reactive({
       code <- tryCatch(.hubgene_export_code(),
         error = function(e) {
@@ -1067,16 +1080,10 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
       },
       res  = 100,
       width  = function() {
-        w <- input$hub_exp_width
-        if (is.null(w) || is.na(w)) w <- 10 else w <- suppressWarnings(as.numeric(w))
-        if (is.na(w) || w <= 0) w <- 10
-        round(min(w * 100, 720))
+        d <- .hub_preview_dims(input$hub_exp_width, input$hub_exp_height); d$width
       },
       height = function() {
-        h <- input$hub_exp_height
-        if (is.null(h) || is.na(h)) h <- 8 else h <- suppressWarnings(as.numeric(h))
-        if (is.na(h) || h <= 0) h <- 8
-        round(min(h * 100, 540))
+        d <- .hub_preview_dims(input$hub_exp_width, input$hub_exp_height); d$height
       }
     )
 

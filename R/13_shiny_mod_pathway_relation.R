@@ -1283,13 +1283,16 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
           # Right column: live preview
           shiny::column(7,
             shiny::h5("Live Preview"),
-            shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; overflow:auto;",
+            # Container has fixed max height with vertical+horizontal scroll
+            # so ultra-tall or ultra-wide aspect ratios stay browseable.
+            # The image inside is auto-centered.
+            shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; overflow:auto; max-height:560px; display:flex; align-items:center; justify-content:center;",
               shiny::plotOutput(ns("exp_preview"), height = "auto") |>
                 shinycssloaders::withSpinner(type = 6, color = "#28a745")
             ),
             shiny::tags$small(style = "color: #666; display:block; margin-top:6px;",
-              "Preview reflects current Width / Height / DPI. ",
-              "Preview aspect ratio matches the saved figure.")
+              "Preview reflects current Width / Height. ",
+              "Aspect ratio matches the saved figure; longer side is capped at 720 px.")
           )
         )
       )
@@ -1336,23 +1339,33 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       eval_env$p
     })
 
-    # Preview plotOutput height scales with the user's chosen aspect ratio
-    # (width / height). The pixel width is fixed by the modal column layout;
-    # we derive height so the preview matches the downloaded figure's
-    # proportions. Without this, a 16x4 banner would preview at the same
-    # 460px box as a 4x16 column, hiding the actual aspect distortion.
+    # Preview plotOutput scales so the on-screen aspect ratio ALWAYS matches
+    # the eventual saved figure, with the longer side capped to a max pixel
+    # dimension so ultra-wide or ultra-tall specs still fit on screen.
     #
-    # IRON FIX (2026-06-30): numericInput returns NA (not NULL) when the
-    # user clears the field. The previous `if (is.null(v)) default else ...`
-    # check let NA propagate through `w * res_v` -> min(NA, 720) -> NA,
-    # which then made png(width=NA) throw "unable to start png() device".
+    # Algorithm: take the user's chosen width_in / height_in (inches), find
+    # which is the longer side, pin it to max_dim (720 px), and scale the
+    # shorter side by the same ratio. This preserves aspect ratio exactly
+    # while bounding the preview to a sensible size:
+    #   * 16x4 banner  -> 720x180 (wide-and-short)
+    #   * 9x7 default  -> 720x560 (matches saved file proportions)
+    #   * 4x16 column  -> 180x720 (tall-and-narrow, container scrolls)
     #
-    # CRITICAL: renderPlot's `res` parameter does NOT accept a function
-    # (unlike `width`/`height`). Passing res=function(){} makes Shiny's
-    # internal drawPlot compute `res * pixelratio` = `function * number`,
-    # which throws "non-numeric argument to binary operator" from
-    # startPNG. The DPI input only affects the DOWNLOADED file (via
-    # ggsave), so the preview uses a fixed res=100.
+    # IRON FIX (2026-06-30): previously width/height were capped
+    # INDEPENDENTLY at 720x540, which distorted the aspect ratio when
+    # width > 7.2 inch (after that, width was clipped and the preview
+    # stopped growing horizontally, showing a squished image).
+    .preview_dims <- function(w_in, h_in, max_dim = 720) {
+      # defensive: invalid / NA / non-positive inputs fall back to 9x7
+      if (is.null(w_in) || is.na(w_in) || w_in <= 0) w_in <- 9
+      if (is.null(h_in) || is.na(h_in) || h_in <= 0) h_in <- 7
+      if (w_in >= h_in) {
+        list(width = max_dim, height = round(max_dim * h_in / w_in))
+      } else {
+        list(width  = round(max_dim * w_in / h_in), height = max_dim)
+      }
+    }
+
     output$exp_preview <- shiny::renderPlot(
       {
         p <- .exp_preview_plot()
@@ -1361,16 +1374,10 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       },
       res  = 100,
       width  = function() {
-        w <- input$exp_width
-        if (is.null(w) || is.na(w)) w <- 9 else w <- suppressWarnings(as.numeric(w))
-        if (is.na(w) || w <= 0) w <- 9
-        round(min(w * 100, 720))
+        d <- .preview_dims(input$exp_width, input$exp_height); d$width
       },
       height = function() {
-        h <- input$exp_height
-        if (is.null(h) || is.na(h)) h <- 7 else h <- suppressWarnings(as.numeric(h))
-        if (is.na(h) || h <= 0) h <- 7
-        round(min(h * 100, 540))
+        d <- .preview_dims(input$exp_width, input$exp_height); d$height
       }
     )
 

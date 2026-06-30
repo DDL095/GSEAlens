@@ -1502,12 +1502,12 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
           ),
           shiny::column(7,
             shiny::h5("Live Preview"),
-            shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px;",
-              shiny::plotOutput(ns("vol_exp_preview"), height = "460px") |>
+            shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; overflow:auto; max-height:560px; display:flex; align-items:center; justify-content:center;",
+              shiny::plotOutput(ns("vol_exp_preview"), height = "auto") |>
                 shinycssloaders::withSpinner(type = 6, color = "#28a745")
             ),
             shiny::tags$small(style = "color: #666; display:block; margin-top:6px;",
-              "X axis: NES | Y axis: -log10(pvalue)")
+              "X axis: NES | Y axis: -log10(pvalue). Aspect ratio matches saved figure.")
           )
         )
       )
@@ -1529,6 +1529,19 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
     # it does not open a separate windows()/pdf() device and conflict with
     # renderPlot's own device. Also surface errors as notifications and add
     # NA guards to width/height/res (numericInput returns NA on cleared).
+    #
+    # Aspect ratio fix (2026-06-30): pin the longer side to max_dim and
+    # scale the shorter side by the same ratio so on-screen proportions
+    # always match the saved figure.
+    .vol_preview_dims <- function(w_in, h_in, max_dim = 720) {
+      if (is.null(w_in) || is.na(w_in) || w_in <= 0) w_in <- 8
+      if (is.null(h_in) || is.na(h_in) || h_in <= 0) h_in <- 6
+      if (w_in >= h_in) {
+        list(width = max_dim, height = round(max_dim * h_in / w_in))
+      } else {
+        list(width = round(max_dim * w_in / h_in), height = max_dim)
+      }
+    }
     .volcano_preview_plot <- shiny::reactive({
       code <- tryCatch(.volcano_export_code(),
         error = function(e) {
@@ -1558,16 +1571,10 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       },
       res  = 100,
       width  = function() {
-        w <- input$vol_exp_width
-        if (is.null(w) || is.na(w)) w <- 8 else w <- suppressWarnings(as.numeric(w))
-        if (is.na(w) || w <= 0) w <- 8
-        round(min(w * 100, 720))
+        d <- .vol_preview_dims(input$vol_exp_width, input$vol_exp_height); d$width
       },
       height = function() {
-        h <- input$vol_exp_height
-        if (is.null(h) || is.na(h)) h <- 6 else h <- suppressWarnings(as.numeric(h))
-        if (is.na(h) || h <= 0) h <- 6
-        round(min(h * 100, 540))
+        d <- .vol_preview_dims(input$vol_exp_width, input$vol_exp_height); d$height
       }
     )
 
@@ -1702,13 +1709,13 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
           ),
           shiny::column(7,
             shiny::h5("Live Preview"),
-            shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; overflow:auto;",
+            shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; overflow:auto; max-height:560px; display:flex; align-items:center; justify-content:center;",
               shiny::plotOutput(ns("de_exp_preview"), height = "auto") |>
                 shinycssloaders::withSpinner(type = 6, color = "#28a745")
             ),
             shiny::tags$small(style = "color: #666; display:block; margin-top:6px;",
               "Six categories: Both (purple) / Selected (green) / Pathway (orange) / ",
-              "Up (red) / Down (blue) / NS (gray).")
+              "Up (red) / Down (blue) / NS (gray). Aspect ratio matches saved figure.")
           )
         )
       )
@@ -1788,16 +1795,10 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       },
       res  = 100,
       width  = function() {
-        w <- input$de_exp_width
-        if (is.null(w) || is.na(w)) w <- 8 else w <- suppressWarnings(as.numeric(w))
-        if (is.na(w) || w <= 0) w <- 8
-        round(min(w * 100, 720))
+        d <- .vol_preview_dims(input$de_exp_width, input$de_exp_height); d$width
       },
       height = function() {
-        h <- input$de_exp_height
-        if (is.null(h) || is.na(h)) h <- 6 else h <- suppressWarnings(as.numeric(h))
-        if (is.na(h) || h <= 0) h <- 6
-        round(min(h * 100, 540))
+        d <- .vol_preview_dims(input$de_exp_width, input$de_exp_height); d$height
       }
     )
 
