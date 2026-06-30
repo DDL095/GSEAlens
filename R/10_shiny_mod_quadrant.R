@@ -1776,20 +1776,21 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       if (is.null(de_df) || nrow(de_df) == 0) return("")
       data_list <- data_prep_data()
       if (is.null(data_list)) return("")
-      current_gene <- current_boxplot_gene()
-      symbol_map <- .rebuild_symbol_map(gsea_res, data_list$contrast_id)
-      display_gene <- .get_display_symbol(current_gene, symbol_map)
-      lg <- if (is.null(data_list$left_group)) NA_character_ else data_list$left_group
-      rg <- if (is.null(data_list$right_group)) NA_character_ else data_list$right_group
-      use_zero <- isTRUE(input$zero_baseline)
-      ord <- boxplot_order_ref()
-      generate_boxplot_image_code(
-        box_data_long    = de_df,
-        gene_symbol      = display_gene,
-        expr_type        = data_list$expression_type,
-        left_group       = lg, right_group = rg,
-        use_zero_baseline = use_zero,
-        custom_order     = ord
+      lg <- if (is.null(data_list$left_group))  "Left"  else data_list$left_group
+      rg <- if (is.null(data_list$right_group)) "Right" else data_list$right_group
+      user_genes <- toupper(highlight_genes_reactive())
+      pathway_genes <- toupper(selected_pathway_genes())
+      logfc_t <- if (is.null(input$de_exp_logfc)) 1 else input$de_exp_logfc
+      pval_t  <- if (is.null(input$de_exp_pval))  0.05 else input$de_exp_pval
+      show_stats <- isTRUE(input$de_exp_show_stats)
+      generate_de_volcano_code(
+        de_df         = de_df,
+        user_genes    = user_genes,
+        pathway_genes = pathway_genes,
+        logfc_thresh  = logfc_t,
+        pval_thresh   = pval_t,
+        left_group    = lg, right_group = rg,
+        show_annotations = show_stats
       )
     }
 

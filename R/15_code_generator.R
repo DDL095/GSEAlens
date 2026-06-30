@@ -759,6 +759,24 @@ color_title <- "%s"
 size_field  <- "%s"
 size_title  <- "%s"
 
+# --- Size column clamp (IRON FIX 2026-06-30) --------------------------------
+# ggplot2 4.x removed the `oob` argument from scale_*_continuous, so any
+# value outside `limits` is silently censored AT RENDER TIME (not at
+# ggplot_build time), producing the warning:
+#   "Removed N rows containing missing values or values outside the scale range"
+# and the corresponding bubbles simply vanish from the PNG/PDF/Live Preview.
+# This is the root cause of the user-reported "missing bubble" symptom:
+#   * size_mode = "setsize"   -> setSize > 500 censored (MSigDB KEGG/Reactome/
+#                                Hallmark pathways routinely span 200-2000
+#                                genes, so MOST pathways can be lost)
+#   * size_mode = "core_size" -> CoreCount > 50 censored
+# The interactive plotly view does NOT have this bug because it clamps via
+# pmin/pmax. We mirror that here: clamp the active size column to the scale
+# limits BEFORE feeding ggplot2, so the scale limits argument becomes
+# purely a visual-range anchor and never a censoring gate.
+size_lim_hi <- if (size_field == "CoreCount") 50 else 500
+df[[size_field]] <- pmin(pmax(df[[size_field]], 0), size_lim_hi)
+
 p <- ggplot(df, aes(
   x = NES,
   y = reorder(ID, NES),
@@ -772,7 +790,7 @@ p <- ggplot(df, aes(
     name   = size_title,
     range  = c(%g, %g),
     limits = %s,
-    trans  = "sqrt"
+    transform = "sqrt"
   ) +
   scale_fill_viridis_c(
     name      = color_title,
