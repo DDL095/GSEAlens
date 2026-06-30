@@ -966,35 +966,72 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
                error = function(e) { message("[hub preview] ", e$message); NULL })
       eval_env$p
     })
-    output$hub_exp_preview <- shiny::renderPlot({
-      p <- .hubgene_preview_plot()
-      shiny::req(p)
-      p
-    })
+    output$hub_exp_preview <- shiny::renderPlot(
+      {
+        p <- .hubgene_preview_plot()
+        shiny::req(p)
+        p
+      },
+      res  = function() {
+        v <- input$hub_exp_dpi; if (is.null(v)) 100 else min(as.integer(v), 150)
+      },
+      width  = function() {
+        w <- input$hub_exp_width; if (is.null(w)) 10 else as.numeric(w)
+        res_v <- input$hub_exp_dpi; if (is.null(res_v)) 100 else min(as.integer(res_v), 150)
+        round(min(w * res_v, 720))
+      },
+      height = function() {
+        h <- input$hub_exp_height; if (is.null(h)) 8 else as.numeric(h)
+        res_v <- input$hub_exp_dpi; if (is.null(res_v)) 100 else min(as.integer(res_v), 150)
+        round(min(h * res_v, 540))
+      }
+    )
 
     .hubgene_export_code <- function() {
       net <- tryCatch(net_data(), error = function(e) NULL)
       if (is.null(net)) return("")
-      pw <- net$nodes$pathway[, c("id", "NES", "FDR", "setSize")]
-      # Defensive: ensure numeric columns are actually numeric (some upstream
-      # paths return FDR/setSize as character when subset, which breaks
-      # sqrt()/log10() inside generate_hubgene_code with
-      # "non-numeric argument to mathematical function".
-      pw$NES     <- suppressWarnings(as.numeric(pw$NES))
-      pw$FDR     <- suppressWarnings(as.numeric(pw$FDR))
-      pw$setSize <- suppressWarnings(as.numeric(pw$setSize))
-      genes <- if (!is.null(net$nodes$gene)) {
-        net$nodes$gene[, c("id", "stat", "degree")]
-      } else {
-        data.frame(id = character(0), stat = numeric(0), degree = integer(0))
-      }
-      genes$stat   <- suppressWarnings(as.numeric(genes$stat))
-      genes$degree <- suppressWarnings(as.integer(genes$degree))
-      edges <- if (!is.null(net$edges) && nrow(net$edges) > 0) {
-        # source = gene, target = pathway. Keep these as-is: the generated
-        # code expects (from=gene, to=pathway) which is the convention.
-        data.frame(from = as.character(net$edges$source),
-                   to   = as.character(net$edges$target),
+      pw_raw <- net$nodes$pathway
+      # IRON FIX (2026-06-30): build_hubgene_network returns pathway nodes
+      # WITHOUT a "setSize" column. It stores the gene-set size under
+      # "n_core" (see utils_hubgene.R: pathway_nodes$n_core <- pw_stats$setSize).
+      # The previous code unconditionally selected c("id","NES","FDR","setSize"),
+      # which raised "undefined columns selected" (or, via dplyr, "Column
+      # setSize doesn't exist"). This propagated as "non-numeric argument
+      # to mathematical function" downstream because pw$setSize was then
+      # coerced to a logical NA column. Normalize the column name here.
+      size_col <- if ("setSize" %in% colnames(pw_raw)) "setSize"
+                  else if ("n_core" %in% colnames(pw_raw)) "n_core"
+                  else if ("n_total" %in% colnames(pw_raw)) "n_total"
+                  else NA_character_
+      pw <- data.frame(
+        id      = as.character(pw_raw$id),
+        NES     = suppressWarnings(as.numeric(pw_raw$NES)),
+        FDR     = suppressWarnings(as.numeric(pw_raw$FDR)),
+        setSize = if (is.na(size_col)) NA_real_
+                  else suppressWarnings(as.numeric(pw_raw[[size_col]])),
+        stringsAsFactors = FALSE
+      )
+      # Replace any all-NA setSize with a sensible fallback so the sqrt
+      # sizing math does not fail (setsize mode falls back to fixed visually).
+      if (all(is.na(pw$setSize))) pw$setSize <- 100
+
+      genes_raw <- net$nodes$gene
+      genes <- data.frame(
+        id     = as.character(genes_raw$id),
+        stat   = suppressWarnings(as.numeric(genes_raw$stat)),
+        degree = suppressWarnings(as.integer(genes_raw$degree)),
+        stringsAsFactors = FALSE
+      )
+      genes$stat[is.na(genes$stat)]   <- 0
+      genes$degree[is.na(genes$degree)] <- 1
+
+      edges_raw <- net$edges
+      edges <- if (!is.null(edges_raw) && nrow(edges_raw) > 0) {
+        # source = gene, target = pathway. Keep this orientation: the
+        # generated code expects (from=gene, to=pathway) which is the
+        # convention used by graph_from_data_frame downstream.
+        data.frame(from = as.character(edges_raw$source),
+                   to   = as.character(edges_raw$target),
                    stringsAsFactors = FALSE)
       } else {
         data.frame(from = character(0), to = character(0),

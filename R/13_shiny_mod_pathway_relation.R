@@ -1157,7 +1157,36 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
     #   * Reactive preview re-runs the generator code in a sandboxed env
     #     (same parent=globalenv() fix used by the download handler).
     # ------------------------------------------------------------
-    .build_export_modal <- function(plot_title) {
+    .build_export_modal <- function(plot_title, show_aesthetics = TRUE) {
+      aesthetics_block <- if (isTRUE(show_aesthetics)) {
+        shiny::tagList(
+          shiny::hr(),
+          shiny::h5("Aesthetics"),
+          shiny::selectInput(ns("exp_palette"), "Color palette",
+            choices = c("Viridis-D (default)" = "D",
+                        "Viridis-C"          = "C",
+                        "Magma"               = "A",
+                        "Inferno"             = "B"),
+            selected = "D"),
+          shiny::sliderInput(ns("exp_point_range"), "Point size range",
+            min = 1, max = 15, value = c(3, 8))
+        )
+      } else {
+        # For Network exports: palette / point range have no effect because
+        # the network generator uses a fixed Up/Down color scheme and node
+        # sizes are derived from -log10(FDR) internally. Hide these inputs
+        # so the UI does not mislead the user.
+        shiny::tagList(
+          shiny::hr(),
+          shiny::div(
+            style = "background:#f8f9fa; padding:8px 10px; border-radius:4px; color:#666; font-size:12px;",
+            shiny::icon("info-circle"),
+            " Network coloring uses a fixed Up (red) / Down (blue) scheme.",
+            " Adjust edge width and layout seed in the main panel instead."
+          )
+        )
+      }
+
       shiny::modalDialog(
         title = sprintf("Export Publication Plot - %s", plot_title),
         size = "l",
@@ -1176,16 +1205,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
               )
             ),
             shiny::numericInput(ns("exp_dpi"), "DPI", value = 300, min = 72, max = 600),
-            shiny::hr(),
-            shiny::h5("Aesthetics"),
-            shiny::selectInput(ns("exp_palette"), "Color palette",
-              choices = c("Viridis-D (default)" = "D",
-                          "Viridis-C"          = "C",
-                          "Magma"               = "A",
-                          "Inferno"             = "B"),
-              selected = "D"),
-            shiny::sliderInput(ns("exp_point_range"), "Point size range",
-              min = 1, max = 15, value = c(3, 8)),
+            aesthetics_block,
             shiny::hr(),
             shiny::h5("Download"),
             shiny::fluidRow(
@@ -1235,13 +1255,13 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
           # Right column: live preview
           shiny::column(7,
             shiny::h5("Live Preview"),
-            shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px;",
-              shiny::plotOutput(ns("exp_preview"), height = "460px") |>
+            shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; overflow:auto;",
+              shiny::plotOutput(ns("exp_preview"), height = "auto") |>
                 shinycssloaders::withSpinner(type = 6, color = "#28a745")
             ),
             shiny::tags$small(style = "color: #666; display:block; margin-top:6px;",
-              "Preview reflects the current palette/size settings. ",
-              "Download uses the chosen Width/Height/DPI.")
+              "Preview reflects current Width / Height / DPI. ",
+              "Preview aspect ratio matches the saved figure.")
           )
         )
       )
@@ -1267,11 +1287,37 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       eval_env$p
     })
 
-    output$exp_preview <- shiny::renderPlot({
-      p <- .exp_preview_plot()
-      shiny::req(p)
-      p
-    })
+    # Preview plotOutput height scales with the user's chosen aspect ratio
+    # (width / height). The pixel width is fixed by the modal column layout;
+    # we derive height so the preview matches the downloaded figure's
+    # proportions. Without this, a 16x4 banner would preview at the same
+    # 460px box as a 4x16 column, hiding the actual aspect distortion.
+    output$exp_preview <- shiny::renderPlot(
+      {
+        p <- .exp_preview_plot()
+        shiny::req(p)
+        p
+      },
+      res  = function() {
+        # renderPlot `res` is pixels-per-inch. Setting it to the user's DPI
+        # makes the on-screen font sizes match the eventual saved file at
+        # that DPI (so text doesn't appear oversized at 600 DPI nor tiny
+        # at 72 DPI).
+        v <- input$exp_dpi; if (is.null(v)) 100 else min(as.integer(v), 150)
+      },
+      width  = function() {
+        # Convert inches -> pixels at the res above. Cap to modal width so
+        # ultra-wide specs still fit on screen.
+        w <- input$exp_width; if (is.null(w)) 9 else as.numeric(w)
+        res_v <- input$exp_dpi; if (is.null(res_v)) 100 else min(as.integer(res_v), 150)
+        round(min(w * res_v, 720))
+      },
+      height = function() {
+        h <- input$exp_height; if (is.null(h)) 7 else as.numeric(h)
+        res_v <- input$exp_dpi; if (is.null(res_v)) 100 else min(as.integer(res_v), 150)
+        round(min(h * res_v, 540))
+      }
+    )
 
     # ----- Reactive: current DotPlot data slice -----
     dotplot_export_df <- shiny::reactive({
@@ -1321,7 +1367,9 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
         shiny::showNotification("No network to export.", type = "warning"); return()
       }
       current_export_target("network")
-      shiny::showModal(.build_export_modal("Pathway Network"))
+      # Network exports ignore palette/point_range (they use a fixed Up/Down
+      # scheme), so hide the Aesthetics block to avoid misleading the user.
+      shiny::showModal(.build_export_modal("Pathway Network", show_aesthetics = FALSE))
     })
 
     shiny::observeEvent(input$exp_dismiss, shiny::removeModal())

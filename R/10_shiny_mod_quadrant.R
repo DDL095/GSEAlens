@@ -63,7 +63,17 @@ mod_quadrant_ui <- function(id) {
             shiny::numericInput(ns("volcano_pval_thresh"), "P-value Threshold:", value = 0.05, min = 0.001, max = 1, step = 0.01)
           )
         ),
-        plotly::plotlyOutput(ns("de_volcano"), height = "400px")
+        plotly::plotlyOutput(ns("de_volcano"), height = "400px"),
+        shiny::div(
+          style = "margin-top: 10px;",
+          shiny::actionButton(
+            ns("open_de_volcano_export"),
+            label = "Export Publication Plot",
+            icon = shiny::icon("file-image"),
+            class = "btn-success",
+            style = "width: 100%;"
+          )
+        )
       )),
       shiny::column(6, shiny::div(
         class = "white-box",
@@ -1524,11 +1534,26 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
                error = function(e) { message("[vol preview] ", e$message); NULL })
       eval_env$p
     })
-    output$vol_exp_preview <- shiny::renderPlot({
-      p <- .volcano_preview_plot()
-      shiny::req(p)
-      p
-    })
+    output$vol_exp_preview <- shiny::renderPlot(
+      {
+        p <- .volcano_preview_plot()
+        shiny::req(p)
+        p
+      },
+      res  = function() {
+        v <- input$vol_exp_dpi; if (is.null(v)) 100 else min(as.integer(v), 150)
+      },
+      width  = function() {
+        w <- input$vol_exp_width; if (is.null(w)) 8 else as.numeric(w)
+        res_v <- input$vol_exp_dpi; if (is.null(res_v)) 100 else min(as.integer(res_v), 150)
+        round(min(w * res_v, 720))
+      },
+      height = function() {
+        h <- input$vol_exp_height; if (is.null(h)) 6 else as.numeric(h)
+        res_v <- input$vol_exp_dpi; if (is.null(res_v)) 100 else min(as.integer(res_v), 150)
+        round(min(h * res_v, 540))
+      }
+    )
 
     .volcano_export_code <- function() {
       data_list <- data_prep_data()
@@ -1573,6 +1598,215 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     shiny::observeEvent(input$vol_exp_copy_code, {
       code <- .volcano_export_code()
+      ok <- tryCatch({ clipr::write_clip(code); TRUE }, error = function(e) FALSE)
+      if (isTRUE(ok)) {
+        shiny::showNotification("R code copied to clipboard.", type = "message")
+      } else {
+        shiny::showModal(shiny::modalDialog(
+          title = "Reproducible R Code (copy manually)",
+          size = "l", easyClose = TRUE,
+          shiny::pre(style = "max-height: 60vh; overflow-y: auto; font-size: 11px;", code),
+          footer = shiny::modalButton("Close")
+        ))
+      }
+    })
+
+    # ============================================================
+    # DE Volcano Export Center (gene-level)
+    # ------------------------------------------------------------
+    # Mirrors the Pathway Volcano export but uses generate_de_volcano_code
+    # (six-category classification: both/user/pathway/up/down/ns).
+    # ============================================================
+    .build_de_volcano_export_modal <- function() {
+      shiny::modalDialog(
+        title = "Export Publication Plot - DE Volcano",
+        size = "l", footer = NULL, easyClose = TRUE,
+        shiny::fluidRow(
+          shiny::column(5,
+            shiny::h5("Dimensions"),
+            shiny::fluidRow(
+              shiny::column(6,
+                shiny::numericInput(ns("de_exp_width"),  "Width (inch)",  value = 8, min = 2, max = 24)
+              ),
+              shiny::column(6,
+                shiny::numericInput(ns("de_exp_height"), "Height (inch)", value = 6, min = 2, max = 24)
+              )
+            ),
+            shiny::numericInput(ns("de_exp_dpi"), "DPI", value = 300, min = 72, max = 600),
+            shiny::hr(),
+            shiny::h5("Classification thresholds"),
+            shiny::numericInput(ns("de_exp_logfc"), "logFC threshold",
+                                value = if (is.null(input$volcano_logfc_thresh)) 1
+                                        else input$volcano_logfc_thresh,
+                                min = 0, max = 22, step = 0.5),
+            shiny::numericInput(ns("de_exp_pval"), "P-value threshold",
+                                value = if (is.null(input$volcano_pval_thresh)) 0.05
+                                        else input$volcano_pval_thresh,
+                                min = 0.001, max = 1, step = 0.01),
+            shiny::hr(),
+            shiny::h5("Download"),
+            shiny::fluidRow(
+              shiny::column(6,
+                shiny::downloadButton(ns("de_exp_download_pdf"),
+                  "Download PDF", class = "btn-danger btn-block",
+                  icon = shiny::icon("file-pdf"))
+              ),
+              shiny::column(6,
+                shiny::downloadButton(ns("de_exp_download_png"),
+                  "Download PNG", class = "btn-primary btn-block",
+                  icon = shiny::icon("file-image"))
+              )
+            ),
+            shiny::hr(),
+            shiny::fluidRow(
+              shiny::column(6,
+                shiny::selectInput(ns("de_exp_format"), "Other format",
+                  choices = c("SVG" = "svg", "TIFF" = "tiff"), selected = "svg")
+              ),
+              shiny::column(6,
+                shiny::div(style = "margin-top: 22px;",
+                  shiny::downloadButton(ns("de_exp_download_other"),
+                    "Download", class = "btn-default btn-block")
+                )
+              )
+            ),
+            shiny::hr(),
+            shiny::fluidRow(
+              shiny::column(6,
+                shiny::actionButton(ns("de_exp_copy_code"),
+                  "Copy R Code", class = "btn-info btn-block",
+                  icon = shiny::icon("clipboard"))
+              ),
+              shiny::column(6,
+                shiny::actionButton(ns("de_exp_dismiss"),
+                  "Close", class = "btn-default btn-block")
+              )
+            )
+          ),
+          shiny::column(7,
+            shiny::h5("Live Preview"),
+            shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; overflow:auto;",
+              shiny::plotOutput(ns("de_exp_preview"), height = "auto") |>
+                shinycssloaders::withSpinner(type = 6, color = "#28a745")
+            ),
+            shiny::tags$small(style = "color: #666; display:block; margin-top:6px;",
+              "Six categories: Both (purple) / Selected (green) / Pathway (orange) / ",
+              "Up (red) / Down (blue) / NS (gray).")
+          )
+        )
+      )
+    }
+
+    shiny::observeEvent(input$open_de_volcano_export, {
+      data_list <- data_prep_data()
+      de_df <- tryCatch(get_de_table(gsea_res, data_list$contrast_id),
+                        error = function(e) NULL)
+      if (is.null(de_df) || nrow(de_df) == 0) {
+        shiny::showNotification("No DE data to export.", type = "warning"); return()
+      }
+      shiny::showModal(.build_de_volcano_export_modal())
+    })
+    shiny::observeEvent(input$de_exp_dismiss, shiny::removeModal())
+
+    .de_volcano_export_df <- shiny::reactive({
+      data_list <- data_prep_data()
+      shiny::req(data_list)
+      de_df <- tryCatch(get_de_table(gsea_res, data_list$contrast_id),
+                        error = function(e) NULL)
+      shiny::req(de_df)
+      if (!"logFC" %in% colnames(de_df)) de_df$logFC <- de_df$log2FoldChange
+      if (!"pvalue" %in% colnames(de_df)) de_df$pvalue <- de_df$p.value
+      if (!"padj" %in% colnames(de_df)) de_df$padj <- de_df$p.adjust
+      de_df <- de_df[!is.na(de_df$logFC) & !is.na(de_df$pvalue), ]
+      de_df
+    })
+
+    .de_volcano_export_code <- function() {
+      de_df <- .de_volcano_export_df()
+      if (is.null(de_df) || nrow(de_df) == 0) return("")
+      data_list <- data_prep_data()
+      lg <- if (is.null(data_list$left_group))  "Left"  else data_list$left_group
+      rg <- if (is.null(data_list$right_group)) "Right" else data_list$right_group
+      user_genes <- toupper(highlight_genes_reactive())
+      pathway_genes <- toupper(selected_pathway_genes())
+      logfc_t <- if (is.null(input$de_exp_logfc)) 1 else input$de_exp_logfc
+      pval_t  <- if (is.null(input$de_exp_pval))  0.05 else input$de_exp_pval
+      generate_de_volcano_code(
+        de_df        = de_df,
+        user_genes   = user_genes,
+        pathway_genes = pathway_genes,
+        logfc_thresh = logfc_t,
+        pval_thresh  = pval_t,
+        left_group   = lg, right_group = rg
+      )
+    }
+
+    .de_volcano_preview_plot <- shiny::reactive({
+      code <- .de_volcano_export_code()
+      if (!nzchar(code)) return(NULL)
+      eval_env <- new.env(parent = globalenv())
+      eval_env$p <- NULL
+      tryCatch(eval(parse(text = code), envir = eval_env),
+               error = function(e) { message("[de vol preview] ", e$message); NULL })
+      eval_env$p
+    })
+
+    output$de_exp_preview <- shiny::renderPlot(
+      {
+        p <- .de_volcano_preview_plot()
+        shiny::req(p)
+        p
+      },
+      res  = function() {
+        v <- input$de_exp_dpi; if (is.null(v)) 100 else min(as.integer(v), 150)
+      },
+      width  = function() {
+        w <- input$de_exp_width; if (is.null(w)) 8 else as.numeric(w)
+        res_v <- input$de_exp_dpi; if (is.null(res_v)) 100 else min(as.integer(res_v), 150)
+        round(min(w * res_v, 720))
+      },
+      height = function() {
+        h <- input$de_exp_height; if (is.null(h)) 6 else as.numeric(h)
+        res_v <- input$de_exp_dpi; if (is.null(res_v)) 100 else min(as.integer(res_v), 150)
+        round(min(h * res_v, 540))
+      }
+    )
+
+    .de_volcano_render_to_file <- function(file, fmt) {
+      code <- .de_volcano_export_code()
+      if (!nzchar(code)) return()
+      eval_env <- new.env(parent = globalenv())
+      eval_env$p <- NULL
+      tryCatch(eval(parse(text = code), envir = eval_env),
+               error = function(e) shiny::showNotification(
+                 sprintf("Render failed: %s", e$message), type = "error"))
+      if (is.null(eval_env$p)) return()
+      ggplot2::ggsave(file, eval_env$p,
+                      width  = if (is.null(input$de_exp_width))  8 else input$de_exp_width,
+                      height = if (is.null(input$de_exp_height)) 6 else input$de_exp_height,
+                      dpi    = if (is.null(input$de_exp_dpi))   300 else input$de_exp_dpi,
+                      device = fmt)
+    }
+
+    output$de_exp_download_pdf <- shiny::downloadHandler(
+      filename = function() sprintf("GSEAlens_de_volcano_%s.pdf", Sys.Date()),
+      content  = function(file) .de_volcano_render_to_file(file, "pdf")
+    )
+    output$de_exp_download_png <- shiny::downloadHandler(
+      filename = function() sprintf("GSEAlens_de_volcano_%s.png", Sys.Date()),
+      content  = function(file) .de_volcano_render_to_file(file, "png")
+    )
+    output$de_exp_download_other <- shiny::downloadHandler(
+      filename = function() sprintf("GSEAlens_de_volcano_%s.%s", Sys.Date(),
+                                    if (is.null(input$de_exp_format)) "svg" else input$de_exp_format),
+      content  = function(file) .de_volcano_render_to_file(file, input$de_exp_format)
+    )
+
+    shiny::observeEvent(input$de_exp_copy_code, {
+      code <- .de_volcano_export_code()
+      if (!nzchar(code)) {
+        shiny::showNotification("Nothing to copy.", type = "warning"); return()
+      }
       ok <- tryCatch({ clipr::write_clip(code); TRUE }, error = function(e) FALSE)
       if (isTRUE(ok)) {
         shiny::showNotification("R code copied to clipboard.", type = "message")

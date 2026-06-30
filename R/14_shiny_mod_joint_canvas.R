@@ -292,11 +292,26 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
     })
     shiny::observeEvent(input$jc_dismiss, shiny::removeModal())
 
-    output$jc_preview <- shiny::renderPlot({
-      cr <- canvas_result()
-      shiny::req(cr, cr$plot)
-      cr$plot
-    })
+    output$jc_preview <- shiny::renderPlot(
+      {
+        cr <- canvas_result()
+        shiny::req(cr, cr$plot)
+        cr$plot
+      },
+      res  = function() {
+        v <- input$jc_dpi; if (is.null(v)) 100 else min(as.integer(v), 150)
+      },
+      width  = function() {
+        w <- input$jc_width; if (is.null(w)) 16 else as.numeric(w)
+        res_v <- input$jc_dpi; if (is.null(res_v)) 100 else min(as.integer(res_v), 150)
+        round(min(w * res_v, 720))
+      },
+      height = function() {
+        h <- input$jc_height; if (is.null(h)) 12 else as.numeric(h)
+        res_v <- input$jc_dpi; if (is.null(res_v)) 100 else min(as.integer(res_v), 150)
+        round(min(h * res_v, 540))
+      }
+    )
 
     .jc_render_to_file <- function(file, fmt) {
       cr <- canvas_result()
