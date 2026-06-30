@@ -180,8 +180,37 @@ launch_gsea_app <- function(gsea_res, addition_data = NULL) {
   ui <- shiny::fluidPage(
     shiny::tags$head(
       shiny::tags$style(shiny::HTML("
-        .modal-dialog { max-width: 90vw !important; width: 90vw !important; }
-        .modal-body { max-height: 85vh; overflow-y: auto; background-color: #fafafa; }
+        /* IRON FIX (2026-06-30): modal scroll-to-top bug.
+         * Previously only .modal-body had max-height: 85vh, but the dialog
+         * itself was unconstrained and vertically centered by Bootstrap, so
+         * when the Live Preview image grew taller than the viewport the
+         * browser pushed the modal header above the viewport and the user
+         * could not scroll back to it. Switching to a flex layout with a
+         * bounded .modal-dialog / .modal-content keeps header & footer
+         * pinned and only the .modal-body scrolls. */
+        .modal {
+          display: flex !important;
+          align-items: flex-start !important;
+          overflow-y: auto !important;
+        }
+        .modal-dialog {
+          max-width: 90vw !important;
+          width: 90vw !important;
+          margin: 4vh auto !important;
+        }
+        .modal-content {
+          max-height: 92vh !important;
+          display: flex !important;
+          flex-direction: column !important;
+        }
+        .modal-header { flex: 0 0 auto !important; }
+        .modal-body {
+          flex: 1 1 auto !important;
+          min-height: 0 !important;
+          overflow-y: auto !important;
+          background-color: #fafafa;
+        }
+        .modal-footer { flex: 0 0 auto !important; }
         .white-box {
           background-color: white; padding: 15px; border-radius: 8px;
           box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 15px;

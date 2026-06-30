@@ -1582,8 +1582,10 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       data_list <- data_prep_data()
       lg <- if (is.null(data_list$left_group))  "Left"  else data_list$left_group
       rg <- if (is.null(data_list$right_group)) "Right" else data_list$right_group
+      n_sel <- length(selected_pathway_ids())
       generate_volcano_code(volcano_export_df(),
-                            left_group = lg, right_group = rg)
+                            left_group = lg, right_group = rg,
+                            n_selected = n_sel)
     }
 
     .volcano_render_to_file <- function(file, fmt) {

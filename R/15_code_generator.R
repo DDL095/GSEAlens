@@ -783,7 +783,8 @@ p <- ggplot(df, aes(
   theme_bw(base_size = %g) +
   labs(
     title    = sprintf("Pathway DotPlot: %%s vs %%s", "%s", "%s"),
-    subtitle = "Color = significance | Size = gene-set magnitude",
+    subtitle = sprintf("Color: %%s (viridis, reversed)  |  Size: %%s (sqrt scale)",
+                       color_title, size_title),
     x = "NES (Normalized Enrichment Score)",
     y = NULL
   ) +
@@ -825,6 +826,7 @@ print(p)
 generate_volcano_code <- function(plot_df,
                                   left_group = "Left",
                                   right_group = "Right",
+                                  n_selected = 0L,
                                   base_size = 12) {
   data_literal <- paste(utils::capture.output(dput(plot_df)), collapse = "\n")
   sprintf(
@@ -837,6 +839,10 @@ library(ggplot2)
 
 # --- Data --------------------------------------------------------------------
 df <- %s
+
+# --- Selected-pathway count (mirrors interactive plotly title) ---------------
+# Populated by GSEAlens when the user exports; edit freely.
+n_selected <- %d
 
 # --- Type coercion (defensive) -----------------------------------------------
 # Upstream GSEA result objects sometimes return NES/pvalue/p.adjust as
@@ -879,6 +885,9 @@ p <- ggplot(df, aes(x = NES, y = -log10(pvalue),
   theme_bw(base_size = %g) +
   labs(
     title = sprintf("Pathway Volcano: %%s vs %%s", "%s", "%s"),
+    subtitle = sprintf("%%d pathways | %%d selected | %%d significant (P<0.25)",
+                       nrow(df), n_selected,
+                       sum(df$p.adjust < 0.25, na.rm = TRUE)),
     x = "NES",
     y = "-log10(P-value)"
   ) +
@@ -899,6 +908,7 @@ print(p)
 # ggsave("volcano.png", p, width = 8, height = 6, dpi = 300)
 ',
     data_literal,
+    n_selected,
     left_group, right_group,
     left_group, right_group,
     base_size,
@@ -1027,11 +1037,27 @@ p <- ggplot(de_df, aes(x = logFC, y = -log10(pvalue), color = category)) +
   theme_bw(base_size = %g) +
   labs(
     title = sprintf("DE Volcano: %%s vs %%s", "%s", "%s"),
+    subtitle = sprintf(
+      "Up %%d | Down %%d | NS %%d | Selected %%d | Pway %%d | Both %%d",
+      sum(de_df$category == "up"),   sum(de_df$category == "down"),
+      sum(de_df$category == "ns"),   sum(de_df$category == "user"),
+      sum(de_df$category == "pathway"), sum(de_df$category == "both")),
     x = "log2 Fold Change",
     y = "-log10(P-value)"
   ) +
+  # Mirror the interactive plotly "High in left/right" corner banners so the
+  # exported figure keeps the directional context without a separate legend.
+  annotate("text", x = Inf, y = Inf, color = "#E41A1C",
+           label = sprintf("High in %%s", "%s"),
+           hjust = 1.08, vjust = 1.6, fontface = "bold", size = 4.5) +
+  annotate("text", x = -Inf, y = Inf, color = "#377EB8",
+           label = sprintf("High in %%s", "%s"),
+           hjust = -0.08, vjust = 1.6, fontface = "bold", size = 4.5) +
+  coord_cartesian(clip = "off") +
   theme(
-    plot.title = element_text(face = "bold", hjust = 0.5),
+    plot.title    = element_text(face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(color = "gray30", hjust = 0.5),
+    plot.margin   = margin(15, 60, 15, 60),
     legend.position = "right"
   )
 
@@ -1044,6 +1070,7 @@ print(p)
     data_literal, user_str, pathway_str,
     logfc_thresh, pval_thresh,
     base_size,
+    left_group, right_group,
     left_group, right_group
   )
 }
