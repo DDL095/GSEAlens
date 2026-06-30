@@ -1127,8 +1127,8 @@ p <- ggplot() +
   # ggrepel dependency entirely.
   geom_label(data = node_df,
              aes(x = x, y = y, label = sub("^[^_]*_", "", name)),
-             size = 3, alpha = 0.85, label.padding = 0.15,
-             label.size = 0.2, fontface = "bold") +
+             size = 3, alpha = 0.85, label.padding = grid::unit(0.15, "lines"),
+             linewidth = 0.2, fontface = "bold") +
   # Legend sizing: enlarge Direction legend circles so Up/Down colors are
   # clearly visible (default key size is too small because the size scale
   # range competes with fill legend).
@@ -1281,7 +1281,7 @@ p <- ggplot() +
   geom_label(data = pw,
              aes(x = x, y = y, label = sub("^[^_]*_", "", id)),
              size = 3, fontface = "bold", alpha = 0.85,
-             label.padding = 0.15, label.size = 0.2) +
+             label.padding = grid::unit(0.15, "lines"), linewidth = 0.2) +
   # Legend sizing: enlarge Direction (color) legend keys so Up/Down/Neutral
   # colors are clearly visible (default inherited key size is too small
   # because both node layers compete for size scale).
