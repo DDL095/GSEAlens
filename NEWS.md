@@ -1,5 +1,17 @@
 <!-- NEWS.md is maintained by https://cynkra.github.io/fledge, do not edit -->
 
+# GSEAlens 0.99.12
+
+Publication export fidelity: ggrepel labels for volcano exports, new
+boxplot image export modal, modal scroll fix, and checkbox-driven
+annotation toggles.
+
+- **Volcano export labels (R/15_code_generator.R, R/10)**: `generate_volcano_code()` now accepts `selected_ids` and annotates the user-selected pathways with `ggrepel::geom_label_repel` (orange labels mirroring the interactive plotly selection). `generate_de_volcano_code()` annotates user / pathway / both genes (green / orange / purple labels) the same way. Labels use `max.overlaps = Inf` so all selected points are named.
+- **Checkbox-driven annotations (R/10, R/15)**: both volcano export modals gain a checkbox (default unchecked). Pathway Volcano: "Show stats subtitle"; DE Volcano: "Show stats + direction banners". When unchecked the figure is clean (title + axes only, identical to pre-annotation behavior); when checked, subtitle shows the same statistics as the interactive plotly title and DE Volcano adds red "High in <left_group>" / blue "High in <right_group>" corner banners using the actual group names.
+- **Boxplot image export (R/10, R/15)**: add an "Export Publication Plot" button to panel 4 (Full Expression Distribution) of the Quadrant module, opening a full export modal (PDF/PNG/SVG/TIFF + Live Preview + Copy R Code). New generator `generate_boxplot_image_code()` produces a self-contained ggplot2 script reproducing the interactive plotly boxplot (boxplot + jitter, group colors, optional zero baseline, optional custom group order).
+- **Modal scroll fix (R/07_shiny_app.R)**: replace the single `max-height: 85vh` on `.modal-body` with a flex layout (`.modal` scrolling viewport, `.modal-content` bounded to 92vh flex column, pinned header/footer, scrolling body). Fixes the bug where a tall Live Preview pushed the modal header above the fold and the scrollbar could not reach it.
+- **DotPlot export subtitle (R/15)**: dynamic subtitle now references the active Color by / Size by selection instead of the previous hardcoded string.
+
 # GSEAlens 0.99.11
 
 Visualization fidelity and publication export. Brings the interactive

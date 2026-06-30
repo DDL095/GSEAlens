@@ -97,6 +97,19 @@ mod_quadrant_ui <- function(id) {
             "Opens a table of the per-sample expression values (long and wide",
             "formats) for the currently selected gene \u2014 copy to Excel /",
             "GraphPad Prism or download as CSV."
+          ),
+          shiny::hr(),
+          shiny::actionButton(
+            ns("open_boxplot_image_export"),
+            label = "Export Publication Plot",
+            icon = shiny::icon("file-image"),
+            class = "btn-success btn-sm",
+            style = "width: 100%;"
+          ),
+          shiny::helpText(
+            "Opens a publication-grade ggplot2 export modal (PDF/PNG/SVG +",
+            "Live Preview + Copy R Code) for the currently selected gene's",
+            "boxplot. Matches the interactive plotly styling."
           )
         )
       ))
@@ -398,7 +411,6 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
         } else {
           selected_pathway_genes(character(0))
         }
-
         message(sprintf("[Pathway] Deselected: %s", clicked_id))
       } else {
         # 点击未选中的 → 添加选中
@@ -1586,11 +1598,13 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       data_list <- data_prep_data()
       lg <- if (is.null(data_list$left_group))  "Left"  else data_list$left_group
       rg <- if (is.null(data_list$right_group)) "Right" else data_list$right_group
-      n_sel <- length(selected_pathway_ids())
+      sel_ids <- selected_pathway_ids()
+      n_sel <- length(sel_ids)
       show_stats <- isTRUE(input$vol_exp_show_stats)
       generate_volcano_code(volcano_export_df(),
                             left_group = lg, right_group = rg,
                             n_selected = n_sel,
+                            selected_ids = sel_ids,
                             show_annotations = show_stats)
     }
 
@@ -1761,21 +1775,21 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       de_df <- .de_volcano_export_df()
       if (is.null(de_df) || nrow(de_df) == 0) return("")
       data_list <- data_prep_data()
-      lg <- if (is.null(data_list$left_group))  "Left"  else data_list$left_group
-      rg <- if (is.null(data_list$right_group)) "Right" else data_list$right_group
-      user_genes <- toupper(highlight_genes_reactive())
-      pathway_genes <- toupper(selected_pathway_genes())
-      logfc_t <- if (is.null(input$de_exp_logfc)) 1 else input$de_exp_logfc
-      pval_t  <- if (is.null(input$de_exp_pval))  0.05 else input$de_exp_pval
-      show_stats <- isTRUE(input$de_exp_show_stats)
-      generate_de_volcano_code(
-        de_df        = de_df,
-        user_genes   = user_genes,
-        pathway_genes = pathway_genes,
-        logfc_thresh = logfc_t,
-        pval_thresh  = pval_t,
-        left_group   = lg, right_group = rg,
-        show_annotations = show_stats
+      if (is.null(data_list)) return("")
+      current_gene <- current_boxplot_gene()
+      symbol_map <- .rebuild_symbol_map(gsea_res, data_list$contrast_id)
+      display_gene <- .get_display_symbol(current_gene, symbol_map)
+      lg <- if (is.null(data_list$left_group)) NA_character_ else data_list$left_group
+      rg <- if (is.null(data_list$right_group)) NA_character_ else data_list$right_group
+      use_zero <- isTRUE(input$zero_baseline)
+      ord <- boxplot_order_ref()
+      generate_boxplot_image_code(
+        box_data_long    = de_df,
+        gene_symbol      = display_gene,
+        expr_type        = data_list$expression_type,
+        left_group       = lg, right_group = rg,
+        use_zero_baseline = use_zero,
+        custom_order     = ord
       )
     }
 

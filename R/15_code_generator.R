@@ -827,9 +827,16 @@ generate_volcano_code <- function(plot_df,
                                   left_group = "Left",
                                   right_group = "Right",
                                   n_selected = 0L,
+                                  selected_ids = character(0),
                                   show_annotations = FALSE,
                                   base_size = 12) {
   data_literal <- paste(utils::capture.output(dput(plot_df)), collapse = "\n")
+  # IRON FIX (2026-06-30): serialize selected pathway IDs as a data literal so
+  # the exported figure can label them with ggrepel, mirroring the interactive
+  # plotly annotations. paste0 avoids nested-sprintf %% escaping.
+  selected_str <- if (length(selected_ids) > 0) {
+    paste0('c(', paste0('"', selected_ids, '"', collapse = ", "), ')')
+  } else "character(0)"
   # IRON FIX (2026-06-30): make subtitle optional via checkbox in export modal.
   # paste0 avoids nested-sprintf %% escaping headaches by embedding group
   # names directly as string literals in the generated code.
@@ -862,6 +869,11 @@ library(ggplot2)
 
 # --- Data --------------------------------------------------------------------
 df <- %s
+
+# --- Selected pathway IDs (mirrors interactive plotly annotation) ------------
+# Populated by GSEAlens when the user exports; edit freely. Used by the
+# ggrepel label layer below to annotate the same pathways highlighted in app.
+selected_ids <- %s
 
 # --- Selected-pathway count (mirrors interactive plotly title) ---------------
 # Populated by GSEAlens when the user exports; edit freely.
@@ -912,10 +924,24 @@ p <- ggplot(df, aes(x = NES, y = -log10(pvalue),
     legend.position = "right"
   )
 
-# Optional: label top-N most significant pathways
-# df_label <- df[order(df$pvalue)[seq_len(min(10, nrow(df)))], ]
-# p <- p + ggrepel::geom_text_repel(data = df_label, aes(label = ID),
-#                                   max.overlaps = 30, size = 3)
+# --- ggrepel labels for selected pathways ------------------------------------
+# Mirror the interactive plotly: annotate pathways the user clicked in the
+# Shiny app. Uses ggrepel to avoid overlaps; no labels when none selected.
+if (length(selected_ids) > 0) {
+  df_label <- df[df$ID %%in%% selected_ids, ]
+  if (nrow(df_label) > 0) {
+    library(ggrepel)
+    p <- p + ggrepel::geom_label_repel(
+      data = df_label,
+      aes(label = ID),
+      size = 3, fontface = "bold",
+      fill = "white", color = "#FF9800",
+      box.padding = 0.4, label.padding = 0.2,
+      min.segment.length = 0, segment.color = "grey55",
+      max.overlaps = Inf, max.iter = 5000
+    )
+  }
+}
 
 print(p)
 
@@ -924,6 +950,7 @@ print(p)
 # ggsave("volcano.png", p, width = 8, height = 6, dpi = 300)
 ',
     data_literal,
+    selected_str,
     n_selected,
     left_group, right_group,
     left_group, right_group,
@@ -1099,6 +1126,26 @@ p <- ggplot(de_df, aes(x = logFC, y = -log10(pvalue), color = category)) +
              linetype = "dashed", color = "grey60") +
   theme_bw(base_size = %g) +
 %s
+
+# --- ggrepel labels for user/pathway/both genes ------------------------------
+# Mirror the interactive plotly: annotate genes the user selected (green),
+# genes from the active pathway (orange), and both (purple). Uses ggrepel
+# to avoid overlaps; no labels when none of these categories are present.
+de_df_label <- de_df[de_df$category %%in%% c("user", "pathway", "both"), ]
+if (nrow(de_df_label) > 0) {
+  label_color_map <- c(user = "#4DAF4A", pathway = "#FF9800", both = "#9C27B0")
+  library(ggrepel)
+  p <- p + ggrepel::geom_label_repel(
+    data = de_df_label,
+    aes(label = gene_symbol, fill = category),
+    color = "white", size = 3, fontface = "bold",
+    box.padding = 0.45, label.padding = 0.2,
+    min.segment.length = 0, segment.color = "grey55",
+    max.overlaps = Inf, max.iter = 5000,
+    show.legend = FALSE
+  ) +
+  scale_fill_manual(values = label_color_map, guide = "none")
+}
 
 print(p)
 
@@ -1469,3 +1516,168 @@ print(p)
 
   paste(c(header, body_lines), collapse = "\n")
 }
+
+
+#' @title Generate Publication Boxplot Image Code
+#' @description Return an executable ggplot2 script reproducing the Quadrant
+#'   module's per-gene expression boxplot (panel 4) as a static,
+#'   publication-ready figure. Mirrors the interactive plotly: boxplot +
+#'   jittered points, group colors, optional zero baseline, optional custom
+#'   group order.
+#' @param box_data_long data.frame with columns: Sample, Group, Expression.
+#'   (Same long format returned by \code{extract_boxplot_data()$long}.)
+#' @param gene_symbol Character. Gene name for the plot title.
+#' @param expr_type Character. Y-axis label (e.g. "logcpm", "log2FC").
+#' @param left_group Character. First group name (gets red fill).
+#' @param right_group Character. Second group name (gets blue fill).
+#' @param use_zero_baseline Logical. Add dashed red line at y = 0.
+#' @param custom_order Character scalar. Custom group ordering
+#'   (e.g. "A->B,C") or "default".
+#' @param base_size Numeric.
+#' @return Character scalar of executable R code.
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Shown via the "Export Publication Plot" button in panel 4 of the
+#' # Quadrant module. Generates a self-contained ggplot2 script.
+#' box_long <- extract_boxplot_data(gsea_res, "untrt_vs_trt", "GAPDH")$long
+#' code <- generate_boxplot_image_code(
+#'   box_data_long = box_long,
+#'   gene_symbol   = "GAPDH",
+#'   expr_type     = "logcpm",
+#'   left_group    = "untrt",
+#'   right_group   = "trt"
+#' )
+#' cat(code)
+#' }
+generate_boxplot_image_code <- function(box_data_long,
+                                        gene_symbol = "Gene",
+                                        expr_type = "Expression",
+                                        left_group = NA_character_,
+                                        right_group = NA_character_,
+                                        use_zero_baseline = TRUE,
+                                        custom_order = "default",
+                                        base_size = 12) {
+  # Subset to the three essential columns + drop NA groups, mirroring the
+  # interactive plotly rendering path.
+  keep_cols <- intersect(c("Sample", "Group", "Expression"),
+                         colnames(box_data_long))
+  box_subset <- box_data_long[, keep_cols, drop = FALSE]
+  box_subset <- box_subset[!is.na(box_subset$Group), , drop = FALSE]
+  data_literal <- paste(utils::capture.output(dput(box_subset)), collapse = "\n")
+
+  safe_gene <- gsub("'", "''", gene_symbol %||% "")
+  safe_expr <- gsub("'", "''", expr_type %||% "Expression")
+
+  # Build the optional custom-ordering block (mirrors
+  # generate_boxplot_data_code's logic, inlined for a self-contained script).
+  has_custom_order <- !is.null(custom_order) &&
+                      length(custom_order) == 1 &&
+                      nzchar(custom_order) &&
+                      !identical(custom_order, "default")
+  ordering_block <- if (has_custom_order) {
+    safe_order <- gsub("'", "''", custom_order)
+    paste0(
+'# --- Custom group ordering (matches the Shiny boxplot) ----------------------\n',
+'custom_order <- \'', safe_order, '\'\n',
+'sep <- if (grepl("->", custom_order, fixed = TRUE)) "->" else ","\n',
+'order_parts <- trimws(strsplit(custom_order, sep)[[1]])\n',
+'actual_groups <- unique(as.character(df$Group))\n',
+'valid_parts <- order_parts[order_parts %in% actual_groups]\n',
+'x_categories <- c(valid_parts, setdiff(actual_groups, valid_parts))\n',
+'df <- df[df$Group %in% x_categories, ]\n',
+'df$Group <- factor(df$Group, levels = x_categories, ordered = TRUE)\n'
+    )
+  } else {
+'# --- Group ordering (alphabetical by default) -------------------------------\n# df$Group <- factor(df$Group)\nx_categories <- unique(as.character(df$Group))\ndf$Group <- factor(df$Group, levels = x_categories)\n'
+  }
+
+  # Zero-baseline line block
+  baseline_block <- if (isTRUE(use_zero_baseline)) {
+'  geom_hline(yintercept = 0, linetype = "dashed",
+             color = "red", alpha = 0.7, linewidth = 0.8) +'
+  } else {
+'  # (zero baseline line disabled) #'
+  }
+
+  sprintf(
+'# =============================================================================
+# GSEAlens Publication Boxplot Code
+# Generated by GSEAlens Shiny App
+# =============================================================================
+# Per-gene expression boxplot with jittered points, mirroring the
+# interactive plotly view in the Quadrant module (panel 4).
+
+library(ggplot2)
+
+# --- Data --------------------------------------------------------------------
+df <- %s
+
+# --- Type coercion (defensive) -----------------------------------------------
+if (!"Sample"     %%in%% names(df)) df$Sample     <- NA_character_
+if (!"Group"      %%in%% names(df)) df$Group      <- NA_character_
+if (!"Expression" %%in%% names(df)) df$Expression <- NA_real_
+df$Sample     <- as.character(df$Sample)
+df$Group      <- as.character(df$Group)
+df$Expression <- suppressWarnings(as.numeric(df$Expression))
+df <- df[!is.na(df$Group) & !is.na(df$Expression), ]
+
+%s
+
+# --- Group color palette -----------------------------------------------------
+# Two-group case uses the same red/blue scheme as the DE volcano; otherwise
+# a qualitative palette. Matches the interactive plotly fill mapping.
+unique_groups <- levels(df$Group)
+if (length(unique_groups) == 0) unique_groups <- unique(as.character(df$Group))
+group_colors <- if (length(unique_groups) == 2) {
+  setNames(c("#E41A1C", "#377EB8"), unique_groups[1:2])
+} else {
+  cols <- c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3",
+            "#FF7F00", "#A65628", "#F781BF", "#999999")[seq_along(unique_groups)]
+  setNames(cols, unique_groups)
+}
+
+# --- Y-axis range with headroom (mirrors interactive plotly) -----------------
+y_min <- min(df$Expression, na.rm = TRUE)
+y_max <- max(df$Expression, na.rm = TRUE)
+%s
+y_range <- y_max - y_min
+y_min <- y_min - y_range * 0.1
+y_max <- y_max + y_range * 0.1
+
+p <- ggplot(df, aes(x = Group, y = Expression, fill = Group)) +
+  geom_boxplot(alpha = 0.7, outlier.shape = NA) +
+  geom_jitter(width = 0.2, size = 2, alpha = 0.6) +
+  scale_fill_manual(values = group_colors) +
+  scale_x_discrete(limits = levels(df$Group), drop = FALSE) +
+%s
+  coord_cartesian(ylim = c(y_min, y_max)) +
+  theme_bw(base_size = %g) +
+  labs(
+    title = "%s",
+    y = "%s",
+    x = NULL
+  ) +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(face = "bold", hjust = 0.5)
+  )
+
+print(p)
+
+# --- Save to file (uncomment one) --------------------------------------------
+# ggsave("boxplot.pdf", p, width = 5, height = 5, device = cairo_pdf)
+# ggsave("boxplot.png", p, width = 5, height = 5, dpi = 300)
+',
+    data_literal,
+    ordering_block,
+    if (isTRUE(use_zero_baseline)) 'y_min <- min(y_min, 0)\ny_max <- max(y_max, 0)' else '# (zero baseline disabled)',
+    baseline_block,
+    base_size,
+    safe_gene,
+    safe_expr
+  )
+}
+
