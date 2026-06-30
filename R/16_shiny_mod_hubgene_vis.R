@@ -494,9 +494,34 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
       # Pathway nodes
       if (!is.null(net$nodes$pathway) && nrow(net$nodes$pathway) > 0) {
+        # IRON FIX (2026-06-30): build_hubgene_network stores the gene-set
+        # size under "n_core" (NOT "setSize"). Accessing row$setSize inside
+        # the per-row sprintf returned NULL, which made sprintf produce a
+        # zero-length character vector, which in turn made data.frame()
+        # fail with "arguments imply differing number of rows: 1, 0".
+        # Resolve the size column name once, outside the loop, then index
+        # safely with a numeric fallback.
+        pw_size_col <- if ("setSize" %in% colnames(net$nodes$pathway)) "setSize"
+                       else if ("n_core" %in% colnames(net$nodes$pathway)) "n_core"
+                       else if ("n_total" %in% colnames(net$nodes$pathway)) "n_total"
+                       else NA_character_
+        pw_NES_col  <- if ("NES" %in% colnames(net$nodes$pathway)) "NES" else NA_character_
+        pw_FDR_col  <- if ("FDR" %in% colnames(net$nodes$pathway)) "FDR" else NA_character_
+
         for (i in seq_len(nrow(net$nodes$pathway))) {
           row <- net$nodes$pathway[i, ]
-          direction <- ifelse(row$NES > 0, left_group, right_group)
+          # Safe scalar extraction with NA fallback
+          row_nes <- if (is.na(pw_NES_col)) NA_real_
+                     else suppressWarnings(as.numeric(row[[pw_NES_col]][1]))
+          row_fdr <- if (is.na(pw_FDR_col)) NA_real_
+                     else suppressWarnings(as.numeric(row[[pw_FDR_col]][1]))
+          row_size <- if (is.na(pw_size_col)) NA_integer_
+                      else suppressWarnings(as.integer(row[[pw_size_col]][1]))
+          row_nes[is.na(row_nes)]  <- 0
+          row_fdr[is.na(row_fdr)]  <- 1
+          row_size[is.na(row_size)] <- 0
+
+          direction <- ifelse(row_nes > 0, left_group, right_group)
 
           # Calculate LE connection count
           le_count <- 0
@@ -509,12 +534,12 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
             label = gsub("^[^_]*_", "", row$id),
             group = "pathway",
             shape = "diamond",
-            color = ifelse(row$NES > 0, "#E41A1C", "#377EB8"),
+            color = ifelse(row_nes > 0, "#E41A1C", "#377EB8"),
             size = pw_size[i],
             opacity = 1.0,
             title = sprintf(
               "<b>%s</b><br>Direction: %s<br>NES: %.3f<br>FDR: %.2e<br>LE Genes: %d<br>Set Size: %d",
-              row$id, direction, row$NES, row$FDR, le_count, row$setSize
+              row$id, direction, row_nes, row_fdr, le_count, row_size
             ),
             stringsAsFactors = FALSE
           ))
@@ -523,8 +548,21 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
       # Gene nodes (add opacity for distinction)
       if (!is.null(net$nodes$gene) && nrow(net$nodes$gene) > 0) {
+        # Resolve gene column names defensively (mirrors the pathway fix
+        # above: some upstream paths may rename or drop columns).
+        gn_stat_col   <- if ("stat"   %in% colnames(net$nodes$gene)) "stat"   else NA_character_
+        gn_degree_col <- if ("degree" %in% colnames(net$nodes$gene)) "degree" else NA_character_
+
         for (i in seq_len(nrow(net$nodes$gene))) {
           row <- net$nodes$gene[i, ]
+          # Safe scalar extraction
+          row_stat <- if (is.na(gn_stat_col)) NA_real_
+                      else suppressWarnings(as.numeric(row[[gn_stat_col]][1]))
+          row_degree <- if (is.na(gn_degree_col)) NA_integer_
+                        else suppressWarnings(as.integer(row[[gn_degree_col]][1]))
+          row_stat[is.na(row_stat)]    <- 0
+          row_degree[is.na(row_degree)] <- 1
+
           # Restore original case
           gene_label <- .get_display_symbol(row$id, symbol_map)
 
@@ -546,9 +584,9 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
           }
 
           # Direction
-          if (row$stat > 0) {
+          if (row_stat > 0) {
             direction <- sprintf("Up in %s", left_group)
-          } else if (row$stat < 0) {
+          } else if (row_stat < 0) {
             direction <- sprintf("Up in %s", right_group)
           } else {
             direction <- "Neutral"
@@ -562,12 +600,12 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
             label = gene_label,
             group = "gene",
             shape = "dot",
-            color = ifelse(row$stat > 0, "#E41A1C", ifelse(row$stat < 0, "#377EB8", "#999999")),
-            size = gene_size + row$degree * 3,
+            color = ifelse(row_stat > 0, "#E41A1C", ifelse(row_stat < 0, "#377EB8", "#999999")),
+            size = gene_size + row_degree * 3,
             opacity = gene_opacity,
             title = sprintf(
               "<b>%s</b><br>Direction: %s<br>Stat: %.3f<br>Hub Degree: %d<br>LE: %s<br>Connected: %s",
-              gene_label, direction, row$stat, row$degree,
+              gene_label, direction, row_stat, row_degree,
               ifelse(is_le, "YES", "NO"), pw_str
             ),
             stringsAsFactors = FALSE
@@ -590,15 +628,31 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
       )
 
       if (!is.null(net$edges) && nrow(net$edges) > 0) {
+        # Resolve edge column names defensively.
+        ed_source_col <- if ("source" %in% colnames(net$edges)) "source" else NA_character_
+        ed_target_col <- if ("target" %in% colnames(net$edges)) "target" else NA_character_
+        ed_le_col     <- if ("is_leading_edge" %in% colnames(net$edges)) "is_leading_edge"
+                         else NA_character_
+
         for (i in seq_len(nrow(net$edges))) {
           row <- net$edges[i, ]
+
+          ed_source <- if (is.na(ed_source_col)) ""
+                       else as.character(row[[ed_source_col]][1])
+          ed_target <- if (is.na(ed_target_col)) ""
+                       else as.character(row[[ed_target_col]][1])
+          ed_is_le  <- if (is.na(ed_le_col)) FALSE
+                       else isTRUE(as.logical(row[[ed_le_col]][1]))
 
           # Get source gene stat value to determine color
           gene_stat <- 0
           if (!is.null(net$nodes$gene) && nrow(net$nodes$gene) > 0) {
-            gene_row <- net$nodes$gene[net$nodes$gene$id == row$source, ]
-            if (nrow(gene_row) > 0) {
-              gene_stat <- gene_row$stat[1]
+            if (!is.na(gn_stat_col)) {
+              gene_row <- net$nodes$gene[net$nodes$gene$id == ed_source, ]
+              if (nrow(gene_row) > 0) {
+                gene_stat <- suppressWarnings(as.numeric(gene_row[[gn_stat_col]][1]))
+                gene_stat <- if (is.na(gene_stat)) 0 else gene_stat
+              }
             }
           }
 
@@ -612,18 +666,18 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
           }
 
           # Restore original case
-          gene_display <- .get_display_symbol(row$source, symbol_map)
+          gene_display <- .get_display_symbol(ed_source, symbol_map)
 
           edges <- rbind(edges, data.frame(
             from = paste0("gene_", gene_display),
-            to = paste0("pw_", row$target),
+            to = paste0("pw_", ed_target),
             color = edge_color,
-            width = ifelse(row$is_leading_edge, 3, 1.5),
-            dashes = !row$is_leading_edge,
+            width = ifelse(ed_is_le, 3, 1.5),
+            dashes = !ed_is_le,
             title = sprintf(
               "<b>Gene:</b> %s<br><b>Pathway:</b> %s<br><b>Leading Edge:</b> %s",
-              gene_display, row$target,
-              ifelse(row$is_leading_edge, "YES", "NO")
+              gene_display, ed_target,
+              ifelse(ed_is_le, "YES", "NO")
             ),
             stringsAsFactors = FALSE
           ))
