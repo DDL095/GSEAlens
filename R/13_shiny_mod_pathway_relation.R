@@ -1296,19 +1296,40 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
     }
 
     # ----- Reactive: live preview ggplot object -----
+    # IRON FIX (2026-06-30): the generated R code includes a `print(p)` line
+    # so the clipboard-copy path renders the plot when the user pastes it
+    # into their own R console. But when we eval() the same code inside a
+    # Shiny reactive for the live preview, `print(p)` opens a separate
+    # graphics device (windows()/pdf()/quartz()) OUTSIDE Shiny's device
+    # chain. On ggplot2 >= 4.0 with an active popup device, the subsequent
+    # renderPlot print can surface "non-numeric argument to binary operator"
+    # from unit/arithmetic ops occurring in the now-stale device context.
+    # Fix: override `print` in eval_env to be a no-op so the popup never
+    # opens; renderPlot does its own print on its own device.
     .exp_preview_plot <- shiny::reactive({
       tgt <- current_export_target()
       if (is.null(tgt)) return(NULL)
-      # Reuse the exact same code path as the download handler so preview
-      # is byte-identical to what gets saved (modulo rasterization).
-      code <- .current_export_code()
+      # Wrap code generation in tryCatch so errors here surface as a Shiny
+      # notification (and a clean NULL return) rather than propagating into
+      # renderPlot and showing as a grey error pane.
+      code <- tryCatch(
+        .current_export_code(),
+        error = function(e) {
+          shiny::showNotification(
+            sprintf("[preview] code generation failed: %s", e$message),
+            type = "error", duration = 8)
+          ""
+        })
       if (!nzchar(code)) return(NULL)
       eval_env <- new.env(parent = globalenv())
       eval_env$p <- NULL
+      eval_env$print <- base::invisible   # suppress popup device from print(p)
       tryCatch(
         eval(parse(text = code), envir = eval_env),
         error = function(e) {
-          message("[export preview] ", e$message)
+          shiny::showNotification(
+            sprintf("[preview] %s", e$message),
+            type = "error", duration = 8)
           NULL
         }
       )
@@ -1320,6 +1341,13 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
     # we derive height so the preview matches the downloaded figure's
     # proportions. Without this, a 16x4 banner would preview at the same
     # 460px box as a 4x16 column, hiding the actual aspect distortion.
+    #
+    # IRON FIX (2026-06-30): numericInput returns NA (not NULL) when the
+    # user clears the field. The previous `if (is.null(v)) default else ...`
+    # check let NA propagate through `w * res_v` -> min(NA, 720) -> NA,
+    # which then made png(width=NA) throw "unable to start png() device"
+    # (sometimes surfacing through downstream geom arithmetic as the
+    # generic "non-numeric argument to binary operator"). Use is.na() too.
     output$exp_preview <- shiny::renderPlot(
       {
         p <- .exp_preview_plot()
@@ -1327,22 +1355,27 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
         p
       },
       res  = function() {
-        # renderPlot `res` is pixels-per-inch. Setting it to the user's DPI
-        # makes the on-screen font sizes match the eventual saved file at
-        # that DPI (so text doesn't appear oversized at 600 DPI nor tiny
-        # at 72 DPI).
-        v <- input$exp_dpi; if (is.null(v)) 100 else min(as.integer(v), 150)
+        v <- input$exp_dpi
+        if (is.null(v) || is.na(v)) 100 else min(suppressWarnings(as.integer(v)), 150)
       },
       width  = function() {
-        # Convert inches -> pixels at the res above. Cap to modal width so
-        # ultra-wide specs still fit on screen.
-        w <- input$exp_width; if (is.null(w)) 9 else as.numeric(w)
-        res_v <- input$exp_dpi; if (is.null(res_v)) 100 else min(as.integer(res_v), 150)
+        w <- input$exp_width
+        if (is.null(w) || is.na(w)) w <- 9 else w <- suppressWarnings(as.numeric(w))
+        if (is.na(w) || w <= 0) w <- 9
+        res_v <- input$exp_dpi
+        if (is.null(res_v) || is.na(res_v)) res_v <- 100
+        else res_v <- suppressWarnings(min(as.integer(res_v), 150))
+        if (is.na(res_v) || res_v <= 0) res_v <- 100
         round(min(w * res_v, 720))
       },
       height = function() {
-        h <- input$exp_height; if (is.null(h)) 7 else as.numeric(h)
-        res_v <- input$exp_dpi; if (is.null(res_v)) 100 else min(as.integer(res_v), 150)
+        h <- input$exp_height
+        if (is.null(h) || is.na(h)) h <- 7 else h <- suppressWarnings(as.numeric(h))
+        if (is.na(h) || h <= 0) h <- 7
+        res_v <- input$exp_dpi
+        if (is.null(res_v) || is.na(res_v)) res_v <- 100
+        else res_v <- suppressWarnings(min(as.integer(res_v), 150))
+        if (is.na(res_v) || res_v <= 0) res_v <- 100
         round(min(h * res_v, 540))
       }
     )
@@ -1451,11 +1484,12 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       # "could not find function 'ggplot'" and the .htm fallback symptom.
       eval_env <- new.env(parent = globalenv())
       eval_env$p <- NULL
+      eval_env$print <- base::invisible   # suppress popup device; ggsave() draws itself
       tryCatch({
         eval(parse(text = code), envir = eval_env)
       }, error = function(e) {
         shiny::showNotification(sprintf("Render failed: %s", e$message),
-                                type = "error")
+                                type = "error", duration = 8)
       })
       if (is.null(eval_env$p)) return()
       ggplot2::ggsave(

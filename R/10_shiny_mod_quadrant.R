@@ -1525,13 +1525,29 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
     shiny::observeEvent(input$vol_exp_dismiss, shiny::removeModal())
 
     # Live preview reactive
+    # IRON FIX (2026-06-30): suppress `print(p)` inside the eval'd code so
+    # it does not open a separate windows()/pdf() device and conflict with
+    # renderPlot's own device. Also surface errors as notifications and add
+    # NA guards to width/height/res (numericInput returns NA on cleared).
     .volcano_preview_plot <- shiny::reactive({
-      code <- .volcano_export_code()
+      code <- tryCatch(.volcano_export_code(),
+        error = function(e) {
+          shiny::showNotification(
+            sprintf("[vol preview] code generation failed: %s", e$message),
+            type = "error", duration = 8)
+          ""
+        })
       if (!nzchar(code)) return(NULL)
       eval_env <- new.env(parent = globalenv())
       eval_env$p <- NULL
+      eval_env$print <- base::invisible
       tryCatch(eval(parse(text = code), envir = eval_env),
-               error = function(e) { message("[vol preview] ", e$message); NULL })
+               error = function(e) {
+                 shiny::showNotification(
+                   sprintf("[vol preview] %s", e$message),
+                   type = "error", duration = 8)
+                 NULL
+               })
       eval_env$p
     })
     output$vol_exp_preview <- shiny::renderPlot(
@@ -1541,16 +1557,27 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
         p
       },
       res  = function() {
-        v <- input$vol_exp_dpi; if (is.null(v)) 100 else min(as.integer(v), 150)
+        v <- input$vol_exp_dpi
+        if (is.null(v) || is.na(v)) 100 else min(suppressWarnings(as.integer(v)), 150)
       },
       width  = function() {
-        w <- input$vol_exp_width; if (is.null(w)) 8 else as.numeric(w)
-        res_v <- input$vol_exp_dpi; if (is.null(res_v)) 100 else min(as.integer(res_v), 150)
+        w <- input$vol_exp_width
+        if (is.null(w) || is.na(w)) w <- 8 else w <- suppressWarnings(as.numeric(w))
+        if (is.na(w) || w <= 0) w <- 8
+        res_v <- input$vol_exp_dpi
+        if (is.null(res_v) || is.na(res_v)) res_v <- 100
+        else res_v <- suppressWarnings(min(as.integer(res_v), 150))
+        if (is.na(res_v) || res_v <= 0) res_v <- 100
         round(min(w * res_v, 720))
       },
       height = function() {
-        h <- input$vol_exp_height; if (is.null(h)) 6 else as.numeric(h)
-        res_v <- input$vol_exp_dpi; if (is.null(res_v)) 100 else min(as.integer(res_v), 150)
+        h <- input$vol_exp_height
+        if (is.null(h) || is.na(h)) h <- 6 else h <- suppressWarnings(as.numeric(h))
+        if (is.na(h) || h <= 0) h <- 6
+        res_v <- input$vol_exp_dpi
+        if (is.null(res_v) || is.na(res_v)) res_v <- 100
+        else res_v <- suppressWarnings(min(as.integer(res_v), 150))
+        if (is.na(res_v) || res_v <= 0) res_v <- 100
         round(min(h * res_v, 540))
       }
     )
@@ -1569,9 +1596,10 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       # parent=globalenv() so lexical lookup resolves attached packages.
       eval_env <- new.env(parent = globalenv())
       eval_env$p <- NULL
+      eval_env$print <- base::invisible   # suppress popup device; ggsave draws itself
       tryCatch(eval(parse(text = code), envir = eval_env),
                error = function(e) shiny::showNotification(
-                 sprintf("Render failed: %s", e$message), type = "error"))
+                 sprintf("Render failed: %s", e$message), type = "error", duration = 8))
       if (is.null(eval_env$p)) return()
       ggplot2::ggsave(file, eval_env$p,
                       width  = if (is.null(input$vol_exp_width))  8 else input$vol_exp_width,
@@ -1742,12 +1770,24 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
     }
 
     .de_volcano_preview_plot <- shiny::reactive({
-      code <- .de_volcano_export_code()
+      code <- tryCatch(.de_volcano_export_code(),
+        error = function(e) {
+          shiny::showNotification(
+            sprintf("[de vol preview] code generation failed: %s", e$message),
+            type = "error", duration = 8)
+          ""
+        })
       if (!nzchar(code)) return(NULL)
       eval_env <- new.env(parent = globalenv())
       eval_env$p <- NULL
+      eval_env$print <- base::invisible
       tryCatch(eval(parse(text = code), envir = eval_env),
-               error = function(e) { message("[de vol preview] ", e$message); NULL })
+               error = function(e) {
+                 shiny::showNotification(
+                   sprintf("[de vol preview] %s", e$message),
+                   type = "error", duration = 8)
+                 NULL
+               })
       eval_env$p
     })
 
@@ -1758,16 +1798,27 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
         p
       },
       res  = function() {
-        v <- input$de_exp_dpi; if (is.null(v)) 100 else min(as.integer(v), 150)
+        v <- input$de_exp_dpi
+        if (is.null(v) || is.na(v)) 100 else min(suppressWarnings(as.integer(v)), 150)
       },
       width  = function() {
-        w <- input$de_exp_width; if (is.null(w)) 8 else as.numeric(w)
-        res_v <- input$de_exp_dpi; if (is.null(res_v)) 100 else min(as.integer(res_v), 150)
+        w <- input$de_exp_width
+        if (is.null(w) || is.na(w)) w <- 8 else w <- suppressWarnings(as.numeric(w))
+        if (is.na(w) || w <= 0) w <- 8
+        res_v <- input$de_exp_dpi
+        if (is.null(res_v) || is.na(res_v)) res_v <- 100
+        else res_v <- suppressWarnings(min(as.integer(res_v), 150))
+        if (is.na(res_v) || res_v <= 0) res_v <- 100
         round(min(w * res_v, 720))
       },
       height = function() {
-        h <- input$de_exp_height; if (is.null(h)) 6 else as.numeric(h)
-        res_v <- input$de_exp_dpi; if (is.null(res_v)) 100 else min(as.integer(res_v), 150)
+        h <- input$de_exp_height
+        if (is.null(h) || is.na(h)) h <- 6 else h <- suppressWarnings(as.numeric(h))
+        if (is.na(h) || h <= 0) h <- 6
+        res_v <- input$de_exp_dpi
+        if (is.null(res_v) || is.na(res_v)) res_v <- 100
+        else res_v <- suppressWarnings(min(as.integer(res_v), 150))
+        if (is.na(res_v) || res_v <= 0) res_v <- 100
         round(min(h * res_v, 540))
       }
     )
@@ -1777,9 +1828,10 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       if (!nzchar(code)) return()
       eval_env <- new.env(parent = globalenv())
       eval_env$p <- NULL
+      eval_env$print <- base::invisible
       tryCatch(eval(parse(text = code), envir = eval_env),
                error = function(e) shiny::showNotification(
-                 sprintf("Render failed: %s", e$message), type = "error"))
+                 sprintf("Render failed: %s", e$message), type = "error", duration = 8))
       if (is.null(eval_env$p)) return()
       ggplot2::ggsave(file, eval_env$p,
                       width  = if (is.null(input$de_exp_width))  8 else input$de_exp_width,

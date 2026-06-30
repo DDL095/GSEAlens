@@ -299,16 +299,27 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
         cr$plot
       },
       res  = function() {
-        v <- input$jc_dpi; if (is.null(v)) 100 else min(as.integer(v), 150)
+        v <- input$jc_dpi
+        if (is.null(v) || is.na(v)) 100 else min(suppressWarnings(as.integer(v)), 150)
       },
       width  = function() {
-        w <- input$jc_width; if (is.null(w)) 16 else as.numeric(w)
-        res_v <- input$jc_dpi; if (is.null(res_v)) 100 else min(as.integer(res_v), 150)
+        w <- input$jc_width
+        if (is.null(w) || is.na(w)) w <- 16 else w <- suppressWarnings(as.numeric(w))
+        if (is.na(w) || w <= 0) w <- 16
+        res_v <- input$jc_dpi
+        if (is.null(res_v) || is.na(res_v)) res_v <- 100
+        else res_v <- suppressWarnings(min(as.integer(res_v), 150))
+        if (is.na(res_v) || res_v <= 0) res_v <- 100
         round(min(w * res_v, 720))
       },
       height = function() {
-        h <- input$jc_height; if (is.null(h)) 12 else as.numeric(h)
-        res_v <- input$jc_dpi; if (is.null(res_v)) 100 else min(as.integer(res_v), 150)
+        h <- input$jc_height
+        if (is.null(h) || is.na(h)) h <- 12 else h <- suppressWarnings(as.numeric(h))
+        if (is.na(h) || h <= 0) h <- 12
+        res_v <- input$jc_dpi
+        if (is.null(res_v) || is.na(res_v)) res_v <- 100
+        else res_v <- suppressWarnings(min(as.integer(res_v), 150))
+        if (is.na(res_v) || res_v <= 0) res_v <- 100
         round(min(h * res_v, 540))
       }
     )

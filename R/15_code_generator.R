@@ -732,16 +732,26 @@ df <- %s
 # --- Type coercion (defensive) -----------------------------------------------
 # Coerce all columns used in arithmetic to numeric to prevent
 # "non-numeric argument to binary operator" when upstream returns character.
-df$NES      <- suppressWarnings(as.numeric(df$NES))
-df$pvalue   <- suppressWarnings(as.numeric(df$pvalue))
-df$p.adjust <- suppressWarnings(as.numeric(df$p.adjust))
+# IRON FIX (2026-06-30): guard each coercion with an existence check.
+# When a column is missing, the assignment evaluates RHS to numeric(0)
+# (length 0), and assigning that to a data.frame with N rows raises
+# "replacement has 0 rows, data has N". Initialize missing columns with
+# the correct length BEFORE coercing.
+if (!"NES"       %%in%% names(df)) df$NES       <- 0
+if (!"pvalue"    %%in%% names(df)) df$pvalue    <- 1
+if (!"p.adjust"  %%in%% names(df)) df$p.adjust  <- 1
+if (!"setSize"   %%in%% names(df)) df$setSize   <- 0
+if (!"CoreCount" %%in%% names(df)) df$CoreCount <- 0L
+df$NES       <- suppressWarnings(as.numeric(df$NES))
+df$pvalue    <- suppressWarnings(as.numeric(df$pvalue))
+df$p.adjust  <- suppressWarnings(as.numeric(df$p.adjust))
+df$setSize   <- suppressWarnings(as.numeric(df$setSize))
 df$CoreCount <- suppressWarnings(as.integer(df$CoreCount))
-df$setSize  <- suppressWarnings(as.numeric(df$setSize))
-df$NES[is.na(df$NES)]        <- 0
+df$NES[is.na(df$NES)]         <- 0
 df$pvalue[is.na(df$pvalue)]   <- 1
 df$p.adjust[is.na(df$p.adjust)] <- 1
-df$CoreCount[is.na(df$CoreCount)] <- 0
-df$setSize[is.na(df$setSize)]  <- 0
+df$setSize[is.na(df$setSize)] <- 0
+df$CoreCount[is.na(df$CoreCount)] <- 0L
 
 # --- Aesthetic mappings ------------------------------------------------------
 color_field <- "%s"
@@ -832,6 +842,10 @@ df <- %s
 # Upstream GSEA result objects sometimes return NES/pvalue/p.adjust as
 # character or factor. Coerce to numeric BEFORE any arithmetic to prevent
 # "non-numeric argument to binary operator" at ifelse(NES > 0, ...) below.
+# IRON FIX (2026-06-30): guard against missing columns too.
+if (!"NES"       %%in%% names(df)) df$NES       <- 0
+if (!"pvalue"    %%in%% names(df)) df$pvalue    <- 1
+if (!"p.adjust"  %%in%% names(df)) df$p.adjust  <- 1
 df$NES      <- suppressWarnings(as.numeric(df$NES))
 df$pvalue   <- suppressWarnings(as.numeric(df$pvalue))
 df$p.adjust <- suppressWarnings(as.numeric(df$p.adjust))
@@ -955,6 +969,9 @@ user_genes    <- toupper(%s)
 pathway_genes <- toupper(%s)
 
 # --- Type coercion (defensive) -----------------------------------------------
+# IRON FIX (2026-06-30): guard against missing columns too.
+if (!"logFC"  %%in%% names(de_df)) de_df$logFC  <- 0
+if (!"pvalue" %%in%% names(de_df)) de_df$pvalue <- 1
 de_df$logFC  <- suppressWarnings(as.numeric(de_df$logFC))
 de_df$pvalue <- suppressWarnings(as.numeric(de_df$pvalue))
 de_df$logFC[is.na(de_df$logFC)]  <- 0
@@ -1078,6 +1095,10 @@ edge_df <- %s
 node_df <- %s
 
 # --- Type coercion (defensive) -----------------------------------------------
+# IRON FIX (2026-06-30): guard against missing columns too.
+if (!"NES"      %%in%% names(node_df)) node_df$NES      <- 0
+if (!"p.adjust" %%in%% names(node_df)) node_df$p.adjust <- 1
+if (!"weight"   %%in%% names(edge_df)) edge_df$weight   <- 0
 node_df$NES       <- suppressWarnings(as.numeric(node_df$NES))
 node_df$p.adjust  <- suppressWarnings(as.numeric(node_df$p.adjust))
 edge_df$weight    <- suppressWarnings(as.numeric(edge_df$weight))
@@ -1203,6 +1224,12 @@ genes <- %s
 edges <- %s
 
 # --- Type coercion (defensive) -----------------------------------------------
+# IRON FIX (2026-06-30): guard against missing columns too.
+if (!"NES"     %%in%% names(pw))    pw$NES     <- 0
+if (!"FDR"     %%in%% names(pw))    pw$FDR     <- 1
+if (!"setSize" %%in%% names(pw))    pw$setSize <- 100
+if (!"stat"    %%in%% names(genes)) genes$stat <- 0
+if (!"degree"  %%in%% names(genes)) genes$degree <- 1L
 pw$NES     <- suppressWarnings(as.numeric(pw$NES))
 pw$FDR     <- suppressWarnings(as.numeric(pw$FDR))
 pw$setSize <- suppressWarnings(as.numeric(pw$setSize))

@@ -1035,13 +1035,28 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
     shiny::observeEvent(input$hub_exp_dismiss, shiny::removeModal())
 
     # Live preview reactive
+    # IRON FIX (2026-06-30): same pattern as pathway/quadrant modules —
+    # suppress `print(p)` from opening a separate graphics device, surface
+    # errors as notifications, and guard against NA from cleared numericInput.
     .hubgene_preview_plot <- shiny::reactive({
-      code <- .hubgene_export_code()
+      code <- tryCatch(.hubgene_export_code(),
+        error = function(e) {
+          shiny::showNotification(
+            sprintf("[hub preview] code generation failed: %s", e$message),
+            type = "error", duration = 8)
+          ""
+        })
       if (!nzchar(code)) return(NULL)
       eval_env <- new.env(parent = globalenv())
       eval_env$p <- NULL
+      eval_env$print <- base::invisible
       tryCatch(eval(parse(text = code), envir = eval_env),
-               error = function(e) { message("[hub preview] ", e$message); NULL })
+               error = function(e) {
+                 shiny::showNotification(
+                   sprintf("[hub preview] %s", e$message),
+                   type = "error", duration = 8)
+                 NULL
+               })
       eval_env$p
     })
     output$hub_exp_preview <- shiny::renderPlot(
@@ -1051,16 +1066,27 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
         p
       },
       res  = function() {
-        v <- input$hub_exp_dpi; if (is.null(v)) 100 else min(as.integer(v), 150)
+        v <- input$hub_exp_dpi
+        if (is.null(v) || is.na(v)) 100 else min(suppressWarnings(as.integer(v)), 150)
       },
       width  = function() {
-        w <- input$hub_exp_width; if (is.null(w)) 10 else as.numeric(w)
-        res_v <- input$hub_exp_dpi; if (is.null(res_v)) 100 else min(as.integer(res_v), 150)
+        w <- input$hub_exp_width
+        if (is.null(w) || is.na(w)) w <- 10 else w <- suppressWarnings(as.numeric(w))
+        if (is.na(w) || w <= 0) w <- 10
+        res_v <- input$hub_exp_dpi
+        if (is.null(res_v) || is.na(res_v)) res_v <- 100
+        else res_v <- suppressWarnings(min(as.integer(res_v), 150))
+        if (is.na(res_v) || res_v <= 0) res_v <- 100
         round(min(w * res_v, 720))
       },
       height = function() {
-        h <- input$hub_exp_height; if (is.null(h)) 8 else as.numeric(h)
-        res_v <- input$hub_exp_dpi; if (is.null(res_v)) 100 else min(as.integer(res_v), 150)
+        h <- input$hub_exp_height
+        if (is.null(h) || is.na(h)) h <- 8 else h <- suppressWarnings(as.numeric(h))
+        if (is.na(h) || h <= 0) h <- 8
+        res_v <- input$hub_exp_dpi
+        if (is.null(res_v) || is.na(res_v)) res_v <- 100
+        else res_v <- suppressWarnings(min(as.integer(res_v), 150))
+        if (is.na(res_v) || res_v <= 0) res_v <- 100
         round(min(h * res_v, 540))
       }
     )
@@ -1130,9 +1156,10 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
       # the .htm fallback symptom; see IRON FIX comment in commit log.)
       eval_env <- new.env(parent = globalenv())
       eval_env$p <- NULL
+      eval_env$print <- base::invisible   # suppress popup device; ggsave draws itself
       tryCatch(eval(parse(text = code), envir = eval_env),
                error = function(e) shiny::showNotification(
-                 sprintf("Render failed: %s", e$message), type = "error"))
+                 sprintf("Render failed: %s", e$message), type = "error", duration = 8))
       if (is.null(eval_env$p)) return()
       ggplot2::ggsave(file, eval_env$p,
                       width  = if (is.null(input$hub_exp_width))  10 else input$hub_exp_width,
