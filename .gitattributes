@@ -9,3 +9,5 @@ NAMESPACE text eol=lf
 LICENSE text eol=lf
 LICENSE.md text eol=lf
 NEWS.md text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
