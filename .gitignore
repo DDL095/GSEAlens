@@ -15,3 +15,8 @@ GSEAlens.BiocCheck
 *.log
 *.Rcheck
 ..Rcheck
+
+# Local one-off repair scripts + personal dev note (added 2026-07-01, not shipped)
+/tools/
+/IDEA.md
+
