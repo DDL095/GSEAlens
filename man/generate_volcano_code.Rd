@@ -21,6 +21,16 @@ generate_volcano_code(
 
 \item{right_group}{Character.}
 
+\item{n_selected}{Integer. Default 0L. Number of pre-selected pathway
+labels to render (in addition to user-selected ones).}
+
+\item{selected_ids}{Character vector. Default \code{character(0)}.
+Pathway IDs that the caller has pre-selected, e.g. via the app's
+"Show label" controls.}
+
+\item{show_annotations}{Logical. Default FALSE. When TRUE, emit
+\code{ggrepel::geom_label_repel} annotations for the labeled pathways.}
+
 \item{base_size}{Numeric.}
 }
 \value{

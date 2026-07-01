@@ -1,473 +1,936 @@
 # Section: Visualization and Report Generation ----
 
+
+
 #' GSEA Visualization and Report Generation
+
 #'
+
 #' Provides static plotting functions and interactive HTML report generation
+
 #' capabilities. This is a documentation landing page for the visualization
+
 #' family of functions in this file.
+
 #'
+
 #' @return NULL (this is a documentation landing page; individual functions
+
 #'   return their own objects, documented separately).
+
 #' @name visualization
+
 NULL
 
+
+
 #' @title Plot Directional GSEA
+
 #' @description Professional-grade GSEA plotting engine with seamless support for single or multiple pathway visualization.
+
 #'   Automatically generates elegant legends and native red-blue gene distribution track.
+
 #' @param directional_gsea_obj A wrapped GseaTask object (returned by extract_gsea_task)
+
 #' @param target_pathways Vector of pathway IDs to plot (supports single or multiple)
+
 #' @param main_title Main title name
+
 #' @param subPlot Controls the number of subplots generated (1: enrichment plot only; 2: enrichment + heatmap track; 3: full rank track)
+
 #' @param curveCol Custom curve color vector
+
 #' @param add_pval Whether to add statistical annotations on the plot. Default FALSE.
+
 #' @param show_contrast_in_axis Logical. Whether to display contrast group information on the x-axis of the Rank plot.
+
 #'   Default FALSE; recommended to set TRUE only in combined canvas mode.
+
 #' @param ... Additional parameters passed to internal engine
+
 #' @return ggplot2 composite object
+
 #' @importFrom ggplot2 ggplot aes geom_col scale_fill_gradient2 geom_hline scale_x_continuous theme_bw theme element_blank element_text margin coord_cartesian labs geom_vline annotate scale_color_manual
+
 #' @importFrom grDevices colorRampPalette
+
 #' @importFrom patchwork plot_annotation wrap_plots
+
 #' @importFrom stringr str_to_title str_wrap
+
 #' @export
 
+
+
 #' @examples
+
 #' # Load pre-computed GseaRes and pick a task + an enriched pathway ID
+
 #' gsea_res <- readRDS(system.file(
+
 #'   "extdata", "precomputed_gseares.rds", package = "GSEAlens"
+
 #' ))
+
 #' task <- extract_gsea_task(gsea_res, contrast_id = "untrt_vs_trt")
+
 #' res_df <- as.data.frame(task$gsea_res)
+
 #' top_pathway <- res_df$ID[1]
+
 #'
+
 #' # Render the directional GSEA plot (enrichment + rank + heatmap tracks)
+
 #' p <- plot_directional_gsea(task, target_pathways = top_pathway)
+
 #' class(p)
+
 plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
+
                                   main_title = NULL, subPlot = 3,
+
                                   curveCol = NULL, add_pval = FALSE,
+
                                   show_contrast_in_axis = FALSE,
+
                                   ...) {
+
   # 1. 瑙ｆ瀽瀵硅薄涓庢彁鍙栧硅薄涓庢彁鍙栧熀纭€鏁版嵁
+
   res <- directional_gsea_obj$gsea_res
+
   res@result$Description <- res@result$ID
+
   meta <- directional_gsea_obj$meta
+
   df <- as.data.frame(res)
 
+
+
   # Guard: filter out pathways not present in the current GSEA result
+
   # (e.g. stale IDs from a different gene set collection)
+
   valid_mask <- target_pathways %in% df$ID
+
   if (!all(valid_mask)) {
+
     missing_pws <- target_pathways[!valid_mask]
+
     warning(sprintf(
+
       "Skipping %d pathway(s) not found in GSEA results: %s",
+
       length(missing_pws), paste(missing_pws, collapse = ", ")
+
     ))
+
     target_pathways <- target_pathways[valid_mask]
+
     if (length(target_pathways) == 0) {
+
       stop("None of the selected pathways exist in the current GSEA result. Please re-select pathways from the active gene set collection.")
+
     }
+
   }
+
+
 
   n_lines <- length(target_pathways)
 
+
+
   # 1b. Unified label formatter: strip first "_" prefix, title-case the rest
+
   .format_pathway_label <- function(pw_id) {
+
     tit <- unlist(strsplit(pw_id, split = "_"))
+
     if (length(tit) > 1) {
+
       ft <- paste(stringr::str_to_title(tit[seq(2, length(tit))]), collapse = " ")
+
     } else {
+
       ft <- paste(stringr::str_to_title(tit), collapse = " ")
+
     }
+
     stringr::str_wrap(ft, width = 45)
+
   }
+
+
 
   # 1c. Auto-generate main_title when caller does not provide one
+
   if (is.null(main_title)) {
+
     main_title <- if (n_lines == 1) {
+
       .format_pathway_label(target_pathways[1])
+
     } else {
+
       sprintf("Combined Display: %d Pathway(s)", n_lines)
+
     }
+
   }
+
+
 
   # 2. 楂樼骇棰滆壊姹犲垎閰嶉€昏緫
+
   if (is.null(curveCol) || length(curveCol) < n_lines) {
+
     base_colors <- c(
+
       "#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00",
+
       "#A65628", "#F781BF", "#1B9E77", "#D95F02", "#7570B3"
+
     )
+
     curveCol <- if (n_lines <= length(base_colors)) {
+
       base_colors[seq_len(n_lines)]
+
     } else {
+
       grDevices::colorRampPalette(base_colors)(n_lines)
+
     }
+
   }
+
+
 
   curveCol_use <- curveCol[seq_len(n_lines)]
+
   curveCol_gsea <- curveCol_use
+
   if (n_lines == 1) {
+
     curveCol_gsea <- c(curveCol_use[1], curveCol_use[1])
+
   }
 
+
+
   # 3. 鏍稿績缁樺浘锛堝師鐢熷紩鎿庯級
+
   p_list <- .gsea_nb_core(
+
     object = res,
+
     geneSetID = target_pathways,
+
     subPlot = subPlot,
+
     curveCol = curveCol_gsea,
+
     addPval = add_pval,
+
     show_contrast_in_axis = show_contrast_in_axis,
+
     left_group = meta$left_group,
+
     right_group = meta$right_group,
+
     ...
+
   )
 
+
+
   # 4. 缁堟瀬鍥句緥鎷︽埅涓庤鍐欓€昏緫
+
   if (n_lines > 1) {
+
     df_sub <- df[match(target_pathways, df$ID), ]
+
     raw_desc <- df_sub$Description
+
     name_id <- df_sub$ID
+
+
 
     nice_labels <- vapply(name_id, .format_pathway_label, character(1))
 
+
+
     names(curveCol_use) <- raw_desc
+
     override_scale <- ggplot2::scale_color_manual(
+
       name = "Term Name",
+
       values = curveCol_use,
+
       breaks = raw_desc,
+
       labels = nice_labels
+
     )
 
+
+
     p_list$p1 <- p_list$p1 + override_scale
+
     if (subPlot >= 2 && !is.null(p_list$p2)) {
+
       p_list$p2 <- p_list$p2 + override_scale
+
     }
+
   }
 
+
+
   # 5. 缁勫悎瀛愬浘
+
   plots <- list(p_list$p1)
+
   if (subPlot >= 2 && !is.null(p_list$p2)) {
+
     plots[[2]] <- p_list$p2
+
   }
+
   if (subPlot == 3 && !is.null(p_list$p3)) {
+
     plots[[3]] <- p_list$p3
+
   }
+
+
 
   heights <- c(0.5, 0.2, 0.3)[seq_len(length(plots))]
 
+
+
   p_base <- patchwork::wrap_plots(plots, ncol = 1, heights = heights)
 
+
+
   # 6. 娣诲姞缁撴瀯鍖栧ぇ鏍囬
+
   p_final <- p_base + patchwork::plot_annotation(
+
     title = main_title,
+
     subtitle = sprintf("<- %s | %s ->", meta$left_group, meta$right_group),
+
     theme = ggplot2::theme(
+
       plot.title = ggplot2::element_text(size = 14, face = "bold", hjust = 0.5),
+
       plot.subtitle = ggplot2::element_text(size = 12, hjust = 0.5, color = "grey40")
+
     )
+
   )
 
+
+
   return(p_final)
+
 }
+
+
 
 # Section: HTML Report Generation ----
 
+
+
 #' @title Generate GSEA HTML Report
+
 #' @description Automatically avoids column name contamination, intelligently extracts expression matrices from objects,
+
 #' and outputs comfortable web reports with dual p-value display and heatmaps.
+
 #' Uses the ComplexHeatmap engine to draw high-quality heatmaps, perfectly replicating pheatmap aesthetics.
+
 #' @param res_obj GseaTask object
+
 #' @param output_base_dir Output folder path. If left empty (NULL), it will automatically follow the original project location of the calculation capsule.
+
 #' @param p_adjust_cutoff FDR filtering threshold, default 1
+
 #' @param top_plots Number of pathways to plot detailed sub-pages, format c(positive_count, negative_count)
+
 #' @param dpi Resolution for GSEA enrichment plots, default 200
+
 #' @return Path to the generated HTML report (invisible)
+
 #' @importFrom ComplexHeatmap Heatmap HeatmapAnnotation draw
+
 #' @importFrom circlize colorRamp2
+
 #' @importFrom grid gpar
+
 #' @export
 
+
+
 #' @examples
+
 #' \dontrun{
+
 #' generate_gsea_html_report(res_obj, output_base_dir = tempdir())
+
 #' }
+
 generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
+
                                       p_adjust_cutoff = 1, top_plots = c(15, 15),
+
                                       dpi = 200) {
+
   if (!requireNamespace("DT", quietly = TRUE)) stop("Missing 'DT' package.")
+
   if (!requireNamespace("ComplexHeatmap", quietly = TRUE)) stop("Missing 'ComplexHeatmap' package.")
+
   if (!requireNamespace("circlize", quietly = TRUE)) stop("Missing 'circlize' package.")
 
+
+
   meta <- res_obj$meta
+
   res <- res_obj$gsea_res
+
   df <- as.data.frame(res)
 
+
+
   # 1. 鑷姩瀵昏矾閫昏緫
+
   if (is.null(output_base_dir)) {
+
     if (!is.null(meta$project_info) && !is.null(meta$project_info$series_dir)) {
+
       output_base_dir <- file.path(
+
         meta$project_info$series_dir,
+
         sprintf("HTML_Report_%s_vs_%s", meta$left_group, meta$right_group)
+
       )
+
     } else {
+
       output_base_dir <- "GSEA_Results"
+
     }
+
   }
 
+
+
   bundle_dir <- output_base_dir
+
   if (!dir.exists(bundle_dir)) dir.create(bundle_dir, recursive = TRUE)
+
   details_dir <- file.path(bundle_dir, "Details")
+
   if (!dir.exists(details_dir)) dir.create(details_dir, recursive = TRUE)
+
+
 
   main_html_path <- file.path(bundle_dir, paste0(basename(bundle_dir), ".html"))
 
+
+
   # 2. 鏍稿績娓呮礂鍖?
+
   if (!is.null(meta$meta_dict)) {
+
     dict_cols <- colnames(meta$meta_dict)
+
     df_cols <- colnames(df)
+
     cols_to_add <- setdiff(dict_cols, df_cols)
+
     safe_dict <- meta$meta_dict |> dplyr::select(ID, dplyr::any_of(cols_to_add))
+
     df_clean <- df |> dplyr::left_join(safe_dict, by = "ID")
+
   } else {
+
     df_clean <- df
+
   }
+
+
 
   df_clean <- df_clean |>
+
     dplyr::filter(p.adjust <= p_adjust_cutoff) |>
+
     dplyr::mutate(
+
       Enriched_In = factor(ifelse(NES > 0, meta$left_group, meta$right_group),
+
         levels = c(meta$left_group, meta$right_group)
+
       ),
+
       Display_Collection = if ("Combo_Name" %in% names(.)) Combo_Name else if ("Collection" %in% names(.)) Collection else "Unknown",
+
       Display_Collection = as.factor(ifelse(is.na(Display_Collection), "Unknown", Display_Collection)),
+
       Pathway_Link = if ("URL" %in% names(.)) {
+
         ifelse(is.na(URL) | URL == "", sprintf("<b>%s</b>", ID),
+
           sprintf('<a href="%s" target="_blank" style="color: #0056b3; text-decoration: none;">%s</a>', URL, ID)
+
         )
+
       } else {
+
         sprintf("<b>%s</b>", ID)
+
       },
+
       Description = if ("Description.y" %in% names(.)) Description.y else Description
+
     ) |>
+
     dplyr::arrange(desc(abs(NES))) |>
+
     dplyr::mutate(Rank = dplyr::row_number())
 
+
+
   if (nrow(df_clean) == 0) {
+
     message("Warning: No significant pathways found under current cutoff. Skipping report generation.")
+
     return(invisible(NULL))
+
   }
+
+
 
   # 3. 琛ㄨ揪鐭╅樀鏅鸿兘闆疯揪
+
   message("[Smart Radar] Detecting expression matrix for heatmap plotting...")
+
   expr_mat <- NULL
+
   cpm_mat <- NULL
+
   sample_meta_sub <- NULL
+
   n_left <- 0
 
+
+
   if (!is.null(meta$expr_bundle)) {
+
     expr_bundle <- meta$expr_bundle
+
     sample_meta <- expr_bundle$sample_meta
 
+
+
     if (!is.null(sample_meta) && "group" %in% colnames(sample_meta)) {
+
       left_samples <- rownames(sample_meta)[sample_meta$group == meta$left_group]
+
       right_samples <- rownames(sample_meta)[sample_meta$group == meta$right_group]
+
       target_samples <- c(left_samples, right_samples)
 
+
+
       if (length(target_samples) > 0) {
+
         message(sprintf(
+
           "   [Heatmap Ready] Matched samples: Left group (%s) %d | Right group (%s) %d",
+
           meta$left_group, length(left_samples), meta$right_group, length(right_samples)
+
         ))
 
+
+
         # 鑾峰彇 display_expr (Z-score 搴曞浘)
+
         if (!is.null(expr_bundle$display_expr)) {
+
           expr_mat <- expr_bundle$display_expr[, target_samples, drop = FALSE]
+
         } else if (!is.null(expr_bundle$raw_counts)) {
+
           expr_mat <- log2(expr_bundle$raw_counts[, target_samples, drop = FALSE] + 1)
+
         }
+
+
 
         # 鑾峰彇 raw_counts (鐢ㄤ簬鏄剧ず鏁板€?
+
         if (!is.null(expr_bundle$raw_counts)) {
+
           cpm_mat <- edgeR::cpm(expr_bundle$raw_counts[, target_samples, drop = FALSE], log = FALSE)
+
         }
 
+
+
         sample_meta_sub <- sample_meta[target_samples, , drop = FALSE]
+
         n_left <- length(left_samples)
+
       }
+
     }
+
   }
 
+
+
   # 4. 閬嶅巻鐢熸垚瀛愬浘涓庤鎯呴〉
+
   pos_plot_ids <- df_clean |>
+
     dplyr::filter(NES > 0) |>
+
     dplyr::arrange(desc(NES)) |>
+
     head(top_plots[1]) |>
+
     dplyr::pull(ID)
+
   neg_plot_ids <- df_clean |>
+
     dplyr::filter(NES < 0) |>
+
     dplyr::arrange(NES) |>
+
     head(top_plots[2]) |>
+
     dplyr::pull(ID)
+
   target_plot_ids <- c(pos_plot_ids, neg_plot_ids)
+
+
 
   detail_links <- character(nrow(df_clean))
 
+
+
   for (i in seq_len(nrow(df_clean))) {
+
     pw_id <- df_clean$ID[i]
 
+
+
     if (!(pw_id %in% target_plot_ids)) {
+
       detail_links[i] <- '<button class="btn btn-sm btn-outline-secondary" disabled style="padding: 2px 10px;">Skipped</button>'
+
       next
+
     }
+
+
 
     safe_pw_name <- gsub("[^A-Za-z0-9_.-]", "_", pw_id)
+
     detail_filename <- sprintf("Detail_Rank%03d_%s.html", i, safe_pw_name)
+
     gsea_png_name <- sprintf("GSEA_Rank%03d_%s.png", i, safe_pw_name)
+
     heat_png_name <- sprintf("Heatmap_Rank%03d_%s.png", i, safe_pw_name)
 
+
+
     # 缁樺埗 GSEA 涓诲浘
+
     tryCatch(
+
       {
+
         p_gsea <- plot_directional_gsea(res_obj, target_pathways = pw_id, main_title = pw_id, subPlot = 3, add_pval = FALSE)
+
         ggplot2::ggsave(file.path(details_dir, gsea_png_name), plot = p_gsea, width = 8, height = 6, dpi = dpi, bg = "white")
+
       },
+
       error = function(e) {
+
         message(sprintf("Failed to plot %s: %s", pw_id, e$message))
+
       }
+
     )
 
+
+
     # 缁樺埗鐑浘 (ComplexHeatmap 鍗囩骇鐗?
+
     heat_html_tag <- "<p class='text-muted' style='margin-top:20px;'>No expression data available for visualization.</p>"
+
     if (!is.null(expr_mat)) {
+
       all_genes <- res@geneSets[[pw_id]]
+
       match_list_idx <- which(toupper(rownames(expr_mat)) %in% toupper(all_genes))
+
       plot_genes <- rownames(expr_mat)[match_list_idx]
 
+
+
       if (length(plot_genes) >= 2) {
+
         plot_mat <- expr_mat[plot_genes, , drop = FALSE]
+
         plot_mat <- plot_mat[apply(plot_mat, 1, var) > 1e-6, , drop = FALSE]
 
+
+
         if (nrow(plot_mat) >= 2) {
+
           # Z-score 鏍囧噯鍖?
+
           z_mat <- t(scale(t(plot_mat)))
+
           z_mat[is.na(z_mat)] <- 0
+
           z_mat[z_mat > 1] <- 1
+
           z_mat[z_mat < -1] <- -1
 
+
+
           # 鎻愬彇 CPM 鏁板€?(鐢ㄤ簬鏄剧ず)
+
           display_numbers <- round(cpm_mat[rownames(z_mat), , drop = FALSE])
 
+
+
           # ComplexHeatmap 閰嶇疆
+
           # 1. 棰滆壊鏄犲皠 (澶嶅埢 pheatmap 鐨勬贰钃?鐧?浜矇姗?
+
           col_fun <- circlize::colorRamp2(c(-1, 0, 1), c("#67a9cf", "#f7f7f7", "#ef8a62"))
 
+
+
           # 2. 鍒楁敞閲?(鍒嗙粍鏉?
+
           grp_col <- c("#E41A1C", "#377EB8")
+
           names(grp_col) <- c(meta$left_group, meta$right_group)
 
+
+
           top_ann <- ComplexHeatmap::HeatmapAnnotation(
+
             Group = sample_meta_sub$group,
+
             col = list(Group = grp_col),
+
             annotation_name_gp = grid::gpar(fontsize = 12, fontface = "bold"),
+
             simple_anno_size = grid::unit(0.6, "cm")
+
           )
+
+
 
           # 3. 琛屾敞閲?(Leading Edge, 鍙€?
+
           # leading_status <- ifelse(toupper(rownames(z_mat)) %in% toupper(core_genes), "YES", "NO")
+
           # right_ann <- rowAnnotation(LeadingEdge = leading_status, ...)
 
+
+
           # 4. 鍗曞厓鏍兼覆鏌撳嚱鏁?(缁樺埗鏁板€?
+
           cell_fun <- function(j, i, x, y, width, height, fill) {
+
             val <- display_numbers[i, j]
+
             # 淇濇寔鍘熸湁璁剧疆锛氬浐瀹氶粦鑹插瓧浣擄紝瀛楀彿 13
+
             grid::grid.text(val, x, y, gp = grid::gpar(fontsize = 13, col = "black", fontface = "bold"))
+
           }
 
+
+
           # 5. 鏋勫缓 Heatmap 瀵硅薄
+
           ht <- ComplexHeatmap::Heatmap(
+
             z_mat,
+
             name = "Z-Score",
+
             col = col_fun,
+
             cluster_rows = FALSE,
+
             cluster_columns = FALSE,
+
             column_split = factor(sample_meta_sub$group, levels = c(meta$left_group, meta$right_group)),
+
             cluster_column_slices = FALSE,
+
             top_annotation = top_ann,
+
             cell_fun = cell_fun,
+
             row_names_gp = grid::gpar(fontsize = 15),
+
             column_names_gp = grid::gpar(fontsize = 15, fontface = "bold"),
+
             rect_gp = grid::gpar(col = "white", lwd = 1),
+
             show_heatmap_legend = TRUE,
+
             width = NULL,
+
             height = NULL
+
           )
+
+
 
           # 6. 淇濆瓨鍥剧墖
+
           png(file.path(details_dir, heat_png_name),
+
             width = 800, height = 600, res = 100
+
           )
+
+          # IRON FIX (2026-07-01): ensure dev.off() runs even if draw() errors,
+          # otherwise the residual png device will swallow subsequent plots.
+          on.exit(dev.off(), add = TRUE)
+
           ComplexHeatmap::draw(ht,
+
             merge_legend = TRUE,
+
             column_title = sprintf(
+
               "Row-Scaled Z-Score [-1, 1]\nEnriched in: %s",
+
               as.character(df_clean$Enriched_In[i])
+
             )
+
           )
-          dev.off()
+
+
 
           heat_html_tag <- sprintf("<img src='%s' class='img-fluid shadow-sm border'>", heat_png_name)
+
         }
+
       }
+
     }
 
+
+
     # 鎷兼帴 HTML
+
     html_content <- sprintf('
+
       <!DOCTYPE html><html><head><meta charset="utf-8"><title>Detail: %s</title>
+
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"></head>
+
       <body class="container mt-4 mb-5"><h2 class="text-primary">%s</h2>
+
       <h6 class="text-muted mb-4">Original ID: %s</h6>
+
       <p class="lead"><strong>Rank:</strong> %d | <strong>NES:</strong> %.3f | <strong>FDR:</strong> %.4e</p><hr>
+
       <div class="row mb-5"><div class="col-md-5"><h4 class="mb-3">Enrichment Plot</h4><img src="%s" class="img-fluid border shadow-sm"></div>
+
       <div class="col-md-7"><h4 class="mb-3">Expression Heatmap</h4><div style="overflow:auto; max-height:800px;">%s</div></div></div>
+
       </body></html>
+
     ', pw_id, pw_id, pw_id, i, df_clean$NES[i], df_clean$p.adjust[i], gsea_png_name, heat_html_tag)
 
+
+
     writeLines(html_content, con = file.path(details_dir, detail_filename))
+
     detail_links[i] <- sprintf('<a href="./Details/%s" target="_blank" class="btn btn-sm btn-success" style="padding: 2px 10px; text-decoration: none;">Dashboard</a>', detail_filename)
+
   }
+
+
 
   df_clean$Detail_Page <- detail_links
 
+
+
   # 5. 鐢熸垚涓讳氦浜掑紡鏁版嵁琛?
+
   display_df <- df_clean |>
+
     dplyr::select(Rank, Detail_Page, Pathway = Pathway_Link, Collection = Display_Collection, Enriched_In, Size = setSize, NES, pvalue, p.adjust, Description)
 
+
+
   dt_table <- DT::datatable(
+
     display_df,
+
     rownames = FALSE, escape = FALSE, filter = "top",
+
     caption = htmltools::tags$caption(
+
       style = "caption-side: top; text-align: center; font-size: 150%; font-weight: bold;",
+
       sprintf("GSEA Report: %s vs %s", meta$left_group, meta$right_group)
+
     ),
+
     extensions = c("Buttons", "Scroller"),
+
     options = list(dom = "Bfrtip", deferRender = TRUE, scrollY = 600, scroller = TRUE, pageLength = -1, buttons = c("copy", "csv", "excel"), autoWidth = TRUE)
+
   ) |>
+
     DT::formatRound(columns = c("NES"), digits = 3) |>
+
     DT::formatSignif(columns = c("pvalue", "p.adjust"), digits = 4) |>
+
     DT::formatStyle("Enriched_In", backgroundColor = DT::styleEqual(c(meta$left_group, meta$right_group), c("#fee0d2", "#deebf7"))) |>
+
     DT::formatStyle("NES", color = DT::styleInterval(0, c("blue", "red")), fontWeight = "bold")
 
-  old_wd <- getwd()
-  setwd(bundle_dir)
-  tryCatch({
-    htmlwidgets::saveWidget(dt_table,
-      file = basename(main_html_path), selfcontained = FALSE, libdir = "lib",
-      title = sprintf("GSEA Report: %s vs %s [%s]", meta$left_group, meta$right_group, meta$geneset_name)
-    )
-  }, finally = {
-    setwd(old_wd)
-  })
+
+
+  # IRON FIX (2026-07-01): use withr::local_dir so saveWidget errors do not
+  # leak a half-changed working directory. withr is already in Imports.
+  withr::local_dir(bundle_dir)
+  htmlwidgets::saveWidget(dt_table,
+    file = basename(main_html_path), selfcontained = FALSE, libdir = "lib",
+    title = sprintf("GSEA Report: %s vs %s [%s]", meta$left_group, meta$right_group, meta$geneset_name)
+  )
+
+
 
   message(sprintf("Done! HTML report generated at: %s", bundle_dir))
+
   return(invisible(bundle_dir))
+
 }
+

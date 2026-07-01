@@ -32,6 +32,9 @@ Optional columns: padj (for hover annotation only).}
 
 \item{right_group}{Character.}
 
+\item{show_annotations}{Logical. Default FALSE. When TRUE, emit
+\code{ggrepel::geom_label_repel} annotations for the labeled genes.}
+
 \item{base_size}{Numeric.}
 }
 \value{

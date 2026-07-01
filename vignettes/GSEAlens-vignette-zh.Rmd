@@ -1,414 +1,828 @@
 ---
+
 title: "GSEAlens：基因集富集分析的交互式探索平台"
+
 author: "Dudali"
+
 date: "`r Sys.Date()`"
+
 output:
+
   BiocStyle::html_document:
+
     toc_float: true
+
     number_sections: true
+
 vignette: >
+
   %\VignetteIndexEntry{GSEAlens（中文版）：基因集富集分析的交互式探索平台}
+
   %\VignetteEngine{knitr::rmarkdown}
+
   %\VignetteEncoding{UTF-8}
+
 ---
+
+
 
 # 包简介
 
+
+
 **GSEAlens** 的名称源自 **Lens**（透镜），象征本包像 **放大镜** 一样，帮助研究者深入
+
 探索 GSEA 富集分析中的关键通路。
 
+
+
 GSEAlens 提供一个基于 Web 的交互式平台，用于展示通路简介与描述，并集成 AI 辅助的
+
 通路富集结果导出功能。通过封装工作流并标准化输入格式，本 R 包简化了 GSEA 富集分析
+
 结果的查看与探索过程。
+
+
 
 ## 与 Bioconductor 工作流的整合
 
+
+
 GSEAlens 作为 **DEG 后探索层（post-DEG exploration layer）**，被设计为可插入标准
+
 Bioconductor RNA-seq 与功能富集工作流：
 
+
+
 - **上游（输入准备）**：GSEAlens 接收来自 `r Biocpkg("limma")` 的已拟合模型对象
+
   （`limma::eBayes()` 返回的 `MArrayLM` 对象，基于 `r Biocpkg("edgeR")` + limma-voom
+
   流程），或来自 `r Biocpkg("DESeq2")` 的 `DESeqDataSet` 对象。表达矩阵与样本元数据
+
   可作为 `r Biocpkg("SummarizedExperiment")` 对象传入，确保与 Bioconductor 核心数据
+
   容器的互操作性。
 
+
+
 - **富集计算**：在底层，GSEAlens 包装了 `r Biocpkg("clusterProfiler")`（`GSEA()` 函数），
+
   并使用来自 `r CRANpkg("msigdbr")` 的基因集集合。因此统计框架通过 `clusterProfiler`
+
   继承了 `r Biocpkg("fgsea")` 的方法论。
 
+
+
 - **并行化**：GSEAlens 使用 `r CRANpkg("future")`（`future::multisession`）执行多对比
+
   并行计算。在并行运行前，用户的原始 `future::plan()` 与 `future.globals.maxSize`
+
   选项会被保存，并在函数退出时通过 `on.exit()` 恢复，因此全局状态不会被污染。选择
+
   `future` 而非 `r Biocpkg("BiocParallel")` 的依据见 v0.99.7 release notes 的基准测试：
+
   对于 GSEAlens 典型工作负载（序列化 > 2 GB 的全局对象：完整 DE 表 + 基因集字典 +
+
   元数据字典）在 Windows 平台上，`future::multisession` 比 `BiocParallel::SnowParam`
+
   的 PSOCK 序列化快 3--5 倍。
 
+
+
 - **可视化**：绘图构建于 `r Biocpkg("enrichplot")`、`r Biocpkg("ComplexHeatmap")`、
+
   `r CRANpkg("ggplot2")`、`r CRANpkg("patchwork")`、`r CRANpkg("visNetwork")` 之上，
+
   产出的图形与下游发表流程兼容。
 
+
+
 - **下游**：Shiny 应用中的"生成 R 代码"功能会输出自包含脚本，可嵌入
+
   `r CRANpkg("rmarkdown")` / Quarto 报告或集成到多步骤流水线。
+
+
 
 典型的端到端 Bioconductor 工作流因此为：
 
-```
-RNA-seq counts
-   |
-   +--[edgeR + limma-voom]--> MArrayLM fit --+
-   |                                         |
-   +--[DESeq2]--------------> DESeqDataSet --+
-                                             |
-                                             v
-                                   [GSEAlens::setup_gsea_env]
-                                             |
-                                             v
-                                  [GSEAlens::batch_calc_gsea]
-                                             |
-                                             v
-                                    Shiny 应用探索
-                                             |
-                                             v
-                                  可复现 R 代码导出
+
+
 ```
 
+RNA-seq counts
+
+   |
+
+   +--[edgeR + limma-voom]--> MArrayLM fit --+
+
+   |                                         |
+
+   +--[DESeq2]--------------> DESeqDataSet --+
+
+                                             |
+
+                                             v
+
+                                   [GSEAlens::setup_gsea_env]
+
+                                             |
+
+                                             v
+
+                                  [GSEAlens::batch_calc_gsea]
+
+                                             |
+
+                                             v
+
+                                    Shiny 应用探索
+
+                                             |
+
+                                             v
+
+                                  可复现 R 代码导出
+
+```
+
+
+
 这使得 GSEAlens 自然地补充了现有 Bioconductor 富集分析包：当 `r Biocpkg("clusterProfiler")`、
+
 `r Biocpkg("GSVA")`、`r Biocpkg("gprofiler2")` 或 `r Biocpkg("ReactomePA")` 关注于
+
 **计算**富集时，GSEAlens 关注于对结果通路列表的**交互式解读**。
+
+
 
 ## 安装
 
+
+
 GSEAlens 可从 Bioconductor 安装。使用以下命令安装稳定版本：
 
+
+
 ```{r install-package, eval=FALSE}
+
 if (!requireNamespace("BiocManager", quietly = TRUE))
+
     install.packages("BiocManager")
+
 BiocManager::install("GSEAlens")
+
 ```
+
+
 
 开发版本可从 GitHub 安装：
 
+
+
 ```{r install-github, eval=FALSE}
+
 if (!requireNamespace("pak", quietly = TRUE))
+
     install.packages("pak")
+
 pak::pkg_install("DDL095/GSEAlens")
+
 ```
+
+
 
 # 快速开始
 
+
+
 本节使用 `r Biocpkg("airway")` 数据集演示 GSEAlens 的完整工作流。由于 GSEAlens
+
 **本身不做 DEG 分析**，我们假定输入对象（`fit`、`dds_se`、`dds`）已按照标准
+
 `r Biocpkg("limma")` / `r Biocpkg("DESeq2")` 流程准备完毕。
 
+
+
 > **注意**：详细的输入准备步骤（limma-voom 拟合、DESeq2 对象构造、基因过滤）请参阅
+
 > 补充 vignette：
+
 >
+
 > ```r
+
 > vignette("GSEAlens-preprocessing-zh")
+
 > ```
 
+
+
 ```{r setup-environment, results='hide'}
+
 library(GSEAlens)
+
 library(airway)
+
 ```
+
+
 
 在本主 vignette 中，三个输入对象（`fit`、`dds_se`、`dds`）按照预处理 vignette 的
+
 步骤准备完毕。由于在每次编译时重跑 `DESeq2::DESeq()` 与 limma-voom 流程会使
+
 vignette 变慢，我们在 `inst/extdata/` 中附带了这些对象的**预计算版本**；
+
 重新生成它们的脚本位于 `inst/scripts/make_preprocessed_inputs.R`，
+
 完全遵循预处理 vignette 的步骤。
 
+
+
 ```{r load-prepared-objects}
+
 preproc_limma <- readRDS(system.file(
+
   "extdata", "preprocessed_limma.rds", package = "GSEAlens"
+
 ))
+
 fit                   <- preproc_limma$fit
+
 gsea_limma_voom_data  <- preproc_limma$gsea_limma_voom_data
 
+
+
 dds_se <- readRDS(system.file(
+
   "extdata", "preprocessed_dds_se.rds", package = "GSEAlens"
+
 ))
+
 dds    <- readRDS(system.file(
+
   "extdata", "preprocessed_dds.rds", package = "GSEAlens"
+
 ))
+
 ```
+
+
 
 若要从自己的数据中准备这些对象，请参阅补充预处理 vignette：
 
+
+
 ```r
+
 vignette("GSEAlens-preprocessing-zh")
+
 ```
+
+
 
 ## GSEAlens处理
 
+
+
 ### 创建GSEA基因集对象
+
+
 
 使用`build_gsea_pathways`函数构建用于GSEA富集分析的基因集对象
 
+
+
 ```{r build-gsea-pathways, eval=FALSE}
+
 # 实际调用（在 Bioconductor 构建机上较慢，因需加载多个 MSigDB 集合；编译时跳过）
+
 # gsea_pathwaysets <- GSEAlens::build_gsea_pathways(
+
 #   species = "HS", auto_select = c("H", "C2:CP:REACTOME", "C5:GO:BP")
+
 # )
+
 ```
 
+
+
 ```{r load-precomputed-pathways}
+
 # 为加速 vignette 编译，此处加载预计算的轻量级基因集对象
+
 # （Hallmark + KEGG_LEGACY，共 236 条通路）。
+
 # 重新生成方法见 inst/scripts/make_gsea_pathwaysets_toy.R。
+
 gsea_pathwaysets <- readRDS(system.file(
+
   "extdata", "gsea_pathwaysets_toy.rds", package = "GSEAlens"
+
 ))
+
 ```
+
+
 
 ### 组装运算对象
 
+
+
 通过`setup_gsea_env`函数，组装用于计算分析的`GSEAEnv`对象，不同的终端使用同一个函数，仅纳入数据不同，对于limma-voom流程，由于`fit`对象当中不包含原始的基因读数，因此必须额外纳入过滤后用于生成`fit`对象的`DGEList`，本例中为多步过滤的`gsea_limma_voom_data`。
+
+
 
 limma-voom 流程对象纳入分析。
 
+
+
 ```{r setup-gsea-limma}
+
 gseadata_limmavoom <- GSEAlens::setup_gsea_env(fit = fit,pathway_obj = gsea_pathwaysets,expr_data = gsea_limma_voom_data)
+
 ```
+
+
 
 DESeq2 的 SummarizedExperiment 对象纳入分析。
 
+
+
 ```{r setup-gsea-se}
+
 gseadata_se <- GSEAlens::setup_gsea_env(fit = dds_se,pathway_obj = gsea_pathwaysets)
+
 ```
+
+
 
 DESeq2 的 Count matrix 流程的对象纳入分析。
 
+
+
 ```{r setup-gsea-dds}
+
 gseadata_dds <- GSEAlens::setup_gsea_env(fit = dds,pathway_obj = gsea_pathwaysets)
+
 ```
+
+
 
 ### 运行处理
 
+
+
 所有对象均使用`batch_calc_gsea`这个函数处理，没有任何区别。
+
+
 
 并行计算提示：可根据电脑性能调整 workers 选项，设置计算使用的核心数量。 比对数量越多，建议设置越高的核心数以提升计算效率。
 
+
+
 ```{r batch-calc-gsea, eval=FALSE}
+
 # 将 vignette 输出写入临时目录，避免污染 Bioconductor 构建机器的工作目录。
+
 out_dir <- tempdir()
 
+
+
 # limma-voom 流程
+
 gsea_res_limmavoom <- GSEAlens::batch_calc_gsea(gseadata_limmavoom,
+
                                                  custom_series_name = "limmavoom_data",
+
                                                  output_dir = out_dir,
+
                                                  workers = 4,  # 根据比对数量和电脑性能调整
+
                                                  force = TRUE)
 
+
+
 # DESeq2 SummarizedExperiment 流程
+
 gsea_res_se <- GSEAlens::batch_calc_gsea(gseadata_se,
+
                                           custom_series_name = "dds_se_data",
+
                                           output_dir = out_dir,
+
                                           workers = 4,
+
                                           force = TRUE)
 
+
+
 # DESeq2 Count matrix 流程
+
 gsea_res_dds <- GSEAlens::batch_calc_gsea(gseadata_dds,
+
                                            custom_series_name = "dds_data",
+
                                            output_dir = out_dir,
+
                                            workers = 4,
+
                                            force = TRUE)
+
 ```
+
+
 
 ### 交互式分析与查看
 
+
+
 `batch_calc_gsea` 运行后，会在输出目录生成一个 RDS 文件（"GSEA Capsule"）。可以
+
 直接用 `readRDS` 读取，或使用 `import_gsea_capsule`，后者会自动将相关文件整理到
+
 您的 `.Rmd` / `.R` 脚本所在目录，并执行数据体检。
 
+
+
 ```{r import-capsule, eval=FALSE}
+
 gsea_res <- import_gsea_capsule("/path/to/your/files/")
+
 # 或者直接读取 RDS 文件：
+
 # gsea_res <- readRDS("/path/of/your/file/")
+
 ```
+
+
 
 ## 使用 Shiny 应用进行交互式探索
 
+
+
 GSEAlens 提供了一个交互式 Shiny 应用，用于 GSEA 结果的可视化探索。将
+
 `batch_calc_gsea` 返回的 `GseaRes` 对象（或通过 `import_gsea_capsule` 加载的对象）
+
 传入 `launch_gsea_app` 即可启动。
+
+
 
 ### 启动应用
 
+
+
 ```{r launch-app, eval=FALSE}
+
 launch_gsea_app(gsea_res)
+
 ```
+
+
 
 可选：传入 `addition_data` 数据框（或 `.csv` / `.rds` 文件路径），将通路注释合并到
+
 主表。若为 `NULL`，应用会自动检测工作目录下的 `addition_data_gsealens.rds` 或
+
 `addition_data_gsealens.csv`。
 
+
+
 ```{r launch-app-with-data, eval=FALSE}
+
 launch_gsea_app(gsea_res, addition_data = "pathway_annotations.csv")
+
 ```
+
+
 
 ### 应用布局
 
+
+
 应用采用 **侧边栏 + 主面板** 布局，主面板包含 **6 个 tab**。侧边栏（数据预处理
+
 模块）提供全局控件；主面板承载六个功能 tab。
+
+
 
 #### 侧边栏 -- 数据预处理
 
+
+
 提供跨 tab 可见的全局控件：
 
+
+
 - **对比选择**：选择要探索的两两比较
+
 - **基因集子组过滤**：按集合（如 H、C2、C5）子集化通路
+
 - **DEG marker 选择**：高亮关注的基因
+
 - **组显示顺序**：自定义因子排序
+
 - **表达指标**：切换 CPM / logCPM / VST / FPKM
+
+
 
 源文件：`R/08_shiny_mod_data_prep.R`
 
+
+
 #### Tab 1 -- 主工作区（Main Workspace）
+
+
 
 默认起始 tab，整合两个子模块：
 
+
+
 - **主表**（`DT::datatable`）：所有富集通路的交互式表格，支持列排序（NES、pvalue、
+
   p.adjust、setSize）与 checkbox 选择。选中的行会推送到其他 tab。
+
 - **组合通路绘图**：将多个选中通路聚合为单张组合图（底层使用 `patchwork`）。
 
+
+
 点击任意通路行会打开**通路详情 Modal**，展示完整描述、leading-edge 基因，并提供
+
 "加入绘图队列"选项。
+
+
 
 源文件：`R/09_shiny_mod_table.R`、`R/11_shiny_mod_modal.R`、`R/12_shiny_mod_multi_plot.R`
 
+
+
 #### Tab 2 -- 全息四象限联动（Holographic Quadruple Linkage）
+
+
 
 四个同步面板：
 
+
+
 1. 左上：通路选择器（与主工作区联动）
+
 2. 右上：基因排名表（按 `|stat|` 排序）
+
 3. 左下：所选对比的 volcano 图
+
 4. 右下：所选基因的表达 boxplot
 
+
+
 选择**双向同步**——在表中点击基因会在 volcano 中高亮；在 volcano 中点击点会滚动
+
 表格到对应行。
+
+
 
 源文件：`R/10_shiny_mod_quadrant.R`
 
+
+
 #### Tab 3 -- 通路关系探索（Pathway Relationship Exploration）
 
+
+
 通路间关系的网络可视化，节点为通路，边表示共享基因（Jaccard 相似度）。两种选择
+
 模式：
 
+
+
 - **单选模式**：探索一个通路及其邻居
+
 - **批量模式**：从主工作区选中多个通路，可视化它们的相互连接
+
+
 
 本 Tab 提供两个子面板：
 
+
+
 - **DotPlot 面板**：横向点图。横轴为 NES，点颜色编码显著性
+
   （`-log10(FDR)` / `-log10(P-value)` / `|NES|`，用户可选），点尺寸编码
+
   基因集量级。尺寸映射使用**固定域 + sqrt 感知**（而非每次绘制 min-max
+
   归一化），这样切换"Core Genes Count"（leading edge 数）与"Set Size"
+
   （MSigDB 基因集总数）时点的视觉形态会有明显差异，且跨参数可比较。这与
+
   `enrichplot::dotplot` 使用的 `ggplot2::scale_size_continuous(range=...)`
+
   语义一致。
+
 - **Network 面板**：图布局（Fruchterman-Reingold / Kamada-Kawai / 圆形），
+
   提供**两种用户可选的边粗细编码**：
+
   - *Weight-based*（默认，`emapplot` 范式）：边粗细与 Jaccard 值线性正比，
+
     视觉忠实反映相似度量级。推荐用于发表。
+
   - *Rank-based*：边粗细按 Jaccard 排名分配，保证所有边在视觉上等距分布，
+
     不受绝对权重影响。适合权重方差很小的密集网络。
+
   节点大小反映 `|NES|`；节点颜色反映富集方向（红色 = 左组上调，蓝色 = 右组
+
   上调）。
 
+
+
 **导出中心**（两个面板均有）：点击 "Export Publication Plot" 弹出 modal，
+
 含宽度 / 高度 / DPI / 格式（PDF、PNG、SVG、TIFF）控件，以及两个动作：通过
+
 `ggsave` 下载静态 `ggplot2` 渲染图像（不依赖 kaleido/orca 等外部工具），
+
 或复制完整可复现 R 脚本（`generate_dotplot_code()` / `generate_network_code()`）
+
 到剪贴板。静态图与复制的代码运行结果字节一致。
 
+
+
 源文件：`R/13_shiny_mod_pathway_relation.R`、辅助函数 `R/utils_hubgene.R`，
+
 代码生成器见 `R/15_code_generator.R`。
+
+
 
 #### Tab 4 -- HubGene 网络（HubGene Network）
 
+
+
 识别并可视化 HubGene（在多个富集通路中高度连接的基因），使用 `visNetwork` 交互式
+
 图。可调参数：
 
+
+
 - **物理模拟**：开关，调整力导向参数
+
 - **通路节点尺寸编码**：三种用户可选模式
+
   - *按基因集大小*（`setSize`，默认）：与 `enrichplot::cnetplot` 范式一致；
+
     通路节点大小与基因集基因数（sqrt 缩放）成正比。推荐用于生物学解读。
+
   - *按显著性*（`-log10(FDR)`）：突出最值得信任的通路。
+
   - *固定大小*：滑块控制的常量大小（旧行为）。
+
   滑块值始终作为**基准**尺寸，所选编码在其 `[0.6×, 1.4×]` 区间缩放，以保证
+
   visNetwork 力导向布局稳定（尺寸差异超过 ~2.3 倍会导致布局抖动）。
+
   基因节点尺寸不受影响（始终为 `base + degree * 3`）。
+
 - **网络统计**：节点数、边数、密度的汇总面板
 
+
+
 **导出中心**：与 Tab 3 相同的 modal 模式。静态复现使用
+
 `generate_hubgene_code()`，通过 `igraph` + `ggplot2`（无 `ggraph` 依赖）将
+
 通路节点绘制为菱形、基因节点绘制为圆形的二分图。当前尺寸编码模式会保留到生成
+
 的脚本中。
+
+
 
 源文件：`R/16_shiny_mod_hubgene_vis.R`，代码生成器见 `R/15_code_generator.R`。
 
+
+
 #### Tab 5 -- AI 解读（AI Interpretation）
 
+
+
 为外部 LLM（如 GPT-4、Claude）生成结构化 prompt，用于解读选中通路。支持自定义
+
 模板，用户可强制要求特定输出格式（如"生成一段引用 leading-edge 基因的三段式生物学
+
 解读"）。生成的 prompt 可一键复制到剪贴板。
+
+
 
 源文件：`R/17_shiny_mod_AI.R`
 
+
+
 > **注意**：本 tab 仅生成 prompt，不直接调用外部 API。作者刻意如此设计，以便用户
+
 > 自行管控 API key 与网络调用。
+
+
 
 #### Tab 6 -- 联合 GSEA 画布（Joint GSEA Canvas）
 
+
+
 将多个选中通路的富集 running-score 曲线聚合为单张画布。核心特性是**一键导出可重现
+
 R 代码**：用户可在侧边栏调整画布参数，然后点击"生成代码"获得一份独立的 R 脚本，
+
 在 Shiny 环境外重现该图。
+
+
 
 源文件：`R/14_shiny_mod_joint_canvas.R`，代码生成器 `R/15_code_generator.R`
 
+
+
 ### 输出解读指南
 
+
+
 | 可视化 | 关注要点 | 生物学含义 |
+
 |---|---|---|
+
 | NES（标准化富集得分） | 符号与幅度 | 正 NES -> 该通路在对比右组中上调 |
+
 | p.adjust | < 0.05 阈值 | BH 校正后的统计显著性 |
+
 | Volcano（Tab 2） | 对称 / 不对称 | 对称表明全局性变化；不对称表明靶向调控 |
+
 | 通路网络（Tab 3） | 簇结构 | 紧密连接的簇提示共调控的生物学模块 |
+
 | HubGene（Tab 4） | 高度数基因 | Hub 基因是潜在的生物标志物或调控节点 |
+
 | 联合画布（Tab 6） | 曲线重叠 | 重叠的 running-score 曲线提示协同调控 |
+
+
 
 ### 可重现代码导出
 
+
+
 Tab 2、3、6 都包含 **"生成 R 代码"** 按钮，会生成一份独立 R 脚本重现当前可视化。
+
 这是生成发表级图表的推荐方式：在 Shiny 应用中迭代调整图像，然后导出代码用于最终
+
 定制。
+
+
 
 # R包中间对象说明
 
+
+
 ## GseaEnv 对象
+
+
 
 `setup_gsea_env` 函数返回的 `GseaEnv` 对象包含以下组件： \| 组件 \| 说明 \| \|------\|------\| \| `backend_info` \| 后端类型信息（limma-voom 或 DESeq2） \| \| `contrast_registry` \| 对比组注册表，包含所有成对比较信息 \| \| `de_store` \| 差异分析结果存储 \| \| `expr_bundle` \| 表达数据封装（原始计数、标准化矩阵、样本元数据） \| \| `geneset` \| 基因集信息（TERM2GENE、元数据字典、物种） \|
 
+
+
 ## GseaRes 对象
+
+
 
 `batch_calc_gsea` 函数返回的 `GseaRes` 对象包含以下组件： \| 组件 \| 说明 \| \|------\|------\| \| `metadata` \| 计算元数据（运行时间、使用的核心数、参数设置） \| \| `backend_info` \| 后端类型信息 \| \| `contrast_registry` \| 对比组注册表 \| \| `de_store` \| 差异分析结果存储 \| \| `expr_bundle` \| 表达数据封装 \| \| `geneset_info` \| 基因集信息 \| \| `results` \| GSEA 结果列表，每个对比组对应一个条目 \|
 
+
+
 ## GseaTask 对象
+
+
 
 `extract_gsea_task` 函数返回的 `GseaTask` 对象用于单对比分析：
 
+
+
 | 组件       | 说明                                       |
+
 |------------|--------------------------------------------|
+
 | `gsea_res` | GSEA result 对象                           |
+
 | `meta`     | 元信息（对比组信息、基因集名称、表达数据） |
+
+
 
 # Session info
 
+
+
 ```{r sessionInfo}
+
 sessionInfo()
+
 ```
 
+
+
 # References
+

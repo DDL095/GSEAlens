@@ -1,0 +1,11 @@
+# Force LF for all source files. This prevents Windows git from silently
+# converting LF back to CRLF on checkout (Bioconductor requires LF).
+* text=auto eol=lf
+*.R text eol=lf
+*.Rmd text eol=lf
+*.Rd text eol=lf
+DESCRIPTION text eol=lf
+NAMESPACE text eol=lf
+LICENSE text eol=lf
+LICENSE.md text eol=lf
+NEWS.md text eol=lf

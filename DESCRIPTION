@@ -1,7 +1,7 @@
 Package: GSEAlens
 Type: Package
 Title: Gene Set Enrichment Analysis Interactive Explorer
-Version: 0.99.12
+Version: 0.99.13
 Authors@R: person("Dudali", role = c("aut", "cre"), email = "sealgod@qq.com", comment = c(ORCID = "0000-0002-1825-0097"))
 Description: Interactive GSEA exploration and visualization platform supporting both Limma-Voom and DESeq2 backends.
 License: MIT + file LICENSE
@@ -11,52 +11,7 @@ Encoding: UTF-8
 LazyData: false
 RoxygenNote: 8.0.0
 biocViews: GeneSetEnrichment, Visualization, ShinyApps, Software
-Imports: 
-    stats,
-    utils,
-    enrichplot,
-    enrichit,
-    grDevices,
-    graphics,
-    methods,
-    shiny,
-    shinycssloaders,
-    DT,
-    plotly,
-    ggplot2,
-    rlang,
-    igraph,
-    dplyr,
-    tidyr,
-    tibble,
-    stringr,
-    patchwork,
-    ComplexHeatmap,
-    circlize,
-    grid,
-    clusterProfiler,
-    limma,
-    edgeR,
-    DESeq2,
-    SummarizedExperiment,
-    S4Vectors,
-    msigdbr,
-    future,
-    future.apply,
-    htmltools,
-    htmlwidgets,
-    jsonlite,
-    clipr,
-    progressr,
-    visNetwork,
-    shinyjs,
-    withr
-Suggests: testthat (>= 3.0.0),
-    BiocStyle,
-    knitr,
-    rmarkdown,
-    shinytest2,
-    airway,
-    BiocParallel
+Imports: stats, utils, enrichplot, enrichit, grDevices, graphics, methods, shiny, shinycssloaders, DT, plotly, ggplot2, rlang, igraph, dplyr, tidyr, tibble, stringr, patchwork, ComplexHeatmap, circlize, grid, clusterProfiler, limma, edgeR, DESeq2, SummarizedExperiment, S4Vectors, msigdbr, future, future.apply, htmltools, htmlwidgets, jsonlite, clipr, progressr, visNetwork, shinyjs, withr
+Suggests: testthat (>= 3.0.0), BiocStyle, knitr, rmarkdown, shinytest2, airway, BiocParallel, ggrepel
 Depends: R (>= 4.6.0)
 VignetteBuilder: knitr

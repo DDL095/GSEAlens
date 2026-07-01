@@ -1,4 +1,12 @@
 ^GSEAlens\.Rproj$
 ^\.Rproj\.user$
 ^GSEAlens\.BiocCheck$
-^LICENSE\.md$
+^tools$
+^\.Rhistory$
+^\.RData$
+^\.Ruserdata$
+^README\.html$
+^\.history$
+^.*\.log$
+^IDEA\.md$
+^\.github$
