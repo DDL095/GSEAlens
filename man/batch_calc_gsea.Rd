@@ -16,9 +16,9 @@ batch_calc_gsea(
 
   custom_series_name = "Auto_Analysis",
 
-  output_dir = "./GSEA_Output",
+  output_dir = tempdir(),
 
-  workers = 4,
+  workers = 2,
 
   bidirectional = TRUE,
 

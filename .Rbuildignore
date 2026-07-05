@@ -10,3 +10,5 @@
 ^.*\.log$
 ^IDEA\.md$
 ^\.github$
+^\.\.Rcheck$
+^.*\.Rcheck$

@@ -36,11 +36,11 @@
 
 get_core_genes_for_pathway <- function(gsea_res_obj, pathway_id) {
 
-  # 缁熶竴澶勭悊杈撳叆锛氬彲鑳芥槸GseaRes瀵硅薄鎴栧凡鎻愬彇鐨則ask缁撴灉
+  # 统一处理输入：可能是GseaRes对象或已提取的task结果
 
   if (inherits(gsea_res_obj, "GseaRes")) {
 
-    # 闇€瑕佹寚瀹歝ontrast_id锛岃繖閲岀畝鍖栧鐞嗭紝鍋囪浼犲叆鐨勬槸鍗曚釜瀵规瘮缁撴灉
+    # 需要指定 contrast_id，这里简化处理，假设传入的是单个对比结果
 
     stop("For GseaRes object, please use extract_gsea_task to extract specific contrast first")
 
@@ -48,7 +48,7 @@ get_core_genes_for_pathway <- function(gsea_res_obj, pathway_id) {
 
 
 
-  # 澶勭悊鎻愬彇鍚庣殑GseaTask瀵硅薄鎴栫洿鎺ョ殑缁撴灉鍒楄〃
+  # 处理提取后的GseaTask对象或直接的结果列表
 
   if (inherits(gsea_res_obj, "GseaTask")) {
 
@@ -56,7 +56,7 @@ get_core_genes_for_pathway <- function(gsea_res_obj, pathway_id) {
 
   } else if (is.list(gsea_res_obj) && !is.null(gsea_res_obj$data)) {
 
-    # 鏉ヨ嚜results鍒楄〃鐨勭洿鎺ュ厓绱?
+    # 来自 results 列表的直接元素
 
     if (gsea_res_obj$status != "Success") {
 
@@ -74,7 +74,7 @@ get_core_genes_for_pathway <- function(gsea_res_obj, pathway_id) {
 
 
 
-  # 浠嶴4瀵硅薄涓彁鍙栫粨鏋滆〃
+  # 从S4对象中提取结果表
 
   if (methods::is(gsea_result, "gseaResult")) {
 
@@ -88,7 +88,7 @@ get_core_genes_for_pathway <- function(gsea_res_obj, pathway_id) {
 
 
 
-  # 鍖归厤閫氳矾ID
+  # 匹配通路ID
 
   row_idx <- which(res_df$ID == pathway_id)
 
@@ -100,7 +100,7 @@ get_core_genes_for_pathway <- function(gsea_res_obj, pathway_id) {
 
 
 
-  # 瑙ｆ瀽core_enrichment瀛楁锛堜互/鍒嗛殧鐨勫熀鍥犲瓧绗︿覆锛?
+  # 解析 core_enrichment 字段（以 / 分隔的基因字符串）
 
   core_str <- as.character(res_df$core_enrichment[row_idx[1]])
 
@@ -112,7 +112,7 @@ get_core_genes_for_pathway <- function(gsea_res_obj, pathway_id) {
 
 
 
-  # 鍒嗗壊骞舵竻娲?
+  # 分割并清洗
 
   genes <- unlist(strsplit(core_str, "/"))
 
@@ -264,13 +264,13 @@ calculate_overlap_ratio <- function(pathway_genes, de_genes, ratio_mode = c("ora
 
   if (ratio_mode == "ora") {
 
-    # 缁忓吀ORA锛氫氦闆?/ 閫氳矾鎬诲熀鍥犳暟
+    # 经典 ORA：交集 / 通路总基因数
 
     return(length(overlap) / length(pathway_genes))
 
   } else {
 
-    # Leading Edge妯″紡锛氫氦闆?/ DE鍩哄洜鎬绘暟
+    # Leading Edge 模式：交集 / DE 基因总数
 
     return(length(overlap) / length(de_genes))
 
@@ -386,7 +386,7 @@ get_term_genes <- function(gsea_res, pathway_id) {
 
 validate_param <- function(value, default, min_val = 1, max_val = NULL, param_name = "parameter") {
 
-  # 澶勭悊NULL鎴朜A
+  # 处理NULL或NA
 
   if (is.null(value) || (length(value) == 1 && is.na(value))) {
 
@@ -512,11 +512,11 @@ validate_param <- function(value, default, min_val = 1, max_val = NULL, param_na
 
 build_edge_list_safely <- function(core_genes_list, min_shared_genes = 2) {
 
-  # ==== 闃插尽鎬ф鏌?====
+  # ==== 防御性检查 ====
 
 
 
-  # 闃插尽1锛氭鏌ヨ緭鍏ユ槸鍚︿负 NULL 鎴栫┖鍒楄〃
+  # 防御1：检查输入是否为 NULL 或空列表
 
   if (is.null(core_genes_list) || length(core_genes_list) == 0) {
 
@@ -528,7 +528,7 @@ build_edge_list_safely <- function(core_genes_list, min_shared_genes = 2) {
 
 
 
-  # 闃插尽2锛氱Щ闄ょ┖鐨勬牳蹇冨熀鍥犲悜閲?
+  # 防御2：移除空的核心基因向量
 
   valid_idx <- which(vapply(core_genes_list, function(x) {
 
@@ -558,7 +558,7 @@ build_edge_list_safely <- function(core_genes_list, min_shared_genes = 2) {
 
 
 
-  # 闃插尽3锛氬鏋滃彧鏈?0 鎴?1 涓?pathway锛屾棤娉曞舰鎴愯竟
+  # 防御3：如果只有 0 或 1 个 pathway，无法形成边
 
   if (n <= 1) {
 
@@ -570,7 +570,7 @@ build_edge_list_safely <- function(core_genes_list, min_shared_genes = 2) {
 
 
 
-  # 闃插尽4锛氬鏋?min_shared_genes <= 0锛岃缃粯璁ゅ€?
+  # 防御4：如果 min_shared_genes <= 0，设置默认值
 
   if (is.null(min_shared_genes) || min_shared_genes < 1) {
 
@@ -582,11 +582,11 @@ build_edge_list_safely <- function(core_genes_list, min_shared_genes = 2) {
 
 
 
-  # ==== 杈规瀯寤?====
+  # ==== 边构建 ====
 
 
 
-  # 棰勫垎閰嶈竟瀛樺偍锛堜娇鐢ㄥ垪琛ㄩ伩鍏嶅姩鎬佹墿灞曪級
+  # 预分配边存储（使用列表避免动态扩展）
 
   edges_list <- vector("list", length = n * (n - 1) / 2)
 
@@ -594,7 +594,7 @@ build_edge_list_safely <- function(core_genes_list, min_shared_genes = 2) {
 
 
 
-  # 鍙屽眰寰幆璁＄畻 Jaccard 鐩镐技搴?
+  # 双层循环计算 Jaccard 相似度
 
   for (i in seq_len(n - 1)) {
 
@@ -612,13 +612,13 @@ build_edge_list_safely <- function(core_genes_list, min_shared_genes = 2) {
 
 
 
-      # 璺宠繃浠讳綍鍖呭惈 NA 鐨勫熀鍥犲悜閲?
+      # 跳过任何包含 NA 的基因向量
 
       if (any(is.na(genes1)) || any(is.na(genes2))) next
 
 
 
-      # 澶у皬鍐欎笉鏁忔劅鐨勪氦闆?骞堕泦璁＄畻
+      # 大小写不敏感的交集/并集计算
 
       genes1_upper <- toupper(as.character(genes1))
 
@@ -626,19 +626,19 @@ build_edge_list_safely <- function(core_genes_list, min_shared_genes = 2) {
 
 
 
-      # 璁＄畻鍏变韩鍩哄洜鏁?
+      # 计算共享基因数
 
       shared_count <- length(intersect(genes1_upper, genes2_upper))
 
 
 
-      # 妫€鏌ユ槸鍚︽弧瓒虫渶灏忓叡浜槇鍊?
+      # 检查是否满足最小共享阈值
 
       if (shared_count < min_shared_genes) next
 
 
 
-      # 璁＄畻 Jaccard 鐩镐技搴?
+      # 计算 Jaccard 相似度
 
       union_count <- length(union(genes1_upper, genes2_upper))
 
@@ -646,11 +646,11 @@ build_edge_list_safely <- function(core_genes_list, min_shared_genes = 2) {
 
 
 
-      # 璁＄畻 Overlap Coefficient (Simpson Index)
+      # 计算 Overlap Coefficient (Simpson Index)
 
-      # 鍏紡锛殀A鈭〣| / min(|A|, |B|)
+      # 公式：|A∩B| / min(|A|, |B|)
 
-      # 閫傚悎妫€娴嬪瓙闆嗗叧绯?
+      # 适合检测子集关系
 
       min_size <- min(length(genes1_upper), length(genes2_upper))
 
@@ -658,11 +658,11 @@ build_edge_list_safely <- function(core_genes_list, min_shared_genes = 2) {
 
 
 
-      # 璁＄畻 Dice Coefficient
+      # 计算 Dice Coefficient
 
-      # 鍏紡锛?|A鈭〣| / (|A| + |B|)
+      # 公式： 2|A∩B| / (|A| + |B|)
 
-      # 瀵逛氦闆嗘洿鏁忔劅锛岃寖鍥?[0, 1]
+      # 对交集更敏感，范围 [0, 1]
 
       sum_size <- length(genes1_upper) + length(genes2_upper)
 
@@ -670,7 +670,7 @@ build_edge_list_safely <- function(core_genes_list, min_shared_genes = 2) {
 
 
 
-      # 鑾峰彇鍏变韩鍩哄洜鍒楄〃
+      # 获取共享基因列表
 
       shared_genes_list <- intersect(genes1_upper, genes2_upper)
 
@@ -704,7 +704,7 @@ build_edge_list_safely <- function(core_genes_list, min_shared_genes = 2) {
 
 
 
-  # ==== 杩斿洖缁撴灉 ====
+  # ==== 返回结果 ====
 
 
 
@@ -724,7 +724,7 @@ build_edge_list_safely <- function(core_genes_list, min_shared_genes = 2) {
 
 
 
-  # 鍚堝苟杈瑰垪琛?
+  # 合并边列表
 
   edge_df <- do.call(rbind, edges_list[seq_len(edge_count)])
 

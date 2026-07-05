@@ -54,7 +54,7 @@ setup_gsea_env <- function(fit, pathway_obj, expr_data = NULL, target_factor = N
 
 
 
-  # 1. 鏍￠獙鍩哄洜闆嗗璞?
+  # 1. 校验基因集对象
 
   if (is.null(pathway_obj) || is.null(pathway_obj$TERM2GENE)) {
 
@@ -64,7 +64,7 @@ setup_gsea_env <- function(fit, pathway_obj, expr_data = NULL, target_factor = N
 
 
 
-  # 2. 璇嗗埆鍚庣绫诲瀷骞跺垎鍙戞彁鍙?
+  # 2. 识别后端类型并分发提取
 
   backend_data <- NULL
 
@@ -78,7 +78,7 @@ setup_gsea_env <- function(fit, pathway_obj, expr_data = NULL, target_factor = N
 
 
 
-    # 璋冪敤 Limma 鎻愬彇鍣?
+    # 调用 Limma 提取器
 
     backend_data <- .extract_limma_data(fit, expr_data)
 
@@ -90,7 +90,7 @@ setup_gsea_env <- function(fit, pathway_obj, expr_data = NULL, target_factor = N
 
       input_class = "MArrayLM",
 
-      design_formula = NULL, # Limma fit 瀵硅薄閫氬父涓嶇洿鎺ヤ繚鐣欏叕寮?
+      design_formula = NULL, # Limma fit 对象通常不直接保留公式
 
       target_factor = NA
 
@@ -102,13 +102,13 @@ setup_gsea_env <- function(fit, pathway_obj, expr_data = NULL, target_factor = N
 
 
 
-    # 璋冪敤 DESeq2 鎻愬彇鍣?
+    # 调用 DESeq2 提取器
 
     backend_data <- .extract_deseq2_data(fit, target_factor)
 
 
 
-    # 璁板綍瀹為檯浣跨敤鐨?target_factor
+    # 记录实际使用的 target_factor
 
     actual_factor <- if (is.null(target_factor)) {
 
@@ -142,7 +142,7 @@ setup_gsea_env <- function(fit, pathway_obj, expr_data = NULL, target_factor = N
 
 
 
-  # 3. 缁勮鍩哄洜闆嗕俊鎭?
+  # 3. 组装基因集信息
 
   #
 
@@ -184,13 +184,13 @@ setup_gsea_env <- function(fit, pathway_obj, expr_data = NULL, target_factor = N
 
     used_collections = pathway_obj$collections_used %||% pathway_obj$used_collections,
 
-    species = pathway_obj$species %||% "HS" # 鏂板
+    species = pathway_obj$species %||% "HS" # 新增
 
   )
 
 
 
-  # 4. 鏋勫缓鏈€缁堝璞?
+  # 4. 构建最终对象
 
   env_obj <- create_gsea_env(
 
@@ -204,13 +204,13 @@ setup_gsea_env <- function(fit, pathway_obj, expr_data = NULL, target_factor = N
 
     geneset = geneset_info,
 
-    raw_obj = list(fit = fit) # 淇濈暀鍘熷瀵硅薄寮曠敤
+    raw_obj = list(fit = fit) # 保留原始对象引用
 
   )
 
 
 
-  # 5. 鏈€缁堟牎楠?
+  # 5. 最终校验
 
   .check_gsea_env(env_obj)
 
@@ -236,7 +236,7 @@ setup_gsea_env <- function(fit, pathway_obj, expr_data = NULL, target_factor = N
 
 
 
-# 鏌ョ湅鍑芥暟
+# 查看函数
 
 
 
@@ -290,7 +290,7 @@ inspect_gsea_env <- function(env_obj) {
 
 
 
-  # 瑙ｆ瀽淇℃伅
+  # 解析信息
 
   bi <- env_obj$backend_info
 
@@ -302,7 +302,7 @@ inspect_gsea_env <- function(env_obj) {
 
 
 
-  # 鎺у埗鍙拌緭鍑?
+  # 控制台输出
 
   message("")
 
@@ -314,7 +314,7 @@ inspect_gsea_env <- function(env_obj) {
 
 
 
-  # 1. 鍚庣淇℃伅
+  # 1. 后端信息
 
   message("[1] Backend Information")
 
@@ -332,13 +332,13 @@ inspect_gsea_env <- function(env_obj) {
 
 
 
-  # 2. 瀵规瘮缁勬敞鍐岃〃
+  # 2. 对比组注册表
 
   message(sprintf("[2] Contrast Registry (%d comparisons)", nrow(reg)))
 
   if (nrow(reg) > 0) {
 
-    # 鎵撳嵃鍓嶅嚑涓紝闃叉鍒峰睆
+    # 打印前几个，防止刷屏
 
     print_head <- utils::head(reg[, c("contrast_id", "left_group", "right_group")], 5)
 
@@ -368,7 +368,7 @@ inspect_gsea_env <- function(env_obj) {
 
 
 
-  # 3. 鍩哄洜闆嗕俊鎭?
+  # 3. 基因集信息
 
   message("[3] Gene Set Database")
 
@@ -380,7 +380,7 @@ inspect_gsea_env <- function(env_obj) {
 
 
 
-  # 4. 琛ㄨ揪鏁版嵁鐘舵€?
+  # 4. 表达数据状态
 
   message("[4] Expression Data Status")
 
@@ -406,7 +406,7 @@ inspect_gsea_env <- function(env_obj) {
 
 
 
-  # 5. 涓嬩竴姝ユ寚寮?
+  # 5. 下一步指引
 
   message("[5] Next Step")
 

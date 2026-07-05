@@ -66,9 +66,9 @@ batch_calc_gsea <- function(gsea_env,
 
                             custom_series_name = "Auto_Analysis",
 
-                            output_dir = "./GSEA_Output",
+                            output_dir = tempdir(),
 
-                            workers = 4,
+                            workers = 2,
 
                             bidirectional = TRUE,
 
@@ -204,7 +204,10 @@ batch_calc_gsea <- function(gsea_env,
 
   total_cores <- as.integer(future::availableCores())
 
-  use_cores <- min(total_cores, max(1, workers))
+  # B10 fix: guard against NA / non-integer workers input
+  workers <- suppressWarnings(as.integer(workers))
+  if (is.na(workers) || workers < 1) workers <- 1
+  use_cores <- min(total_cores, max(1L, workers))
 
   message(sprintf("Hardware scheduling: Using %d cores for parallel computation...", use_cores))
 
@@ -218,15 +221,13 @@ batch_calc_gsea <- function(gsea_env,
 
 
 
-  # Set the future backend for this call. on.exit restores sequential plan so
+  # B7 fix: Set the future backend for this call. Save the current plan so it
+  # can be restored on exit (avoid clobbering a plan the user set elsewhere,
+  # e.g. in global.R or another Shiny session). Restoring the old plan also
+  # avoids the global side-effect of forcing everyone back to `sequential`.
+  old_plan <- future::plan(future::multisession, workers = use_cores)
 
-  # that an error or early return does not leave the user with a stray
-
-  # multisession worker pool.
-
-  future::plan(future::multisession, workers = use_cores)
-
-  on.exit(future::plan(future::sequential), add = TRUE)
+  on.exit(future::plan(old_plan), add = TRUE)
 
 
 

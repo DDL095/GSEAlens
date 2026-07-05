@@ -326,13 +326,13 @@ build_gsea_pathways <- function(species = "HS", auto_select = NULL) {
 
       display_desc <- mapped$desc
 
-      combo_name <- mm_key # 淇濇寔 MM 浠ｇ爜鏍煎紡
+      combo_name <- mm_key # 保持 MM 代码格式
 
       # Combined name (for auto_select matching)
 
     } else {
 
-      # 浜虹被妯″紡锛氱洿鎺ヤ娇鐢?
+      # 人类模式：直接使用
 
       human_coll <- row$gs_collection
 

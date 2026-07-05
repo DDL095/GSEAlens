@@ -56,7 +56,7 @@
 
 import_gsea_capsule <- function(file_path, auto_relocate = TRUE, inspect = TRUE) {
 
-  # 1. 鏂囦欢瀛樺湪鎬ф鏌?
+  # 1. 文件存在性检查
 
   if (!file.exists(file_path)) {
 
@@ -72,7 +72,7 @@ import_gsea_capsule <- function(file_path, auto_relocate = TRUE, inspect = TRUE)
 
 
 
-  # 2. 璇嗗埆鑳跺泭绫诲瀷
+  # 2. 识别胶囊类型
 
   if (inherits(capsule, c("GseaEnv", "GseaEnvPro"))) {
 
@@ -94,7 +94,7 @@ import_gsea_capsule <- function(file_path, auto_relocate = TRUE, inspect = TRUE)
 
 
 
-  # 3. 瀵逛簬璁＄畻缁撴灉鑳跺泭锛屾墽琛屾櫤鑳藉綊浣嶉€昏緫
+  # 3. 对于计算结果胶囊，执行智能归位逻辑
 
   if (!inherits(capsule, "GseaRes")) {
 
@@ -106,7 +106,7 @@ import_gsea_capsule <- function(file_path, auto_relocate = TRUE, inspect = TRUE)
 
 
 
-  # 4. 妫€鏌ユ槸鍚︽湁琛€缁熻蹇嗭紙project_info锛?
+  # 4. 检查是否有系统记忆（project_info）
 
   project_info <- capsule$metadata$project_info
 
@@ -118,7 +118,7 @@ import_gsea_capsule <- function(file_path, auto_relocate = TRUE, inspect = TRUE)
 
   } else {
 
-    # 5. 鑾峰彇褰撳墠璺緞涓庨鏈熻矾寰?
+    # 5. 获取当前路径与预期路径
 
     current_abs <- normalizePath(file_path, winslash = "/", mustWork = FALSE)
 
@@ -126,7 +126,7 @@ import_gsea_capsule <- function(file_path, auto_relocate = TRUE, inspect = TRUE)
 
 
 
-    # 6. 璺緞涓嶄竴鑷达紝涓斿紑鍚簡鑷姩褰掍綅
+    # 6. 路径不一致，且开启了自动归位
 
     if (current_abs != expected_abs && auto_relocate) {
 
@@ -138,7 +138,7 @@ import_gsea_capsule <- function(file_path, auto_relocate = TRUE, inspect = TRUE)
 
 
 
-      # 7. 鏍规嵁褰撳墠宸ヤ綔鐩綍閲嶅缓鏍囧噯妗ｆ搴?
+      # 7. 根据当前工作目录重建标准档案库
 
       local_series_dir <- file.path(getwd(), "GSEA_Output", project_info$custom_series_name)
 
@@ -152,7 +152,7 @@ import_gsea_capsule <- function(file_path, auto_relocate = TRUE, inspect = TRUE)
 
 
 
-      # 8. 鎵ц鏂囦欢褰掍綅
+      # 8. 执行文件归位
 
       target_file <- file.path(local_series_dir, basename(file_path))
 
@@ -168,7 +168,7 @@ import_gsea_capsule <- function(file_path, auto_relocate = TRUE, inspect = TRUE)
 
 
 
-        # 9. 鏇存柊鑳跺泭鍐呴儴鐨勮矾寰勪俊鎭紝闃叉涓嬫鍔犺浇鏃堕噸澶嶈鍛?
+        # 9. 更新胶囊内部的路径信息，防止下次加载时重复警告
 
         capsule$metadata$project_info$output_dir <- file.path(getwd(), "GSEA_Output")
 
@@ -188,7 +188,7 @@ import_gsea_capsule <- function(file_path, auto_relocate = TRUE, inspect = TRUE)
 
 
 
-  # 10. 鑷姩璋冪敤鎺㈤拡鍑芥暟鎵撳嵃姒傚喌
+  # 10. 自动调用探针函数打印概况
 
   if (inspect) {
 
@@ -248,7 +248,7 @@ import_gsea_capsule <- function(file_path, auto_relocate = TRUE, inspect = TRUE)
 
 extract_gsea_task <- function(gsea_res, contrast_id, target_collection = "ALL") {
 
-  # 1. 鏍￠獙杈撳叆
+  # 1. 校验输入
 
   .check_gsea_res(gsea_res)
 
@@ -280,19 +280,19 @@ extract_gsea_task <- function(gsea_res, contrast_id, target_collection = "ALL") 
 
 
 
-  # 2. 鑾峰彇鍏冧俊鎭?(浠?registry 涓簿纭尮閰嶏紝涓嶅啀瑙ｆ瀽瀛楃涓?
+  # 2. 获取元信息（从 registry 中精确匹配，不再解析字符串）
 
-  # 娉ㄦ剰锛歝ontrast_id 鍙兘鏄弽鍚戠殑 (B_vs_A)锛宺egistry 涓彲鑳藉彧鏈夋鍚戠殑 (A_vs_B)
+  # 注意：contrast_id 可能是反向的 (B_vs_A)，registry 中可能只有正向的 (A_vs_B)
 
-  # 浣嗘垜浠湪 batch_calc_gsea 涓凡缁忔妸鍙嶅悜浠诲姟鍐欏叆浜?results锛屽嵈娌℃湁鍐欏叆 registry (杩欐槸璁捐涓婄殑鏉冭　锛宺egistry 璁板綍鍘熷鐢熺墿瀛﹀姣?
+  # 但我们在 batch_calc_gsea 中已经把反向任务写入了 results，却没有写入 registry (这是设计上的权衡，registry 记录原始生物学对比)
 
-  # 杩欓噷鎴戜滑闇€瑕佹櫤鑳藉鐞?left/right group
+  # 这里我们需要智能处理 left/right group
 
 
 
-  # 浼樺厛浠?results 閲岀殑 genelist 鍚嶇О鎺ㄦ柇 (鏈€鍑嗙‘)
+  # 优先从 results 里的 genelist 名称推断 (最准确)
 
-  # 鎴栬€呬粠 registry 鏌ユ壘
+  # 或者从 registry 查找
 
 
 
@@ -316,7 +316,7 @@ extract_gsea_task <- function(gsea_res, contrast_id, target_collection = "ALL") 
 
   } else {
 
-    # 濡傛灉 registry 閲屾病鎵惧埌 (鍙兘鏄弽鍚戠敓鎴愮殑浠诲姟)锛屽皾璇曚粠 ID 瑙ｆ瀽
+    # 如果 registry 里没找到 (可能是反向生成的任务)，尝试从 ID 解析
 
     parts <- strsplit(contrast_id, "_vs_")[[1]]
 
@@ -338,7 +338,7 @@ extract_gsea_task <- function(gsea_res, contrast_id, target_collection = "ALL") 
 
 
 
-  # 3. 鎻愬彇 GSEA 缁撴灉瀵硅薄
+  # 3. 提取 GSEA 结果对象
 
   gsea_obj <- task_info$data
 
@@ -346,7 +346,7 @@ extract_gsea_task <- function(gsea_res, contrast_id, target_collection = "ALL") 
 
 
 
-  # 4. 鍒囩墖閫昏緫
+  # 4. 切片逻辑
 
   is_slice_mode <- length(target_collection) != 1 || toupper(target_collection[1]) != "ALL"
 
@@ -354,9 +354,9 @@ extract_gsea_task <- function(gsea_res, contrast_id, target_collection = "ALL") 
 
   if (is_slice_mode) {
 
-    # 鏌ユ壘鍖归厤鐨勮
+    # 查找匹配的行
 
-    # 鏀寔 Collection (濡?"H") 鎴?Combo_Name (濡?"C2:CP:KEGG_LEGACY")
+    # 支持 Collection (如 "H") 或 Combo_Name (如 "C2:CP:KEGG_LEGACY")
 
     match_idx <- which(res_df$Collection %in% target_collection |
 
@@ -382,7 +382,7 @@ extract_gsea_task <- function(gsea_res, contrast_id, target_collection = "ALL") 
 
 
 
-    # 鍏抽敭锛氶噸绠?FDR (娑堥櫎鍏ㄥ簱鑳屾櫙鐨勬儵缃?
+    # 关键：重算 FDR (消除全库背景的惩罚)
 
     res_df$p.adjust <- p.adjust(res_df$pvalue, method = "BH")
 
@@ -394,7 +394,7 @@ extract_gsea_task <- function(gsea_res, contrast_id, target_collection = "ALL") 
 
 
 
-    # 鏇存柊 S4 瀵硅薄
+    # 更新 S4 对象
 
     gsea_obj@result <- res_df
 
@@ -402,9 +402,9 @@ extract_gsea_task <- function(gsea_res, contrast_id, target_collection = "ALL") 
 
 
 
-  # 5. 鏋勫缓 GseaTask 瀵硅薄
+  # 5. 构建 GseaTask 对象
 
-  # 鏁村悎 meta 淇℃伅锛屼緵涓嬫父缁樺浘浣跨敤
+  # 整合 meta 信息，供下游绘图使用
 
   task_meta <- list(
 
@@ -496,7 +496,7 @@ inspect_gsea_res <- function(gsea_res) {
 
 
 
-  # 1. 鍚庣淇℃伅
+  # 1. 后端信息
 
   message("[1] Backend")
 
@@ -508,7 +508,7 @@ inspect_gsea_res <- function(gsea_res) {
 
 
 
-  # 2. 璁＄畻鐘舵€佺粺璁?
+  # 2. 计算状态统计
 
   message("[2] Calculation Status")
 
@@ -526,7 +526,7 @@ inspect_gsea_res <- function(gsea_res) {
 
 
 
-  # 3. 璇︾粏鍒楄〃锛屼慨鏀逛负鍏ㄩ儴鏄剧ず
+  # 3. 详细列表，修改为全部显示
 
   message("[3] Contrast Details ")
 
@@ -569,7 +569,7 @@ inspect_gsea_res <- function(gsea_res) {
 
 
 
-  # 4. 涓嬩竴姝ユ寚寮?
+  # 4. 下一步指引
 
   message("[4] Next Step")
 
