@@ -2,6 +2,36 @@
 
 
 
+# GSEAlens 0.99.14
+
+Bioconductor re-review preparation: 0 ERROR / 0 WARNING / 0 NOTE on
+`R CMD check --no-manual` (Status: OK); `BiocCheck` reports 0 ERRORS,
+0 WARNINGS, 10 NOTES. All reviewer comments are now addressed
+point-by-point (see `2026_06_26_biocondutor审查意见/2026_07_05_待回复的中文审查意见.md`).
+
+- **Runnable examples for all exported functions**: removed
+  `\donttest{}` from `batch_calc_gsea.Rd` and replaced `\dontrun{}`
+  in `plot_gsea_memory.Rd` with an inline synthetic data.frame;
+  added self-contained runnable examples to all 8 `generate_*_code()`
+  functions (using `precomputed_gseares.rds` or inline mini data).
+- **Slimmed `preprocessed_dds_se.rds`**: 8.05 MB -> 3.05 MB (-62%)
+  by dropping DESeq() intermediate assays (mu/H/cooks), flattening
+  `GRangesList` to `GRanges`, and removing 5 Ensembl coordinate
+  columns. `DESeq2::results()` output is bit-identical before/after.
+- **DESCRIPTION `Authors@R`**: switched to single-line format to fix
+  DCF parsing; removed redundant `Author`/`Maintainer` fields per
+  BiocCheck.
+- **`batch_calc_gsea()` defaults**: `workers` default reduced from 4
+  to 2 for Bioconductor build machine compatibility; `output_dir`
+  default changed to `tempdir()`; `future::plan()` is now saved and
+  restored via `on.exit()` to avoid global state pollution.
+- **Vignette `workers`**: all `batch_calc_gsea()` calls in both
+  English and Chinese vignettes updated to `workers = 2`.
+- **Vignette transparency note**: added "Note on the shipped `dds_se`"
+  block in both EN/ZH vignettes explaining the slimming rationale.
+
+
+
 # GSEAlens 0.99.13
 
 Bioconductor submission preparation: 0 ERROR / 0 WARNING / 0 NOTE on

@@ -33,3 +33,39 @@ Return an executable R script reproducing the Pathway
   igraph layout + geom_segment edges + geom_point nodes). No ggraph
   dependency required.
 }
+
+\examples{
+
+# Construct minimal edge and node data.frames inline.
+
+mini_edges <- data.frame(
+
+  from = c("PATHWAY_A", "PATHWAY_B"),
+
+  to   = c("GENE_X", "GENE_Y"),
+
+  weight = c(0.5, 0.8),
+
+  shared = c(3L, 5L)
+
+)
+
+mini_nodes <- data.frame(
+
+  name = c("PATHWAY_A", "PATHWAY_B", "GENE_X", "GENE_Y"),
+
+  x = c(0, 1, 0.3, 0.7),
+
+  y = c(0, 0, 0.5, 0.5),
+
+  NES = c(1.5, -1.2, NA, NA),
+
+  p.adjust = c(0.01, 0.04, NA, NA)
+
+)
+
+code <- generate_network_code(mini_edges, mini_nodes)
+
+cat(code)
+
+}

@@ -28,7 +28,6 @@
 
 #' @examples
 
-#' \donttest{
 
 #' # Build a GseaEnv from pre-computed inputs shipped with the package
 
@@ -57,8 +56,6 @@
 #' # Run batch GSEA (writes to a temporary directory; ~20s on the toy set)
 
 #' gsea_res <- batch_calc_gsea(gsea_env, workers = 2, output_dir = tempdir())
-
-#' }
 
 #' @export
 

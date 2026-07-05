@@ -40,3 +40,25 @@ Character scalar of executable R code.
 Return an executable ggplot2 script reproducing the Quadrant
   module's pathway volcano plot as a static, publication-ready figure.
 }
+
+\examples{
+
+# Construct a minimal pathway data.frame inline.
+
+mini_df <- data.frame(
+
+  ID = c("PATHWAY_A", "PATHWAY_B"),
+
+  NES = c(1.5, -1.2),
+
+  pvalue = c(0.001, 0.01),
+
+  p.adjust = c(0.02, 0.04)
+
+)
+
+code <- generate_volcano_code(mini_df)
+
+cat(code)
+
+}

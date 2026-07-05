@@ -298,8 +298,59 @@ saveRDS(
 
 )
 
-saveRDS(dds_se, file.path(out_dir, "preprocessed_dds_se.rds"), compress = "xz")
+# Slim preprocessed_dds_se.rds before saving to stay below the Bioconductor
+# 5 MB extdata limit. The full DESeqDataSet from DESeq() on the pasilla data
+# is ~8 MB on disk because each gene is wrapped in a GRangesList of ~20
+# transcript sub-ranges and DESeq() also stores mu/H/cooks assay layers.
+# GSEAlens only needs the gene-level fits, so the slimming is non-destructive
+# for every code path that GSEAlens or its vignettes exercise.
+#
+# What is removed and why (all verified to be unused by GSEAlens):
+#   * mu / H / cooks assays  -> DESeq() fitting intermediates. GSEAlens
+#                               only reads the 'counts' assay and the
+#                               Wald statistics stored in mcols (via
+#                               DESeq2::results()). log2FoldChange / pvalue
+#                               / padj are bit-identical before vs. after.
+#   * GRangesList -> GRanges -> keep one representative range per gene.
+#                               rowRanges() is never accessed by GSEAlens.
+#   * 5 columns of Ensembl coordinate metadata (gene_seq_start, gene_seq_end,
+#     seq_name, seq_strand, seq_coord_system) -> gene_id / gene_name /
+#     symbol / gene_biotype are KEPT so users can still inspect gene info.
+#
+# Users who want the full, untrimmed DESeqDataSet for teaching DESeq2 itself
+# should re-run this script without calling slim_dds_se(), or follow the
+# preprocessing vignette to rebuild one from their own count matrix.
+slim_dds_se <- function(dds_se) {
+  # (1) Drop DESeq() intermediate assays (mu/H/cooks); keep counts only.
+  SummarizedExperiment::assays(dds_se) <-
+    SummarizedExperiment::assays(dds_se)["counts"]
 
+  # (2) GRangesList -> GRanges: keep one representative range per gene.
+  rr <- SummarizedExperiment::rowRanges(dds_se)
+  if (inherits(rr, "GRangesList")) {
+    grp_lens <- S4Vectors::elementNROWS(rr)
+    first_idx <- cumsum(c(1L, head(grp_lens, -1L)))
+    gr_flat <- unlist(rr, use.names = FALSE)
+    gr_first <- gr_flat[first_idx]
+    mcols(gr_first) <- mcols(rr)
+    names(gr_first) <- rownames(dds_se)
+    SummarizedExperiment::rowRanges(dds_se) <- gr_first
+  }
+
+  # (3) Drop 5 Ensembl coordinate columns; keep gene_id / gene_name /
+  #     symbol / gene_biotype so gene-level metadata stays queryable.
+  redundant_anno <- c("gene_seq_start", "gene_seq_end",
+                      "seq_name", "seq_strand", "seq_coord_system")
+  rr2 <- SummarizedExperiment::rowRanges(dds_se)
+  mc2 <- mcols(rr2)
+  mcols(rr2) <- mc2[, setdiff(colnames(mc2), redundant_anno), drop = FALSE]
+  SummarizedExperiment::rowRanges(dds_se) <- rr2
+
+  stopifnot(validObject(dds_se))
+  dds_se
+}
+
+saveRDS(slim_dds_se(dds_se), file.path(out_dir, "preprocessed_dds_se.rds"), compress = "xz")
 saveRDS(dds,    file.path(out_dir, "preprocessed_dds.rds"),    compress = "xz")
 
 

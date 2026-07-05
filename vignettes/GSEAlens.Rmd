@@ -78,17 +78,19 @@ enrichment workflows as a **post-DEG exploration layer**:
 
   `future.globals.maxSize` option are saved before the parallel run and restored
 
-  on exit via `on.exit()`, so the global state is never polluted. The choice of
+  on exit via `on.exit()`, so the global state is never polluted. We anecdotally
 
-  `future` over `r Biocpkg("BiocParallel")` is benchmarked in the v0.99.7 release
+  observed `future::multisession` to be noticeably faster than
 
-  notes: for GSEAlens' typical workload that serializes more than 2 GB of globals
+  `r Biocpkg("BiocParallel")` (`SnowParam` / PSOCK serialization) on Windows for
 
-  (full DE table + gene set dictionary + metadata dictionary) on Windows,
+  this package's typical workload, which serializes large globals (the full DE
 
-  `future::multisession` was measured to be 3--5x faster than
+  table plus the gene set dictionary and metadata dictionary). This is an informal
 
-  `BiocParallel::SnowParam` PSOCK serialization for this workload.
+  observation from development, not a formal benchmark; users are free to re-run
+
+  the analysis with `BiocParallel` if it better suits their environment.
 
 
 
@@ -256,6 +258,28 @@ vignette exactly.
 
 
 
+> **Note on the shipped `dds_se`**: to stay below the Bioconductor 5 MB
+
+> `extdata` limit, the `preprocessed_dds_se.rds` shipped here is a
+
+> *slimmed* `DESeqDataSet` produced by `slim_dds_se()` inside
+
+> `make_preprocessed_inputs.R`. The slimmed copy drops the `mu` / `H` /
+
+> `cooks` assay layers (DESeq() fitting intermediates) and flattens
+
+> `rowRanges` from `GRangesList` to `GRanges` (one representative range
+
+> per gene). `DESeq2::results()` and every GSEAlens entry point return
+
+> bit-identical output on the slimmed vs. the full object. To rebuild the
+
+> full, untrimmed `DESeqDataSet` for teaching DESeq2 itself, see the
+
+> preprocessing vignette.
+
+
+
 ```{r load-prepared-objects}
 
 preproc_limma <- readRDS(system.file(
@@ -420,7 +444,7 @@ gsea_res_limmavoom <- GSEAlens::batch_calc_gsea(gseadata_limmavoom,
 
                                                  output_dir = out_dir,
 
-                                                 workers = 4,
+                                                 workers = 2,
 
                                                  force = TRUE)
 
@@ -434,7 +458,7 @@ gsea_res_se <- GSEAlens::batch_calc_gsea(gseadata_se,
 
                                           output_dir = out_dir,
 
-                                          workers = 4,
+                                          workers = 2,
 
                                           force = TRUE)
 
@@ -448,7 +472,7 @@ gsea_res_dds <- GSEAlens::batch_calc_gsea(gseadata_dds,
 
                                            output_dir = out_dir,
 
-                                           workers = 4,
+                                           workers = 2,
 
                                            force = TRUE)
 

@@ -1,15 +1,22 @@
 Package: GSEAlens
 Type: Package
 Title: Gene Set Enrichment Analysis Interactive Explorer
-Version: 0.99.13
-Authors@R: c(
-    person(given = "Dudali", role = "aut"),
-    person(given = "Dudali", role = "cre", email = "sealgod@qq.com",
-           comment = c(ORCID = "0000-0002-1825-0097"))
-  )
-Author: Dudali
-Maintainer: Dudali <sealgod@qq.com>
-Description: Interactive GSEA exploration and visualization platform supporting both Limma-Voom and DESeq2 backends.
+Version: 0.99.14
+Authors@R: c(person(given = "Dudali", role = "aut"), person(given = "Dudali", role = "cre", email = "sealgod@qq.com", comment = c(ORCID = "0000-0002-1825-0097")))
+Description: GSEAlens provides an interactive exploration layer on top of
+    standard Bioconductor RNA-seq workflows. It consumes fitted model objects
+    from limma (MArrayLM) or DESeq2 (DESeqDataSet) as input and accepts
+    expression matrices and sample metadata as SummarizedExperiment objects,
+    ensuring interoperability with core Bioconductor data containers. For core
+    computation, GSEAlens wraps clusterProfiler::GSEA() as its statistical
+    engine (thereby inheriting the fgsea fast GSEA methodology) and draws on
+    MSigDB gene set collections via the msigdbr package from CRAN; multi-contrast
+    parallel computation is handled by future (future::multisession).
+    Visualization output relies on Bioconductor graphics packages including
+    enrichplot, ComplexHeatmap, and circlize, producing figures suitable for
+    publication pipelines. The package also includes a built-in Shiny application
+    for interactive exploration of enrichment results after DEG analysis, with
+    the ability to export self-contained reproducible R scripts.
 License: MIT + file LICENSE
 URL: https://github.com/DDL095/GSEAlens
 BugReports: https://github.com/DDL095/GSEAlens/issues
@@ -18,6 +25,6 @@ LazyData: false
 RoxygenNote: 8.0.0
 biocViews: GeneSetEnrichment, Visualization, ShinyApps, Software
 Imports: stats, utils, enrichplot, enrichit, grDevices, graphics, methods, shiny, shinycssloaders, DT, plotly, ggplot2, rlang, igraph, dplyr, tidyr, tibble, stringr, patchwork, ComplexHeatmap, circlize, grid, clusterProfiler, limma, edgeR, DESeq2, SummarizedExperiment, S4Vectors, msigdbr, future, future.apply, htmltools, htmlwidgets, jsonlite, clipr, progressr, visNetwork, shinyjs, withr
-Suggests: testthat (>= 3.0.0), BiocStyle, knitr, rmarkdown, shinytest2, airway, BiocParallel, ggrepel
+Suggests: testthat (>= 3.0.0), BiocStyle, knitr, rmarkdown, shinytest2, airway, ggrepel
 Depends: R (>= 4.6.0)
 VignetteBuilder: knitr

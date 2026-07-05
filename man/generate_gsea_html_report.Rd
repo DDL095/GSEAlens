@@ -66,11 +66,15 @@ Uses the ComplexHeatmap engine to draw high-quality heatmaps, perfectly replicat
 
 \examples{
 
-\dontrun{
+gsea_res <- readRDS(system.file("extdata", "precomputed_gseares.rds", package = "GSEAlens"))
 
-generate_gsea_html_report(res_obj, output_base_dir = tempdir())
+task <- extract_gsea_task(gsea_res, contrast_id = "untrt_vs_trt")
 
-}
+# The full HTML report renders multiple enrichment plots (~10s);
+
+# uncomment the line below to generate it locally.
+
+# generate_gsea_html_report(task, output_base_dir = tempdir())
 
 }
 

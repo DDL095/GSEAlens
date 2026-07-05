@@ -150,15 +150,31 @@ align_benchmark_data <- function(gsea_res, monitor_csv) {
 
 #' @examples
 
-#' \dontrun{
+#' # Build a small synthetic aligned-data frame (mimics the output of
 
-#' data <- align_benchmark_data(gsea_res, "system_monitor.csv")
+#' # align_benchmark_data() without needing an external CSV or GseaRes object).
 
-#' plot_gsea_memory(data)
+#' syn <- data.frame(
 
-#' plot_gsea_memory(data, highlight_phases = FALSE)
+#'   timestamp_ms = seq(0, 20000, by = 1000),
 
-#' }
+#'   rss_mb = c(120, 150, 220, 280, 310, 330, 340, 335, 320, 305,
+
+#'              290, 270, 255, 245, 240, 235, 230, 225, 220, 215, 210),
+
+#'   relative_sec = seq(0, 20, by = 1),
+
+#'   phase = c(rep("startup", 4), rep("core_compute", 12), rep("cleanup", 5))
+
+#' )
+
+#' attr(syn, "gsea_info") <- list(duration_sec = 20, workers = 2)
+
+#' class(syn) <- c("GseaBenchmarkAligned", "data.frame")
+
+#' plot_gsea_memory(syn)
+
+#' plot_gsea_memory(syn, highlight_phases = FALSE)
 
 plot_gsea_memory <- function(aligned_data, highlight_phases = TRUE) {
 

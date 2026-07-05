@@ -56,17 +56,19 @@ Generate Joint Canvas Code
 
 \examples{
 
-\dontrun{
+gsea_res <- readRDS(system.file("extdata", "precomputed_gseares.rds", package = "GSEAlens"))
 
-code <- generate_joint_canvas_code(GSEAlens_res = gsea_res,
+code <- generate_joint_canvas_code(
 
-                                   contrast_ids = c("A_vs_B"),
+  GSEAlens_res    = gsea_res,
 
-                                   target_pathways = c("HALLMARK_INFLAMMATORY_RESPONSE"))
+  contrast_ids    = "untrt_vs_trt",
+
+  target_pathways = "HALLMARK_INFLAMMATORY_RESPONSE"
+
+)
 
 cat(code)
-
-}
 
 }
 

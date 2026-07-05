@@ -45,17 +45,18 @@ Return an executable ggplot2 script reproducing the Quadrant
   group order.
 }
 \examples{
-\dontrun{
-# Shown via the "Export Publication Plot" button in panel 4 of the
-# Quadrant module. Generates a self-contained ggplot2 script.
-box_long <- extract_boxplot_data(gsea_res, "untrt_vs_trt", "GAPDH")$long
+# Construct a minimal long-format boxplot input inline.
+mini_box <- data.frame(
+  Sample     = c("S1", "S2", "S3", "S4"),
+  Group      = c("A", "A", "B", "B"),
+  Expression = c(1.2, 1.5, 2.3, 2.0)
+)
 code <- generate_boxplot_image_code(
-  box_data_long = box_long,
-  gene_symbol   = "GAPDH",
+  box_data_long = mini_box,
+  gene_symbol   = "GENE_X",
   expr_type     = "logcpm",
-  left_group    = "untrt",
-  right_group   = "trt"
+  left_group    = "A",
+  right_group   = "B"
 )
 cat(code)
-}
 }

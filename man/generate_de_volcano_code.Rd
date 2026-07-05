@@ -46,3 +46,23 @@ Return an executable ggplot2 script reproducing the Quadrant
   publication-ready figure. Six-color classification (both / user /
   pathway / up / down / ns) mirrors the interactive plotly view.
 }
+
+\examples{
+
+# Construct a minimal DE gene data.frame inline.
+
+mini_de <- data.frame(
+
+  gene_symbol = c("GAPDH", "TP53", "MYC"),
+
+  logFC = c(2.5, -1.8, 0.5),
+
+  pvalue = c(0.001, 0.01, 0.5)
+
+)
+
+code <- generate_de_volcano_code(mini_de)
+
+cat(code)
+
+}

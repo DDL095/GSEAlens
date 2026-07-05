@@ -42,3 +42,29 @@ Return an executable ggplot2 script that reproduces the
   publication-ready figure. The data frame passed in is serialized as a
   \code{dput()}-style structure literal so the script is self-contained.
 }
+
+\examples{
+
+# Construct a minimal pathway data.frame inline.
+
+mini_df <- data.frame(
+
+  ID = c("PATHWAY_A", "PATHWAY_B", "PATHWAY_C"),
+
+  NES = c(1.5, -1.2, 0.8),
+
+  pvalue = c(0.001, 0.01, 0.05),
+
+  p.adjust = c(0.02, 0.04, 0.10),
+
+  CoreCount = c(10L, 8L, 5L),
+
+  setSize = c(50L, 40L, 30L)
+
+)
+
+code <- generate_dotplot_code(mini_df)
+
+cat(code)
+
+}

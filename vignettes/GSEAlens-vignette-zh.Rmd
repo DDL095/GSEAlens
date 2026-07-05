@@ -78,15 +78,17 @@ Bioconductor RNA-seq 与功能富集工作流：
 
   并行计算。在并行运行前，用户的原始 `future::plan()` 与 `future.globals.maxSize`
 
-  选项会被保存，并在函数退出时通过 `on.exit()` 恢复，因此全局状态不会被污染。选择
+  选项会被保存，并在函数退出时通过 `on.exit()` 恢复，因此全局状态不会被污染。在
 
-  `future` 而非 `r Biocpkg("BiocParallel")` 的依据见 v0.99.7 release notes 的基准测试：
+  开发阶段，我们经验性地观察到，对于本包的典型工作负载（需序列化较大的全局对象：
 
-  对于 GSEAlens 典型工作负载（序列化 > 2 GB 的全局对象：完整 DE 表 + 基因集字典 +
+  完整 DE 表 + 基因集字典 + 元数据字典），`future::multisession` 在 Windows 平台上
 
-  元数据字典）在 Windows 平台上，`future::multisession` 比 `BiocParallel::SnowParam`
+  比 `r Biocpkg("BiocParallel")`（`SnowParam` / PSOCK 序列化）速度更有体感优势。
 
-  的 PSOCK 序列化快 3--5 倍。
+  这只是开发过程中的一次非正式观察，并非严格的基准测试；如果 `BiocParallel` 更适合
+
+  您的运行环境，用户完全可以自行切换到 `BiocParallel` 重新运行分析。
 
 
 
@@ -238,6 +240,22 @@ vignette 变慢，我们在 `inst/extdata/` 中附带了这些对象的**预计�
 
 完全遵循预处理 vignette 的步骤。
 
+
+> **关于附带的 `dds_se` 的说明**：为满足 Bioconductor `extdata` 文件不超过 5 MB
+
+> 的要求，本 vignette 使用的 `preprocessed_dds_se.rds` 是经由
+
+> `make_preprocessed_inputs.R` 中的 `slim_dds_se()` 函数**裁剪过**的
+
+> `DESeqDataSet`。裁剪操作去除了 `mu` / `H` / `cooks` 这三个 assay（`DESeq()`
+
+> 拟合的中间产物），并将 `rowRanges` 由 `GRangesList` 展平为 `GRanges`（每个基因
+
+> 仅保留一条代表性区间）。经 `DESeq2::results()` 与全部 GSEAlens 入口函数验证，
+
+> 裁剪前后的 `log2FoldChange` / `pvalue` / `padj` 完全一致。如需重建未裁剪的完整
+
+> `DESeqDataSet`（用于 DESeq2 教学），请参阅预处理 vignette。
 
 
 ```{r load-prepared-objects}
@@ -398,7 +416,7 @@ gsea_res_limmavoom <- GSEAlens::batch_calc_gsea(gseadata_limmavoom,
 
                                                  output_dir = out_dir,
 
-                                                 workers = 4,  # 根据比对数量和电脑性能调整
+                                                 workers = 2,  # 根据比对数量和电脑性能调整
 
                                                  force = TRUE)
 
@@ -412,7 +430,7 @@ gsea_res_se <- GSEAlens::batch_calc_gsea(gseadata_se,
 
                                           output_dir = out_dir,
 
-                                          workers = 4,
+                                          workers = 2,
 
                                           force = TRUE)
 
@@ -426,7 +444,7 @@ gsea_res_dds <- GSEAlens::batch_calc_gsea(gseadata_dds,
 
                                            output_dir = out_dir,
 
-                                           workers = 4,
+                                           workers = 2,
 
                                            force = TRUE)
 
