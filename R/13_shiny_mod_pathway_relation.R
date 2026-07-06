@@ -2395,7 +2395,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
 
           shiny::sliderInput(ns("exp_point_range"), "Point size range",
 
-            min = 1, max = 15, value = c(3, 8))
+            min = 1, max = 15, value = c(2, 12))
 
         )
 
@@ -2889,7 +2889,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
 
       pal <- if (is.null(input$exp_palette)) "D" else input$exp_palette
 
-      pr  <- if (is.null(input$exp_point_range)) c(3, 8) else input$exp_point_range
+      pr  <- if (is.null(input$exp_point_range)) c(2, 12) else input$exp_point_range
 
       data_list <- data_prep_list$data()
 

@@ -1386,7 +1386,7 @@ generate_dotplot_code <- function(plot_df, color_mode = "padj",
 
                                   palette = "D",
 
-                                  point_range = c(3, 8),
+                                  point_range = c(2, 12),
 
                                   base_size = 12) {
 
@@ -1831,8 +1831,11 @@ df$p.adjust[is.na(df$p.adjust)] <- 1
 
 
 # --- Classify direction & significance ---------------------------------------
+# GSEA NES direction = enrichment direction (not gene-level up/down).
+# NES > 0 means the pathway is ENRICHED in the left group; NES < 0 in the right.
+# Using "Enriched in" (not "Up in") avoids confusion with DE expression direction.
 
-df$direction <- with(df, ifelse(NES > 0, "Up in %s", "Up in %s"))
+df$direction <- with(df, ifelse(NES > 0, "Enriched in %s", "Enriched in %s"))
 
 df$sig_level <- with(df,
 
@@ -1854,7 +1857,7 @@ p <- ggplot(df, aes(x = NES, y = -log10(pvalue),
 
   scale_color_manual(
 
-    values = c("Up in %s" = "#E41A1C", "Up in %s" = "#377EB8"),
+    values = c("Enriched in %s" = "#E41A1C", "Enriched in %s" = "#377EB8"),
 
     name   = "Direction"
 
