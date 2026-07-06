@@ -2934,7 +2934,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             shiny::h5("Live Preview"),
 
-            shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; width:100%; height:520px; display:flex; align-items:center; justify-content:center; overflow:hidden;",
+            shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; width:100%; height:520px; display:flex; align-items:center; justify-content:center; overflow:auto;",
 
               shiny::plotOutput(ns("box_exp_preview")) |>
 
@@ -3392,7 +3392,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             shiny::h5("Live Preview"),
 
-            shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; width:100%; height:520px; display:flex; align-items:center; justify-content:center; overflow:hidden;",
+            shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; width:100%; height:520px; display:flex; align-items:center; justify-content:center; overflow:auto;",
 
               shiny::plotOutput(ns("vol_exp_preview")) |>
 
@@ -3851,7 +3851,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             shiny::h5("Live Preview"),
 
-            shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; width:100%; height:520px; display:flex; align-items:center; justify-content:center; overflow:hidden;",
+            shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; width:100%; height:520px; display:flex; align-items:center; justify-content:center; overflow:auto;",
 
               shiny::plotOutput(ns("de_exp_preview")) |>
 
