@@ -2,6 +2,42 @@
 
 
 
+# GSEAlens 0.99.15
+
+Documentation completeness pass + dependency cleanup: 0 ERROR / 0 WARNING /
+0 NOTE on `R CMD check --no-manual` (Status: OK); `BiocCheck` reports 0
+ERRORS, 0 WARNINGS, 10 NOTES (all stylistic).
+
+- **Removed unused `shinytest2` from Suggests**: the package was declared
+  but had zero references in the entire codebase. On environments without
+  `shinytest2` installed, `R CMD check` would ERROR at the dependency-check
+  stage.
+- **Complete `@param` documentation**: added missing `@param` tags for
+  `margin_top/bottom/left/right`, `show_annotations`, `n_selected`,
+  `selected_ids`, and `verbose` across 6 functions (fixes R CMD check
+  WARNING on Rd \usage sections).
+- **Runnable examples for all `generate_*_code()` functions**: converted
+  all `\dontrun{}` to `\donttest{}` and added inline-data examples to
+  `generate_combined_plot_code()`, `generate_dotplot_code()`,
+  `generate_volcano_code()`, `generate_de_volcano_code()`,
+  `generate_network_code()`, and `generate_hubgene_code()` (fixes BiocCheck
+  ERROR on man-page runnable-example coverage).
+- **DotPlot scale fix**: removed `sqrt` transform and fixed `limits` from
+  `scale_size_continuous()` — now uses data-driven domain (no limits, no
+  transform), matching `enrichplot::dotplot` convention exactly.
+- **Live Preview (WYSIWYG)**: all image export modals now include a
+  real-time preview pane so users can see render results before export.
+- **Unified code export**: Combined Pathway Plotting and Joint Canvas code
+  export is now integrated into the image export modal ("Copy R Code"
+  button), replacing standalone code-export buttons.
+- **Pathway Volcano labels**: changed "Up in [group]" to "Enriched in
+  [group]" to align with GSEA enrichment semantics.
+- **Vignettes updated** (EN + ZH): dotplot description, Combined Pathway
+  Plotting, Joint Canvas, and Reproducible Code Export sections all
+  reflect the latest module behavior.
+
+
+
 # GSEAlens 0.99.14
 
 Bioconductor re-review preparation: 0 ERROR / 0 WARNING / 0 NOTE on
