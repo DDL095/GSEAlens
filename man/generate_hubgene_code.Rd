@@ -10,7 +10,11 @@ generate_hubgene_code(
   edge_df,
   pw_size_mode = "setsize",
   seed = 42L,
-  base_size = 12
+  base_size = 12,
+  margin_top = 18,
+  margin_bottom = 18,
+  margin_left = 18,
+  margin_right = 18
 )
 }
 \arguments{
@@ -33,34 +37,4 @@ Character scalar of executable R code.
 Return an executable R script reproducing the HubGene module's
   visNetwork view as a static ggplot2 figure. Node size is controlled by
   the same three-mode logic (fixed / fdr / setsize) as the interactive view.
-}
-
-\examples{
-
-# Construct minimal pathway/gene/edge data.frames inline.
-
-mini_pw <- data.frame(
-
-  id = c("PATHWAY_A"), NES = c(1.5), FDR = c(0.01), setSize = c(50L)
-
-)
-
-mini_gn <- data.frame(
-
-  id = c("GENE_X", "GENE_Y"), stat = c(2.5, -1.8), degree = c(3L, 5L)
-
-)
-
-mini_ed <- data.frame(
-
-  from = c("PATHWAY_A", "PATHWAY_A"),
-
-  to   = c("GENE_X", "GENE_Y")
-
-)
-
-code <- generate_hubgene_code(mini_pw, mini_gn, mini_ed)
-
-cat(code)
-
 }

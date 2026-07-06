@@ -13,7 +13,11 @@ generate_de_volcano_code(
   left_group = "Left",
   right_group = "Right",
   show_annotations = FALSE,
-  base_size = 12
+  base_size = 12,
+  margin_top = 15,
+  margin_bottom = 15,
+  margin_left = 18,
+  margin_right = 18
 )
 }
 \arguments{
@@ -32,9 +36,6 @@ Optional columns: padj (for hover annotation only).}
 
 \item{right_group}{Character.}
 
-\item{show_annotations}{Logical. Default FALSE. When TRUE, emit
-\code{ggrepel::geom_label_repel} annotations for the labeled genes.}
-
 \item{base_size}{Numeric.}
 }
 \value{
@@ -45,24 +46,4 @@ Return an executable ggplot2 script reproducing the Quadrant
   module's gene-level Differential Expression Volcano as a static,
   publication-ready figure. Six-color classification (both / user /
   pathway / up / down / ns) mirrors the interactive plotly view.
-}
-
-\examples{
-
-# Construct a minimal DE gene data.frame inline.
-
-mini_de <- data.frame(
-
-  gene_symbol = c("GAPDH", "TP53", "MYC"),
-
-  logFC = c(2.5, -1.8, 0.5),
-
-  pvalue = c(0.001, 0.01, 0.5)
-
-)
-
-code <- generate_de_volcano_code(mini_de)
-
-cat(code)
-
 }

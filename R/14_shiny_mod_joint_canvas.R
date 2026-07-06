@@ -718,66 +718,41 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
 
 
 
-    # Subsection: Export Code Modal ----
+    # Subsection: Code export (Copy R Code, mirrors module 12/13 pattern) ----
 
+    .jc_export_code <- function() {
+      contrasts <- data_prep_list$joint_contrasts()
+      pathways  <- table_result$selected_pathways()
+      if (length(pathways) == 0 || is.null(contrasts)) return("")
+      generate_joint_canvas_code(
+        GSEAlens_res    = gsea_res,
+        contrast_ids    = contrasts,
+        target_pathways = pathways,
+        ncol            = data_prep_list$joint_ncol()
+      )
+    }
 
-
-    shiny::observeEvent(input$export_code_btn, {
-
-      shiny::showModal(shiny::modalDialog(
-
-        title = "Generated R Code",
-
-        size = "l",
-
-        easyClose = TRUE,
-
-        shiny::fluidRow(
-
-          shiny::column(
-
-            12,
-
-            shiny::div(
-
-              style = "background: #f5f5f5; padding: 15px; border-radius: 5px; max-height: 500px; overflow: auto;",
-
-              shiny::tags$pre(
-
-                shiny::code(
-
-                  generate_joint_canvas_code(
-
-                    GSEAlens_res = gsea_res,
-
-                    contrast_ids = data_prep_list$joint_contrasts(),
-
-                    target_pathways = table_result$selected_pathways(),
-
-                    ncol = data_prep_list$joint_ncol()
-
-                  )
-
-                ),
-
-                style = "font-size: 11px; white-space: pre-wrap; word-break: break-all;"
-
-              )
-
-            )
-
-          )
-
-        ),
-
-        footer = shiny::modalButton("Close")
-
-      ))
-
+    shiny::observeEvent(input$jc_copy_code, {
+      code <- .jc_export_code()
+      if (!nzchar(code)) {
+        shiny::showNotification("Nothing to copy.", type = "warning"); return()
+      }
+      ok <- tryCatch({ clipr::write_clip(code); TRUE }, error = function(e) FALSE)
+      if (isTRUE(ok)) {
+        shiny::showNotification("R code copied to clipboard.", type = "message")
+      } else {
+        shiny::showModal(shiny::modalDialog(
+          title = "Reproducible R Code (copy manually)",
+          size = "l", easyClose = TRUE,
+          shiny::div(
+            style = "background:#f5f5f5; padding:15px; border-radius:5px; max-height:500px; overflow:auto;",
+            shiny::tags$pre(shiny::code(code),
+              style = "font-size:11px; white-space:pre-wrap; word-break:break-all;")
+          ),
+          footer = shiny::modalButton("Close")
+        ))
+      }
     })
-
-
-
 
 
     # Subsection: Render Canvas ----

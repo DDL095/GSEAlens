@@ -11,7 +11,11 @@ generate_volcano_code(
   n_selected = 0L,
   selected_ids = character(0),
   show_annotations = FALSE,
-  base_size = 12
+  base_size = 12,
+  margin_top = 15,
+  margin_bottom = 15,
+  margin_left = 18,
+  margin_right = 18
 )
 }
 \arguments{
@@ -21,16 +25,6 @@ generate_volcano_code(
 
 \item{right_group}{Character.}
 
-\item{n_selected}{Integer. Default 0L. Number of pre-selected pathway
-labels to render (in addition to user-selected ones).}
-
-\item{selected_ids}{Character vector. Default \code{character(0)}.
-Pathway IDs that the caller has pre-selected, e.g. via the app's
-"Show label" controls.}
-
-\item{show_annotations}{Logical. Default FALSE. When TRUE, emit
-\code{ggrepel::geom_label_repel} annotations for the labeled pathways.}
-
 \item{base_size}{Numeric.}
 }
 \value{
@@ -39,26 +33,4 @@ Character scalar of executable R code.
 \description{
 Return an executable ggplot2 script reproducing the Quadrant
   module's pathway volcano plot as a static, publication-ready figure.
-}
-
-\examples{
-
-# Construct a minimal pathway data.frame inline.
-
-mini_df <- data.frame(
-
-  ID = c("PATHWAY_A", "PATHWAY_B"),
-
-  NES = c(1.5, -1.2),
-
-  pvalue = c(0.001, 0.01),
-
-  p.adjust = c(0.02, 0.04)
-
-)
-
-code <- generate_volcano_code(mini_df)
-
-cat(code)
-
 }

@@ -12,7 +12,11 @@ generate_boxplot_image_code(
   right_group = NA_character_,
   use_zero_baseline = TRUE,
   custom_order = "default",
-  base_size = 12
+  base_size = 12,
+  margin_top = 15,
+  margin_bottom = 15,
+  margin_left = 18,
+  margin_right = 18
 )
 }
 \arguments{
@@ -45,18 +49,17 @@ Return an executable ggplot2 script reproducing the Quadrant
   group order.
 }
 \examples{
-# Construct a minimal long-format boxplot input inline.
-mini_box <- data.frame(
-  Sample     = c("S1", "S2", "S3", "S4"),
-  Group      = c("A", "A", "B", "B"),
-  Expression = c(1.2, 1.5, 2.3, 2.0)
-)
+\dontrun{
+# Shown via the "Export Publication Plot" button in panel 4 of the
+# Quadrant module. Generates a self-contained ggplot2 script.
+box_long <- extract_boxplot_data(gsea_res, "untrt_vs_trt", "GAPDH")$long
 code <- generate_boxplot_image_code(
-  box_data_long = mini_box,
-  gene_symbol   = "GENE_X",
+  box_data_long = box_long,
+  gene_symbol   = "GAPDH",
   expr_type     = "logcpm",
-  left_group    = "A",
-  right_group   = "B"
+  left_group    = "untrt",
+  right_group   = "trt"
 )
 cat(code)
+}
 }
