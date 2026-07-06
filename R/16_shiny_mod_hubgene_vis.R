@@ -2324,13 +2324,13 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
                             seed = seed_val,
 
-                            margin_top    = if (is.null(input$hub_exp_margin_top))    18 else input$hub_exp_margin_top,
+                            margin_top    = if (is.null(input$hub_exp_margin_top)    || is.na(input$hub_exp_margin_top))    18 else input$hub_exp_margin_top,
 
-                            margin_bottom = if (is.null(input$hub_exp_margin_bottom)) 18 else input$hub_exp_margin_bottom,
+                            margin_bottom = if (is.null(input$hub_exp_margin_bottom) || is.na(input$hub_exp_margin_bottom)) 18 else input$hub_exp_margin_bottom,
 
-                            margin_left   = if (is.null(input$hub_exp_margin_left))   18 else input$hub_exp_margin_left,
+                            margin_left   = if (is.null(input$hub_exp_margin_left)   || is.na(input$hub_exp_margin_left))   18 else input$hub_exp_margin_left,
 
-                            margin_right  = if (is.null(input$hub_exp_margin_right))  18 else input$hub_exp_margin_right)
+                            margin_right  = if (is.null(input$hub_exp_margin_right)  || is.na(input$hub_exp_margin_right))  18 else input$hub_exp_margin_right)
 
     }
 

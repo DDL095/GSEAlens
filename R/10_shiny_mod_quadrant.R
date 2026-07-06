@@ -3042,13 +3042,13 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         use_zero_baseline = isTRUE(input$zero_baseline),
 
-        margin_top    = if (is.null(input$box_exp_margin_top))    15 else input$box_exp_margin_top,
+        margin_top    = if (is.null(input$box_exp_margin_top)    || is.na(input$box_exp_margin_top))    15 else input$box_exp_margin_top,
 
-        margin_bottom = if (is.null(input$box_exp_margin_bottom)) 15 else input$box_exp_margin_bottom,
+        margin_bottom = if (is.null(input$box_exp_margin_bottom) || is.na(input$box_exp_margin_bottom)) 15 else input$box_exp_margin_bottom,
 
-        margin_left   = if (is.null(input$box_exp_margin_left))   18 else input$box_exp_margin_left,
+        margin_left   = if (is.null(input$box_exp_margin_left)   || is.na(input$box_exp_margin_left))   18 else input$box_exp_margin_left,
 
-        margin_right  = if (is.null(input$box_exp_margin_right))  18 else input$box_exp_margin_right
+        margin_right  = if (is.null(input$box_exp_margin_right)  || is.na(input$box_exp_margin_right))  18 else input$box_exp_margin_right
 
       )
 
@@ -3592,13 +3592,13 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
                             show_annotations = show_stats,
 
-                            margin_top    = if (is.null(input$vol_exp_margin_top))    15 else input$vol_exp_margin_top,
+                            margin_top    = if (is.null(input$vol_exp_margin_top)    || is.na(input$vol_exp_margin_top))    15 else input$vol_exp_margin_top,
 
-                            margin_bottom = if (is.null(input$vol_exp_margin_bottom)) 15 else input$vol_exp_margin_bottom,
+                            margin_bottom = if (is.null(input$vol_exp_margin_bottom) || is.na(input$vol_exp_margin_bottom)) 15 else input$vol_exp_margin_bottom,
 
-                            margin_left   = if (is.null(input$vol_exp_margin_left))   18 else input$vol_exp_margin_left,
+                            margin_left   = if (is.null(input$vol_exp_margin_left)   || is.na(input$vol_exp_margin_left))   18 else input$vol_exp_margin_left,
 
-                            margin_right  = if (is.null(input$vol_exp_margin_right))  18 else input$vol_exp_margin_right)
+                            margin_right  = if (is.null(input$vol_exp_margin_right)  || is.na(input$vol_exp_margin_right))  18 else input$vol_exp_margin_right)
 
     }
 
@@ -3984,13 +3984,13 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         show_annotations = show_stats,
 
-        margin_top    = if (is.null(input$de_exp_margin_top))    15 else input$de_exp_margin_top,
+        margin_top    = if (is.null(input$de_exp_margin_top)    || is.na(input$de_exp_margin_top))    15 else input$de_exp_margin_top,
 
-        margin_bottom = if (is.null(input$de_exp_margin_bottom)) 15 else input$de_exp_margin_bottom,
+        margin_bottom = if (is.null(input$de_exp_margin_bottom) || is.na(input$de_exp_margin_bottom)) 15 else input$de_exp_margin_bottom,
 
-        margin_left   = if (is.null(input$de_exp_margin_left))   18 else input$de_exp_margin_left,
+        margin_left   = if (is.null(input$de_exp_margin_left)   || is.na(input$de_exp_margin_left))   18 else input$de_exp_margin_left,
 
-        margin_right  = if (is.null(input$de_exp_margin_right))  18 else input$de_exp_margin_right
+        margin_right  = if (is.null(input$de_exp_margin_right)  || is.na(input$de_exp_margin_right))  18 else input$de_exp_margin_right
 
       )
 
