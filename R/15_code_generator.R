@@ -1434,8 +1434,6 @@ generate_dotplot_code <- function(plot_df, color_mode = "padj",
 
     "Core Genes")
 
-  size_lim <- if (size_mode == "core_size") "c(0, 50)" else "c(0, 500)"
-
 
 
   sprintf(
@@ -1578,9 +1576,7 @@ p <- ggplot(df, aes(
 
     name   = size_title,
 
-    range  = c(%g, %g),
-
-    limits = %s
+    range  = c(%g, %g)
 
   ) +
 
@@ -1602,7 +1598,7 @@ p <- ggplot(df, aes(
 
     title    = sprintf("Pathway DotPlot: %%s vs %%s", "%s", "%s"),
 
-    subtitle = sprintf("Color: %%s (viridis, reversed)  |  Size: %%s (sqrt scale)",
+    subtitle = sprintf("Color: %%s (viridis, reversed)  |  Size: %%s (linear, data-driven scale)",
 
                        color_title, size_title),
 
@@ -1647,8 +1643,6 @@ print(p)
     size_field,  size_title,
 
     point_range[1], point_range[2],
-
-    size_lim,
 
     palette,
 
