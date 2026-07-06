@@ -2158,6 +2158,8 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
     })
 
+    .hub_preview_state <- new.env(parent = emptyenv())
+    .hub_preview_state$prev_path <- NULL
     .hub_exp_preview_img <- shiny::debounce(shiny::reactive({
 
       p <- .hubgene_preview_plot()
@@ -2169,6 +2171,10 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
       h   <- if (is.null(input$hub_exp_height) || is.na(input$hub_exp_height))  8 else input$hub_exp_height
 
       dpi <- if (is.null(input$hub_exp_dpi)    || is.na(input$hub_exp_dpi))  300 else input$hub_exp_dpi
+
+      prev <- .hub_preview_state$prev_path
+
+      if (!is.null(prev) && file.exists(prev)) try(unlink(prev), silent = TRUE)
 
       tmp <- tempfile(fileext = ".png")
 
@@ -2186,7 +2192,13 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
       )
 
-      if (file.exists(tmp)) tmp else NULL
+      if (file.exists(tmp)) {
+
+        .hub_preview_state$prev_path <- tmp
+
+        tmp
+
+      } else NULL
 
     }), 350)
 

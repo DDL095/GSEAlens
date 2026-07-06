@@ -2741,6 +2741,8 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
 
 
 
+    .exp_preview_state <- new.env(parent = emptyenv())
+    .exp_preview_state$prev_path <- NULL
     .exp_preview_img <- shiny::debounce(shiny::reactive({
 
       p <- .exp_preview_plot()
@@ -2752,6 +2754,10 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       h   <- if (is.null(input$exp_height) || is.na(input$exp_height)) 7 else input$exp_height
 
       dpi <- if (is.null(input$exp_dpi)    || is.na(input$exp_dpi))  300 else input$exp_dpi
+
+      prev <- .exp_preview_state$prev_path
+
+      if (!is.null(prev) && file.exists(prev)) try(unlink(prev), silent = TRUE)
 
       tmp <- tempfile(fileext = ".png")
 
@@ -2769,7 +2775,13 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
 
       )
 
-      if (file.exists(tmp)) tmp else NULL
+      if (file.exists(tmp)) {
+
+        .exp_preview_state$prev_path <- tmp
+
+        tmp
+
+      } else NULL
 
     }), 350)
 

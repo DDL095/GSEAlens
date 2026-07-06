@@ -3105,6 +3105,11 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
     # then displayed in a fixed window scaled to fit. This eliminates the
     # device-mismatch drift of renderPlot (whose virtual device had a
     # different physical size than the export, distorting margin/font ratios).
+    # A plain env (NOT reactiveValues) holds the previous temp path so we can
+    # unlink it before writing the next one. Env mutation does not trigger
+    # reactive dependencies, so no infinite loop.
+    .box_preview_state <- new.env(parent = emptyenv())
+    .box_preview_state$prev_path <- NULL
     .box_exp_preview_img <- shiny::debounce(shiny::reactive({
 
       p <- .boxplot_preview_plot()
@@ -3116,6 +3121,10 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       h   <- if (is.null(input$box_exp_height) || is.na(input$box_exp_height)) 5 else input$box_exp_height
 
       dpi <- if (is.null(input$box_exp_dpi)    || is.na(input$box_exp_dpi))  300 else input$box_exp_dpi
+
+      prev <- .box_preview_state$prev_path
+
+      if (!is.null(prev) && file.exists(prev)) try(unlink(prev), silent = TRUE)
 
       tmp <- tempfile(fileext = ".png")
 
@@ -3133,7 +3142,13 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
       )
 
-      if (file.exists(tmp)) tmp else NULL
+      if (file.exists(tmp)) {
+
+        .box_preview_state$prev_path <- tmp
+
+        tmp
+
+      } else NULL
 
     }), 350)
 
@@ -3539,6 +3554,8 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     })
 
+    .vol_preview_state <- new.env(parent = emptyenv())
+    .vol_preview_state$prev_path <- NULL
     .vol_exp_preview_img <- shiny::debounce(shiny::reactive({
 
       p <- .volcano_preview_plot()
@@ -3550,6 +3567,10 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       h   <- if (is.null(input$vol_exp_height) || is.na(input$vol_exp_height)) 6 else input$vol_exp_height
 
       dpi <- if (is.null(input$vol_exp_dpi)    || is.na(input$vol_exp_dpi))  300 else input$vol_exp_dpi
+
+      prev <- .vol_preview_state$prev_path
+
+      if (!is.null(prev) && file.exists(prev)) try(unlink(prev), silent = TRUE)
 
       tmp <- tempfile(fileext = ".png")
 
@@ -3567,7 +3588,13 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
       )
 
-      if (file.exists(tmp)) tmp else NULL
+      if (file.exists(tmp)) {
+
+        .vol_preview_state$prev_path <- tmp
+
+        tmp
+
+      } else NULL
 
     }), 350)
 
@@ -4063,6 +4090,8 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
 
 
+    .de_preview_state <- new.env(parent = emptyenv())
+    .de_preview_state$prev_path <- NULL
     .de_exp_preview_img <- shiny::debounce(shiny::reactive({
 
       p <- .de_volcano_preview_plot()
@@ -4074,6 +4103,10 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       h   <- if (is.null(input$de_exp_height) || is.na(input$de_exp_height)) 6 else input$de_exp_height
 
       dpi <- if (is.null(input$de_exp_dpi)    || is.na(input$de_exp_dpi))  300 else input$de_exp_dpi
+
+      prev <- .de_preview_state$prev_path
+
+      if (!is.null(prev) && file.exists(prev)) try(unlink(prev), silent = TRUE)
 
       tmp <- tempfile(fileext = ".png")
 
@@ -4091,7 +4124,13 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
       )
 
-      if (file.exists(tmp)) tmp else NULL
+      if (file.exists(tmp)) {
+
+        .de_preview_state$prev_path <- tmp
+
+        tmp
+
+      } else NULL
 
     }), 350)
 
