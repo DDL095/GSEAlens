@@ -2585,7 +2585,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
 
             shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; width:100%; height:520px; display:flex; align-items:center; justify-content:center; overflow:hidden;",
 
-              shiny::imageOutput(ns("exp_preview")) |>
+              shiny::plotOutput(ns("exp_preview")) |>
 
                 shinycssloaders::withSpinner(type = 6, color = "#28a745")
 
@@ -2741,65 +2741,33 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
 
 
 
-    .exp_preview_state <- new.env(parent = emptyenv())
-    .exp_preview_state$prev_path <- NULL
-    .exp_preview_img <- shiny::debounce(shiny::reactive({
+    output$exp_preview <- shiny::renderPlot(
 
-      p <- .exp_preview_plot()
+      {
 
-      shiny::req(p)
+        p <- .exp_preview_plot()
 
-      w   <- if (is.null(input$exp_width)  || is.na(input$exp_width))  9 else input$exp_width
+        shiny::req(p)
 
-      h   <- if (is.null(input$exp_height) || is.na(input$exp_height)) 7 else input$exp_height
+        p
 
-      dpi <- if (is.null(input$exp_dpi)    || is.na(input$exp_dpi))  300 else input$exp_dpi
+      },
 
-      prev <- .exp_preview_state$prev_path
+      res  = 100,
 
-      if (!is.null(prev) && file.exists(prev)) try(unlink(prev), silent = TRUE)
+      width  = function() {
 
-      tmp <- tempfile(fileext = ".png")
+        d <- .preview_dims(input$exp_width, input$exp_height); d$width
 
-      tryCatch(
+      },
 
-        ggplot2::ggsave(tmp, p, width = w, height = h, dpi = dpi),
+      height = function() {
 
-        error = function(e) {
+        d <- .preview_dims(input$exp_width, input$exp_height); d$height
 
-          shiny::showNotification(sprintf("[network preview] %s", e$message),
+      }
 
-                                  type = "error", duration = 8)
-
-        }
-
-      )
-
-      if (file.exists(tmp)) {
-
-        .exp_preview_state$prev_path <- tmp
-
-        tmp
-
-      } else NULL
-
-    }), 350)
-
-
-
-    output$exp_preview <- shiny::renderImage({
-
-      src <- .exp_preview_img()
-
-      shiny::req(src, file.exists(src))
-
-      d <- .preview_dims(input$exp_width, input$exp_height)
-
-      list(src = src, contentType = "image/png",
-
-           width = d$width, height = d$height, alt = "Network preview")
-
-    }, deleteFile = FALSE)
+    )
 
 
 

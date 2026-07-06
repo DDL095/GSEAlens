@@ -2046,7 +2046,7 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
             shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; width:100%; height:520px; display:flex; align-items:center; justify-content:center; overflow:hidden;",
 
-              shiny::imageOutput(ns("hub_exp_preview")) |>
+              shiny::plotOutput(ns("hub_exp_preview")) |>
 
                 shinycssloaders::withSpinner(type = 6, color = "#28a745")
 
@@ -2158,65 +2158,33 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
     })
 
-    .hub_preview_state <- new.env(parent = emptyenv())
-    .hub_preview_state$prev_path <- NULL
-    .hub_exp_preview_img <- shiny::debounce(shiny::reactive({
+    output$hub_exp_preview <- shiny::renderPlot(
 
-      p <- .hubgene_preview_plot()
+      {
 
-      shiny::req(p)
+        p <- .hubgene_preview_plot()
 
-      w   <- if (is.null(input$hub_exp_width)  || is.na(input$hub_exp_width))  10 else input$hub_exp_width
+        shiny::req(p)
 
-      h   <- if (is.null(input$hub_exp_height) || is.na(input$hub_exp_height))  8 else input$hub_exp_height
+        p
 
-      dpi <- if (is.null(input$hub_exp_dpi)    || is.na(input$hub_exp_dpi))  300 else input$hub_exp_dpi
+      },
 
-      prev <- .hub_preview_state$prev_path
+      res  = 100,
 
-      if (!is.null(prev) && file.exists(prev)) try(unlink(prev), silent = TRUE)
+      width  = function() {
 
-      tmp <- tempfile(fileext = ".png")
+        d <- .hub_preview_dims(input$hub_exp_width, input$hub_exp_height); d$width
 
-      tryCatch(
+      },
 
-        ggplot2::ggsave(tmp, p, width = w, height = h, dpi = dpi),
+      height = function() {
 
-        error = function(e) {
+        d <- .hub_preview_dims(input$hub_exp_width, input$hub_exp_height); d$height
 
-          shiny::showNotification(sprintf("[hubgene preview] %s", e$message),
+      }
 
-                                  type = "error", duration = 8)
-
-        }
-
-      )
-
-      if (file.exists(tmp)) {
-
-        .hub_preview_state$prev_path <- tmp
-
-        tmp
-
-      } else NULL
-
-    }), 350)
-
-
-
-    output$hub_exp_preview <- shiny::renderImage({
-
-      src <- .hub_exp_preview_img()
-
-      shiny::req(src, file.exists(src))
-
-      d <- .hub_preview_dims(input$hub_exp_width, input$hub_exp_height)
-
-      list(src = src, contentType = "image/png",
-
-           width = d$width, height = d$height, alt = "HubGene preview")
-
-    }, deleteFile = FALSE)
+    )
 
 
 
