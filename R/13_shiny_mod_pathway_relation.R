@@ -2725,11 +2725,23 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
     # downsampled with a cap so large figures don't blow up memory.
     .preview_dims <- function(w_in, h_in, dpi = 300, max_px = 1600) {
 
-      if (is.null(w_in) || is.na(w_in) || w_in <= 0) w_in <- 9
+      # as.numeric first: numericInput can return character strings in
 
-      if (is.null(h_in) || is.na(h_in) || h_in <= 0) h_in <- 7
+      # edge cases; arithmetic on strings throws "non-numeric argument
 
-      if (is.null(dpi)  || is.na(dpi)  || dpi  <= 0) dpi  <- 300
+      # to binary operator". Coerce, then guard NULL/NA/<=0.
+
+      w_in <- suppressWarnings(as.numeric(w_in[1]))
+
+      h_in <- suppressWarnings(as.numeric(h_in[1]))
+
+      dpi  <- suppressWarnings(as.numeric(dpi[1]))
+
+      if (length(w_in) == 0 || is.na(w_in) || w_in <= 0) w_in <- 9
+
+      if (length(h_in) == 0 || is.na(h_in) || h_in <= 0) h_in <- 7
+
+      if (length(dpi)  == 0 || is.na(dpi)  || dpi  <= 0) dpi  <- 300
 
       scale <- min(1, max_px / (max(w_in, h_in) * dpi))
 
