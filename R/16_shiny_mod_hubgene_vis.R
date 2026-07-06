@@ -2102,17 +2102,27 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
     # vertical "pole" thumbnail; a wide figure as a horizontal "pole".
 
-    .hub_preview_dims <- function(w_in, h_in, max_w = 500, max_h = 480) {
+    # Preview device matching export physical size (2026-07-06 v2): device
+    # is sized to exactly w_in x h_in inches so margin()/base_size (pt)
+    # match the exported figure's proportions. Resolution is downsampled
+    # with a pixel cap to keep memory bounded for large figures.
+    .hub_preview_dims <- function(w_in, h_in, dpi = 300, max_px = 1600) {
 
       if (is.null(w_in) || is.na(w_in) || w_in <= 0) w_in <- 10
 
       if (is.null(h_in) || is.na(h_in) || h_in <= 0) h_in <- 8
 
-      scale <- min(max_w / w_in, max_h / h_in)
+      if (is.null(dpi)  || is.na(dpi)  || dpi  <= 0) dpi  <- 300
 
-      list(width  = round(w_in * scale),
+      scale <- min(1, max_px / (max(w_in, h_in) * dpi))
 
-           height = round(h_in * scale))
+      res   <- dpi * scale
+
+      list(width  = round(w_in * res),
+
+           height = round(h_in * res),
+
+           res    = res)
 
     }
 
@@ -2170,17 +2180,21 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
       },
 
-      res  = 100,
+      res  = function() {
+
+        d <- .hub_preview_dims(input$hub_exp_width, input$hub_exp_height, input$hub_exp_dpi); d$res
+
+      },
 
       width  = function() {
 
-        d <- .hub_preview_dims(input$hub_exp_width, input$hub_exp_height); d$width
+        d <- .hub_preview_dims(input$hub_exp_width, input$hub_exp_height, input$hub_exp_dpi); d$width
 
       },
 
       height = function() {
 
-        d <- .hub_preview_dims(input$hub_exp_width, input$hub_exp_height); d$height
+        d <- .hub_preview_dims(input$hub_exp_width, input$hub_exp_height, input$hub_exp_dpi); d$height
 
       }
 
