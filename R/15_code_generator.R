@@ -1386,7 +1386,7 @@ generate_dotplot_code <- function(plot_df, color_mode = "padj",
 
                                   palette = "D",
 
-                                  point_range = c(2, 12),
+                                  point_range = c(3, 8),
 
                                   base_size = 12) {
 
@@ -1580,9 +1580,7 @@ p <- ggplot(df, aes(
 
     range  = c(%g, %g),
 
-    limits = %s,
-
-    transform = "sqrt"
+    limits = %s
 
   ) +
 
