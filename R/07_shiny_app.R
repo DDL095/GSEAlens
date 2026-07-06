@@ -552,14 +552,6 @@ launch_gsea_app <- function(gsea_res, addition_data = NULL) {
 
   server <- function(input, output, session) {
 
-    # External canvas temp directory (for full-size plots opened in new tab)
-
-    canvas_dir <- file.path(tempdir(), "gsealens_canvas")
-
-    dir.create(canvas_dir, showWarnings = FALSE, recursive = TRUE)
-
-    shiny::addResourcePath("gsealens_canvas", canvas_dir)
-
     # Module 1: Data preprocessing module
 
     data_prep_list <- mod_data_prep_server("data_prep", gsea_res)

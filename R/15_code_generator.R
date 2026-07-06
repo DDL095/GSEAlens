@@ -1880,7 +1880,13 @@ p <- ggplot(df, aes(x = NES, y = -log10(pvalue),
 
     plot.title = element_text(face = "bold", hjust = 0.5),
 
-    legend.position = "right"
+    legend.position = "right",
+
+    # Canvas margin (2026-07-06): uniform breathing room on all sides so the
+
+    # exported figure sits on a clear "canvas" like a cairo_pdf page.
+
+    plot.margin = margin(15, 18, 15, 18)
 
   )
 
@@ -1894,7 +1900,7 @@ p <- ggplot(df, aes(x = NES, y = -log10(pvalue),
 
 # repelled in both x and y with finite max.overlaps so ggrepel can DROP labels
 
-# when too crowded. Long pathway IDs shortened to the last underscore segment.
+# when too crowded. Full pathway IDs are shown.
 
 if (length(selected_ids) > 0) {
 
@@ -1902,17 +1908,13 @@ if (length(selected_ids) > 0) {
 
   if (nrow(df_label) > 0) {
 
-    df_label$short_id <- sapply(strsplit(as.character(df_label$ID), "_"),
-
-                                function(p) tail(p, 1))
-
     library(ggrepel)
 
     p <- p + ggrepel::geom_label_repel(
 
       data = df_label,
 
-      aes(label = short_id),
+      aes(label = ID),
 
       size = 3, fontface = "bold",
 
@@ -2166,7 +2168,9 @@ generate_de_volcano_code <- function(de_df,
 
 '    plot.title    = element_text(face = "bold", hjust = 0.5),\n',
 
-'    legend.position = "right"\n',
+'    legend.position = "right",\n',
+
+'    plot.margin = margin(15, 18, 15, 18)\n',
 
 '  )'
 
@@ -2650,7 +2654,15 @@ p <- ggplot() +
 
   theme_void(base_size = %g) +
 
-  theme(legend.position = "right") +
+  theme(legend.position = "right",
+
+        # Canvas margin (2026-07-06): breathing room so labels do not touch
+
+        # the canvas edge; coord_cartesian(clip=off) lets repelled labels show.
+
+        plot.margin = margin(18, 18, 18, 18)) +
+
+  coord_cartesian(clip = "off") +
 
   labs(title = "Pathway Relationship Network")
 
@@ -3002,7 +3014,11 @@ p <- ggplot() +
 
   theme_void(base_size = %g) +
 
-  theme(legend.position = "right") +
+  theme(legend.position = "right",
+
+        plot.margin = margin(18, 18, 18, 18)) +
+
+  coord_cartesian(clip = "off") +
 
   labs(title = "HubGene Pathway-Gene Network")
 
@@ -3394,7 +3410,11 @@ p <- ggplot(df, aes(x = Group, y = Expression, fill = Group)) +
 
     axis.text.x = element_text(angle = 45, hjust = 1),
 
-    plot.title = element_text(face = "bold", hjust = 0.5)
+    plot.title = element_text(face = "bold", hjust = 0.5),
+
+    # Canvas margin (2026-07-06): uniform breathing room on all sides.
+
+    plot.margin = margin(15, 18, 15, 18)
 
   )
 

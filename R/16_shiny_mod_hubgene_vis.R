@@ -1996,20 +1996,6 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
             shiny::hr(),
 
-            shiny::radioButtons(ns("hub_exp_preview_mode"), "Preview Mode",
-
-              choices = c(
-
-                "Internal Image (in-modal)" = "internal",
-
-                "External Canvas (new tab)" = "external"
-
-              ),
-
-              selected = "internal", inline = TRUE),
-
-            shiny::hr(),
-
             shiny::fluidRow(
 
               shiny::column(6,
@@ -2040,45 +2026,19 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
           shiny::column(7,
 
-            shiny::div(id = ns("hub_internal_div"),
+            shiny::h5("Live Preview"),
 
-              shiny::h5("Live Preview"),
+            shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; width:100%; height:520px; display:flex; align-items:center; justify-content:center; overflow:hidden;",
 
-              shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; overflow:auto; max-height:560px; display:flex; align-items:center; justify-content:center;",
+              shiny::plotOutput(ns("hub_exp_preview")) |>
 
-                shiny::plotOutput(ns("hub_exp_preview"), height = "auto") |>
-
-                  shinycssloaders::withSpinner(type = 6, color = "#28a745")
-
-              ),
-
-              shiny::tags$small(style = "color: #666; display:block; margin-top:6px;",
-
-                "Pathway nodes: diamonds; Gene nodes: circles. ",
-
-                "Aspect ratio matches saved figure.")
+                shinycssloaders::withSpinner(type = 6, color = "#28a745")
 
             ),
 
-            shiny::div(id = ns("hub_external_div"), style = "display:none;",
+            shiny::tags$small(style = "color: #666; display:block; margin-top:6px;",
 
-              shiny::h5("External Canvas"),
-
-              shiny::actionButton(ns("hub_open_external"),
-
-                "Open Full-Size Canvas", class = "btn-warning btn-block",
-
-                icon = shiny::icon("external-link")),
-
-              shiny::hr(),
-
-              shiny::helpText("Renders the plot at the specified dimensions and DPI,",
-
-                "then opens it in a new browser tab. Use browser zoom (Ctrl/Cmd +/-)",
-
-                "for fine detail inspection.")
-
-            )
+              "Pathway nodes: diamonds; Gene nodes: circles. Preview auto-scaled to fit while keeping the export aspect ratio.")
 
           )
 
@@ -2108,54 +2068,6 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
 
 
-    # Toggle internal/external visibility
-
-    shiny::observeEvent(input$hub_exp_preview_mode, {
-
-      if (is.null(input$hub_exp_preview_mode)) return()
-
-      if (input$hub_exp_preview_mode == "internal") {
-
-        shinyjs::show(ns("hub_internal_div")); shinyjs::hide(ns("hub_external_div"))
-
-      } else {
-
-        shinyjs::hide(ns("hub_internal_div")); shinyjs::show(ns("hub_external_div"))
-
-      }
-
-    }, ignoreInit = FALSE)
-
-
-
-    # External canvas: open full-size HubGene network in a new browser tab
-
-    shiny::observeEvent(input$hub_open_external, {
-
-      p <- .hubgene_preview_plot()
-
-      shiny::req(p)
-
-      canvas_dir <- file.path(tempdir(), "gsealens_canvas")
-
-      tmp <- tempfile(pattern = "hub", tmpdir = canvas_dir, fileext = ".png")
-
-      w <- if (is.null(input$hub_exp_width) || is.na(input$hub_exp_width))  10 else input$hub_exp_width
-
-      h <- if (is.null(input$hub_exp_height) || is.na(input$hub_exp_height))  8 else input$hub_exp_height
-
-      d <- if (is.null(input$hub_exp_dpi) || is.na(input$hub_exp_dpi)) 300 else input$hub_exp_dpi
-
-      ggplot2::ggsave(tmp, p, width = w, height = h, dpi = d)
-
-      url <- sprintf("gsealens_canvas/%s", basename(tmp))
-
-      shinyjs::runjs(sprintf("window.open('%s', '_blank')", url))
-
-    })
-
-
-
     # Live preview reactive
 
     # IRON FIX (2026-06-30): same pattern as pathway/quadrant modules —
@@ -2166,27 +2078,25 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
     #
 
-    # Aspect ratio fix (2026-06-30): pin longer side to max_dim and scale
+    # Preview scaling (2026-07-06): the preview pane is a FIXED-SIZE window
 
-    # the shorter side proportionally so on-screen preview matches the
+    # (~500x480 px). The figure is rendered at the export aspect ratio and
 
-    # saved figure's proportions exactly.
+    # scaled to fit inside that window, centered. A tall figure appears as a
 
-    .hub_preview_dims <- function(w_in, h_in, max_dim = 720) {
+    # vertical "pole" thumbnail; a wide figure as a horizontal "pole".
+
+    .hub_preview_dims <- function(w_in, h_in, max_w = 500, max_h = 480) {
 
       if (is.null(w_in) || is.na(w_in) || w_in <= 0) w_in <- 10
 
       if (is.null(h_in) || is.na(h_in) || h_in <= 0) h_in <- 8
 
-      if (w_in >= h_in) {
+      scale <- min(max_w / w_in, max_h / h_in)
 
-        list(width = max_dim, height = round(max_dim * h_in / w_in))
+      list(width  = round(w_in * scale),
 
-      } else {
-
-        list(width = round(max_dim * w_in / h_in), height = max_dim)
-
-      }
+           height = round(h_in * scale))
 
     }
 

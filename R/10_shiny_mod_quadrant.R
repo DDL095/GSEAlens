@@ -652,21 +652,13 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
           ay_offset <- round(radius * sin(ang))
 
-          # Shorten long pathway IDs for readability
-
-          short_id <- tryCatch(
-
-            tail(unlist(strsplit(as.character(row$ID), "_")), 1),
-
-            error = function(e) as.character(row$ID))
-
           annotations_list[[i]] <- list(
 
             x = row$NES,
 
             y = -log10(row$pvalue),
 
-            text = short_id,
+            text = as.character(row$ID),
 
             showarrow = TRUE,
 
@@ -2862,20 +2854,6 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             shiny::hr(),
 
-            shiny::radioButtons(ns("box_exp_preview_mode"), "Preview Mode",
-
-              choices = c(
-
-                "Internal Image (in-modal)" = "internal",
-
-                "External Canvas (new tab)" = "external"
-
-              ),
-
-              selected = "internal", inline = TRUE),
-
-            shiny::hr(),
-
             shiny::h5("Download"),
 
             shiny::fluidRow(
@@ -2956,43 +2934,19 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
           shiny::column(7,
 
-            shiny::div(id = ns("box_internal_div"),
+            shiny::h5("Live Preview"),
 
-              shiny::h5("Live Preview"),
+            shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; width:100%; height:520px; display:flex; align-items:center; justify-content:center; overflow:hidden;",
 
-              shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; overflow:auto; max-height:560px; display:flex; align-items:center; justify-content:center;",
+              shiny::plotOutput(ns("box_exp_preview")) |>
 
-                shiny::plotOutput(ns("box_exp_preview"), height = "auto") |>
-
-                  shinycssloaders::withSpinner(type = 6, color = "#28a745")
-
-              ),
-
-              shiny::tags$small(style = "color: #666; display:block; margin-top:6px;",
-
-                "Per-gene expression boxplot. Aspect ratio matches saved figure.")
+                shinycssloaders::withSpinner(type = 6, color = "#28a745")
 
             ),
 
-            shiny::div(id = ns("box_external_div"), style = "display:none;",
+            shiny::tags$small(style = "color: #666; display:block; margin-top:6px;",
 
-              shiny::h5("External Canvas"),
-
-              shiny::actionButton(ns("box_open_external"),
-
-                "Open Full-Size Canvas", class = "btn-warning btn-block",
-
-                icon = shiny::icon("external-link")),
-
-              shiny::hr(),
-
-              shiny::helpText("Renders the plot at the specified dimensions and DPI,",
-
-                "then opens it in a new browser tab. Use browser zoom (Ctrl/Cmd +/-)",
-
-                "for fine detail inspection.")
-
-            )
+              "Preview is auto-scaled to fit the window while keeping the export aspect ratio (tall figures appear as vertical thumbnails, wide figures as horizontal ones).")
 
           )
 
@@ -3059,26 +3013,6 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
     })
 
     shiny::observeEvent(input$box_exp_dismiss, shiny::removeModal())
-
-
-
-    # Toggle internal/external visibility
-
-    shiny::observeEvent(input$box_exp_preview_mode, {
-
-      if (is.null(input$box_exp_preview_mode)) return()
-
-      if (input$box_exp_preview_mode == "internal") {
-
-        shinyjs::show(ns("box_internal_div")); shinyjs::hide(ns("box_external_div"))
-
-      } else {
-
-        shinyjs::hide(ns("box_internal_div")); shinyjs::show(ns("box_external_div"))
-
-      }
-
-    }, ignoreInit = FALSE)
 
 
 
@@ -3288,41 +3222,11 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
 
 
-    # External canvas: open full-size plot in a new browser tab
-
-    shiny::observeEvent(input$box_open_external, {
-
-      p <- .boxplot_preview_plot()
-
-      shiny::req(p)
-
-      canvas_dir <- file.path(tempdir(), "gsealens_canvas")
-
-      tmp <- tempfile(pattern = "box", tmpdir = canvas_dir, fileext = ".png")
-
-      w <- if (is.null(input$box_exp_width) || is.na(input$box_exp_width))  5 else input$box_exp_width
-
-      h <- if (is.null(input$box_exp_height) || is.na(input$box_exp_height)) 5 else input$box_exp_height
-
-      d <- if (is.null(input$box_exp_dpi) || is.na(input$box_exp_dpi)) 300 else input$box_exp_dpi
-
-      ggplot2::ggsave(tmp, p, width = w, height = h, dpi = d)
-
-      url <- sprintf("gsealens_canvas/%s", basename(tmp))
-
-      shinyjs::runjs(sprintf("window.open('%s', '_blank')", url))
-
-    })
-
-
-
     # ============================================================
 
     # Pathway Volcano Export Center
 
     # ------------------------------------------------------------
-
-    # Mirrors the export modal pattern used in mod_pathway_relation:
 
     # ggplot2 + ggsave (no kaleido/orca dependency), with a reproducible
 
@@ -3371,20 +3275,6 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
               label = "Show stats subtitle (pathways / selected / significant)",
 
               value = FALSE),
-
-            shiny::hr(),
-
-            shiny::radioButtons(ns("vol_exp_preview_mode"), "Preview Mode",
-
-              choices = c(
-
-                "Internal Image (in-modal)" = "internal",
-
-                "External Canvas (new tab)" = "external"
-
-              ),
-
-              selected = "internal", inline = TRUE),
 
             shiny::hr(),
 
@@ -3478,43 +3368,19 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
           shiny::column(7,
 
-            shiny::div(id = ns("vol_internal_div"),
+            shiny::h5("Live Preview"),
 
-              shiny::h5("Live Preview"),
+            shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; width:100%; height:520px; display:flex; align-items:center; justify-content:center; overflow:hidden;",
 
-              shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; overflow:auto; max-height:560px; display:flex; align-items:center; justify-content:center;",
+              shiny::plotOutput(ns("vol_exp_preview")) |>
 
-                shiny::plotOutput(ns("vol_exp_preview"), height = "auto") |>
-
-                  shinycssloaders::withSpinner(type = 6, color = "#28a745")
-
-              ),
-
-              shiny::tags$small(style = "color: #666; display:block; margin-top:6px;",
-
-                "X axis: NES | Y axis: -log10(pvalue). Aspect ratio matches saved figure.")
+                shinycssloaders::withSpinner(type = 6, color = "#28a745")
 
             ),
 
-            shiny::div(id = ns("vol_external_div"), style = "display:none;",
+            shiny::tags$small(style = "color: #666; display:block; margin-top:6px;",
 
-              shiny::h5("External Canvas"),
-
-              shiny::actionButton(ns("vol_open_external"),
-
-                "Open Full-Size Canvas", class = "btn-warning btn-block",
-
-                icon = shiny::icon("external-link")),
-
-              shiny::hr(),
-
-              shiny::helpText("Renders the plot at the specified dimensions and DPI,",
-
-                "then opens it in a new browser tab. Use browser zoom (Ctrl/Cmd +/-)",
-
-                "for fine detail inspection.")
-
-            )
+              "X axis: NES | Y axis: -log10(pvalue). Preview auto-scaled to fit while keeping the export aspect ratio.")
 
           )
 
@@ -3548,54 +3414,6 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
 
 
-    # Toggle internal/external visibility
-
-    shiny::observeEvent(input$vol_exp_preview_mode, {
-
-      if (is.null(input$vol_exp_preview_mode)) return()
-
-      if (input$vol_exp_preview_mode == "internal") {
-
-        shinyjs::show(ns("vol_internal_div")); shinyjs::hide(ns("vol_external_div"))
-
-      } else {
-
-        shinyjs::hide(ns("vol_internal_div")); shinyjs::show(ns("vol_external_div"))
-
-      }
-
-    }, ignoreInit = FALSE)
-
-
-
-    # External canvas: open full-size volcano in a new browser tab
-
-    shiny::observeEvent(input$vol_open_external, {
-
-      p <- .volcano_preview_plot()
-
-      shiny::req(p)
-
-      canvas_dir <- file.path(tempdir(), "gsealens_canvas")
-
-      tmp <- tempfile(pattern = "vol", tmpdir = canvas_dir, fileext = ".png")
-
-      w <- if (is.null(input$vol_exp_width) || is.na(input$vol_exp_width))  8 else input$vol_exp_width
-
-      h <- if (is.null(input$vol_exp_height) || is.na(input$vol_exp_height)) 6 else input$vol_exp_height
-
-      d <- if (is.null(input$vol_exp_dpi) || is.na(input$vol_exp_dpi)) 300 else input$vol_exp_dpi
-
-      ggplot2::ggsave(tmp, p, width = w, height = h, dpi = d)
-
-      url <- sprintf("gsealens_canvas/%s", basename(tmp))
-
-      shinyjs::runjs(sprintf("window.open('%s', '_blank')", url))
-
-    })
-
-
-
     # Live preview reactive
 
     # IRON FIX (2026-06-30): suppress `print(p)` inside the eval'd code so
@@ -3608,27 +3426,27 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     #
 
-    # Aspect ratio fix (2026-06-30): pin the longer side to max_dim and
+    # Preview scaling (2026-07-06): the preview pane is a FIXED-SIZE window
 
-    # scale the shorter side by the same ratio so on-screen proportions
+    # (~500x480 px). The figure is rendered at the export aspect ratio and
 
-    # always match the saved figure.
+    # scaled to fit inside that window, centered. A tall figure (e.g. 5x20
 
-    .vol_preview_dims <- function(w_in, h_in, max_dim = 720) {
+    # inch) appears as a vertical "pole" thumbnail; a wide figure (16x12)
+
+    # as a horizontal "pole". This mirrors how cairo_pdf/PNG exports look.
+
+    .vol_preview_dims <- function(w_in, h_in, max_w = 500, max_h = 480) {
 
       if (is.null(w_in) || is.na(w_in) || w_in <= 0) w_in <- 8
 
       if (is.null(h_in) || is.na(h_in) || h_in <= 0) h_in <- 6
 
-      if (w_in >= h_in) {
+      scale <- min(max_w / w_in, max_h / h_in)
 
-        list(width = max_dim, height = round(max_dim * h_in / w_in))
+      list(width  = round(w_in * scale),
 
-      } else {
-
-        list(width = round(max_dim * w_in / h_in), height = max_dim)
-
-      }
+           height = round(h_in * scale))
 
     }
 
@@ -3904,20 +3722,6 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             shiny::hr(),
 
-            shiny::radioButtons(ns("de_exp_preview_mode"), "Preview Mode",
-
-              choices = c(
-
-                "Internal Image (in-modal)" = "internal",
-
-                "External Canvas (new tab)" = "external"
-
-              ),
-
-              selected = "internal", inline = TRUE),
-
-            shiny::hr(),
-
             shiny::h5("Download"),
 
             shiny::fluidRow(
@@ -3998,45 +3802,19 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
           shiny::column(7,
 
-            shiny::div(id = ns("de_internal_div"),
+            shiny::h5("Live Preview"),
 
-              shiny::h5("Live Preview"),
+            shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; width:100%; height:520px; display:flex; align-items:center; justify-content:center; overflow:hidden;",
 
-              shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; overflow:auto; max-height:560px; display:flex; align-items:center; justify-content:center;",
+              shiny::plotOutput(ns("de_exp_preview")) |>
 
-                shiny::plotOutput(ns("de_exp_preview"), height = "auto") |>
-
-                  shinycssloaders::withSpinner(type = 6, color = "#28a745")
-
-              ),
-
-              shiny::tags$small(style = "color: #666; display:block; margin-top:6px;",
-
-                "Six categories: Both (purple) / Selected (green) / Pathway (orange) / ",
-
-                "Up (red) / Down (blue) / NS (gray). Aspect ratio matches saved figure.")
+                shinycssloaders::withSpinner(type = 6, color = "#28a745")
 
             ),
 
-            shiny::div(id = ns("de_external_div"), style = "display:none;",
+            shiny::tags$small(style = "color: #666; display:block; margin-top:6px;",
 
-              shiny::h5("External Canvas"),
-
-              shiny::actionButton(ns("de_open_external"),
-
-                "Open Full-Size Canvas", class = "btn-warning btn-block",
-
-                icon = shiny::icon("external-link")),
-
-              shiny::hr(),
-
-              shiny::helpText("Renders the plot at the specified dimensions and DPI,",
-
-                "then opens it in a new browser tab. Use browser zoom (Ctrl/Cmd +/-)",
-
-                "for fine detail inspection.")
-
-            )
+              "Six categories: Both (purple) / Selected (green) / Pathway (orange) / Up (red) / Down (blue) / NS (gray). Preview auto-scaled to fit while keeping the export aspect ratio.")
 
           )
 
@@ -4067,54 +3845,6 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
     })
 
     shiny::observeEvent(input$de_exp_dismiss, shiny::removeModal())
-
-
-
-    # Toggle internal/external visibility
-
-    shiny::observeEvent(input$de_exp_preview_mode, {
-
-      if (is.null(input$de_exp_preview_mode)) return()
-
-      if (input$de_exp_preview_mode == "internal") {
-
-        shinyjs::show(ns("de_internal_div")); shinyjs::hide(ns("de_external_div"))
-
-      } else {
-
-        shinyjs::hide(ns("de_internal_div")); shinyjs::show(ns("de_external_div"))
-
-      }
-
-    }, ignoreInit = FALSE)
-
-
-
-    # External canvas: open full-size DE volcano in a new browser tab
-
-    shiny::observeEvent(input$de_open_external, {
-
-      p <- .de_volcano_preview_plot()
-
-      shiny::req(p)
-
-      canvas_dir <- file.path(tempdir(), "gsealens_canvas")
-
-      tmp <- tempfile(pattern = "de_vol", tmpdir = canvas_dir, fileext = ".png")
-
-      w <- if (is.null(input$de_exp_width) || is.na(input$de_exp_width))  8 else input$de_exp_width
-
-      h <- if (is.null(input$de_exp_height) || is.na(input$de_exp_height)) 6 else input$de_exp_height
-
-      d <- if (is.null(input$de_exp_dpi) || is.na(input$de_exp_dpi)) 300 else input$de_exp_dpi
-
-      ggplot2::ggsave(tmp, p, width = w, height = h, dpi = d)
-
-      url <- sprintf("gsealens_canvas/%s", basename(tmp))
-
-      shinyjs::runjs(sprintf("window.open('%s', '_blank')", url))
-
-    })
 
 
 
