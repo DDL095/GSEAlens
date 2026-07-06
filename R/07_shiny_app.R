@@ -448,6 +448,8 @@ launch_gsea_app <- function(gsea_res, addition_data = NULL) {
 
     ),
 
+    shinyjs::useShinyjs(),
+
     shiny::titlePanel(shiny::HTML("GSEAlens: Seek Inside")),
 
     shiny::sidebarLayout(
@@ -549,6 +551,14 @@ launch_gsea_app <- function(gsea_res, addition_data = NULL) {
   # Server part -------------------------------------------------------------------------
 
   server <- function(input, output, session) {
+
+    # External canvas temp directory (for full-size plots opened in new tab)
+
+    canvas_dir <- file.path(tempdir(), "gsealens_canvas")
+
+    dir.create(canvas_dir, showWarnings = FALSE, recursive = TRUE)
+
+    shiny::addResourcePath("gsealens_canvas", canvas_dir)
 
     # Module 1: Data preprocessing module
 

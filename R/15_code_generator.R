@@ -1890,7 +1890,11 @@ p <- ggplot(df, aes(x = NES, y = -log10(pvalue),
 
 # Mirror the interactive plotly: annotate pathways the user clicked in the
 
-# Shiny app. Uses ggrepel to avoid overlaps; no labels when none selected.
+# Shiny app. Network-style label strategy: dark text on white, nudged upward,
+
+# repelled in both x and y with finite max.overlaps so ggrepel can DROP labels
+
+# when too crowded. Long pathway IDs shortened to the last underscore segment.
 
 if (length(selected_ids) > 0) {
 
@@ -1898,23 +1902,33 @@ if (length(selected_ids) > 0) {
 
   if (nrow(df_label) > 0) {
 
+    df_label$short_id <- sapply(strsplit(as.character(df_label$ID), "_"),
+
+                                function(p) tail(p, 1))
+
     library(ggrepel)
 
     p <- p + ggrepel::geom_label_repel(
 
       data = df_label,
 
-      aes(label = ID),
+      aes(label = short_id),
 
       size = 3, fontface = "bold",
 
-      fill = "white", color = "#FF9800",
+      fill = "white", color = "#222", alpha = 0.9,
 
-      box.padding = 0.4, label.padding = 0.2,
+      box.padding = 0.5, label.padding = 0.18,
 
-      min.segment.length = 0, segment.color = "grey55",
+      linewidth = 0.2,
 
-      max.overlaps = Inf, max.iter = 5000
+      min.segment.length = 0,
+
+      segment.color = "grey55", segment.size = 0.3, segment.alpha = 0.7,
+
+      max.overlaps = 20, max.iter = 5000,
+
+      nudge_y = 0.3, direction = "both", force = 2
 
     )
 

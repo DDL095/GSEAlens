@@ -534,6 +534,18 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
 
             ),
 
+            shiny::radioButtons(ns("jc_preview_mode"), "Preview Mode",
+
+              choices = c(
+
+                "Internal Image (in-modal)" = "internal",
+
+                "External Canvas (new tab)" = "external"
+
+              ),
+
+              selected = "internal", inline = TRUE),
+
             shiny::hr(),
 
             shiny::actionButton(ns("jc_dismiss"), "Close",
@@ -544,23 +556,47 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
 
           shiny::column(7,
 
-            shiny::h5("Live Preview"),
+            shiny::div(id = ns("jc_internal_div"),
 
-            shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; overflow:auto; max-height:560px; display:flex; align-items:center; justify-content:center;",
+              shiny::h5("Live Preview"),
 
-              shiny::plotOutput(ns("jc_preview"), height = "auto") |>
+              shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; overflow:auto; max-height:560px; display:flex; align-items:center; justify-content:center;",
 
-                shinycssloaders::withSpinner(type = 6, color = "#28a745")
+                shiny::plotOutput(ns("jc_preview"), height = "auto") |>
+
+                  shinycssloaders::withSpinner(type = 6, color = "#28a745")
+
+              ),
+
+              shiny::tags$small(style = "color: #666; display:block; margin-top:6px;",
+
+                "The Joint Canvas is a patchwork of GSEA sub-plots. ",
+
+                "Larger widths are recommended for multi-contrast layouts. ",
+
+                "Aspect ratio matches saved figure.")
 
             ),
 
-            shiny::tags$small(style = "color: #666; display:block; margin-top:6px;",
+            shiny::div(id = ns("jc_external_div"), style = "display:none;",
 
-              "The Joint Canvas is a patchwork of GSEA sub-plots. ",
+              shiny::h5("External Canvas"),
 
-              "Larger widths are recommended for multi-contrast layouts. ",
+              shiny::actionButton(ns("jc_open_external"),
 
-              "Aspect ratio matches saved figure.")
+                "Open Full-Size Canvas", class = "btn-warning btn-block",
+
+                icon = shiny::icon("external-link")),
+
+              shiny::hr(),
+
+              shiny::helpText("Renders the Joint Canvas at the specified dimensions and DPI,",
+
+                "then opens it in a new browser tab. Use browser zoom (Ctrl/Cmd +/-)",
+
+                "for fine detail inspection. Highly recommended for multi-contrast layouts.")
+
+            )
 
           )
 
@@ -585,6 +621,56 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
     })
 
     shiny::observeEvent(input$jc_dismiss, shiny::removeModal())
+
+
+
+    # Toggle internal/external visibility
+
+    shiny::observeEvent(input$jc_preview_mode, {
+
+      if (is.null(input$jc_preview_mode)) return()
+
+      if (input$jc_preview_mode == "internal") {
+
+        shinyjs::show(ns("jc_internal_div")); shinyjs::hide(ns("jc_external_div"))
+
+      } else {
+
+        shinyjs::hide(ns("jc_internal_div")); shinyjs::show(ns("jc_external_div"))
+
+      }
+
+    }, ignoreInit = FALSE)
+
+
+
+    # External canvas: open full-size Joint Canvas in a new browser tab
+
+    shiny::observeEvent(input$jc_open_external, {
+
+      cr <- canvas_result()
+
+      shiny::req(cr, cr$plot)
+
+      canvas_dir <- file.path(tempdir(), "gsealens_canvas")
+
+      tmp <- tempfile(pattern = "jc", tmpdir = canvas_dir, fileext = ".png")
+
+      w <- if (is.null(input$jc_width) || is.na(input$jc_width))  16 else input$jc_width
+
+      h <- if (is.null(input$jc_height) || is.na(input$jc_height)) 12 else input$jc_height
+
+      d <- if (is.null(input$jc_dpi) || is.na(input$jc_dpi)) 300 else input$jc_dpi
+
+      ggplot2::ggsave(tmp, cr$plot, width = w, height = h, dpi = d,
+
+                      limitsize = FALSE)
+
+      url <- sprintf("gsealens_canvas/%s", basename(tmp))
+
+      shinyjs::runjs(sprintf("window.open('%s', '_blank')", url))
+
+    })
 
 
 

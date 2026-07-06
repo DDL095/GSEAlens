@@ -1996,6 +1996,20 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
             shiny::hr(),
 
+            shiny::radioButtons(ns("hub_exp_preview_mode"), "Preview Mode",
+
+              choices = c(
+
+                "Internal Image (in-modal)" = "internal",
+
+                "External Canvas (new tab)" = "external"
+
+              ),
+
+              selected = "internal", inline = TRUE),
+
+            shiny::hr(),
+
             shiny::fluidRow(
 
               shiny::column(6,
@@ -2026,21 +2040,45 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
           shiny::column(7,
 
-            shiny::h5("Live Preview"),
+            shiny::div(id = ns("hub_internal_div"),
 
-            shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; overflow:auto; max-height:560px; display:flex; align-items:center; justify-content:center;",
+              shiny::h5("Live Preview"),
 
-              shiny::plotOutput(ns("hub_exp_preview"), height = "auto") |>
+              shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; overflow:auto; max-height:560px; display:flex; align-items:center; justify-content:center;",
 
-                shinycssloaders::withSpinner(type = 6, color = "#28a745")
+                shiny::plotOutput(ns("hub_exp_preview"), height = "auto") |>
+
+                  shinycssloaders::withSpinner(type = 6, color = "#28a745")
+
+              ),
+
+              shiny::tags$small(style = "color: #666; display:block; margin-top:6px;",
+
+                "Pathway nodes: diamonds; Gene nodes: circles. ",
+
+                "Aspect ratio matches saved figure.")
 
             ),
 
-            shiny::tags$small(style = "color: #666; display:block; margin-top:6px;",
+            shiny::div(id = ns("hub_external_div"), style = "display:none;",
 
-              "Pathway nodes: diamonds; Gene nodes: circles. ",
+              shiny::h5("External Canvas"),
 
-              "Aspect ratio matches saved figure.")
+              shiny::actionButton(ns("hub_open_external"),
+
+                "Open Full-Size Canvas", class = "btn-warning btn-block",
+
+                icon = shiny::icon("external-link")),
+
+              shiny::hr(),
+
+              shiny::helpText("Renders the plot at the specified dimensions and DPI,",
+
+                "then opens it in a new browser tab. Use browser zoom (Ctrl/Cmd +/-)",
+
+                "for fine detail inspection.")
+
+            )
 
           )
 
@@ -2067,6 +2105,54 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
     })
 
     shiny::observeEvent(input$hub_exp_dismiss, shiny::removeModal())
+
+
+
+    # Toggle internal/external visibility
+
+    shiny::observeEvent(input$hub_exp_preview_mode, {
+
+      if (is.null(input$hub_exp_preview_mode)) return()
+
+      if (input$hub_exp_preview_mode == "internal") {
+
+        shinyjs::show(ns("hub_internal_div")); shinyjs::hide(ns("hub_external_div"))
+
+      } else {
+
+        shinyjs::hide(ns("hub_internal_div")); shinyjs::show(ns("hub_external_div"))
+
+      }
+
+    }, ignoreInit = FALSE)
+
+
+
+    # External canvas: open full-size HubGene network in a new browser tab
+
+    shiny::observeEvent(input$hub_open_external, {
+
+      p <- .hubgene_preview_plot()
+
+      shiny::req(p)
+
+      canvas_dir <- file.path(tempdir(), "gsealens_canvas")
+
+      tmp <- tempfile(pattern = "hub", tmpdir = canvas_dir, fileext = ".png")
+
+      w <- if (is.null(input$hub_exp_width) || is.na(input$hub_exp_width))  10 else input$hub_exp_width
+
+      h <- if (is.null(input$hub_exp_height) || is.na(input$hub_exp_height))  8 else input$hub_exp_height
+
+      d <- if (is.null(input$hub_exp_dpi) || is.na(input$hub_exp_dpi)) 300 else input$hub_exp_dpi
+
+      ggplot2::ggsave(tmp, p, width = w, height = h, dpi = d)
+
+      url <- sprintf("gsealens_canvas/%s", basename(tmp))
+
+      shinyjs::runjs(sprintf("window.open('%s', '_blank')", url))
+
+    })
 
 
 

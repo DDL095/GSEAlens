@@ -2534,6 +2534,20 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
 
             shiny::hr(),
 
+            shiny::radioButtons(ns("exp_preview_mode"), "Preview Mode",
+
+              choices = c(
+
+                "Internal Image (in-modal)" = "internal",
+
+                "External Canvas (new tab)" = "external"
+
+              ),
+
+              selected = "internal", inline = TRUE),
+
+            shiny::hr(),
+
             shiny::fluidRow(
 
               shiny::column(6,
@@ -2562,31 +2576,49 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
 
           ),
 
-          # Right column: live preview
+          # Right column: live preview / external canvas
 
           shiny::column(7,
 
-            shiny::h5("Live Preview"),
+            shiny::div(id = ns("exp_internal_div"),
 
-            # Container has fixed max height with vertical+horizontal scroll
+              shiny::h5("Live Preview"),
 
-            # so ultra-tall or ultra-wide aspect ratios stay browseable.
+              shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; overflow:auto; max-height:560px; display:flex; align-items:center; justify-content:center;",
 
-            # The image inside is auto-centered.
+                shiny::plotOutput(ns("exp_preview"), height = "auto") |>
 
-            shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; overflow:auto; max-height:560px; display:flex; align-items:center; justify-content:center;",
+                  shinycssloaders::withSpinner(type = 6, color = "#28a745")
 
-              shiny::plotOutput(ns("exp_preview"), height = "auto") |>
+              ),
 
-                shinycssloaders::withSpinner(type = 6, color = "#28a745")
+              shiny::tags$small(style = "color: #666; display:block; margin-top:6px;",
+
+                "Preview reflects current Width / Height. ",
+
+                "Aspect ratio matches the saved figure; longer side is capped at 720 px.")
 
             ),
 
-            shiny::tags$small(style = "color: #666; display:block; margin-top:6px;",
+            shiny::div(id = ns("exp_external_div"), style = "display:none;",
 
-              "Preview reflects current Width / Height. ",
+              shiny::h5("External Canvas"),
 
-              "Aspect ratio matches the saved figure; longer side is capped at 720 px.")
+              shiny::actionButton(ns("exp_open_external"),
+
+                "Open Full-Size Canvas", class = "btn-warning btn-block",
+
+                icon = shiny::icon("external-link")),
+
+              shiny::hr(),
+
+              shiny::helpText("Renders the plot at the specified dimensions and DPI,",
+
+                "then opens it in a new browser tab. Use browser zoom (Ctrl/Cmd +/-)",
+
+                "for fine detail inspection.")
+
+            )
 
           )
 
@@ -2871,6 +2903,54 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
 
 
     shiny::observeEvent(input$exp_dismiss, shiny::removeModal())
+
+
+
+    # Toggle internal/external visibility
+
+    shiny::observeEvent(input$exp_preview_mode, {
+
+      if (is.null(input$exp_preview_mode)) return()
+
+      if (input$exp_preview_mode == "internal") {
+
+        shinyjs::show(ns("exp_internal_div")); shinyjs::hide(ns("exp_external_div"))
+
+      } else {
+
+        shinyjs::hide(ns("exp_internal_div")); shinyjs::show(ns("exp_external_div"))
+
+      }
+
+    }, ignoreInit = FALSE)
+
+
+
+    # External canvas: open full-size plot in a new browser tab
+
+    shiny::observeEvent(input$exp_open_external, {
+
+      p <- .exp_preview_plot()
+
+      shiny::req(p)
+
+      canvas_dir <- file.path(tempdir(), "gsealens_canvas")
+
+      tmp <- tempfile(pattern = "pway", tmpdir = canvas_dir, fileext = ".png")
+
+      w <- if (is.null(input$exp_width) || is.na(input$exp_width))  9 else input$exp_width
+
+      h <- if (is.null(input$exp_height) || is.na(input$exp_height)) 7 else input$exp_height
+
+      d <- if (is.null(input$exp_dpi) || is.na(input$exp_dpi)) 300 else input$exp_dpi
+
+      ggplot2::ggsave(tmp, p, width = w, height = h, dpi = d)
+
+      url <- sprintf("gsealens_canvas/%s", basename(tmp))
+
+      shinyjs::runjs(sprintf("window.open('%s', '_blank')", url))
+
+    })
 
 
 

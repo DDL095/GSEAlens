@@ -264,24 +264,6 @@ mod_quadrant_ui <- function(id) {
 
     ),
 
-    shiny::hr(),
-
-    shiny::fluidRow(
-
-      shiny::column(12, shiny::div(
-
-        class = "white-box",
-
-        shiny::h4("Export Code"),
-
-        shiny::actionButton(ns("export_code_btn"), label = "Export Current Plot Code", class = "btn-secondary", style = "width: 100%;"),
-
-        shiny::helpText("Generate R code for the currently selected pathways")
-
-      ))
-
-    )
-
   )
 
 }
@@ -646,11 +628,37 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         selected_df <- df[df$ID %in% current_selections, ]
 
-        for (i in seq_len(nrow(selected_df))) {
+        n_sel <- nrow(selected_df)
+
+        # Distribute annotation labels in radial directions to minimise
+
+        # overlap (was: all labels at ay=-30 alternating ax 0/50, which
+
+        # stacked and obscured data points).
+
+        angles <- seq(0, 2 * pi, length.out = 8 + 1)[1:8]
+
+        for (i in seq_len(n_sel)) {
 
           row <- selected_df[i, ]
 
-          ax_offset <- ifelse(i %% 2 == 1, 0, 50)
+          ring  <- (i - 1) %/% 8          # 0 for first 8, 1 for next 8, ...
+
+          radius <- 45 + ring * 25
+
+          ang <- angles[(i - 1) %% 8 + 1]
+
+          ax_offset <- round(radius * cos(ang))
+
+          ay_offset <- round(radius * sin(ang))
+
+          # Shorten long pathway IDs for readability
+
+          short_id <- tryCatch(
+
+            tail(unlist(strsplit(as.character(row$ID), "_")), 1),
+
+            error = function(e) as.character(row$ID))
 
           annotations_list[[i]] <- list(
 
@@ -658,31 +666,31 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             y = -log10(row$pvalue),
 
-            text = row$ID,
+            text = short_id,
 
             showarrow = TRUE,
 
             arrowhead = 2,
 
-            arrowsize = 1,
+            arrowsize = 0.8,
 
-            arrowwidth = 2,
+            arrowwidth = 1.5,
 
             arrowcolor = COLOR_PATHWAY,
 
             ax = ax_offset,
 
-            ay = -30,
+            ay = ay_offset,
 
-            font = list(size = 10, color = COLOR_PATHWAY),
+            font = list(size = 9, color = "#222"),
 
-            bgcolor = "rgba(255,255,255,0.95)",
+            bgcolor = "rgba(255,255,255,0.92)",
 
             bordercolor = COLOR_PATHWAY,
 
-            borderwidth = 2,
+            borderwidth = 1,
 
-            borderpad = 4
+            borderpad = 3
 
           )
 
@@ -2404,86 +2412,6 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
 
 
-    # 6. Export Code Button
-
-    shiny::observeEvent(input$export_code_btn, {
-
-      data_list <- data_prep_data()
-
-      shiny::req(data_list)
-
-
-
-      target_pw <- if (nrow(data_list$df) > 0) {
-
-        data_list$df$ID[seq_len(min(5, nrow(data_list$df)))]
-
-      } else {
-
-        character(0)
-
-      }
-
-
-
-      shiny::showModal(shiny::modalDialog(
-
-        title = "Generated R Code",
-
-        size = "l",
-
-        easyClose = TRUE,
-
-        shiny::fluidRow(
-
-          shiny::column(
-
-            12,
-
-            shiny::div(
-
-              style = "background: #f5f5f5; padding: 15px; border-radius: 5px; max-height: 500px; overflow: auto;",
-
-              shiny::tags$pre(
-
-                shiny::code(
-
-                  generate_pathway_plot_code(
-
-                    GSEAlens_res = gsea_res,
-
-                    contrast_id = data_list$contrast_id,
-
-                    target_pathways = target_pw,
-
-                    user_genes = highlight_genes_reactive(),
-
-                    pathway_genes = selected_pathway_genes(),
-
-                    expr_type = data_list$expression_type
-
-                  )
-
-                ),
-
-                style = "font-size: 11px; white-space: pre-wrap; word-break: break-all;"
-
-              )
-
-            )
-
-          )
-
-        ),
-
-        footer = shiny::modalButton("Close")
-
-      ))
-
-    })
-
-
-
     # ==========================================================================
 
     # 7. Export Boxplot Data Button (panel 4, "Full Expression Distribution")
@@ -2890,6 +2818,506 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     # ============================================================
 
+    # Boxplot Image Export Center (panel 4, "Full Expression Distribution")
+
+    # ------------------------------------------------------------
+
+    # Publication-grade ggplot2 export for the selected gene's boxplot.
+
+    # Mirrors the volcano export modal pattern + internal/external preview.
+
+    # ============================================================
+
+    .build_boxplot_export_modal <- function() {
+
+      shiny::modalDialog(
+
+        title = "Export Publication Plot - Gene Boxplot",
+
+        size = "l", footer = NULL, easyClose = TRUE,
+
+        shiny::fluidRow(
+
+          shiny::column(5,
+
+            shiny::h5("Dimensions"),
+
+            shiny::fluidRow(
+
+              shiny::column(6,
+
+                shiny::numericInput(ns("box_exp_width"),  "Width (inch)",  value = 5, min = 2, max = 20)
+
+              ),
+
+              shiny::column(6,
+
+                shiny::numericInput(ns("box_exp_height"), "Height (inch)", value = 5, min = 2, max = 20)
+
+              )
+
+            ),
+
+            shiny::numericInput(ns("box_exp_dpi"), "DPI", value = 300, min = 72, max = 600),
+
+            shiny::hr(),
+
+            shiny::radioButtons(ns("box_exp_preview_mode"), "Preview Mode",
+
+              choices = c(
+
+                "Internal Image (in-modal)" = "internal",
+
+                "External Canvas (new tab)" = "external"
+
+              ),
+
+              selected = "internal", inline = TRUE),
+
+            shiny::hr(),
+
+            shiny::h5("Download"),
+
+            shiny::fluidRow(
+
+              shiny::column(6,
+
+                shiny::downloadButton(ns("box_exp_download_pdf"),
+
+                  "Download PDF", class = "btn-danger btn-block",
+
+                  icon = shiny::icon("file-pdf"))
+
+              ),
+
+              shiny::column(6,
+
+                shiny::downloadButton(ns("box_exp_download_png"),
+
+                  "Download PNG", class = "btn-primary btn-block",
+
+                  icon = shiny::icon("file-image"))
+
+              )
+
+            ),
+
+            shiny::hr(),
+
+            shiny::fluidRow(
+
+              shiny::column(6,
+
+                shiny::selectInput(ns("box_exp_format"), "Other format",
+
+                  choices = c("SVG" = "svg", "TIFF" = "tiff"), selected = "svg")
+
+              ),
+
+              shiny::column(6,
+
+                shiny::div(style = "margin-top: 22px;",
+
+                  shiny::downloadButton(ns("box_exp_download_other"),
+
+                    "Download", class = "btn-default btn-block")
+
+                )
+
+              )
+
+            ),
+
+            shiny::hr(),
+
+            shiny::fluidRow(
+
+              shiny::column(6,
+
+                shiny::actionButton(ns("box_exp_copy_code"),
+
+                  "Copy R Code", class = "btn-info btn-block",
+
+                  icon = shiny::icon("clipboard"))
+
+              ),
+
+              shiny::column(6,
+
+                shiny::actionButton(ns("box_exp_dismiss"),
+
+                  "Close", class = "btn-default btn-block")
+
+              )
+
+            )
+
+          ),
+
+          shiny::column(7,
+
+            shiny::div(id = ns("box_internal_div"),
+
+              shiny::h5("Live Preview"),
+
+              shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; overflow:auto; max-height:560px; display:flex; align-items:center; justify-content:center;",
+
+                shiny::plotOutput(ns("box_exp_preview"), height = "auto") |>
+
+                  shinycssloaders::withSpinner(type = 6, color = "#28a745")
+
+              ),
+
+              shiny::tags$small(style = "color: #666; display:block; margin-top:6px;",
+
+                "Per-gene expression boxplot. Aspect ratio matches saved figure.")
+
+            ),
+
+            shiny::div(id = ns("box_external_div"), style = "display:none;",
+
+              shiny::h5("External Canvas"),
+
+              shiny::actionButton(ns("box_open_external"),
+
+                "Open Full-Size Canvas", class = "btn-warning btn-block",
+
+                icon = shiny::icon("external-link")),
+
+              shiny::hr(),
+
+              shiny::helpText("Renders the plot at the specified dimensions and DPI,",
+
+                "then opens it in a new browser tab. Use browser zoom (Ctrl/Cmd +/-)",
+
+                "for fine detail inspection.")
+
+            )
+
+          )
+
+        )
+
+      )
+
+    }
+
+
+
+    shiny::observeEvent(input$open_boxplot_image_export, {
+
+      # Auto-extract data if not already cached (so the user doesn't need
+
+      # to click "Export Boxplot Data" first)
+
+      result <- current_boxplot_data()
+
+      if (is.null(result) || is.null(result$long) || nrow(result$long) == 0) {
+
+        data_list <- data_prep_data()
+
+        current_gene <- current_boxplot_gene()
+
+        if (is.null(data_list) || is.null(current_gene) || !nzchar(current_gene)) {
+
+          shiny::showNotification(
+
+            "No gene selected. Click a gene in the DE volcano or gene table first.",
+
+            type = "warning", duration = 4); return()
+
+        }
+
+        symbol_map  <- .rebuild_symbol_map(gsea_res, data_list$contrast_id)
+
+        display_gene <- .get_display_symbol(current_gene, symbol_map)
+
+        result <- tryCatch(
+
+          extract_boxplot_data(
+
+            GSEAlens_res = gsea_res, contrast_id  = data_list$contrast_id,
+
+            gene_symbol  = display_gene, expr_type = data_list$expression_type),
+
+          error = function(e) {
+
+            shiny::showNotification(
+
+              sprintf("Failed to extract boxplot data: %s", e$message),
+
+              type = "error", duration = 5); NULL })
+
+        if (is.null(result)) return()
+
+        current_boxplot_data(result)
+
+      }
+
+      shiny::showModal(.build_boxplot_export_modal())
+
+    })
+
+    shiny::observeEvent(input$box_exp_dismiss, shiny::removeModal())
+
+
+
+    # Toggle internal/external visibility
+
+    shiny::observeEvent(input$box_exp_preview_mode, {
+
+      if (is.null(input$box_exp_preview_mode)) return()
+
+      if (input$box_exp_preview_mode == "internal") {
+
+        shinyjs::show(ns("box_internal_div")); shinyjs::hide(ns("box_external_div"))
+
+      } else {
+
+        shinyjs::hide(ns("box_internal_div")); shinyjs::show(ns("box_external_div"))
+
+      }
+
+    }, ignoreInit = FALSE)
+
+
+
+    .boxplot_export_code <- function() {
+
+      result <- current_boxplot_data()
+
+      if (is.null(result)) return("")
+
+      data_list <- data_prep_data()
+
+      if (is.null(data_list)) return("")
+
+      lg <- if (is.null(data_list$left_group))  "Left"  else data_list$left_group
+
+      rg <- if (is.null(data_list$right_group)) "Right" else data_list$right_group
+
+      generate_boxplot_image_code(
+
+        box_data_long     = result$long,
+
+        gene_symbol       = result$gene,
+
+        expr_type         = data_list$expression_type,
+
+        left_group        = lg,
+
+        right_group       = rg,
+
+        use_zero_baseline = isTRUE(input$zero_baseline)
+
+      )
+
+    }
+
+
+
+    .boxplot_preview_plot <- shiny::reactive({
+
+      code <- tryCatch(.boxplot_export_code(),
+
+        error = function(e) {
+
+          shiny::showNotification(
+
+            sprintf("[boxplot preview] code generation failed: %s", e$message),
+
+            type = "error", duration = 8)
+
+          ""
+
+        })
+
+      if (!nzchar(code)) return(NULL)
+
+      eval_env <- new.env(parent = globalenv())
+
+      eval_env$p <- NULL
+
+      eval_env$print <- base::invisible
+
+      tryCatch(eval(parse(text = code), envir = eval_env),
+
+               error = function(e) {
+
+                 shiny::showNotification(
+
+                   sprintf("[boxplot preview] %s", e$message),
+
+                   type = "error", duration = 8)
+
+                 NULL
+
+               })
+
+      eval_env$p
+
+    })
+
+
+
+    output$box_exp_preview <- shiny::renderPlot(
+
+      {
+
+        p <- .boxplot_preview_plot()
+
+        shiny::req(p)
+
+        p
+
+      },
+
+      res  = 100,
+
+      width  = function() {
+
+        d <- .vol_preview_dims(input$box_exp_width, input$box_exp_height); d$width
+
+      },
+
+      height = function() {
+
+        d <- .vol_preview_dims(input$box_exp_width, input$box_exp_height); d$height
+
+      }
+
+    )
+
+
+
+    .boxplot_render_to_file <- function(file, fmt) {
+
+      code <- .boxplot_export_code()
+
+      if (!nzchar(code)) return()
+
+      eval_env <- new.env(parent = globalenv())
+
+      eval_env$p <- NULL
+
+      eval_env$print <- base::invisible
+
+      tryCatch(eval(parse(text = code), envir = eval_env),
+
+               error = function(e) shiny::showNotification(
+
+                 sprintf("Render failed: %s", e$message), type = "error", duration = 8))
+
+      if (is.null(eval_env$p)) return()
+
+      ggplot2::ggsave(file, eval_env$p,
+
+                      width  = if (is.null(input$box_exp_width))  5 else input$box_exp_width,
+
+                      height = if (is.null(input$box_exp_height)) 5 else input$box_exp_height,
+
+                      dpi    = if (is.null(input$box_exp_dpi))   300 else input$box_exp_dpi,
+
+                      device = fmt)
+
+    }
+
+
+
+    output$box_exp_download_pdf <- shiny::downloadHandler(
+
+      filename = function() sprintf("GSEAlens_boxplot_%s.pdf", Sys.Date()),
+
+      content  = function(file) .boxplot_render_to_file(file, "pdf")
+
+    )
+
+    output$box_exp_download_png <- shiny::downloadHandler(
+
+      filename = function() sprintf("GSEAlens_boxplot_%s.png", Sys.Date()),
+
+      content  = function(file) .boxplot_render_to_file(file, "png")
+
+    )
+
+    output$box_exp_download_other <- shiny::downloadHandler(
+
+      filename = function() sprintf("GSEAlens_boxplot_%s.%s", Sys.Date(),
+
+                                    if (is.null(input$box_exp_format)) "svg" else input$box_exp_format),
+
+      content  = function(file) .boxplot_render_to_file(file, input$box_exp_format)
+
+    )
+
+
+
+    shiny::observeEvent(input$box_exp_copy_code, {
+
+      code <- .boxplot_export_code()
+
+      if (!nzchar(code)) {
+
+        shiny::showNotification("Nothing to copy.", type = "warning"); return()
+
+      }
+
+      ok <- tryCatch({ clipr::write_clip(code); TRUE }, error = function(e) FALSE)
+
+      if (isTRUE(ok)) {
+
+        shiny::showNotification("R code copied to clipboard.", type = "message")
+
+      } else {
+
+        shiny::showModal(shiny::modalDialog(
+
+          title = "Reproducible R Code (copy manually)",
+
+          size = "l", easyClose = TRUE,
+
+          shiny::pre(style = "max-height: 60vh; overflow-y: auto; font-size: 11px;", code),
+
+          footer = shiny::modalButton("Close")
+
+        ))
+
+      }
+
+    })
+
+
+
+    # External canvas: open full-size plot in a new browser tab
+
+    shiny::observeEvent(input$box_open_external, {
+
+      p <- .boxplot_preview_plot()
+
+      shiny::req(p)
+
+      canvas_dir <- file.path(tempdir(), "gsealens_canvas")
+
+      tmp <- tempfile(pattern = "box", tmpdir = canvas_dir, fileext = ".png")
+
+      w <- if (is.null(input$box_exp_width) || is.na(input$box_exp_width))  5 else input$box_exp_width
+
+      h <- if (is.null(input$box_exp_height) || is.na(input$box_exp_height)) 5 else input$box_exp_height
+
+      d <- if (is.null(input$box_exp_dpi) || is.na(input$box_exp_dpi)) 300 else input$box_exp_dpi
+
+      ggplot2::ggsave(tmp, p, width = w, height = h, dpi = d)
+
+      url <- sprintf("gsealens_canvas/%s", basename(tmp))
+
+      shinyjs::runjs(sprintf("window.open('%s', '_blank')", url))
+
+    })
+
+
+
+    # ============================================================
+
     # Pathway Volcano Export Center
 
     # ------------------------------------------------------------
@@ -2943,6 +3371,20 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
               label = "Show stats subtitle (pathways / selected / significant)",
 
               value = FALSE),
+
+            shiny::hr(),
+
+            shiny::radioButtons(ns("vol_exp_preview_mode"), "Preview Mode",
+
+              choices = c(
+
+                "Internal Image (in-modal)" = "internal",
+
+                "External Canvas (new tab)" = "external"
+
+              ),
+
+              selected = "internal", inline = TRUE),
 
             shiny::hr(),
 
@@ -3036,19 +3478,43 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
           shiny::column(7,
 
-            shiny::h5("Live Preview"),
+            shiny::div(id = ns("vol_internal_div"),
 
-            shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; overflow:auto; max-height:560px; display:flex; align-items:center; justify-content:center;",
+              shiny::h5("Live Preview"),
 
-              shiny::plotOutput(ns("vol_exp_preview"), height = "auto") |>
+              shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; overflow:auto; max-height:560px; display:flex; align-items:center; justify-content:center;",
 
-                shinycssloaders::withSpinner(type = 6, color = "#28a745")
+                shiny::plotOutput(ns("vol_exp_preview"), height = "auto") |>
+
+                  shinycssloaders::withSpinner(type = 6, color = "#28a745")
+
+              ),
+
+              shiny::tags$small(style = "color: #666; display:block; margin-top:6px;",
+
+                "X axis: NES | Y axis: -log10(pvalue). Aspect ratio matches saved figure.")
 
             ),
 
-            shiny::tags$small(style = "color: #666; display:block; margin-top:6px;",
+            shiny::div(id = ns("vol_external_div"), style = "display:none;",
 
-              "X axis: NES | Y axis: -log10(pvalue). Aspect ratio matches saved figure.")
+              shiny::h5("External Canvas"),
+
+              shiny::actionButton(ns("vol_open_external"),
+
+                "Open Full-Size Canvas", class = "btn-warning btn-block",
+
+                icon = shiny::icon("external-link")),
+
+              shiny::hr(),
+
+              shiny::helpText("Renders the plot at the specified dimensions and DPI,",
+
+                "then opens it in a new browser tab. Use browser zoom (Ctrl/Cmd +/-)",
+
+                "for fine detail inspection.")
+
+            )
 
           )
 
@@ -3079,6 +3545,54 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
     })
 
     shiny::observeEvent(input$vol_exp_dismiss, shiny::removeModal())
+
+
+
+    # Toggle internal/external visibility
+
+    shiny::observeEvent(input$vol_exp_preview_mode, {
+
+      if (is.null(input$vol_exp_preview_mode)) return()
+
+      if (input$vol_exp_preview_mode == "internal") {
+
+        shinyjs::show(ns("vol_internal_div")); shinyjs::hide(ns("vol_external_div"))
+
+      } else {
+
+        shinyjs::hide(ns("vol_internal_div")); shinyjs::show(ns("vol_external_div"))
+
+      }
+
+    }, ignoreInit = FALSE)
+
+
+
+    # External canvas: open full-size volcano in a new browser tab
+
+    shiny::observeEvent(input$vol_open_external, {
+
+      p <- .volcano_preview_plot()
+
+      shiny::req(p)
+
+      canvas_dir <- file.path(tempdir(), "gsealens_canvas")
+
+      tmp <- tempfile(pattern = "vol", tmpdir = canvas_dir, fileext = ".png")
+
+      w <- if (is.null(input$vol_exp_width) || is.na(input$vol_exp_width))  8 else input$vol_exp_width
+
+      h <- if (is.null(input$vol_exp_height) || is.na(input$vol_exp_height)) 6 else input$vol_exp_height
+
+      d <- if (is.null(input$vol_exp_dpi) || is.na(input$vol_exp_dpi)) 300 else input$vol_exp_dpi
+
+      ggplot2::ggsave(tmp, p, width = w, height = h, dpi = d)
+
+      url <- sprintf("gsealens_canvas/%s", basename(tmp))
+
+      shinyjs::runjs(sprintf("window.open('%s', '_blank')", url))
+
+    })
 
 
 
@@ -3390,6 +3904,20 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             shiny::hr(),
 
+            shiny::radioButtons(ns("de_exp_preview_mode"), "Preview Mode",
+
+              choices = c(
+
+                "Internal Image (in-modal)" = "internal",
+
+                "External Canvas (new tab)" = "external"
+
+              ),
+
+              selected = "internal", inline = TRUE),
+
+            shiny::hr(),
+
             shiny::h5("Download"),
 
             shiny::fluidRow(
@@ -3470,21 +3998,45 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
           shiny::column(7,
 
-            shiny::h5("Live Preview"),
+            shiny::div(id = ns("de_internal_div"),
 
-            shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; overflow:auto; max-height:560px; display:flex; align-items:center; justify-content:center;",
+              shiny::h5("Live Preview"),
 
-              shiny::plotOutput(ns("de_exp_preview"), height = "auto") |>
+              shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; overflow:auto; max-height:560px; display:flex; align-items:center; justify-content:center;",
 
-                shinycssloaders::withSpinner(type = 6, color = "#28a745")
+                shiny::plotOutput(ns("de_exp_preview"), height = "auto") |>
+
+                  shinycssloaders::withSpinner(type = 6, color = "#28a745")
+
+              ),
+
+              shiny::tags$small(style = "color: #666; display:block; margin-top:6px;",
+
+                "Six categories: Both (purple) / Selected (green) / Pathway (orange) / ",
+
+                "Up (red) / Down (blue) / NS (gray). Aspect ratio matches saved figure.")
 
             ),
 
-            shiny::tags$small(style = "color: #666; display:block; margin-top:6px;",
+            shiny::div(id = ns("de_external_div"), style = "display:none;",
 
-              "Six categories: Both (purple) / Selected (green) / Pathway (orange) / ",
+              shiny::h5("External Canvas"),
 
-              "Up (red) / Down (blue) / NS (gray). Aspect ratio matches saved figure.")
+              shiny::actionButton(ns("de_open_external"),
+
+                "Open Full-Size Canvas", class = "btn-warning btn-block",
+
+                icon = shiny::icon("external-link")),
+
+              shiny::hr(),
+
+              shiny::helpText("Renders the plot at the specified dimensions and DPI,",
+
+                "then opens it in a new browser tab. Use browser zoom (Ctrl/Cmd +/-)",
+
+                "for fine detail inspection.")
+
+            )
 
           )
 
@@ -3515,6 +4067,54 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
     })
 
     shiny::observeEvent(input$de_exp_dismiss, shiny::removeModal())
+
+
+
+    # Toggle internal/external visibility
+
+    shiny::observeEvent(input$de_exp_preview_mode, {
+
+      if (is.null(input$de_exp_preview_mode)) return()
+
+      if (input$de_exp_preview_mode == "internal") {
+
+        shinyjs::show(ns("de_internal_div")); shinyjs::hide(ns("de_external_div"))
+
+      } else {
+
+        shinyjs::hide(ns("de_internal_div")); shinyjs::show(ns("de_external_div"))
+
+      }
+
+    }, ignoreInit = FALSE)
+
+
+
+    # External canvas: open full-size DE volcano in a new browser tab
+
+    shiny::observeEvent(input$de_open_external, {
+
+      p <- .de_volcano_preview_plot()
+
+      shiny::req(p)
+
+      canvas_dir <- file.path(tempdir(), "gsealens_canvas")
+
+      tmp <- tempfile(pattern = "de_vol", tmpdir = canvas_dir, fileext = ".png")
+
+      w <- if (is.null(input$de_exp_width) || is.na(input$de_exp_width))  8 else input$de_exp_width
+
+      h <- if (is.null(input$de_exp_height) || is.na(input$de_exp_height)) 6 else input$de_exp_height
+
+      d <- if (is.null(input$de_exp_dpi) || is.na(input$de_exp_dpi)) 300 else input$de_exp_dpi
+
+      ggplot2::ggsave(tmp, p, width = w, height = h, dpi = d)
+
+      url <- sprintf("gsealens_canvas/%s", basename(tmp))
+
+      shinyjs::runjs(sprintf("window.open('%s', '_blank')", url))
+
+    })
 
 
 
