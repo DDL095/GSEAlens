@@ -2719,39 +2719,25 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
 
     # stopped growing horizontally, showing a squished image).
 
-    # Preview device matching export physical size (2026-07-06 v2): size the
-    # device to exactly w_in x h_in inches so margin()/base_size (in points)
-    # occupy the same proportion as the exported figure. Pixel resolution is
-    # downsampled with a cap so large figures don't blow up memory.
-    .preview_dims <- function(w_in, h_in, dpi = 300, max_px = 1600) {
-
-      # as.numeric first: numericInput can return character strings in
-
-      # edge cases; arithmetic on strings throws "non-numeric argument
-
-      # to binary operator". Coerce, then guard NULL/NA/<=0.
+    # Preview device matching export physical size (2026-07-06 v3):
+    # Shiny renderPlot does NOT accept res as a function, so res is fixed
+    # at 72 and pixel dims are computed as inch * 72 (with a pixel cap).
+    # Physical size = width_px / 72 = w_in inches, matching the export.
+    .preview_dims <- function(w_in, h_in, res = 72, max_px = 1600) {
 
       w_in <- suppressWarnings(as.numeric(w_in[1]))
 
       h_in <- suppressWarnings(as.numeric(h_in[1]))
 
-      dpi  <- suppressWarnings(as.numeric(dpi[1]))
-
       if (length(w_in) == 0 || is.na(w_in) || w_in <= 0) w_in <- 9
 
       if (length(h_in) == 0 || is.na(h_in) || h_in <= 0) h_in <- 7
 
-      if (length(dpi)  == 0 || is.na(dpi)  || dpi  <= 0) dpi  <- 300
+      scale <- min(1, max_px / (max(w_in, h_in) * res))
 
-      scale <- min(1, max_px / (max(w_in, h_in) * dpi))
+      list(width  = round(w_in * res * scale),
 
-      res   <- dpi * scale
-
-      list(width  = round(w_in * res),
-
-           height = round(h_in * res),
-
-           res    = res)
+           height = round(h_in * res * scale))
 
     }
 
@@ -2769,21 +2755,17 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
 
       },
 
-      res  = function() {
-
-        d <- .preview_dims(input$exp_width, input$exp_height, input$exp_dpi); d$res
-
-      },
+      res  = 72,
 
       width  = function() {
 
-        d <- .preview_dims(input$exp_width, input$exp_height, input$exp_dpi); d$width
+        d <- .preview_dims(input$exp_width, input$exp_height); d$width
 
       },
 
       height = function() {
 
-        d <- .preview_dims(input$exp_width, input$exp_height, input$exp_dpi); d$height
+        d <- .preview_dims(input$exp_width, input$exp_height); d$height
 
       }
 
