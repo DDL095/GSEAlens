@@ -628,29 +628,11 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         selected_df <- df[df$ID %in% current_selections, ]
 
-        n_sel <- nrow(selected_df)
-
-        # Distribute annotation labels in radial directions to minimise
-
-        # overlap (was: all labels at ay=-30 alternating ax 0/50, which
-
-        # stacked and obscured data points).
-
-        angles <- seq(0, 2 * pi, length.out = 8 + 1)[1:8]
-
-        for (i in seq_len(n_sel)) {
+        for (i in seq_len(nrow(selected_df))) {
 
           row <- selected_df[i, ]
 
-          ring  <- (i - 1) %/% 8          # 0 for first 8, 1 for next 8, ...
-
-          radius <- 45 + ring * 25
-
-          ang <- angles[(i - 1) %% 8 + 1]
-
-          ax_offset <- round(radius * cos(ang))
-
-          ay_offset <- round(radius * sin(ang))
+          ax_offset <- ifelse(i %% 2 == 1, 0, 50)
 
           annotations_list[[i]] <- list(
 
@@ -658,31 +640,31 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             y = -log10(row$pvalue),
 
-            text = as.character(row$ID),
+            text = row$ID,
 
             showarrow = TRUE,
 
             arrowhead = 2,
 
-            arrowsize = 0.8,
+            arrowsize = 1,
 
-            arrowwidth = 1.5,
+            arrowwidth = 2,
 
             arrowcolor = COLOR_PATHWAY,
 
             ax = ax_offset,
 
-            ay = ay_offset,
+            ay = -30,
 
-            font = list(size = 9, color = "#222"),
+            font = list(size = 10, color = COLOR_PATHWAY),
 
-            bgcolor = "rgba(255,255,255,0.92)",
+            bgcolor = "rgba(255,255,255,0.95)",
 
             bordercolor = COLOR_PATHWAY,
 
-            borderwidth = 1,
+            borderwidth = 2,
 
-            borderpad = 3
+            borderpad = 4
 
           )
 
@@ -2852,6 +2834,22 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             shiny::numericInput(ns("box_exp_dpi"), "DPI", value = 300, min = 72, max = 600),
 
+
+
+            shiny::h6("Canvas Margin (pt)"),
+
+            shiny::fluidRow(
+
+              shiny::column(3, shiny::numericInput(ns("box_exp_margin_top"),    "Top",    value = 15, min = 0, max = 80)),
+
+              shiny::column(3, shiny::numericInput(ns("box_exp_margin_bottom"), "Bottom", value = 15, min = 0, max = 80)),
+
+              shiny::column(3, shiny::numericInput(ns("box_exp_margin_left"),   "Left",   value = 18, min = 0, max = 80)),
+
+              shiny::column(3, shiny::numericInput(ns("box_exp_margin_right"),  "Right",  value = 18, min = 0, max = 80))
+
+            ),
+
             shiny::hr(),
 
             shiny::h5("Download"),
@@ -3042,7 +3040,15 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         right_group       = rg,
 
-        use_zero_baseline = isTRUE(input$zero_baseline)
+        use_zero_baseline = isTRUE(input$zero_baseline),
+
+        margin_top    = if (is.null(input$box_exp_margin_top))    15 else input$box_exp_margin_top,
+
+        margin_bottom = if (is.null(input$box_exp_margin_bottom)) 15 else input$box_exp_margin_bottom,
+
+        margin_left   = if (is.null(input$box_exp_margin_left))   18 else input$box_exp_margin_left,
+
+        margin_right  = if (is.null(input$box_exp_margin_right))  18 else input$box_exp_margin_right
 
       )
 
@@ -3267,6 +3273,22 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
             ),
 
             shiny::numericInput(ns("vol_exp_dpi"), "DPI", value = 300, min = 72, max = 600),
+
+
+
+            shiny::h6("Canvas Margin (pt)"),
+
+            shiny::fluidRow(
+
+              shiny::column(3, shiny::numericInput(ns("vol_exp_margin_top"),    "Top",    value = 15, min = 0, max = 80)),
+
+              shiny::column(3, shiny::numericInput(ns("vol_exp_margin_bottom"), "Bottom", value = 15, min = 0, max = 80)),
+
+              shiny::column(3, shiny::numericInput(ns("vol_exp_margin_left"),   "Left",   value = 18, min = 0, max = 80)),
+
+              shiny::column(3, shiny::numericInput(ns("vol_exp_margin_right"),  "Right",  value = 18, min = 0, max = 80))
+
+            ),
 
             shiny::hr(),
 
@@ -3544,7 +3566,15 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
                             selected_ids = sel_ids,
 
-                            show_annotations = show_stats)
+                            show_annotations = show_stats,
+
+                            margin_top    = if (is.null(input$vol_exp_margin_top))    15 else input$vol_exp_margin_top,
+
+                            margin_bottom = if (is.null(input$vol_exp_margin_bottom)) 15 else input$vol_exp_margin_bottom,
+
+                            margin_left   = if (is.null(input$vol_exp_margin_left))   18 else input$vol_exp_margin_left,
+
+                            margin_right  = if (is.null(input$vol_exp_margin_right))  18 else input$vol_exp_margin_right)
 
     }
 
@@ -3691,6 +3721,22 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
             ),
 
             shiny::numericInput(ns("de_exp_dpi"), "DPI", value = 300, min = 72, max = 600),
+
+
+
+            shiny::h6("Canvas Margin (pt)"),
+
+            shiny::fluidRow(
+
+              shiny::column(3, shiny::numericInput(ns("de_exp_margin_top"),    "Top",    value = 15, min = 0, max = 80)),
+
+              shiny::column(3, shiny::numericInput(ns("de_exp_margin_bottom"), "Bottom", value = 15, min = 0, max = 80)),
+
+              shiny::column(3, shiny::numericInput(ns("de_exp_margin_left"),   "Left",   value = 18, min = 0, max = 80)),
+
+              shiny::column(3, shiny::numericInput(ns("de_exp_margin_right"),  "Right",  value = 18, min = 0, max = 80))
+
+            ),
 
             shiny::hr(),
 
@@ -3912,7 +3958,15 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         left_group    = lg, right_group = rg,
 
-        show_annotations = show_stats
+        show_annotations = show_stats,
+
+        margin_top    = if (is.null(input$de_exp_margin_top))    15 else input$de_exp_margin_top,
+
+        margin_bottom = if (is.null(input$de_exp_margin_bottom)) 15 else input$de_exp_margin_bottom,
+
+        margin_left   = if (is.null(input$de_exp_margin_left))   18 else input$de_exp_margin_left,
+
+        margin_right  = if (is.null(input$de_exp_margin_right))  18 else input$de_exp_margin_right
 
       )
 

@@ -1934,6 +1934,22 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
             shiny::numericInput(ns("hub_exp_dpi"), "DPI", value = 300, min = 72, max = 600),
 
+
+
+            shiny::h6("Canvas Margin (pt)"),
+
+            shiny::fluidRow(
+
+              shiny::column(3, shiny::numericInput(ns("hub_exp_margin_top"),    "Top",    value = 18, min = 0, max = 80)),
+
+              shiny::column(3, shiny::numericInput(ns("hub_exp_margin_bottom"), "Bottom", value = 18, min = 0, max = 80)),
+
+              shiny::column(3, shiny::numericInput(ns("hub_exp_margin_left"),   "Left",   value = 18, min = 0, max = 80)),
+
+              shiny::column(3, shiny::numericInput(ns("hub_exp_margin_right"),  "Right",  value = 18, min = 0, max = 80))
+
+            ),
+
             shiny::hr(),
 
             shiny::h5("Download"),
@@ -2280,7 +2296,15 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
                             edge_df = edges, pw_size_mode = pw_mode,
 
-                            seed = seed_val)
+                            seed = seed_val,
+
+                            margin_top    = if (is.null(input$hub_exp_margin_top))    18 else input$hub_exp_margin_top,
+
+                            margin_bottom = if (is.null(input$hub_exp_margin_bottom)) 18 else input$hub_exp_margin_bottom,
+
+                            margin_left   = if (is.null(input$hub_exp_margin_left))   18 else input$hub_exp_margin_left,
+
+                            margin_right  = if (is.null(input$hub_exp_margin_right))  18 else input$hub_exp_margin_right)
 
     }
 

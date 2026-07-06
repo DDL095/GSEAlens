@@ -1696,7 +1696,11 @@ generate_volcano_code <- function(plot_df,
 
                                   show_annotations = FALSE,
 
-                                  base_size = 12) {
+                                  base_size = 12,
+
+                                  margin_top = 15, margin_bottom = 15,
+
+                                  margin_left = 18, margin_right = 18) {
 
   data_literal <- paste(utils::capture.output(dput(plot_df)), collapse = "\n")
 
@@ -1882,11 +1886,7 @@ p <- ggplot(df, aes(x = NES, y = -log10(pvalue),
 
     legend.position = "right",
 
-    # Canvas margin (2026-07-06): uniform breathing room on all sides so the
-
-    # exported figure sits on a clear "canvas" like a cairo_pdf page.
-
-    plot.margin = margin(15, 18, 15, 18)
+    plot.margin = margin(%d, %d, %d, %d)
 
   )
 
@@ -1964,7 +1964,9 @@ print(p)
 
     base_size,
 
-    labs_block
+    labs_block,
+
+    margin_top, margin_right, margin_bottom, margin_left
 
   )
 
@@ -2022,7 +2024,11 @@ generate_de_volcano_code <- function(de_df,
 
                                      show_annotations = FALSE,
 
-                                     base_size = 12) {
+                                     base_size = 12,
+
+                                     margin_top = 15, margin_bottom = 15,
+
+                                     margin_left = 18, margin_right = 18) {
 
   # Subset to essential columns + trim to top-N by significance to keep the
 
@@ -2142,7 +2148,7 @@ generate_de_volcano_code <- function(de_df,
 
 '    plot.subtitle = element_text(color = "gray30", hjust = 0.5),\n',
 
-'    plot.margin   = margin(15, 60, 15, 60),\n',
+    sprintf('    plot.margin   = margin(%d, %d, %d, %d),\n', margin_top, margin_right, margin_bottom, margin_left),
 
 '    legend.position = "right"\n',
 
@@ -2170,7 +2176,7 @@ generate_de_volcano_code <- function(de_df,
 
 '    legend.position = "right",\n',
 
-'    plot.margin = margin(15, 18, 15, 18)\n',
+    sprintf('    plot.margin = margin(%d, %d, %d, %d)\n', margin_top, margin_right, margin_bottom, margin_left),
 
 '  )'
 
@@ -2428,7 +2434,11 @@ generate_network_code <- function(edge_df, node_df,
 
                                   seed = 42L,
 
-                                  base_size = 12) {
+                                  base_size = 12,
+
+                                  margin_top = 18, margin_bottom = 18,
+
+                                  margin_left = 18, margin_right = 18) {
 
   edge_literal <- paste(utils::capture.output(dput(edge_df)), collapse = "\n")
 
@@ -2656,11 +2666,7 @@ p <- ggplot() +
 
   theme(legend.position = "right",
 
-        # Canvas margin (2026-07-06): breathing room so labels do not touch
-
-        # the canvas edge; coord_cartesian(clip=off) lets repelled labels show.
-
-        plot.margin = margin(18, 18, 18, 18)) +
+        plot.margin = margin(%d, %d, %d, %d)) +
 
   coord_cartesian(clip = "off") +
 
@@ -2680,7 +2686,9 @@ print(p)
 
 ',
 
-    edge_literal, node_literal, width_block, seed, base_size
+    edge_literal, node_literal, width_block, seed, base_size,
+
+    margin_top, margin_right, margin_bottom, margin_left
 
   )
 
@@ -2720,7 +2728,11 @@ generate_hubgene_code <- function(pathway_nodes, gene_nodes, edge_df,
 
                                   seed = 42L,
 
-                                  base_size = 12) {
+                                  base_size = 12,
+
+                                  margin_top = 18, margin_bottom = 18,
+
+                                  margin_left = 18, margin_right = 18) {
 
   pw_literal    <- paste(utils::capture.output(dput(pathway_nodes)), collapse = "\n")
 
@@ -3016,7 +3028,7 @@ p <- ggplot() +
 
   theme(legend.position = "right",
 
-        plot.margin = margin(18, 18, 18, 18)) +
+        plot.margin = margin(%d, %d, %d, %d)) +
 
   coord_cartesian(clip = "off") +
 
@@ -3040,7 +3052,9 @@ print(p)
 
     size_block,
 
-    seed, base_size
+    seed, base_size,
+
+    margin_top, margin_right, margin_bottom, margin_left
 
   )
 
@@ -3202,7 +3216,11 @@ generate_boxplot_image_code <- function(box_data_long,
 
                                         custom_order = "default",
 
-                                        base_size = 12) {
+                                        base_size = 12,
+
+                                        margin_top = 15, margin_bottom = 15,
+
+                                        margin_left = 18, margin_right = 18) {
 
   # Subset to the three essential columns + drop NA groups, mirroring the
 
@@ -3412,9 +3430,7 @@ p <- ggplot(df, aes(x = Group, y = Expression, fill = Group)) +
 
     plot.title = element_text(face = "bold", hjust = 0.5),
 
-    # Canvas margin (2026-07-06): uniform breathing room on all sides.
-
-    plot.margin = margin(15, 18, 15, 18)
+    plot.margin = margin(%d, %d, %d, %d)
 
   )
 
@@ -3444,7 +3460,9 @@ print(p)
 
     safe_gene,
 
-    safe_expr
+    safe_expr,
+
+    margin_top, margin_right, margin_bottom, margin_left
 
   )
 
