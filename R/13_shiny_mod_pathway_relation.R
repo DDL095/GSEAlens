@@ -2585,7 +2585,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
 
             shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; width:100%; height:520px; display:flex; align-items:center; justify-content:center; overflow:hidden;",
 
-              shiny::plotOutput(ns("exp_preview")) |>
+              shiny::imageOutput(ns("exp_preview")) |>
 
                 shinycssloaders::withSpinner(type = 6, color = "#28a745")
 
@@ -2741,33 +2741,53 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
 
 
 
-    output$exp_preview <- shiny::renderPlot(
+    .exp_preview_img <- shiny::debounce(shiny::reactive({
 
-      {
+      p <- .exp_preview_plot()
 
-        p <- .exp_preview_plot()
+      shiny::req(p)
 
-        shiny::req(p)
+      w   <- if (is.null(input$exp_width)  || is.na(input$exp_width))  9 else input$exp_width
 
-        p
+      h   <- if (is.null(input$exp_height) || is.na(input$exp_height)) 7 else input$exp_height
 
-      },
+      dpi <- if (is.null(input$exp_dpi)    || is.na(input$exp_dpi))  300 else input$exp_dpi
 
-      res  = 100,
+      tmp <- tempfile(fileext = ".png")
 
-      width  = function() {
+      tryCatch(
 
-        d <- .preview_dims(input$exp_width, input$exp_height); d$width
+        ggplot2::ggsave(tmp, p, width = w, height = h, dpi = dpi),
 
-      },
+        error = function(e) {
 
-      height = function() {
+          shiny::showNotification(sprintf("[network preview] %s", e$message),
 
-        d <- .preview_dims(input$exp_width, input$exp_height); d$height
+                                  type = "error", duration = 8)
 
-      }
+        }
 
-    )
+      )
+
+      if (file.exists(tmp)) tmp else NULL
+
+    }), 350)
+
+
+
+    output$exp_preview <- shiny::renderImage({
+
+      src <- .exp_preview_img()
+
+      shiny::req(src, file.exists(src))
+
+      d <- .preview_dims(input$exp_width, input$exp_height)
+
+      list(src = src, contentType = "image/png",
+
+           width = d$width, height = d$height, alt = "Network preview")
+
+    }, deleteFile = FALSE)
 
 
 

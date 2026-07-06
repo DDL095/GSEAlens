@@ -2936,7 +2936,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; width:100%; height:520px; display:flex; align-items:center; justify-content:center; overflow:hidden;",
 
-              shiny::plotOutput(ns("box_exp_preview")) |>
+              shiny::imageOutput(ns("box_exp_preview")) |>
 
                 shinycssloaders::withSpinner(type = 6, color = "#28a745")
 
@@ -3100,33 +3100,58 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
 
 
-    output$box_exp_preview <- shiny::renderPlot(
+    # Live preview = actual exported PNG (WYSIWYG). The ggplot object is
+    # rendered via ggsave to a temp PNG using the user's width/height/dpi,
+    # then displayed in a fixed window scaled to fit. This eliminates the
+    # device-mismatch drift of renderPlot (whose virtual device had a
+    # different physical size than the export, distorting margin/font ratios).
+    .box_exp_preview_img <- shiny::debounce(shiny::reactive({
 
-      {
+      p <- .boxplot_preview_plot()
 
-        p <- .boxplot_preview_plot()
+      shiny::req(p)
 
-        shiny::req(p)
+      w   <- if (is.null(input$box_exp_width)  || is.na(input$box_exp_width))  5 else input$box_exp_width
 
-        p
+      h   <- if (is.null(input$box_exp_height) || is.na(input$box_exp_height)) 5 else input$box_exp_height
 
-      },
+      dpi <- if (is.null(input$box_exp_dpi)    || is.na(input$box_exp_dpi))  300 else input$box_exp_dpi
 
-      res  = 100,
+      tmp <- tempfile(fileext = ".png")
 
-      width  = function() {
+      tryCatch(
 
-        d <- .vol_preview_dims(input$box_exp_width, input$box_exp_height); d$width
+        ggplot2::ggsave(tmp, p, width = w, height = h, dpi = dpi),
 
-      },
+        error = function(e) {
 
-      height = function() {
+          shiny::showNotification(sprintf("[boxplot preview] %s", e$message),
 
-        d <- .vol_preview_dims(input$box_exp_width, input$box_exp_height); d$height
+                                  type = "error", duration = 8)
 
-      }
+        }
 
-    )
+      )
+
+      if (file.exists(tmp)) tmp else NULL
+
+    }), 350)
+
+
+
+    output$box_exp_preview <- shiny::renderImage({
+
+      src <- .box_exp_preview_img()
+
+      shiny::req(src, file.exists(src))
+
+      d <- .vol_preview_dims(input$box_exp_width, input$box_exp_height)
+
+      list(src = src, contentType = "image/png",
+
+           width = d$width, height = d$height, alt = "Boxplot preview")
+
+    }, deleteFile = FALSE)
 
 
 
@@ -3394,7 +3419,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; width:100%; height:520px; display:flex; align-items:center; justify-content:center; overflow:hidden;",
 
-              shiny::plotOutput(ns("vol_exp_preview")) |>
+              shiny::imageOutput(ns("vol_exp_preview")) |>
 
                 shinycssloaders::withSpinner(type = 6, color = "#28a745")
 
@@ -3514,33 +3539,53 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     })
 
-    output$vol_exp_preview <- shiny::renderPlot(
+    .vol_exp_preview_img <- shiny::debounce(shiny::reactive({
 
-      {
+      p <- .volcano_preview_plot()
 
-        p <- .volcano_preview_plot()
+      shiny::req(p)
 
-        shiny::req(p)
+      w   <- if (is.null(input$vol_exp_width)  || is.na(input$vol_exp_width))  8 else input$vol_exp_width
 
-        p
+      h   <- if (is.null(input$vol_exp_height) || is.na(input$vol_exp_height)) 6 else input$vol_exp_height
 
-      },
+      dpi <- if (is.null(input$vol_exp_dpi)    || is.na(input$vol_exp_dpi))  300 else input$vol_exp_dpi
 
-      res  = 100,
+      tmp <- tempfile(fileext = ".png")
 
-      width  = function() {
+      tryCatch(
 
-        d <- .vol_preview_dims(input$vol_exp_width, input$vol_exp_height); d$width
+        ggplot2::ggsave(tmp, p, width = w, height = h, dpi = dpi),
 
-      },
+        error = function(e) {
 
-      height = function() {
+          shiny::showNotification(sprintf("[volcano preview] %s", e$message),
 
-        d <- .vol_preview_dims(input$vol_exp_width, input$vol_exp_height); d$height
+                                  type = "error", duration = 8)
 
-      }
+        }
 
-    )
+      )
+
+      if (file.exists(tmp)) tmp else NULL
+
+    }), 350)
+
+
+
+    output$vol_exp_preview <- shiny::renderImage({
+
+      src <- .vol_exp_preview_img()
+
+      shiny::req(src, file.exists(src))
+
+      d <- .vol_preview_dims(input$vol_exp_width, input$vol_exp_height)
+
+      list(src = src, contentType = "image/png",
+
+           width = d$width, height = d$height, alt = "Volcano preview")
+
+    }, deleteFile = FALSE)
 
 
 
@@ -3852,7 +3897,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; width:100%; height:520px; display:flex; align-items:center; justify-content:center; overflow:hidden;",
 
-              shiny::plotOutput(ns("de_exp_preview")) |>
+              shiny::imageOutput(ns("de_exp_preview")) |>
 
                 shinycssloaders::withSpinner(type = 6, color = "#28a745")
 
@@ -4018,33 +4063,53 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
 
 
-    output$de_exp_preview <- shiny::renderPlot(
+    .de_exp_preview_img <- shiny::debounce(shiny::reactive({
 
-      {
+      p <- .de_volcano_preview_plot()
 
-        p <- .de_volcano_preview_plot()
+      shiny::req(p)
 
-        shiny::req(p)
+      w   <- if (is.null(input$de_exp_width)  || is.na(input$de_exp_width))  8 else input$de_exp_width
 
-        p
+      h   <- if (is.null(input$de_exp_height) || is.na(input$de_exp_height)) 6 else input$de_exp_height
 
-      },
+      dpi <- if (is.null(input$de_exp_dpi)    || is.na(input$de_exp_dpi))  300 else input$de_exp_dpi
 
-      res  = 100,
+      tmp <- tempfile(fileext = ".png")
 
-      width  = function() {
+      tryCatch(
 
-        d <- .vol_preview_dims(input$de_exp_width, input$de_exp_height); d$width
+        ggplot2::ggsave(tmp, p, width = w, height = h, dpi = dpi),
 
-      },
+        error = function(e) {
 
-      height = function() {
+          shiny::showNotification(sprintf("[DE volcano preview] %s", e$message),
 
-        d <- .vol_preview_dims(input$de_exp_width, input$de_exp_height); d$height
+                                  type = "error", duration = 8)
 
-      }
+        }
 
-    )
+      )
+
+      if (file.exists(tmp)) tmp else NULL
+
+    }), 350)
+
+
+
+    output$de_exp_preview <- shiny::renderImage({
+
+      src <- .de_exp_preview_img()
+
+      shiny::req(src, file.exists(src))
+
+      d <- .vol_preview_dims(input$de_exp_width, input$de_exp_height)
+
+      list(src = src, contentType = "image/png",
+
+           width = d$width, height = d$height, alt = "DE volcano preview")
+
+    }, deleteFile = FALSE)
 
 
 
