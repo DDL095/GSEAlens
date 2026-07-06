@@ -14,6 +14,8 @@
 
 #' @param target_factor Only for DESeq2. Specifies the target factor of interest. If NULL, automatically inferred as the last term in the design formula.
 
+
+#' @param verbose Logical. If TRUE (default), print progress messages. Set to FALSE for silent batch-mode use.
 #' @return Returns a standardized object of class \code{GseaEnv}.
 
 #' @export

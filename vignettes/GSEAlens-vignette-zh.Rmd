@@ -564,6 +564,10 @@ launch_gsea_app(gsea_res, addition_data = "pathway_annotations.csv")
 
 - **组合通路绘图**：将多个选中通路聚合为单张组合图（底层使用 `patchwork`）。
 
+  导出模态框包含 WYSIWYG 实时预览、PDF/PNG/SVG/TIFF 输出，以及"复制 R 代码"
+
+  按钮（通过 `generate_combined_plot_code()` 生成自包含脚本）。
+
 
 
 点击任意通路行会打开**通路详情 Modal**，展示完整描述、leading-edge 基因，并提供
@@ -628,15 +632,13 @@ launch_gsea_app(gsea_res, addition_data = "pathway_annotations.csv")
 
   （`-log10(FDR)` / `-log10(P-value)` / `|NES|`，用户可选），点尺寸编码
 
-  基因集量级。尺寸映射使用**固定域 + sqrt 感知**（而非每次绘制 min-max
+  基因集量级。尺寸映射采用**数据驱动**（无固定域、无变换），使点尺寸
 
-  归一化），这样切换"Core Genes Count"（leading edge 数）与"Set Size"
+  忠实反映底层基因集量级范围。这与 `enrichplot::dotplot` 使用的
 
-  （MSigDB 基因集总数）时点的视觉形态会有明显差异，且跨参数可比较。这与
+  `ggplot2::scale_size_continuous(range=c(3,8))` 范式一致——尺寸
 
-  `enrichplot::dotplot` 使用的 `ggplot2::scale_size_continuous(range=...)`
-
-  语义一致。
+  上下限由数据本身决定，而非人为施加固定域。
 
 - **Network 面板**：图布局（Fruchterman-Reingold / Kamada-Kawai / 圆形），
 
@@ -746,11 +748,13 @@ launch_gsea_app(gsea_res, addition_data = "pathway_annotations.csv")
 
 
 
-将多个选中通路的富集 running-score 曲线聚合为单张画布。核心特性是**一键导出可重现
+将多个选中通路的富集 running-score 曲线聚合为单张画布。图像导出模态框
 
-R 代码**：用户可在侧边栏调整画布参数，然后点击"生成代码"获得一份独立的 R 脚本，
+包含 WYSIWYG 实时预览、PDF/PNG/SVG/TIFF 输出、可调画布边距，以及"复制 R
 
-在 Shiny 环境外重现该图。
+代码"按钮（通过 `generate_joint_canvas_code()` 生成自包含 R 脚本，可在 Shiny
+
+环境外重现该图）。
 
 
 
@@ -784,7 +788,9 @@ R 代码**：用户可在侧边栏调整画布参数，然后点击"生成代码
 
 
 
-Tab 2、3、6 都包含 **"生成 R 代码"** 按钮，会生成一份独立 R 脚本重现当前可视化。
+Tab 1（组合通路绘图）、2、3、4、6 均在各自的图像导出模态框中集成了
+
+**"复制 R 代码"** 按钮，会生成一份独立 R 脚本重现当前可视化。
 
 这是生成发表级图表的推荐方式：在 Shiny 应用中迭代调整图像，然后导出代码用于最终
 

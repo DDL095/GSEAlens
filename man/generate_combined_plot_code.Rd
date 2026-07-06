@@ -43,3 +43,10 @@ Return an executable R script reproducing the Combined Pathway
   the interactive \code{plot_directional_gsea()} call the app performs when
   the user selects pathways in the main table's "Combined Display" column.
 }
+\examples{
+code <- generate_combined_plot_code(
+  contrast_id    = "untrt_vs_trt",
+  target_pathways = c("HALLMARK_TNFA_SIGNALING_VIA_NFKB")
+)
+cat(code)
+}

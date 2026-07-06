@@ -29,6 +29,14 @@ generate_hubgene_code(
 \item{seed}{Integer.}
 
 \item{base_size}{Numeric.}
+
+\item{margin_top}{Numeric. Top plot margin (mm).}
+
+\item{margin_bottom}{Numeric. Bottom plot margin (mm).}
+
+\item{margin_left}{Numeric. Left plot margin (mm).}
+
+\item{margin_right}{Numeric. Right plot margin (mm).}
 }
 \value{
 Character scalar of executable R code.
@@ -37,4 +45,11 @@ Character scalar of executable R code.
 Return an executable R script reproducing the HubGene module's
   visNetwork view as a static ggplot2 figure. Node size is controlled by
   the same three-mode logic (fixed / fdr / setsize) as the interactive view.
+}
+\examples{
+pathway_nodes <- data.frame(id = c("P1","P2"),
+  NES = c(1.8,-1.5), FDR = c(.01,.04), setSize = c(20, 15))
+gene_nodes <- data.frame(id = c("G1","G2"), stat = c(3.2,-2.8), degree = c(2, 1))
+edge_df <- data.frame(from = c("P1","P2"), to = c("G1","G1"))
+cat(generate_hubgene_code(pathway_nodes, gene_nodes, edge_df))
 }

@@ -600,7 +600,11 @@ The default landing tab, combining two sub-modules:
 
 - **Combined Pathway Plotting**: aggregates multiple selected pathways into a
 
-  single composite figure (uses `patchwork` under the hood).
+  single composite figure (uses `patchwork` under the hood). The export modal
+
+  includes a WYSIWYG Live Preview, PDF/PNG/SVG/TIFF output, and a "Copy R Code"
+
+  button via `generate_combined_plot_code()`.
 
 
 
@@ -672,19 +676,17 @@ Two sub-panels are provided under this tab:
 
   encodes significance (`-log10(FDR)` / `-log10(P-value)` / `|NES|`,
 
-  user-selectable), and dot size encodes gene-set magnitude. A fixed-domain
+  dot size encodes gene-set magnitude. A data-driven size scale
 
-  `sqrt` size scale (rather than per-render min-max normalization) is used so
+  (no fixed limits, no transform) is used so that dot sizes faithfully
 
-  that switching between "Core Genes Count" (leading edge) and "Set Size"
+  reflect the underlying gene-set magnitude range. This mirrors the
 
-  (MSigDB gene-set total) produces visually distinct dot patterns and remains
+  `ggplot2::scale_size_continuous(range=c(3,8))` convention used by
 
-  comparable across parameter changes. This mirrors the
+  `enrichplot::dotplot`, where size limits are derived from the data
 
-  `ggplot2::scale_size_continuous(range=...)` semantics used by
-
-  `enrichplot::dotplot`.
+  rather than imposed as a fixed domain.
 
 - **Network panel**: graph layout (Fruchterman-Reingold / Kamada-Kawai /
 
@@ -818,13 +820,13 @@ Source: `R/17_shiny_mod_AI.R`.
 
 Aggregates enrichment running-score curves for multiple selected pathways into
 
-a single composite canvas. The key feature is **one-click export of reproducible
+a single composite canvas. The image export modal includes a WYSIWYG Live
 
-R code**: the user can adjust the canvas parameters in the sidebar, then click
+Preview, PDF/PNG/SVG/TIFF output, adjustable canvas margins, and a "Copy R
 
-"Generate Code" to obtain a self-contained R script that reproduces the figure
+Code" button that generates a self-contained R script via
 
-outside the Shiny environment.
+`generate_joint_canvas_code()` for reproduction outside the Shiny environment.
 
 
 
@@ -862,7 +864,9 @@ A practical interpretation guide:
 
 
 
-Tabs 2, 3, and 6 include a **"Generate R Code"** button that produces a
+Tabs 1 (Combined Pathway Plotting), 2, 3, 4, and 6 include a **"Copy R Code"**
+
+button integrated directly into each module's image export modal, producing a
 
 self-contained R script reproducing the current visualization. This is the
 

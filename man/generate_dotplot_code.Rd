@@ -42,3 +42,10 @@ Return an executable ggplot2 script that reproduces the
   publication-ready figure. The data frame passed in is serialized as a
   \code{dput()}-style structure literal so the script is self-contained.
 }
+\examples{
+plot_df <- data.frame(
+  ID = c("A", "B", "C"), NES = c(1.9, -1.6, 0.4),
+  pvalue = c(.001, .004, .12), p.adjust = c(.01, .03, .35),
+  CoreCount = c(8, 5, 2), setSize = c(25, 18, 10))
+cat(generate_dotplot_code(plot_df))
+}

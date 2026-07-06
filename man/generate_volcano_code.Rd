@@ -25,7 +25,21 @@ generate_volcano_code(
 
 \item{right_group}{Character.}
 
+\item{n_selected}{Integer. Number of selected pathways (subtitle).}
+
+\item{selected_ids}{Character vector. Pathway IDs for ggrepel annotation.}
+
+\item{show_annotations}{Logical. Add ggrepel labels for selected pathways.}
+
 \item{base_size}{Numeric.}
+
+\item{margin_top}{Numeric. Top plot margin (mm).}
+
+\item{margin_bottom}{Numeric. Bottom plot margin (mm).}
+
+\item{margin_left}{Numeric. Left plot margin (mm).}
+
+\item{margin_right}{Numeric. Right plot margin (mm).}
 }
 \value{
 Character scalar of executable R code.
@@ -33,4 +47,10 @@ Character scalar of executable R code.
 \description{
 Return an executable ggplot2 script reproducing the Quadrant
   module's pathway volcano plot as a static, publication-ready figure.
+}
+\examples{
+plot_df <- data.frame(
+  ID = c("HALLMARK_A", "HALLMARK_B"),
+  NES = c(2.1, -1.8), pvalue = c(.001, .003), p.adjust = c(.01, .02))
+cat(generate_volcano_code(plot_df, left_group = "Ctrl", right_group = "Trt"))
 }

@@ -466,7 +466,7 @@ print(GSEAlens_volcano_plot)
 
 #' @examples
 
-#' \dontrun{
+#' \donttest{
 
 #' code <- generate_joint_canvas_code(GSEAlens_res = gsea_res,
 
@@ -680,6 +680,12 @@ print(GSEAlens_combined)
 #' @param left_group Character. Left group label for axis annotation.
 #' @param right_group Character. Right group label.
 #' @return Character scalar of executable R code.
+#' @examples
+#' code <- generate_combined_plot_code(
+#'   contrast_id    = "untrt_vs_trt",
+#'   target_pathways = c("HALLMARK_TNFA_SIGNALING_VIA_NFKB")
+#' )
+#' cat(code)
 #' @export
 generate_combined_plot_code <- function(gsea_res_var = "gsea_res",
                                          contrast_id,
@@ -796,7 +802,7 @@ print(GSEAlens_p)
 
 #' @examples
 
-#' \dontrun{
+#' \donttest{
 
 #' # Show the code in the Shiny app via the "Export Boxplot Data Code" button
 
@@ -1468,6 +1474,18 @@ extract_boxplot_data <- function(GSEAlens_res,
 
 #' @return Character scalar of executable R code.
 
+#' @examples
+
+#' plot_df <- data.frame(
+
+#'   ID = c("A", "B", "C"), NES = c(1.9, -1.6, 0.4),
+
+#'   pvalue = c(.001, .004, .12), p.adjust = c(.01, .03, .35),
+
+#'   CoreCount = c(8, 5, 2), setSize = c(25, 18, 10))
+
+#' cat(generate_dotplot_code(plot_df))
+
 #' @export
 
 generate_dotplot_code <- function(plot_df, color_mode = "padj",
@@ -1767,6 +1785,30 @@ print(p)
 #' @param base_size Numeric.
 
 #' @return Character scalar of executable R code.
+
+#' @param n_selected Integer. Number of selected pathways (subtitle).
+
+#' @param selected_ids Character vector. Pathway IDs for ggrepel annotation.
+
+#' @param show_annotations Logical. Add ggrepel labels for selected pathways.
+
+#' @param margin_top Numeric. Top plot margin (mm).
+
+#' @param margin_bottom Numeric. Bottom plot margin (mm).
+
+#' @param margin_left Numeric. Left plot margin (mm).
+
+#' @param margin_right Numeric. Right plot margin (mm).
+
+#' @examples
+
+#' plot_df <- data.frame(
+
+#'   ID = c("HALLMARK_A", "HALLMARK_B"),
+
+#'   NES = c(2.1, -1.8), pvalue = c(.001, .003), p.adjust = c(.01, .02))
+
+#' cat(generate_volcano_code(plot_df, left_group = "Ctrl", right_group = "Trt"))
 
 #' @export
 
@@ -2094,6 +2136,26 @@ print(p)
 #' @param base_size Numeric.
 
 #' @return Character scalar of executable R code.
+
+#' @param show_annotations Logical. Add ggrepel labels.
+
+#' @param margin_top Numeric. Top plot margin (mm).
+
+#' @param margin_bottom Numeric. Bottom plot margin (mm).
+
+#' @param margin_left Numeric. Left plot margin (mm).
+
+#' @param margin_right Numeric. Right plot margin (mm).
+
+#' @examples
+
+#' de_df <- data.frame(
+
+#'   gene_symbol = c("GENE_A", "GENE_B"),
+
+#'   logFC = c(2.5, -3.1), pvalue = c(.001, .002))
+
+#' cat(generate_de_volcano_code(de_df, left_group = "Ctrl", right_group = "Trt"))
 
 #' @export
 
@@ -2515,6 +2577,26 @@ print(p)
 
 #' @return Character scalar of executable R code.
 
+#' @param margin_top Numeric. Top plot margin (mm).
+
+#' @param margin_bottom Numeric. Bottom plot margin (mm).
+
+#' @param margin_left Numeric. Left plot margin (mm).
+
+#' @param margin_right Numeric. Right plot margin (mm).
+
+#' @examples
+
+#' edge_df <- data.frame(from = c("P1","P2"), to = c("P2","P3"),
+
+#'   weight = c(.3, .1), shared = c(3, 1))
+
+#' node_df <- data.frame(name = c("P1","P2","P3"),
+
+#'   x = c(0,1,2), y = c(0,1,0), NES = c(1.5,-1.2,.8), p.adjust = c(.01,.03,.2))
+
+#' cat(generate_network_code(edge_df, node_df))
+
 #' @export
 
 generate_network_code <- function(edge_df, node_df,
@@ -2808,6 +2890,26 @@ print(p)
 #' @param base_size Numeric.
 
 #' @return Character scalar of executable R code.
+
+#' @param margin_top Numeric. Top plot margin (mm).
+
+#' @param margin_bottom Numeric. Bottom plot margin (mm).
+
+#' @param margin_left Numeric. Left plot margin (mm).
+
+#' @param margin_right Numeric. Right plot margin (mm).
+
+#' @examples
+
+#' pathway_nodes <- data.frame(id = c("P1","P2"),
+
+#'   NES = c(1.8,-1.5), FDR = c(.01,.04), setSize = c(20, 15))
+
+#' gene_nodes <- data.frame(id = c("G1","G2"), stat = c(3.2,-2.8), degree = c(2, 1))
+
+#' edge_df <- data.frame(from = c("P1","P2"), to = c("G1","G1"))
+
+#' cat(generate_hubgene_code(pathway_nodes, gene_nodes, edge_df))
 
 #' @export
 
@@ -3257,6 +3359,14 @@ print(p)
 
 #' @param base_size Numeric.
 
+#' @param margin_top Numeric. Top plot margin (mm).
+
+#' @param margin_bottom Numeric. Bottom plot margin (mm).
+
+#' @param margin_left Numeric. Left plot margin (mm).
+
+#' @param margin_right Numeric. Right plot margin (mm).
+
 #' @return Character scalar of executable R code.
 
 #' @export
@@ -3265,7 +3375,7 @@ print(p)
 
 #' @examples
 
-#' \dontrun{
+#' \donttest{
 
 #' # Shown via the "Export Publication Plot" button in panel 4 of the
 

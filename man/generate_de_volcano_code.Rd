@@ -36,7 +36,17 @@ Optional columns: padj (for hover annotation only).}
 
 \item{right_group}{Character.}
 
+\item{show_annotations}{Logical. Add ggrepel labels.}
+
 \item{base_size}{Numeric.}
+
+\item{margin_top}{Numeric. Top plot margin (mm).}
+
+\item{margin_bottom}{Numeric. Bottom plot margin (mm).}
+
+\item{margin_left}{Numeric. Left plot margin (mm).}
+
+\item{margin_right}{Numeric. Right plot margin (mm).}
 }
 \value{
 Character scalar of executable R code.
@@ -46,4 +56,10 @@ Return an executable ggplot2 script reproducing the Quadrant
   module's gene-level Differential Expression Volcano as a static,
   publication-ready figure. Six-color classification (both / user /
   pathway / up / down / ns) mirrors the interactive plotly view.
+}
+\examples{
+de_df <- data.frame(
+  gene_symbol = c("GENE_A", "GENE_B"),
+  logFC = c(2.5, -3.1), pvalue = c(.001, .002))
+cat(generate_de_volcano_code(de_df, left_group = "Ctrl", right_group = "Trt"))
 }

@@ -39,7 +39,7 @@ Produce a self-contained, reproducible R script that extracts
   (e.g. GraphPad Prism, Excel, R) for downstream plotting.
 }
 \examples{
-\dontrun{
+\donttest{
 # Show the code in the Shiny app via the "Export Boxplot Data Code" button
 # in the Quadrant module (panel 4).
 code <- generate_boxplot_data_code(

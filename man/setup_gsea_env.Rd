@@ -20,6 +20,8 @@ setup_gsea_env(
 \item{expr_data}{Optional. Expression matrix or DGEList. If NULL, extraction from fit object will be attempted (partial support only).}
 
 \item{target_factor}{Only for DESeq2. Specifies the target factor of interest. If NULL, automatically inferred as the last term in the design formula.}
+
+\item{verbose}{Logical. If TRUE (default), print progress messages. Set to FALSE for silent batch-mode use.}
 }
 \value{
 Returns a standardized object of class \code{GseaEnv}.

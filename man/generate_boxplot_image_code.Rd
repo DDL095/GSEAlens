@@ -37,6 +37,14 @@ generate_boxplot_image_code(
 (e.g. "A->B,C") or "default".}
 
 \item{base_size}{Numeric.}
+
+\item{margin_top}{Numeric. Top plot margin (mm).}
+
+\item{margin_bottom}{Numeric. Bottom plot margin (mm).}
+
+\item{margin_left}{Numeric. Left plot margin (mm).}
+
+\item{margin_right}{Numeric. Right plot margin (mm).}
 }
 \value{
 Character scalar of executable R code.
@@ -49,7 +57,7 @@ Return an executable ggplot2 script reproducing the Quadrant
   group order.
 }
 \examples{
-\dontrun{
+\donttest{
 # Shown via the "Export Publication Plot" button in panel 4 of the
 # Quadrant module. Generates a self-contained ggplot2 script.
 box_long <- extract_boxplot_data(gsea_res, "untrt_vs_trt", "GAPDH")$long

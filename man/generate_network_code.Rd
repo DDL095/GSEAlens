@@ -27,6 +27,14 @@ generate_network_code(
 inside the generated script for full reproducibility).}
 
 \item{base_size}{Numeric.}
+
+\item{margin_top}{Numeric. Top plot margin (mm).}
+
+\item{margin_bottom}{Numeric. Bottom plot margin (mm).}
+
+\item{margin_left}{Numeric. Left plot margin (mm).}
+
+\item{margin_right}{Numeric. Right plot margin (mm).}
 }
 \value{
 Character scalar of executable R code.
@@ -36,4 +44,11 @@ Return an executable R script reproducing the Pathway
   Relationship module's network view as a static ggplot2 figure (using
   igraph layout + geom_segment edges + geom_point nodes). No ggraph
   dependency required.
+}
+\examples{
+edge_df <- data.frame(from = c("P1","P2"), to = c("P2","P3"),
+  weight = c(.3, .1), shared = c(3, 1))
+node_df <- data.frame(name = c("P1","P2","P3"),
+  x = c(0,1,2), y = c(0,1,0), NES = c(1.5,-1.2,.8), p.adjust = c(.01,.03,.2))
+cat(generate_network_code(edge_df, node_df))
 }
