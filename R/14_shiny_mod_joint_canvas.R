@@ -474,6 +474,22 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
 
             shiny::numericInput(ns("jc_dpi"), "DPI", value = 300, min = 72, max = 600),
 
+
+
+            shiny::h6("Canvas Margin (pt)"),
+
+            shiny::fluidRow(
+
+              shiny::column(3, shiny::numericInput(ns("jc_margin_top"),    "Top",    value = 10, min = 0, max = 80)),
+
+              shiny::column(3, shiny::numericInput(ns("jc_margin_bottom"), "Bottom", value = 10, min = 0, max = 80)),
+
+              shiny::column(3, shiny::numericInput(ns("jc_margin_left"),   "Left",   value = 10, min = 0, max = 80)),
+
+              shiny::column(3, shiny::numericInput(ns("jc_margin_right"),  "Right",  value = 10, min = 0, max = 80))
+
+            ),
+
             shiny::hr(),
 
             shiny::h5("Download"),
@@ -546,7 +562,7 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
 
             shiny::h5("Live Preview"),
 
-            shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; width:100%; height:520px; display:flex; align-items:center; justify-content:center; overflow:hidden;",
+            shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; width:100%; height:520px; display:flex; align-items:center; justify-content:center; overflow:auto;",
 
               shiny::plotOutput(ns("jc_preview")) |>
 
@@ -584,29 +600,52 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
 
 
 
-    # Preview scaling (2026-07-06): the preview pane is a FIXED-SIZE window
+    # Preview device matching export physical size (2026-07-06 v3):
+    # res fixed at 72 (Shiny renderPlot doesn't accept res as function),
+    # pixel dims = inch * 72, physical size matches export.
+    .jc_preview_dims <- function(w_in, h_in, res = 72, max_px = 1600) {
 
-    # (~500x480 px). The figure is rendered at the export aspect ratio and
+      w_in <- suppressWarnings(as.numeric(w_in[1]))
 
-    # scaled to fit inside that window, centered. A tall figure appears as a
+      h_in <- suppressWarnings(as.numeric(h_in[1]))
 
-    # vertical "pole" thumbnail; a wide multi-contrast canvas as a horizontal
+      if (length(w_in) == 0 || is.na(w_in) || w_in <= 0) w_in <- 16
 
-    # "pole". This mirrors how the saved PNG/PDF looks.
+      if (length(h_in) == 0 || is.na(h_in) || h_in <= 0) h_in <- 12
 
-    .jc_preview_dims <- function(w_in, h_in, max_w = 500, max_h = 480) {
+      scale <- min(1, max_px / (max(w_in, h_in) * res))
 
-      if (is.null(w_in) || is.na(w_in) || w_in <= 0) w_in <- 16
+      list(width  = round(w_in * res * scale),
 
-      if (is.null(h_in) || is.na(h_in) || h_in <= 0) h_in <- 12
-
-      scale <- min(max_w / w_in, max_h / h_in)
-
-      list(width  = round(w_in * scale),
-
-           height = round(h_in * scale))
+           height = round(h_in * res * scale))
 
     }
+
+
+
+    # Post-process: apply user-adjustable canvas margin via patchwork's
+
+    # & operator (theme applied to all subplots = canvas breathing room).
+
+    # This lets users tweak margin live without re-generating the canvas.
+
+    .jc_preview_plot <- shiny::reactive({
+
+      cr <- canvas_result()
+
+      shiny::req(cr, cr$plot)
+
+      mt <- if (is.null(input$jc_margin_top)    || is.na(input$jc_margin_top))    10 else input$jc_margin_top
+
+      mb <- if (is.null(input$jc_margin_bottom) || is.na(input$jc_margin_bottom)) 10 else input$jc_margin_bottom
+
+      ml <- if (is.null(input$jc_margin_left)   || is.na(input$jc_margin_left))   10 else input$jc_margin_left
+
+      mr <- if (is.null(input$jc_margin_right)  || is.na(input$jc_margin_right))  10 else input$jc_margin_right
+
+      cr$plot & ggplot2::theme(plot.margin = ggplot2::margin(mt, mr, mb, ml))
+
+    })
 
 
 
@@ -614,15 +653,11 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
 
       {
 
-        cr <- canvas_result()
-
-        shiny::req(cr, cr$plot)
-
-        cr$plot
+        .jc_preview_plot()
 
       },
 
-      res  = 100,
+      res  = 72,
 
       width  = function() {
 
@@ -642,9 +677,9 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
 
     .jc_render_to_file <- function(file, fmt) {
 
-      cr <- canvas_result()
+      p <- .jc_preview_plot()
 
-      if (is.null(cr) || is.null(cr$plot)) {
+      if (is.null(p)) {
 
         shiny::showNotification("No canvas to export.", type = "warning"); return()
 
@@ -652,7 +687,7 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
 
       ggplot2::ggsave(
 
-        file, cr$plot,
+        file, p,
 
         width  = if (is.null(input$jc_width))  16 else input$jc_width,
 
