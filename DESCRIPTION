@@ -25,6 +25,6 @@ LazyData: false
 RoxygenNote: 8.0.0
 biocViews: GeneSetEnrichment, Visualization, ShinyApps, Software
 Imports: stats, utils, enrichplot, enrichit, grDevices, graphics, methods, shiny, shinycssloaders, DT, plotly, ggplot2, rlang, igraph, dplyr, tidyr, tibble, stringr, patchwork, ComplexHeatmap, circlize, grid, clusterProfiler, limma, edgeR, DESeq2, SummarizedExperiment, S4Vectors, msigdbr, future, future.apply, htmltools, htmlwidgets, jsonlite, clipr, progressr, visNetwork, shinyjs, withr
-Suggests: testthat (>= 3.0.0), BiocStyle, knitr, rmarkdown, shinytest2, airway, ggrepel
+Suggests: testthat (>= 3.0.0), BiocStyle, knitr, rmarkdown, airway, ggrepel
 Depends: R (>= 4.6.0)
 VignetteBuilder: knitr
