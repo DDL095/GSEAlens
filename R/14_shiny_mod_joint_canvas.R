@@ -46,7 +46,7 @@ mod_joint_canvas_ui <- function(id) {
 
         shiny::fluidRow(
 
-          shiny::column(3,
+          shiny::column(12,
 
             shiny::actionButton(
 
@@ -62,35 +62,13 @@ mod_joint_canvas_ui <- function(id) {
 
             )
 
-          ),
-
-          shiny::column(3,
-
-            shiny::actionButton(
-
-              ns("export_code_btn"),
-
-              label = "Export Joint Canvas Code",
-
-              class = "btn-secondary",
-
-              icon  = shiny::icon("code"),
-
-              style = "width: 100%;"
-
-            )
-
-          ),
-
-          shiny::column(6,
-
-            shiny::helpText("Image export uses ggplot2::ggsave (PDF/PNG/SVG/TIFF). ",
-
-                            "Code export generates a self-contained R script for reproduction.")
-
           )
 
-        )
+        ),
+
+        shiny::tags$small(style = "color:#666; display:block; margin-top:6px;",
+
+          "Image export uses ggplot2::ggsave (PDF/PNG/SVG/TIFF). Reproducible R code is available inside the modal via 'Copy R Code'.")
 
       ))
 
@@ -287,7 +265,6 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
           length(pathways)
 
         )
-
 
 
         p <- tryCatch(
@@ -552,10 +529,18 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
 
             shiny::hr(),
 
-            shiny::actionButton(ns("jc_dismiss"), "Close",
-
-                                class = "btn-default btn-block")
-
+            shiny::fluidRow(
+              shiny::column(6,
+                shiny::actionButton(ns("jc_copy_code"),
+                  "Copy R Code",
+                  class = "btn-info btn-block",
+                  icon = shiny::icon("clipboard"))
+              ),
+              shiny::column(6,
+                shiny::actionButton(ns("jc_dismiss"), "Close",
+                                    class = "btn-default btn-block")
+              )
+            )
           ),
 
           shiny::column(7,

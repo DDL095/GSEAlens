@@ -313,8 +313,18 @@ mod_multi_plot_server <- function(id, data_prep, table_controller, gsea_res = NU
               )
             ),
             shiny::hr(),
-            shiny::actionButton(ns("cp_dismiss"), "Close",
-                                class = "btn-default btn-block")
+            shiny::fluidRow(
+              shiny::column(6,
+                shiny::actionButton(ns("cp_copy_code"),
+                  "Copy R Code",
+                  class = "btn-info btn-block",
+                  icon = shiny::icon("clipboard"))
+              ),
+              shiny::column(6,
+                shiny::actionButton(ns("cp_dismiss"), "Close",
+                                    class = "btn-default btn-block")
+              )
+            )
           ),
           shiny::column(7,
             shiny::h5("Live Preview"),
@@ -389,6 +399,56 @@ mod_multi_plot_server <- function(id, data_prep, table_controller, gsea_res = NU
                                     if (is.null(input$cp_format)) "svg" else input$cp_format),
       content  = function(file) .cp_render_to_file(file, input$cp_format)
     )
+
+    # ----- Code export (mirrors module 13/14 pattern) -----
+    # Generates self-contained R code reproducing the current
+    # plot_directional_gsea() call so the user can reproduce the figure.
+    .cp_export_code <- function() {
+      sel <- selected_ids()
+      if (is.null(sel) || length(sel) == 0) return("")
+      data_list <- data_prep()
+      if (is.null(data_list)) return("")
+
+      colors <- trimws(strsplit(data_list$custom_colors, ",")[[1]])
+      if (length(colors) == 0) colors <- NULL
+
+      lg <- if (is.null(data_list$left_group))  "Left"  else data_list$left_group
+      rg <- if (is.null(data_list$right_group)) "Right" else data_list$right_group
+      sub <- if (is.null(data_list$plot_subtype)) 3 else data_list$plot_subtype
+
+      generate_combined_plot_code(
+        gsea_res_var   = "gsea_res",
+        contrast_id    = data_list$contrast_id,
+        target_pathways = sel,
+        subPlot        = sub,
+        curve_colors   = colors,
+        left_group     = lg,
+        right_group    = rg
+      )
+    }
+
+    shiny::observeEvent(input$cp_copy_code, {
+      code <- .cp_export_code()
+      if (!nzchar(code)) {
+        shiny::showNotification("Nothing to copy.", type = "warning"); return()
+      }
+      ok <- tryCatch({ clipr::write_clip(code); TRUE }, error = function(e) FALSE)
+      if (isTRUE(ok)) {
+        shiny::showNotification("R code copied to clipboard.", type = "message")
+      } else {
+        # Fallback: show code in a new modal so the user can manually copy
+        shiny::showModal(shiny::modalDialog(
+          title = "Reproducible R Code (copy manually)",
+          size = "l", easyClose = TRUE,
+          shiny::div(
+            style = "background:#f5f5f5; padding:15px; border-radius:5px; max-height:500px; overflow:auto;",
+            shiny::tags$pre(shiny::code(code),
+              style = "font-size:11px; white-space:pre-wrap; word-break:break-all;")
+          ),
+          footer = shiny::modalButton("Close")
+        ))
+      }
+    })
   })
 }
 
