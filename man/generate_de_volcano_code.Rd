@@ -5,7 +5,8 @@
 \title{Generate Publication DE Volcano Code}
 \usage{
 generate_de_volcano_code(
-  de_df,
+  gsea_res_var = "gsea_res",
+  contrast_id,
   user_genes = character(0),
   pathway_genes = character(0),
   logfc_thresh = 1,
@@ -21,8 +22,9 @@ generate_de_volcano_code(
 )
 }
 \arguments{
-\item{de_df}{data.frame with at least: gene_symbol, logFC, pvalue.
-Optional columns: padj (for hover annotation only).}
+\item{gsea_res_var}{Character. Name of the GseaRes variable.}
+
+\item{contrast_id}{Character. Contrast ID for DE table extraction.}
 
 \item{user_genes}{Character vector of user-selected genes (upper-cased).}
 
@@ -53,13 +55,13 @@ Character scalar of executable R code.
 }
 \description{
 Return an executable ggplot2 script reproducing the Quadrant
-  module's gene-level Differential Expression Volcano as a static,
-  publication-ready figure. Six-color classification (both / user /
-  pathway / up / down / ns) mirrors the interactive plotly view.
+  module's gene-level Differential Expression Volcano as a static figure.
+  Assumes a \code{GseaRes} object is already loaded. Six-color classification
+  (both / user / pathway / up / down / ns) mirrors the interactive view.
 }
 \examples{
-de_df <- data.frame(
-  gene_symbol = c("GENE_A", "GENE_B"),
-  logFC = c(2.5, -3.1), pvalue = c(.001, .002))
-cat(generate_de_volcano_code(de_df, left_group = "Ctrl", right_group = "Trt"))
+code <- generate_de_volcano_code(
+  gsea_res_var = "gsea_res", contrast_id = "untrt_vs_trt",
+  left_group = "Ctrl", right_group = "Trt")
+cat(code)
 }

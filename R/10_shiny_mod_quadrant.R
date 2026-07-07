@@ -3559,7 +3559,11 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
       show_stats <- isTRUE(input$vol_exp_show_stats)
 
-      generate_volcano_code(volcano_export_df(),
+      generate_volcano_code(
+
+                            gsea_res_var = "gsea_res",
+
+                            contrast_id  = data_list$contrast_id,
 
                             left_group = lg, right_group = rg,
 
@@ -3947,7 +3951,9 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
       generate_de_volcano_code(
 
-        de_df         = de_df,
+        gsea_res_var  = "gsea_res",
+
+        contrast_id   = data_list$contrast_id,
 
         user_genes    = user_genes,
 

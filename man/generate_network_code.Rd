@@ -5,8 +5,10 @@
 \title{Generate Publication Pathway Network Code}
 \usage{
 generate_network_code(
-  edge_df,
-  node_df,
+  gsea_res_var = "gsea_res",
+  contrast_id,
+  pathways,
+  min_shared_genes = 2,
   width_mode = "weight",
   seed = 42L,
   base_size = 12,
@@ -17,14 +19,17 @@ generate_network_code(
 )
 }
 \arguments{
-\item{edge_df}{data.frame with columns: from, to, weight, shared.}
+\item{gsea_res_var}{Character. Name of the GseaRes variable.}
 
-\item{node_df}{data.frame with columns: name, x, y, NES, p.adjust.}
+\item{contrast_id}{Character. Contrast ID to extract.}
+
+\item{pathways}{Character vector. Pathway IDs to include in the network.}
+
+\item{min_shared_genes}{Integer. Minimum shared core genes for an edge.}
 
 \item{width_mode}{Character. "rank" or "weight".}
 
-\item{seed}{Integer. Layout seed (informational; layout is recomputed
-inside the generated script for full reproducibility).}
+\item{seed}{Integer. Layout seed.}
 
 \item{base_size}{Numeric.}
 
@@ -41,14 +46,13 @@ Character scalar of executable R code.
 }
 \description{
 Return an executable R script reproducing the Pathway
-  Relationship module's network view as a static ggplot2 figure (using
-  igraph layout + geom_segment edges + geom_point nodes). No ggraph
-  dependency required.
+  Relationship module's network view as a static ggplot2 figure.
+  Assumes a \code{GseaRes} object is already loaded. Uses igraph layout +
+  geom_segment edges + geom_point nodes (no ggraph dependency).
 }
 \examples{
-edge_df <- data.frame(from = c("P1","P2"), to = c("P2","P3"),
-  weight = c(.3, .1), shared = c(3, 1))
-node_df <- data.frame(name = c("P1","P2","P3"),
-  x = c(0,1,2), y = c(0,1,0), NES = c(1.5,-1.2,.8), p.adjust = c(.01,.03,.2))
-cat(generate_network_code(edge_df, node_df))
+code <- generate_network_code(
+  gsea_res_var = "gsea_res", contrast_id = "untrt_vs_trt",
+  pathways = c("HALLMARK_TNFA_SIGNALING_VIA_NFKB", "HALLMARK_HYPOXIA"))
+cat(code)
 }

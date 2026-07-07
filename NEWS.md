@@ -2,6 +2,32 @@
 
 
 
+# GSEAlens 0.99.16
+
+Concise export-code refactor + DE Volcano layer ordering fix: 0 ERROR / 0
+WARNING / 0 NOTE on `R CMD check --no-manual` (Status: OK); `BiocCheck`
+reports 0 ERRORS, 0 WARNINGS (support-site check excluded as external
+service).
+
+- **Concise export code**: five publication plot code generators
+  (`generate_dotplot_code()`, `generate_volcano_code()`,
+  `generate_de_volcano_code()`, `generate_network_code()`,
+  `generate_hubgene_code()`) now produce concise scripts that assume a
+  `GseaRes` object is loaded in the environment and derive plot data via
+  `extract_gsea_task()` / `get_core_genes_list()` / `get_de_table()` /
+  `build_edge_list_safely()` / `build_hubgene_network()`, replacing the
+  previous verbose `dput()` data-literal approach.
+- **DE Volcano layer ordering**: the exported DE Volcano script now sorts
+  points by a `plot_order` column (mirroring the interactive plotly) so
+  that special-category genes (Pathway / Selected / Both) are drawn on top
+  of significant and NS points, making them easy to spot.
+- **Pathway DotPlot direction caption**: both the exported ggplot2 script
+  and the interactive plotly view now include a direction caption
+  ("Left (NES<0): Enriched in [group] | Right (NES>0): Enriched in
+  [group]").
+
+
+
 # GSEAlens 0.99.15
 
 Documentation completeness pass + dependency cleanup: 0 ERROR / 0 WARNING /

@@ -5,9 +5,10 @@
 \title{Generate Publication HubGene Network Code}
 \usage{
 generate_hubgene_code(
-  pathway_nodes,
-  gene_nodes,
-  edge_df,
+  gsea_res_var = "gsea_res",
+  contrast_id,
+  pathways,
+  min_hub_degree = 2,
   pw_size_mode = "setsize",
   seed = 42L,
   base_size = 12,
@@ -18,11 +19,13 @@ generate_hubgene_code(
 )
 }
 \arguments{
-\item{pathway_nodes}{data.frame: id, NES, FDR, setSize.}
+\item{gsea_res_var}{Character. Name of the GseaRes variable.}
 
-\item{gene_nodes}{data.frame: id, stat, degree (optional column le_count).}
+\item{contrast_id}{Character. Contrast ID to extract.}
 
-\item{edge_df}{data.frame: from, to.}
+\item{pathways}{Character vector. Pathway IDs to include.}
+
+\item{min_hub_degree}{Integer. Minimum hub degree for gene inclusion.}
 
 \item{pw_size_mode}{Character. One of "fixed", "fdr", "setsize".}
 
@@ -43,13 +46,13 @@ Character scalar of executable R code.
 }
 \description{
 Return an executable R script reproducing the HubGene module's
-  visNetwork view as a static ggplot2 figure. Node size is controlled by
-  the same three-mode logic (fixed / fdr / setsize) as the interactive view.
+  visNetwork view as a static ggplot2 figure. Assumes a \code{GseaRes}
+  object is already loaded. Node size is controlled by the same three-mode
+  logic (fixed / fdr / setsize) as the interactive view.
 }
 \examples{
-pathway_nodes <- data.frame(id = c("P1","P2"),
-  NES = c(1.8,-1.5), FDR = c(.01,.04), setSize = c(20, 15))
-gene_nodes <- data.frame(id = c("G1","G2"), stat = c(3.2,-2.8), degree = c(2, 1))
-edge_df <- data.frame(from = c("P1","P2"), to = c("G1","G1"))
-cat(generate_hubgene_code(pathway_nodes, gene_nodes, edge_df))
+code <- generate_hubgene_code(
+  gsea_res_var = "gsea_res", contrast_id = "untrt_vs_trt",
+  pathways = c("HALLMARK_TNFA_SIGNALING_VIA_NFKB"))
+cat(code)
 }

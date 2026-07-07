@@ -5,7 +5,8 @@
 \title{Generate Publication Volcano Code}
 \usage{
 generate_volcano_code(
-  plot_df,
+  gsea_res_var = "gsea_res",
+  contrast_id,
   left_group = "Left",
   right_group = "Right",
   n_selected = 0L,
@@ -19,7 +20,9 @@ generate_volcano_code(
 )
 }
 \arguments{
-\item{plot_df}{data.frame with columns: ID, NES, pvalue, p.adjust.}
+\item{gsea_res_var}{Character. Name of the GseaRes variable.}
+
+\item{contrast_id}{Character. Contrast ID to extract.}
 
 \item{left_group}{Character.}
 
@@ -47,10 +50,11 @@ Character scalar of executable R code.
 \description{
 Return an executable ggplot2 script reproducing the Quadrant
   module's pathway volcano plot as a static, publication-ready figure.
+  Assumes a \code{GseaRes} object is already loaded in the R environment.
 }
 \examples{
-plot_df <- data.frame(
-  ID = c("HALLMARK_A", "HALLMARK_B"),
-  NES = c(2.1, -1.8), pvalue = c(.001, .003), p.adjust = c(.01, .02))
-cat(generate_volcano_code(plot_df, left_group = "Ctrl", right_group = "Trt"))
+code <- generate_volcano_code(
+  gsea_res_var = "gsea_res", contrast_id = "untrt_vs_trt",
+  left_group = "Ctrl", right_group = "Trt")
+cat(code)
 }

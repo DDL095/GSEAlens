@@ -1182,7 +1182,13 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
 
           title = list(
 
-            text = sprintf("Pathway DotPlot: %s vs %s", data_list$left_group, data_list$right_group),
+            text = sprintf(
+
+              "<b>Pathway DotPlot: %s vs %s</b><br><sub style='font-size:10px;color:gray;'>Left (NES&lt;0): Enriched in %s   |   Right (NES&gt;0): Enriched in %s</sub>",
+
+              data_list$left_group, data_list$right_group,
+
+              data_list$right_group, data_list$left_group),
 
             font = list(size = 12), x = 0.5, xanchor = "center"
 
@@ -2909,39 +2915,37 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
 
         generate_dotplot_code(
 
-          plot_df    = dotplot_export_df(),
+          gsea_res_var = "gsea_res",
 
-          color_mode = input$dotplot_color_mode,
+          contrast_id  = data_list$contrast_id,
 
-          size_mode  = input$dotplot_size_mode,
+          pathways     = final_pathways(),
 
-          left_group = lg, right_group = rg,
+          color_mode   = input$dotplot_color_mode,
 
-          palette    = pal, point_range = pr)
+          size_mode    = input$dotplot_size_mode,
+
+          left_group   = lg, right_group = rg,
+
+          palette      = pal, point_range = pr)
 
       } else if (tgt == "network") {
 
-        nd <- network_export_data()
-
         seed_val <- if (is.null(input$seed)) 42L else as.integer(input$seed)
-
-        # Merge NES/p.adjust back into node_df from the data prep
 
         data_list <- data_prep_list$data()
 
-        df <- data_list$df
-
-        nd$node_df <- merge(nd$node_df, df[, c("ID", "NES", "p.adjust")],
-
-                            by.x = "name", by.y = "ID", all.x = TRUE)
-
         generate_network_code(
 
-          edge_df = nd$edge_df, node_df = nd$node_df,
+          gsea_res_var = "gsea_res",
 
-          width_mode = if (is.null(input$network_edge_width_mode)) "weight"
+          contrast_id  = data_list$contrast_id,
 
-                       else input$network_edge_width_mode,
+          pathways     = final_pathways(),
+
+          width_mode   = if (is.null(input$network_edge_width_mode)) "weight"
+
+                         else input$network_edge_width_mode,
 
           seed = seed_val,
 

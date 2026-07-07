@@ -5,7 +5,9 @@
 \title{Generate Publication DotPlot Code}
 \usage{
 generate_dotplot_code(
-  plot_df,
+  gsea_res_var = "gsea_res",
+  contrast_id,
+  pathways,
   color_mode = "padj",
   size_mode = "core_size",
   left_group = "Left",
@@ -16,8 +18,12 @@ generate_dotplot_code(
 )
 }
 \arguments{
-\item{plot_df}{data.frame with at least columns: ID, NES, p.adjust,
-pvalue, CoreCount, setSize.}
+\item{gsea_res_var}{Character. Name of the GseaRes variable in the user's
+environment (default \code{"gsea_res"}).}
+
+\item{contrast_id}{Character. Contrast ID to extract.}
+
+\item{pathways}{Character vector. Pathway IDs to display.}
 
 \item{color_mode}{Character. One of "padj", "pval", "nes".}
 
@@ -37,15 +43,16 @@ pvalue, CoreCount, setSize.}
 Character scalar of executable R code.
 }
 \description{
-Return an executable ggplot2 script that reproduces the
-  Pathway Relationship module's interactive DotPlot as a static,
-  publication-ready figure. The data frame passed in is serialized as a
-  \code{dput()}-style structure literal so the script is self-contained.
+Return an executable ggplot2 script reproducing the Pathway
+  Relationship module's dotplot as a static, publication-ready figure.
+  The generated script assumes a \code{GseaRes} object is already loaded
+  in the R environment and derives plot data via \code{extract_gsea_task()}
+  + \code{get_core_genes_list()}, producing concise reproducible code
+  without embedding raw data.
 }
 \examples{
-plot_df <- data.frame(
-  ID = c("A", "B", "C"), NES = c(1.9, -1.6, 0.4),
-  pvalue = c(.001, .004, .12), p.adjust = c(.01, .03, .35),
-  CoreCount = c(8, 5, 2), setSize = c(25, 18, 10))
-cat(generate_dotplot_code(plot_df))
+code <- generate_dotplot_code(
+  gsea_res_var = "gsea_res", contrast_id = "untrt_vs_trt",
+  pathways = c("HALLMARK_TNFA_SIGNALING_VIA_NFKB"))
+cat(code)
 }
