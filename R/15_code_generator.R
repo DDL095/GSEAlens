@@ -729,8 +729,8 @@ library(GSEAlens)
 library(ggplot2)
 
 # Step 4: Extract the task for the specified contrast
-# NOTE: collection = "ALL" merges cross-collection results when applicable.
-GSEAlens_task <- extract_gsea_task(%s, contrast_id = GSEAlens_contrast_id, collection = "ALL")
+# NOTE: target_collection = "ALL" merges cross-collection results when applicable.
+GSEAlens_task <- extract_gsea_task(%s, contrast_id = GSEAlens_contrast_id, target_collection = "ALL")
 
 # Step 5: Build the combined directional GSEA plot
 GSEAlens_p <- plot_directional_gsea(
@@ -1525,7 +1525,7 @@ GSEAlens_pathways <- c(
 
 # --- Extract task and build plot data ----------------------------------------
 GSEAlens_task <- extract_gsea_task(%s,
-  contrast_id = GSEAlens_contrast_id, collection = "ALL")
+  contrast_id = GSEAlens_contrast_id, target_collection = "ALL")
 df <- as.data.frame(GSEAlens_task$gsea_res@result)
 df <- df[df$ID %%in%% GSEAlens_pathways, ]
 
@@ -1685,7 +1685,7 @@ GSEAlens_contrast_id <- "%s"
 
 # --- Extract task and build plot data ----------------------------------------
 GSEAlens_task <- extract_gsea_task(%s,
-  contrast_id = GSEAlens_contrast_id, collection = "ALL")
+  contrast_id = GSEAlens_contrast_id, target_collection = "ALL")
 df <- as.data.frame(GSEAlens_task$gsea_res@result)
 
 # --- Selected pathway IDs (for ggrepel labels) -------------------------------
@@ -1702,8 +1702,7 @@ df$p.adjust[is.na(df$p.adjust)]   <- 1
 
 # --- Direction: NES > 0 = enriched in left_group; NES < 0 = right_group ------
 df$direction <- with(df, ifelse(NES > 0,
-  sprintf("Enriched in %%s", "%s"),
-  sprintf("Enriched in %%s", "%s")))
+  "Enriched in %s", "Enriched in %s"))
 df$sig_level <- with(df,
   cut(pvalue,
       breaks = c(-Inf, 1e-10, 1e-5, 1e-2, 0.05, Inf),
@@ -1714,9 +1713,7 @@ p <- ggplot(df, aes(x = NES, y = -log10(pvalue),
                     color = direction, alpha = sig_level)) +
   geom_point(size = 2.5) +
   scale_color_manual(
-    values = c(
-      sprintf("Enriched in %%s", "%s") = "#E41A1C",
-      sprintf("Enriched in %%s", "%s") = "#377EB8"),
+    values = c("Enriched in %s" = "#E41A1C", "Enriched in %s" = "#377EB8"),
     name = "Direction") +
   scale_alpha_manual(
     values = c("P<1e-10" = 1.0, "P<1e-5" = 0.9, "P<1e-2" = 0.7,
@@ -2044,7 +2041,7 @@ GSEAlens_pathways <- c(
 
 # --- Extract task and build network data -------------------------------------
 GSEAlens_task <- extract_gsea_task(%s,
-  contrast_id = GSEAlens_contrast_id, collection = "ALL")
+  contrast_id = GSEAlens_contrast_id, target_collection = "ALL")
 df <- as.data.frame(GSEAlens_task$gsea_res@result)
 df <- df[df$ID %%in%% GSEAlens_pathways, ]
 
@@ -2208,7 +2205,7 @@ GSEAlens_pathways <- c(
 
 # --- Extract task and build HubGene network ----------------------------------
 GSEAlens_task <- extract_gsea_task(%s,
-  contrast_id = GSEAlens_contrast_id, collection = "ALL")
+  contrast_id = GSEAlens_contrast_id, target_collection = "ALL")
 
 GSEAlens_net <- build_hubgene_network(
   GSEAlens_task,
@@ -2216,8 +2213,8 @@ GSEAlens_net <- build_hubgene_network(
   min_hub_degree = %d
 )
 
-pw    <- GSEAlens_net$pathway_nodes
-genes <- GSEAlens_net$gene_nodes
+pw    <- GSEAlens_net$nodes$pathway
+genes <- GSEAlens_net$nodes$gene
 edges_raw <- GSEAlens_net$edges
 
 edges <- if (!is.null(edges_raw) && nrow(edges_raw) > 0) {

@@ -2147,6 +2147,7 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
       eval_env$p <- NULL
 
       eval_env$print <- base::invisible
+      eval_env$gsea_res <- data_prep_list$data()$gsea_res
 
       tryCatch(eval(parse(text = code), envir = eval_env),
 
@@ -2212,6 +2213,8 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
                             pathways     = final_pathways(),
 
+                            min_hub_degree = if (is.null(input$vis_min_hub)) 2 else input$vis_min_hub,
+
                             pw_size_mode = pw_mode,
 
                             seed = seed_val,
@@ -2245,6 +2248,7 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
       eval_env$p <- NULL
 
       eval_env$print <- base::invisible   # suppress popup device; ggsave draws itself
+      eval_env$gsea_res <- data_prep_list$data()$gsea_res
 
       tryCatch(eval(parse(text = code), envir = eval_env),
 

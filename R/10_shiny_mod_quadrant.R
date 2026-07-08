@@ -3496,6 +3496,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       eval_env$p <- NULL
 
       eval_env$print <- base::invisible
+      eval_env$gsea_res <- gsea_res
 
       tryCatch(eval(parse(text = code), envir = eval_env),
 
@@ -3598,6 +3599,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       eval_env$p <- NULL
 
       eval_env$print <- base::invisible   # suppress popup device; ggsave draws itself
+      eval_env$gsea_res <- gsea_res
 
       tryCatch(eval(parse(text = code), envir = eval_env),
 
@@ -4004,6 +4006,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       eval_env$p <- NULL
 
       eval_env$print <- base::invisible
+      eval_env$gsea_res <- gsea_res
 
       tryCatch(eval(parse(text = code), envir = eval_env),
 
@@ -4066,6 +4069,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
       eval_env$p <- NULL
 
       eval_env$print <- base::invisible
+      eval_env$gsea_res <- gsea_res
 
       tryCatch(eval(parse(text = code), envir = eval_env),
 

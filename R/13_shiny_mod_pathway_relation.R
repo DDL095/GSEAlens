@@ -2668,6 +2668,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       eval_env$p <- NULL
 
       eval_env$print <- base::invisible   # suppress popup device from print(p)
+      eval_env$gsea_res <- data_prep_list$data()$gsea_res
 
       tryCatch(
 
@@ -2943,6 +2944,8 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
 
           pathways     = final_pathways(),
 
+          min_shared_genes = if (is.null(input$min_shared)) 3 else input$min_shared,
+
           width_mode   = if (is.null(input$network_edge_width_mode)) "weight"
 
                          else input$network_edge_width_mode,
@@ -2994,6 +2997,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       eval_env$p <- NULL
 
       eval_env$print <- base::invisible   # suppress popup device; ggsave() draws itself
+      eval_env$gsea_res <- data_prep_list$data()$gsea_res
 
       tryCatch({
 
