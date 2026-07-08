@@ -2,6 +2,17 @@
 
 
 
+# GSEAlens 0.99.17
+
+Live-preview class-validation fix for DotPlot / Network / HubGene plots:
+the Shiny module eval environments in `mod_pathway_relation_server()` and
+`mod_hubgene_vis_server()` now inject the module-parameter `gsea_res`
+(consistent with the already-working `mod_quadrant_server()`) instead of
+`data_prep_list$data()$gsea_res`, which could lose its `GseaRes` class
+attribute through the reactive chain and trigger
+"Input object is not of class GseaRes" during `extract_gsea_task()`.
+
+
 # GSEAlens 0.99.16
 
 Concise export-code refactor + DE Volcano layer ordering fix: 0 ERROR / 0

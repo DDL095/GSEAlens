@@ -2668,7 +2668,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       eval_env$p <- NULL
 
       eval_env$print <- base::invisible   # suppress popup device from print(p)
-      eval_env$gsea_res <- data_prep_list$data()$gsea_res
+      eval_env$gsea_res <- gsea_res
 
       tryCatch(
 
@@ -2997,7 +2997,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
       eval_env$p <- NULL
 
       eval_env$print <- base::invisible   # suppress popup device; ggsave() draws itself
-      eval_env$gsea_res <- data_prep_list$data()$gsea_res
+      eval_env$gsea_res <- gsea_res
 
       tryCatch({
 
