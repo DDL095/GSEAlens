@@ -66,7 +66,7 @@ generate_pathway_plot_code <- function(GSEAlens_res,
 
     {
 
-      extract_gsea_task(GSEAlens_res, contrast_id)
+      GSEAlens::extract_gsea_task(GSEAlens_res, contrast_id)
 
     },
 
@@ -156,7 +156,7 @@ GSEAlens_res <- YOUR_GSEA_RES_OBJECT
 
 # Step 2: Extract task for the specified contrast
 
-GSEAlens_task <- extract_gsea_task(GSEAlens_res, contrast_id = "', contrast_id, '")
+GSEAlens_task <- GSEAlens::extract_gsea_task(GSEAlens_res, contrast_id = "', contrast_id, '")
 
 GSEAlens_left_group <- "', left_group, '"
 
@@ -188,7 +188,6 @@ GSEAlens_pathways <- c(
 
 # Step 6: Load required libraries
 
-library(GSEAlens)
 
 library(ggplot2)
 
@@ -228,7 +227,7 @@ print(GSEAlens_combined_plot)
 
 # -----------------------------------------------------------------------------
 
-GSEAlens_de_df <- get_de_table(GSEAlens_res, contrast_id = "', contrast_id, '")
+GSEAlens_de_df <- GSEAlens::get_de_table(GSEAlens_res, contrast_id = "', contrast_id, '")
 
 
 
@@ -556,7 +555,6 @@ GSEAlens_ncol <- ", ncol, '
 
 # Step 3: Load required libraries
 
-library(GSEAlens)
 
 library(ggplot2)
 
@@ -576,7 +574,7 @@ for (GSEAlens_i in seq_along(GSEAlens_contrasts)) {
 
 
 
-  GSEAlens_task <- extract_gsea_task(GSEAlens_res, contrast_id = GSEAlens_contrast_id)
+  GSEAlens_task <- GSEAlens::extract_gsea_task(GSEAlens_res, contrast_id = GSEAlens_contrast_id)
 
 
 
@@ -725,12 +723,11 @@ GSEAlens_left_grp  <- "%s"
 GSEAlens_right_grp <- "%s"
 
 # Step 3: Load required libraries
-library(GSEAlens)
 library(ggplot2)
 
 # Step 4: Extract the task for the specified contrast
 # NOTE: target_collection = "ALL" merges cross-collection results when applicable.
-GSEAlens_task <- extract_gsea_task(%s, contrast_id = GSEAlens_contrast_id, target_collection = "ALL")
+GSEAlens_task <- GSEAlens::extract_gsea_task(%s, contrast_id = GSEAlens_contrast_id, target_collection = "ALL")
 
 # Step 5: Build the combined directional GSEA plot
 GSEAlens_p <- plot_directional_gsea(
@@ -838,7 +835,7 @@ generate_boxplot_data_code <- function(GSEAlens_res,
 
   #         informative even if the user just copy-pastes it). ----
 
-  # Prefer extract_gsea_task() (same source as generate_pathway_plot_code)
+  # Prefer GSEAlens::extract_gsea_task() (same source as generate_pathway_plot_code)
 
   # for consistency; fall back to a heuristic split of the contrast ID.
 
@@ -846,7 +843,7 @@ generate_boxplot_data_code <- function(GSEAlens_res,
 
   right_group <- NA_character_
 
-  gtask <- tryCatch(extract_gsea_task(GSEAlens_res, contrast_id), error = function(e) NULL)
+  gtask <- tryCatch(GSEAlens::extract_gsea_task(GSEAlens_res, contrast_id), error = function(e) NULL)
 
   if (!is.null(gtask) && !is.null(gtask$meta)) {
 
@@ -1240,7 +1237,7 @@ extract_boxplot_data <- function(GSEAlens_res,
 
   right_group <- NA_character_
 
-  gtask <- tryCatch(extract_gsea_task(GSEAlens_res, contrast_id),
+  gtask <- tryCatch(GSEAlens::extract_gsea_task(GSEAlens_res, contrast_id),
 
                     error = function(e) NULL)
 
@@ -1511,7 +1508,6 @@ generate_dotplot_code <- function(gsea_res_var = "gsea_res",
 # GSEAlens Publication DotPlot Code
 # =============================================================================
 
-library(GSEAlens)
 library(ggplot2)
 
 # --- Assume gsea_res (GseaRes object) is loaded in your environment ---------
@@ -1524,13 +1520,13 @@ GSEAlens_pathways <- c(
 )
 
 # --- Extract task and build plot data ----------------------------------------
-GSEAlens_task <- extract_gsea_task(%s,
+GSEAlens_task <- GSEAlens::extract_gsea_task(%s,
   contrast_id = GSEAlens_contrast_id, target_collection = "ALL")
 df <- as.data.frame(GSEAlens_task$gsea_res@result)
 df <- df[df$ID %%in%% GSEAlens_pathways, ]
 
 # CoreCount via leading-edge (core) genes
-GSEAlens_core <- get_core_genes_list(GSEAlens_task, GSEAlens_pathways)
+GSEAlens_core <- GSEAlens::get_core_genes_list(GSEAlens_task, GSEAlens_pathways)
 df$CoreCount <- vapply(GSEAlens_pathways, function(pid) {
   if (is.null(GSEAlens_core[[pid]])) 0L else length(GSEAlens_core[[pid]])
 }, integer(1))
@@ -1674,7 +1670,6 @@ generate_volcano_code <- function(gsea_res_var = "gsea_res",
 # GSEAlens Publication Pathway Volcano Code
 # =============================================================================
 
-library(GSEAlens)
 library(ggplot2)
 
 # --- Assume gsea_res (GseaRes object) is loaded in your environment ---------
@@ -1684,7 +1679,7 @@ library(ggplot2)
 GSEAlens_contrast_id <- "%s"
 
 # --- Extract task and build plot data ----------------------------------------
-GSEAlens_task <- extract_gsea_task(%s,
+GSEAlens_task <- GSEAlens::extract_gsea_task(%s,
   contrast_id = GSEAlens_contrast_id, target_collection = "ALL")
 df <- as.data.frame(GSEAlens_task$gsea_res@result)
 
@@ -1860,7 +1855,6 @@ generate_de_volcano_code <- function(gsea_res_var = "gsea_res",
 # GSEAlens Publication DE Volcano Code
 # =============================================================================
 
-library(GSEAlens)
 library(ggplot2)
 
 # --- Assume gsea_res (GseaRes object) is loaded in your environment ---------
@@ -1870,7 +1864,7 @@ library(ggplot2)
 GSEAlens_contrast_id <- "%s"
 
 # --- Extract DE table from GseaRes -------------------------------------------
-de_df <- get_de_table(%s, GSEAlens_contrast_id)
+de_df <- GSEAlens::get_de_table(%s, GSEAlens_contrast_id)
 if (!"logFC"  %%in%% names(de_df)) de_df$logFC  <- de_df$log2FoldChange
 if (!"pvalue" %%in%% names(de_df)) de_df$pvalue <- de_df$p.value
 
@@ -2025,7 +2019,6 @@ generate_network_code <- function(gsea_res_var = "gsea_res",
 # GSEAlens Publication Pathway Network Code
 # =============================================================================
 
-library(GSEAlens)
 library(igraph)
 library(ggplot2)
 library(ggrepel)
@@ -2040,14 +2033,14 @@ GSEAlens_pathways <- c(
 )
 
 # --- Extract task and build network data -------------------------------------
-GSEAlens_task <- extract_gsea_task(%s,
+GSEAlens_task <- GSEAlens::extract_gsea_task(%s,
   contrast_id = GSEAlens_contrast_id, target_collection = "ALL")
 df <- as.data.frame(GSEAlens_task$gsea_res@result)
 df <- df[df$ID %%in%% GSEAlens_pathways, ]
 
 # Build edge list from shared leading-edge (core) genes
-GSEAlens_core <- get_core_genes_list(GSEAlens_task, GSEAlens_pathways)
-edge_df <- build_edge_list_safely(GSEAlens_core, min_shared_genes = %d)
+GSEAlens_core <- GSEAlens::get_core_genes_list(GSEAlens_task, GSEAlens_pathways)
+edge_df <- GSEAlens::build_edge_list_safely(GSEAlens_core, min_shared_genes = %d)
 node_df <- df[, c("ID", "NES", "p.adjust")]
 names(node_df)[1] <- "name"
 
@@ -2189,7 +2182,6 @@ generate_hubgene_code <- function(gsea_res_var = "gsea_res",
 # GSEAlens Publication HubGene Network Code
 # =============================================================================
 
-library(GSEAlens)
 library(igraph)
 library(ggplot2)
 library(ggrepel)
@@ -2204,10 +2196,10 @@ GSEAlens_pathways <- c(
 )
 
 # --- Extract task and build HubGene network ----------------------------------
-GSEAlens_task <- extract_gsea_task(%s,
+GSEAlens_task <- GSEAlens::extract_gsea_task(%s,
   contrast_id = GSEAlens_contrast_id, target_collection = "ALL")
 
-GSEAlens_net <- build_hubgene_network(
+GSEAlens_net <- GSEAlens::build_hubgene_network(
   GSEAlens_task,
   pathway_ids    = GSEAlens_pathways,
   min_hub_degree = %d
