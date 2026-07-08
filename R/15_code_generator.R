@@ -1475,7 +1475,11 @@ generate_dotplot_code <- function(gsea_res_var = "gsea_res",
                                   right_group = "Right",
                                   palette = "D",
                                   point_range = c(3, 8),
-                                  base_size = 12) {
+                                  base_size = 12,
+                                  margin_top = 18,
+                                  margin_bottom = 18,
+                                  margin_left = 18,
+                                  margin_right = 18) {
 
   if (length(pathways) == 0) {
     return("# No pathways selected; nothing to plot.")
@@ -1569,18 +1573,34 @@ p <- ggplot(df, aes(
   labs(
     title    = sprintf("Pathway DotPlot: %%s vs %%s", "%s", "%s"),
     subtitle = sprintf("Color: %%s (viridis)  |  Size: %%s", color_title, size_title),
-    caption  = sprintf("Left (NES<0): Enriched in %%s   |   Right (NES>0): Enriched in %%s",
-                       "%s", "%s"),
     x = "NES (Normalized Enrichment Score)",
     y = NULL
   ) +
+  coord_cartesian(clip = "off") +
   theme(
     plot.title    = element_text(face = "bold", hjust = 0.5),
-    plot.subtitle = element_text(color = "gray40", hjust = 0.5),
-    plot.caption  = element_text(color = "gray40", hjust = 0.5, size = rel(0.85)),
+    plot.subtitle = element_text(color = "gray40", hjust = 0.5, margin = margin(b = 14)),
     axis.text.y   = element_text(size = rel(0.85)),
-    legend.position = "right"
+    legend.position = "right",
+    plot.margin     = margin(%d, %d, %d, %d)
   )
+
+# --- Direction annotation: colored enriched-in labels above the plot ---------
+# Single-direction aware: if only one NES sign is present, show one label only.
+has_neg <- any(df$NES < 0, na.rm = TRUE)
+has_pos <- any(df$NES > 0, na.rm = TRUE)
+if (has_neg) {
+  p <- p + annotation_custom(
+    grid::textGrob("Enriched in %s", x = 0.02, y = 1.04, just = c("left", "bottom"),
+                   gp = grid::gpar(col = "#3B6EA5", fontface = "bold", fontsize = %g)),
+    xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf)
+}
+if (has_pos) {
+  p <- p + annotation_custom(
+    grid::textGrob("Enriched in %s", x = 0.98, y = 1.04, just = c("right", "bottom"),
+                   gp = grid::gpar(col = "#C0392B", fontface = "bold", fontsize = %g)),
+    xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf)
+}
 
 print(p)
 
@@ -1598,7 +1618,11 @@ print(p)
     palette,
     base_size,
     left_group, right_group,
-    right_group, left_group
+    margin_top, margin_right, margin_bottom, margin_left,
+    right_group,
+    base_size,
+    left_group,
+    base_size
   )
 }
 

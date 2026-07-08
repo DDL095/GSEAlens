@@ -2,6 +2,28 @@
 
 
 
+# GSEAlens 0.99.18
+
+DotPlot Canvas Margin fix + enriched-in direction annotation redesign:
+
+- **Canvas Margin now effective**: the four margin inputs (top / bottom /
+  left / right) in `mod_pathway_relation_server()` are now passed through
+  to `generate_dotplot_code()`, so changing them updates the live preview
+  and exported code. Previously the dotplot branch of `.current_export_code()`
+  omitted all margin arguments.
+- **Direction annotation redesign**: the verbose bottom caption
+  ("Left (NES<0): Enriched in ... | Right (NES>0): Enriched in ...") is
+  replaced by two concise colored labels rendered above the plot panel
+  via `annotation_custom(grid::textGrob(...))`:
+  - Left label in blue (`#3B6EA5`, bold) — NES<0 enrichment direction.
+  - Right label in red (`#C0392B`, bold) — NES>0 enrichment direction.
+- **Single-direction aware**: if all selected pathways have the same NES
+  sign, only one direction label is shown.
+- **Plotly title simplified**: the interactive DotPlot title also drops
+  the "Left (NES<0):" / "Right (NES>0):" prefixes and uses colored
+  `<span>` elements for the enriched-in labels.
+
+
 # GSEAlens 0.99.17
 
 Live-preview class-validation fix for DotPlot / Network / HubGene plots:

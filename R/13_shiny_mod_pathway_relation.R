@@ -1184,7 +1184,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
 
             text = sprintf(
 
-              "<b>Pathway DotPlot: %s vs %s</b><br><sub style='font-size:10px;color:gray;'>Left (NES&lt;0): Enriched in %s   |   Right (NES&gt;0): Enriched in %s</sub>",
+              "<b>Pathway DotPlot: %s vs %s</b><br><sub style='font-size:10px;'><span style='color:#3B6EA5;font-weight:bold;'>Enriched in %s</span>   |   <span style='color:#C0392B;font-weight:bold;'>Enriched in %s</span></sub>",
 
               data_list$left_group, data_list$right_group,
 
@@ -2928,7 +2928,11 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
 
           left_group   = lg, right_group = rg,
 
-          palette      = pal, point_range = pr)
+          palette      = pal, point_range = pr,
+          margin_top    = if (is.null(input$exp_margin_top)    || is.na(input$exp_margin_top))    18 else input$exp_margin_top,
+          margin_bottom = if (is.null(input$exp_margin_bottom) || is.na(input$exp_margin_bottom)) 18 else input$exp_margin_bottom,
+          margin_left   = if (is.null(input$exp_margin_left)   || is.na(input$exp_margin_left))   18 else input$exp_margin_left,
+          margin_right  = if (is.null(input$exp_margin_right)  || is.na(input$exp_margin_right))  18 else input$exp_margin_right)
 
       } else if (tgt == "network") {
 
