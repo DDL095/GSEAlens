@@ -16,25 +16,25 @@
 
 mod_master_table_ui <- function(id) {
 
-  ns <- shiny::NS(id)
+    ns <- shiny::NS(id)
 
-  shiny::tagList(
+    shiny::tagList(
 
     shiny::tags$head(
 
-      shiny::tags$script(shiny::HTML(sprintf("
+            shiny::tags$script(shiny::HTML(sprintf("
 
         Shiny.addCustomMessageHandler('%s', function(message) {
 
-          var ids = message.ids;
+                    var ids = message.ids;
 
-          var ns = message.ns;
+                    var ns = message.ns;
 
-          var checkboxes = document.querySelectorAll('.joint-plot-checkbox');
+                    var checkboxes = document.querySelectorAll('.joint-plot-checkbox');
 
-          var now = Date.now();
+                    var now = Date.now();
 
-          checkboxes.forEach(function(cb) {
+                    checkboxes.forEach(function(cb) {
 
             // Skip checkboxes the user clicked within the last 800ms to avoid
 
@@ -52,113 +52,113 @@ mod_master_table_ui <- function(id) {
 
             if (cb.checked !== shouldBeChecked) {
 
-              cb.checked = shouldBeChecked;
+                            cb.checked = shouldBeChecked;
 
             }
 
-          });
+                    });
 
         });
 
-      ", ns("updateCheckbox")))),
+            ", ns("updateCheckbox")))),
 
-      # External selection update message handler
+            # External selection update message handler
 
-      shiny::tags$script(shiny::HTML(sprintf("
+            shiny::tags$script(shiny::HTML(sprintf("
 
         Shiny.addCustomMessageHandler('%s', function(message) {
 
-          var action = message.action;
+                    var action = message.action;
 
-          var ids = message.ids || [];
+                    var ids = message.ids || [];
 
-          var checkboxes = document.querySelectorAll('.joint-plot-checkbox');
+                    var checkboxes = document.querySelectorAll('.joint-plot-checkbox');
 
 
 
-          if (action === 'set') {
+                    if (action === 'set') {
 
             checkboxes.forEach(function(cb) {
 
-              var id = cb.getAttribute('data-id');
+                            var id = cb.getAttribute('data-id');
 
-              cb.checked = ids.includes(id);
+                            cb.checked = ids.includes(id);
 
             });
 
-          } else if (action === 'add') {
+                    } else if (action === 'add') {
 
             checkboxes.forEach(function(cb) {
 
-              var id = cb.getAttribute('data-id');
+                            var id = cb.getAttribute('data-id');
 
-              if (ids.includes(id)) {
+                            if (ids.includes(id)) {
 
                 cb.checked = true;
 
-              }
+                            }
 
             });
 
-          } else if (action === 'remove') {
+                    } else if (action === 'remove') {
 
             checkboxes.forEach(function(cb) {
 
-              var id = cb.getAttribute('data-id');
+                            var id = cb.getAttribute('data-id');
 
-              if (ids.includes(id)) {
+                            if (ids.includes(id)) {
 
                 cb.checked = false;
 
-              }
+                            }
 
             });
 
-          } else if (action === 'clear') {
+                    } else if (action === 'clear') {
 
             checkboxes.forEach(function(cb) {
 
-              cb.checked = false;
+                            cb.checked = false;
 
             });
 
-          }
+                    }
 
         });
 
-      ", ns("externalUpdate"))))
+            ", ns("externalUpdate"))))
 
     ),
 
     shiny::div(
 
-      id = ns("table-wrapper"),
+            id = ns("table-wrapper"),
 
-      class = "master-table-container",
+            class = "master-table-container",
 
-      style = "width: 100%; overflow-x: auto;",
+            style = "width: 100%; overflow-x: auto;",
 
-      shiny::tags$div(
+            shiny::tags$div(
 
         style = "margin-bottom: 10px; color: #666; font-size: 12px;",
 
         shiny::HTML("Drag column headers to reorder | Check 'Joint Plot' column to select pathways | Click 'Dashboard' for details")
 
-      ),
+            ),
 
-      DT::dataTableOutput(ns("table"))
+            DT::dataTableOutput(ns("table"))
 
     ),
 
     shiny::tags$div(
 
-      style = "display: none;",
+            style = "display: none;",
 
-      shiny::textInput(ns("joint_selection_store"), label = NULL, value = "")
+            shiny::textInput(ns("joint_selection_store"), label = NULL, value = "")
 
     )
 
-  )
+    )
 
 }
 
@@ -188,7 +188,7 @@ mod_master_table_ui <- function(id) {
 
 mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
-  shiny::moduleServer(id, function(input, output, session) {
+    shiny::moduleServer(id, function(input, output, session) {
 
     ns <- session$ns
 
@@ -210,31 +210,31 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
     .validate_addition_data_internal <- function(add_data) {
 
-      if (is.null(add_data)) {
+            if (is.null(add_data)) {
 
         return(NULL)
 
-      }
+            }
 
-      if (!is.data.frame(add_data)) {
+            if (!is.data.frame(add_data)) {
 
         warning("[MasterTable] addition_data must be a data.frame, ignoring")
 
         return(NULL)
 
-      }
+            }
 
-      if (!"ID" %in% colnames(add_data)) {
+            if (!"ID" %in% colnames(add_data)) {
 
         warning("[MasterTable] addition_data must contain 'ID' column, ignoring")
 
         return(NULL)
 
-      }
+            }
 
-      add_data$ID <- as.character(add_data$ID)
+            add_data$ID <- as.character(add_data$ID)
 
-      return(add_data)
+            return(add_data)
 
     }
 
@@ -254,43 +254,43 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
     shiny::observeEvent(input$joint_plot_toggle, {
 
-      toggle <- input$joint_plot_toggle
+            toggle <- input$joint_plot_toggle
 
-      if (is.null(toggle) || !is.list(toggle)) {
+            if (is.null(toggle) || !is.list(toggle)) {
 
         return()
 
-      }
+            }
 
 
 
-      # Key fix: JavaScript passes strings "true"/"false", need to convert
+            # Key fix: JavaScript passes strings "true"/"false", need to convert
 
-      is_checked <- identical(toggle$checked, TRUE) || identical(toggle$checked, "true")
-
-
-
-      has_interaction(TRUE) # Mark as interacted when event fires
+            is_checked <- identical(toggle$checked, TRUE) || identical(toggle$checked, "true")
 
 
 
-      current <- joint_selected()
+            has_interaction(TRUE) # Mark as interacted when event fires
 
 
 
-      if (is_checked) {
+            current <- joint_selected()
+
+
+
+            if (is_checked) {
 
         # Add to selected list
 
         if (!(toggle$id %in% current)) {
 
-          joint_selected(c(current, toggle$id))
+                    joint_selected(c(current, toggle$id))
 
-          message(sprintf("[MasterTable] Added pathway: %s", toggle$id))
+                    message(sprintf("[MasterTable] Added pathway: %s", toggle$id))
 
         }
 
-      } else {
+            } else {
 
         # Remove from selected list
 
@@ -300,7 +300,7 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
         message(sprintf("[MasterTable] Removed pathway: %s", toggle$id))
 
-      }
+            }
 
     })
 
@@ -310,91 +310,91 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
     update_selection <- function(action = c("set", "add", "remove", "clear"), ids = character(0)) {
 
-      action <- match.arg(action)
+            action <- match.arg(action)
 
-      current <- joint_selected()
+            current <- joint_selected()
 
 
 
-      switch(action,
+            switch(action,
 
         "set" = {
 
-          has_interaction(TRUE)
+                    has_interaction(TRUE)
 
-          joint_selected(unique(ids))
+                    joint_selected(unique(ids))
 
-          session$sendCustomMessage(type = ns("externalUpdate"), message = list(
+                    session$sendCustomMessage(type = ns("externalUpdate"), message = list(
 
             action = "set",
 
             ids = to_safe(unique(ids))
 
-          ))
+                    ))
 
-          message("[MasterTable] Selection set to: ", paste(ids, collapse = ", "))
+                    message("[MasterTable] Selection set to: ", paste(ids, collapse = ", "))
 
         },
 
         "add" = {
 
-          has_interaction(TRUE)
+                    has_interaction(TRUE)
 
-          new_sel <- union(current, ids)
+                    new_sel <- union(current, ids)
 
-          joint_selected(unique(new_sel))
+                    joint_selected(unique(new_sel))
 
-          session$sendCustomMessage(type = ns("externalUpdate"), message = list(
+                    session$sendCustomMessage(type = ns("externalUpdate"), message = list(
 
             action = "add",
 
             ids = to_safe(unique(ids))
 
-          ))
+                    ))
 
-          message("[MasterTable] Added to selection: ", paste(ids, collapse = ", "))
+                    message("[MasterTable] Added to selection: ", paste(ids, collapse = ", "))
 
         },
 
         "remove" = {
 
-          has_interaction(TRUE)
+                    has_interaction(TRUE)
 
-          new_sel <- setdiff(current, ids)
+                    new_sel <- setdiff(current, ids)
 
-          joint_selected(new_sel)
+                    joint_selected(new_sel)
 
-          session$sendCustomMessage(type = ns("externalUpdate"), message = list(
+                    session$sendCustomMessage(type = ns("externalUpdate"), message = list(
 
             action = "remove",
 
             ids = to_safe(unique(ids))
 
-          ))
+                    ))
 
-          message("[MasterTable] Removed from selection: ", paste(ids, collapse = ", "))
+                    message("[MasterTable] Removed from selection: ", paste(ids, collapse = ", "))
 
         },
 
         "clear" = {
 
-          has_interaction(TRUE)
+                    has_interaction(TRUE)
 
-          joint_selected(character(0))
+                    joint_selected(character(0))
 
-          session$sendCustomMessage(type = ns("externalUpdate"), message = list(
+                    session$sendCustomMessage(type = ns("externalUpdate"), message = list(
 
             action = "clear",
 
             ids = character(0)
 
-          ))
+                    ))
 
-          message("[MasterTable] Selection cleared")
+                    message("[MasterTable] Selection cleared")
 
         }
 
-      )
+            )
 
     }
 
@@ -408,7 +408,7 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
     output$table <- DT::renderDataTable(
 
-      {
+            {
 
         data_list <- data_prep()
 
@@ -438,29 +438,29 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
         if (!is.null(data_list$task_obj$meta$meta_dict)) {
 
-          meta_dict <- data_list$task_obj$meta$meta_dict
+                    meta_dict <- data_list$task_obj$meta$meta_dict
 
-          if ("Brief_Description" %in% colnames(meta_dict)) {
+                    if ("Brief_Description" %in% colnames(meta_dict)) {
 
             desc_map <- setNames(meta_dict$Brief_Description, meta_dict$ID)
 
             df$Description <- desc_map[df$ID]
 
-          } else if ("Description" %in% colnames(meta_dict)) {
+                    } else if ("Description" %in% colnames(meta_dict)) {
 
             desc_map <- setNames(meta_dict$Description, meta_dict$ID)
 
             df$Description <- desc_map[df$ID]
 
-          } else {
+                    } else {
 
             df$Description <- df$ID
 
-          }
+                    }
 
         } else {
 
-          df$Description <- df$ID
+                    df$Description <- df$ID
 
         }
 
@@ -472,9 +472,9 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
         if (!is.null(addition_data_validated)) {
 
-          add_cols <- setdiff(colnames(addition_data_validated), "ID")
+                    add_cols <- setdiff(colnames(addition_data_validated), "ID")
 
-          df <- dplyr::left_join(df, addition_data_validated, by = "ID", suffix = c("", "_add"))
+                    df <- dplyr::left_join(df, addition_data_validated, by = "ID", suffix = c("", "_add"))
 
         }
 
@@ -498,15 +498,15 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
         df$Select_for_Plot <- sprintf(
 
-          '<input type="checkbox" class="joint-plot-checkbox" data-id="%s" %s onclick="this._lastUserClick=Date.now();Shiny.setInputValue(\'%s\', {id: \'%s\', checked: this.checked, ts: Date.now()}, {priority: \'event\'});"/>',
+                    '<input type="checkbox" class="joint-plot-checkbox" data-id="%s" %s onclick="this._lastUserClick=Date.now();Shiny.setInputValue(\'%s\', {id: \'%s\', checked: this.checked, ts: Date.now()}, {priority: \'event\'});"/>',
 
-          df$Safe_ID,
+                    df$Safe_ID,
 
-          ifelse(df$Safe_ID %in% current_selection, 'checked="checked"', ""),
+                    ifelse(df$Safe_ID %in% current_selection, 'checked="checked"', ""),
 
-          ns("joint_plot_toggle"),
+                    ns("joint_plot_toggle"),
 
-          df$Safe_ID
+                    df$Safe_ID
 
         )
 
@@ -514,11 +514,11 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
         df$Detail_Btn <- sprintf(
 
-          '<button class="btn btn-sm btn-success" onclick="Shiny.setInputValue(\'%s\', \'%s\', {priority: \'event\'})">Dashboard</button>',
+                    '<button class="btn btn-sm btn-success" onclick="Shiny.setInputValue(\'%s\', \'%s\', {priority: \'event\'})">Dashboard</button>',
 
-          ns("show_modal"),
+                    ns("show_modal"),
 
-          df$Safe_ID
+                    df$Safe_ID
 
         )
 
@@ -528,9 +528,9 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
         base_cols <- c(
 
-          "Rank", "Select_for_Plot", "Detail_Btn", "ID", "Enriched_In",
+                    "Rank", "Select_for_Plot", "Detail_Btn", "ID", "Enriched_In",
 
-          "NES_display", "pvalue", "p.adjust", "setSize", "Description"
+                    "NES_display", "pvalue", "p.adjust", "setSize", "Description"
 
         )
 
@@ -538,15 +538,15 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
         if (!is.null(addition_data_validated)) {
 
-          add_cols_display <- setdiff(colnames(addition_data_validated), "ID")
+                    add_cols_display <- setdiff(colnames(addition_data_validated), "ID")
 
-          add_cols_valid <- add_cols_display[vapply(add_cols_display, function(col) {
+                    add_cols_valid <- add_cols_display[vapply(add_cols_display, function(col) {
 
             !all(is.na(df[[col]]) | df[[col]] == "" | is.null(df[[col]]))
 
-          }, logical(1))]
+                    }, logical(1))]
 
-          base_cols <- c(base_cols, add_cols_valid)
+                    base_cols <- c(base_cols, add_cols_valid)
 
         }
 
@@ -560,25 +560,25 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
         col_name_map <- c(
 
-          "Rank" = "Rank",
+                    "Rank" = "Rank",
 
-          "Select_for_Plot" = "Joint Plot",
+                    "Select_for_Plot" = "Joint Plot",
 
-          "Detail_Btn" = "Dashboard",
+                    "Detail_Btn" = "Dashboard",
 
-          "ID" = "Pathway",
+                    "ID" = "Pathway",
 
-          "Enriched_In" = "Enriched In",
+                    "Enriched_In" = "Enriched In",
 
-          "NES_display" = "NES",
+                    "NES_display" = "NES",
 
-          "pvalue" = "P-value",
+                    "pvalue" = "P-value",
 
-          "p.adjust" = "FDR",
+                    "p.adjust" = "FDR",
 
-          "setSize" = "Size",
+                    "setSize" = "Size",
 
-          "Description" = "Description"
+                    "Description" = "Description"
 
         )
 
@@ -586,11 +586,11 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
         for (col in display_cols) {
 
-          if (!col %in% names(col_name_map)) {
+                    if (!col %in% names(col_name_map)) {
 
             col_name_map[col] <- col
 
-          }
+                    }
 
         }
 
@@ -608,13 +608,13 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
         if ("Select_for_Plot" %in% display_cols) {
 
-          idx <- which(display_cols == "Select_for_Plot") - 1
+                    idx <- which(display_cols == "Select_for_Plot") - 1
 
-          col_defs[[length(col_defs) + 1]] <- list(
+                    col_defs[[length(col_defs) + 1]] <- list(
 
             width = "40px", targets = idx, className = "dt-center", orderable = FALSE
 
-          )
+                    )
 
         }
 
@@ -622,13 +622,13 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
         if ("Detail_Btn" %in% display_cols) {
 
-          idx <- which(display_cols == "Detail_Btn") - 1
+                    idx <- which(display_cols == "Detail_Btn") - 1
 
-          col_defs[[length(col_defs) + 1]] <- list(
+                    col_defs[[length(col_defs) + 1]] <- list(
 
             width = "60px", targets = idx, className = "dt-center", orderable = FALSE
 
-          )
+                    )
 
         }
 
@@ -636,13 +636,13 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
         if ("Rank" %in% display_cols) {
 
-          idx <- which(display_cols == "Rank") - 1
+                    idx <- which(display_cols == "Rank") - 1
 
-          col_defs[[length(col_defs) + 1]] <- list(
+                    col_defs[[length(col_defs) + 1]] <- list(
 
             width = "20px", targets = idx, className = "dt-center"
 
-          )
+                    )
 
         }
 
@@ -650,13 +650,13 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
         if ("ID" %in% display_cols) {
 
-          idx <- which(display_cols == "ID") - 1
+                    idx <- which(display_cols == "ID") - 1
 
-          col_defs[[length(col_defs) + 1]] <- list(
+                    col_defs[[length(col_defs) + 1]] <- list(
 
             width = "200px", targets = idx
 
-          )
+                    )
 
         }
 
@@ -664,13 +664,13 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
         if ("Enriched_In" %in% display_cols) {
 
-          idx <- which(display_cols == "Enriched_In") - 1
+                    idx <- which(display_cols == "Enriched_In") - 1
 
-          col_defs[[length(col_defs) + 1]] <- list(
+                    col_defs[[length(col_defs) + 1]] <- list(
 
             width = "80px", targets = idx, className = "dt-center"
 
-          )
+                    )
 
         }
 
@@ -680,17 +680,17 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
         for (numeric_col in numeric_cols) {
 
-          if (numeric_col %in% display_cols) {
+                    if (numeric_col %in% display_cols) {
 
             idx <- which(display_cols == numeric_col) - 1
 
             col_defs[[length(col_defs) + 1]] <- list(
 
-              width = "60px", targets = idx, className = "dt-center"
+                            width = "60px", targets = idx, className = "dt-center"
 
             )
 
-          }
+                    }
 
         }
 
@@ -698,13 +698,13 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
         if ("Description" %in% display_cols) {
 
-          idx <- which(display_cols == "Description") - 1
+                    idx <- which(display_cols == "Description") - 1
 
-          col_defs[[length(col_defs) + 1]] <- list(
+                    col_defs[[length(col_defs) + 1]] <- list(
 
             width = "800px", targets = idx, className = "description-cell"
 
-          )
+                    )
 
         }
 
@@ -716,17 +716,17 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
         function(data, type) {
 
-          if (type === 'sort' || type === 'type') return data;
+                    if (type === 'sort' || type === 'type') return data;
 
-          if (data === null || isNaN(data)) return '-';
+                    if (data === null || isNaN(data)) return '-';
 
-          if (Math.abs(data) < 0.001) return data.toExponential(2);
+                    if (Math.abs(data) < 0.001) return data.toExponential(2);
 
-          return data.toFixed(4);
+                    return data.toFixed(4);
 
         }
 
-      "
+            "
 
 
 
@@ -742,17 +742,17 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
         col_defs[[length(col_defs) + 1]] <- list(
 
-          targets = pval_idx,
+                    targets = pval_idx,
 
-          render = htmlwidgets::JS(js_pval_render)
+                    render = htmlwidgets::JS(js_pval_render)
 
         )
 
         col_defs[[length(col_defs) + 1]] <- list(
 
-          targets = padj_idx,
+                    targets = padj_idx,
 
-          render = htmlwidgets::JS(js_pval_render)
+                    render = htmlwidgets::JS(js_pval_render)
 
         )
 
@@ -764,17 +764,17 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
         dt <- DT::datatable(
 
-          dt_data,
+                    dt_data,
 
-          escape = FALSE,
+                    escape = FALSE,
 
-          selection = "none",
+                    selection = "none",
 
-          rownames = FALSE,
+                    rownames = FALSE,
 
-          extensions = c("Buttons", "Scroller", "ColReorder", "FixedColumns"),
+                    extensions = c("Buttons", "Scroller", "ColReorder", "FixedColumns"),
 
-          options = list(
+                    options = list(
 
             scrollX = TRUE,
 
@@ -804,7 +804,7 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
             language = list(emptyTable = "No data available", zeroRecords = "No matching records found")
 
-          )
+                    )
 
         )
 
@@ -812,7 +812,7 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
         if ("Enriched In" %in% names(dt_data)) {
 
-          dt <- dt |> DT::formatStyle(
+                    dt <- dt |> DT::formatStyle(
 
             columns = "Enriched In",
 
@@ -822,7 +822,7 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
             fontWeight = "bold"
 
-          )
+                    )
 
         }
 
@@ -830,7 +830,7 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
         if ("NES" %in% names(dt_data)) {
 
-          dt <- dt |> DT::formatStyle(
+                    dt <- dt |> DT::formatStyle(
 
             columns = "NES",
 
@@ -838,7 +838,7 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
             fontWeight = "bold"
 
-          )
+                    )
 
         }
 
@@ -846,7 +846,7 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
         if ("FDR" %in% names(dt_data)) {
 
-          dt <- dt |> DT::formatStyle(
+                    dt <- dt |> DT::formatStyle(
 
             columns = "FDR",
 
@@ -854,7 +854,7 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
             fontWeight = DT::styleInterval(0.05, c("bold", "normal"))
 
-          )
+                    )
 
         }
 
@@ -862,7 +862,7 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
         if ("P-value" %in% names(dt_data)) {
 
-          dt <- dt |> DT::formatStyle(
+                    dt <- dt |> DT::formatStyle(
 
             columns = "P-value",
 
@@ -870,7 +870,7 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
             fontWeight = DT::styleInterval(0.05, c("bold", "normal"))
 
-          )
+                    )
 
         }
 
@@ -878,9 +878,9 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
         dt
 
-      },
+            },
 
-      server = TRUE
+            server = TRUE
 
     )
 
@@ -904,13 +904,13 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
     shiny::observe({
 
-      sel <- joint_selected_d()
+            sel <- joint_selected_d()
 
-      session$sendCustomMessage(type = ns("updateCheckbox"), message = list(
+            session$sendCustomMessage(type = ns("updateCheckbox"), message = list(
 
         ids = sel, ns = ns("")
 
-      ))
+            ))
 
     })
 
@@ -924,25 +924,25 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
     selected_pathways <- shiny::reactive({
 
-      # Return checkbox interaction state first
+            # Return checkbox interaction state first
 
-      if (isTRUE(has_interaction())) {
+            if (isTRUE(has_interaction())) {
 
         return(to_original(joint_selected()))
 
-      }
+            }
 
-      # Fall back to row click
+            # Fall back to row click
 
-      data_list <- data_prep()
+            data_list <- data_prep()
 
-      if (is.null(data_list) || is.null(input$table_rows_selected)) {
+            if (is.null(data_list) || is.null(input$table_rows_selected)) {
 
         return(character(0))
 
-      }
+            }
 
-      return(data_list$df$ID[input$table_rows_selected])
+            return(data_list$df$ID[input$table_rows_selected])
 
     })
 
@@ -950,7 +950,7 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
     show_modal_trigger <- shiny::reactive({
 
-      input$show_modal
+            input$show_modal
 
     })
 
@@ -958,21 +958,21 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
     remove_pathways <- function(ids) {
 
-      ids <- ids[!is.na(ids)]
+            ids <- ids[!is.na(ids)]
 
-      if (length(ids) == 0) {
+            if (length(ids) == 0) {
 
         return()
 
-      }
+            }
 
-      has_interaction(TRUE)
+            has_interaction(TRUE)
 
-      safe_ids <- to_safe(ids)
+            safe_ids <- to_safe(ids)
 
-      new_sel <- setdiff(joint_selected(), safe_ids)
+            new_sel <- setdiff(joint_selected(), safe_ids)
 
-      joint_selected(new_sel)
+            joint_selected(new_sel)
 
     }
 
@@ -980,9 +980,9 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
     clear_selection <- function() {
 
-      has_interaction(TRUE)
+            has_interaction(TRUE)
 
-      joint_selected(character(0))
+            joint_selected(character(0))
 
     }
 
@@ -992,19 +992,19 @@ mod_master_table_server <- function(id, data_prep, addition_data = NULL) {
 
     return(list(
 
-      selected_pathways = selected_pathways,
+            selected_pathways = selected_pathways,
 
-      show_modal = show_modal_trigger,
+            show_modal = show_modal_trigger,
 
-      remove_pathways = remove_pathways,
+            remove_pathways = remove_pathways,
 
-      clear_selection = clear_selection,
+            clear_selection = clear_selection,
 
-      update_selection = update_selection
+            update_selection = update_selection
 
     ))
 
-  })
+    })
 
 }
 

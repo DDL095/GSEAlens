@@ -390,17 +390,17 @@ NULL
 
 utils::globalVariables(c(
 
-  ".", "gene_symbol", "stat", "abs_stat", "ID", "NES", "Collection",
+    ".", "gene_symbol", "stat", "abs_stat", "ID", "NES", "Collection",
 
-  "Combo_Name", "Display_Collection", "Enriched_In", "Expression",
+    "Combo_Name", "Display_Collection", "Enriched_In", "Expression",
 
-  "Group", "Sample", "Subcollection", "URL", "Description", "Description.y",
+    "Group", "Sample", "Subcollection", "URL", "Description", "Description.y",
 
-  "Detail_Page", "Pathway_Link", "Rank", "setSize", "pvalue", "gs_collection",
+    "Detail_Page", "Pathway_Link", "Rank", "setSize", "pvalue", "gs_collection",
 
-  "gs_description", "gs_name", "gs_subcollection", "gs_url", "phase",
+    "gs_description", "gs_name", "gs_subcollection", "gs_url", "phase",
 
-  "read.csv", "relative_sec", "rss_mb", "x", "y"
+    "read.csv", "relative_sec", "rss_mb", "x", "y"
 
 ))
 

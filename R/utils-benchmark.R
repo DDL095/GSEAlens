@@ -28,101 +28,101 @@
 
 align_benchmark_data <- function(gsea_res, monitor_csv) {
 
-  if (!inherits(gsea_res, "GseaRes")) {
+    if (!inherits(gsea_res, "GseaRes")) {
 
     stop("Input must be a GseaRes object")
 
-  }
+    }
 
 
 
-  if (!file.exists(monitor_csv)) {
+    if (!file.exists(monitor_csv)) {
 
     stop("Monitoring CSV does not exist: ", monitor_csv)
 
-  }
+    }
 
 
 
-  # 提取GSEA时间窗口
+    # 提取GSEA时间窗口
 
-  bench <- gsea_res$metadata$gsea_benchmark
+    bench <- gsea_res$metadata$gsea_benchmark
 
-  start_ms <- bench$start_ms
+    start_ms <- bench$start_ms
 
-  end_ms <- bench$end_ms
-
-
-
-  # 读取Python生成的CSV（格式更简洁）
-
-  monitor <- read.csv(monitor_csv, stringsAsFactors = FALSE)
+    end_ms <- bench$end_ms
 
 
 
-  # Python和R的时间戳都是Unix毫秒，直接对齐
+    # 读取Python生成的CSV（格式更简洁）
 
-  aligned <- monitor[monitor$timestamp_ms >= (start_ms - 5000) &
+    monitor <- read.csv(monitor_csv, stringsAsFactors = FALSE)
+
+
+
+    # Python和R的时间戳都是Unix毫秒，直接对齐
+
+    aligned <- monitor[monitor$timestamp_ms >= (start_ms - 5000) &
 
     monitor$timestamp_ms <= (end_ms + 5000), ]
 
 
 
-  if (nrow(aligned) == 0) {
+    if (nrow(aligned) == 0) {
 
     warning("No overlapping time data found")
 
     return(NULL)
 
-  }
+    }
 
 
 
-  # 转换相对时间（秒）
+    # 转换相对时间（秒）
 
-  aligned$relative_sec <- (aligned$timestamp_ms - start_ms) / 1000
+    aligned$relative_sec <- (aligned$timestamp_ms - start_ms) / 1000
 
 
 
-  # 阶段标记
+    # 阶段标记
 
-  total_duration <- (end_ms - start_ms) / 1000
+    total_duration <- (end_ms - start_ms) / 1000
 
-  aligned$phase <- ifelse(
+    aligned$phase <- ifelse(
 
     aligned$relative_sec < 0, "pre_start",
 
     ifelse(aligned$relative_sec > total_duration, "post_end",
 
-      ifelse(aligned$relative_sec < total_duration * 0.2, "startup",
+            ifelse(aligned$relative_sec < total_duration * 0.2, "startup",
 
         ifelse(aligned$relative_sec < total_duration * 0.8, "core_compute", "cleanup")
 
-      )
+            )
 
     )
 
-  )
+    )
 
 
 
-  attr(aligned, "gsea_info") <- bench
+    attr(aligned, "gsea_info") <- bench
 
-  class(aligned) <- c("GseaBenchmarkAligned", "data.frame")
+    class(aligned) <- c("GseaBenchmarkAligned", "data.frame")
 
 
 
-  message(sprintf(
+    message(sprintf(
 
     "Alignment complete: %d sampling points, spanning %.1f seconds",
 
     nrow(aligned), max(aligned$relative_sec) - min(aligned$relative_sec)
 
-  ))
+    ))
 
 
 
-  invisible(aligned)
+    invisible(aligned)
 
 }
 
@@ -178,19 +178,19 @@ align_benchmark_data <- function(gsea_res, monitor_csv) {
 
 plot_gsea_memory <- function(aligned_data, highlight_phases = TRUE) {
 
-  if (!requireNamespace("ggplot2", quietly = TRUE)) {
+    if (!requireNamespace("ggplot2", quietly = TRUE)) {
 
     stop("ggplot2 package required: install.packages('ggplot2')")
 
-  }
+    }
 
 
 
-  info <- attr(aligned_data, "gsea_info")
+    info <- attr(aligned_data, "gsea_info")
 
 
 
-  p <- ggplot2::ggplot(aligned_data, ggplot2::aes(x = relative_sec, y = rss_mb)) +
+    p <- ggplot2::ggplot(aligned_data, ggplot2::aes(x = relative_sec, y = rss_mb)) +
 
     ggplot2::geom_line(linewidth = 0.8, color = "steelblue") +
 
@@ -200,15 +200,15 @@ plot_gsea_memory <- function(aligned_data, highlight_phases = TRUE) {
 
     ggplot2::labs(
 
-      title = sprintf("GSEA Memory Usage Profile (%d cores)", info$workers),
+            title = sprintf("GSEA Memory Usage Profile (%d cores)", info$workers),
 
-      subtitle = sprintf("Total duration: %.1f seconds", info$duration_sec),
+            subtitle = sprintf("Total duration: %.1f seconds", info$duration_sec),
 
-      x = "Time (seconds from GSEA start)",
+            x = "Time (seconds from GSEA start)",
 
-      y = "Memory (MB)",
+            y = "Memory (MB)",
 
-      caption = sprintf(
+            caption = sprintf(
 
         "Peak: %.0f MB | Average: %.0f MB",
 
@@ -216,7 +216,7 @@ plot_gsea_memory <- function(aligned_data, highlight_phases = TRUE) {
 
         mean(aligned_data$rss_mb[aligned_data$phase %in% c("startup", "core_compute", "cleanup")], na.rm = TRUE)
 
-      )
+            )
 
     ) +
 
@@ -224,13 +224,13 @@ plot_gsea_memory <- function(aligned_data, highlight_phases = TRUE) {
 
 
 
-  if (highlight_phases) {
+    if (highlight_phases) {
 
     # 添加阶段背景色（高级用法，可选）
 
     p <- p + ggplot2::aes(color = phase) +
 
-      ggplot2::scale_color_manual(values = c(
+            ggplot2::scale_color_manual(values = c(
 
         pre_start = "gray70",
 
@@ -242,13 +242,13 @@ plot_gsea_memory <- function(aligned_data, highlight_phases = TRUE) {
 
         post_end = "gray70"
 
-      ), name = "Phase")
+            ), name = "Phase")
 
-  }
+    }
 
 
 
-  p
+    p
 
 }
 
@@ -290,33 +290,33 @@ plot_gsea_memory <- function(aligned_data, highlight_phases = TRUE) {
 
 print.GseaBenchmarkAligned <- function(x, ...) {
 
-  info <- attr(x, "gsea_info")
+    info <- attr(x, "gsea_info")
 
 
 
-  # NOTE: cat() is the idiomatic way to write to stdout inside an S3 print()
+    # NOTE: cat() is the idiomatic way to write to stdout inside an S3 print()
 
-  # method (cf. print.data.frame, print.lm). Do NOT convert to message(),
+    # method (cf. print.data.frame, print.lm). Do NOT convert to message(),
 
-  # which would redirect output to stderr and break interactive use.
+    # which would redirect output to stderr and break interactive use.
 
-  cat("========================================\n")
+    cat("========================================\n")
 
-  cat("   GSEA Benchmark Alignment Results\n")
+    cat("   GSEA Benchmark Alignment Results\n")
 
-  cat("========================================\n")
+    cat("========================================\n")
 
-  cat(sprintf("GSEA Computation Time: %s\n", info$start_time))
+    cat(sprintf("GSEA Computation Time: %s\n", info$start_time))
 
-  cat(sprintf("Parallel Cores:        %d\n", info$workers))
+    cat(sprintf("Parallel Cores:        %d\n", info$workers))
 
-  cat(sprintf("GSEA Total Duration:   %.2f seconds\n", info$duration_sec))
+    cat(sprintf("GSEA Total Duration:   %.2f seconds\n", info$duration_sec))
 
-  cat("----------------------------------------\n")
+    cat("----------------------------------------\n")
 
-  cat(sprintf("Monitoring Samples:    %d\n", nrow(x)))
+    cat(sprintf("Monitoring Samples:    %d\n", nrow(x)))
 
-  cat(sprintf(
+    cat(sprintf(
 
     "Monitoring Span:       %.1f seconds (%.1f to %.1f)\n",
 
@@ -324,39 +324,39 @@ print.GseaBenchmarkAligned <- function(x, ...) {
 
     min(x$relative_sec), max(x$relative_sec)
 
-  ))
+    ))
 
-  cat(sprintf("Peak Memory:           %.0f MB\n", max(x$rss_mb, na.rm = TRUE)))
+    cat(sprintf("Peak Memory:           %.0f MB\n", max(x$rss_mb, na.rm = TRUE)))
 
-  cat(sprintf("Average Memory:        %.0f MB\n", mean(x$rss_mb[x$phase %in% c("startup", "core_compute", "cleanup")], na.rm = TRUE)))
+    cat(sprintf("Average Memory:        %.0f MB\n", mean(x$rss_mb[x$phase %in% c("startup", "core_compute", "cleanup")], na.rm = TRUE)))
 
-  cat("========================================\n")
+    cat("========================================\n")
 
 
 
-  # 各阶段统计
+    # 各阶段统计
 
-  cat("\nMemory Statistics by Phase:\n")
+    cat("\nMemory Statistics by Phase:\n")
 
-  stage_stats <- tapply(x$rss_mb, x$phase, function(v) {
+    stage_stats <- tapply(x$rss_mb, x$phase, function(v) {
 
     sprintf("Mean %.0f MB, Peak %.0f MB", mean(v, na.rm = TRUE), max(v, na.rm = TRUE))
 
-  })
+    })
 
-  for (phase in names(stage_stats)) {
+    for (phase in names(stage_stats)) {
 
     if (!is.na(stage_stats[phase])) {
 
-      cat(sprintf("  [%s]: %s\n", phase, stage_stats[phase]))
+            cat(sprintf("  [%s]: %s\n", phase, stage_stats[phase]))
 
     }
 
-  }
+    }
 
 
 
-  invisible(x)
+    invisible(x)
 
 }
 
@@ -398,15 +398,15 @@ print.GseaBenchmarkAligned <- function(x, ...) {
 
 analyze_scalability <- function(gsea_res_list, monitor_csv_list = NULL) {
 
-  if (is.null(names(gsea_res_list))) {
+    if (is.null(names(gsea_res_list))) {
 
     names(gsea_res_list) <- paste0("run_", seq_along(gsea_res_list))
 
-  }
+    }
 
 
 
-  results <- lapply(names(gsea_res_list), function(name) {
+    results <- lapply(names(gsea_res_list), function(name) {
 
     res <- gsea_res_list[[name]]
 
@@ -414,9 +414,9 @@ analyze_scalability <- function(gsea_res_list, monitor_csv_list = NULL) {
 
     if (is.null(res$metadata$gsea_benchmark)) {
 
-      warning(name, " missing benchmark data, skipping")
+            warning(name, " missing benchmark data, skipping")
 
-      return(NULL)
+            return(NULL)
 
     }
 
@@ -430,13 +430,13 @@ analyze_scalability <- function(gsea_res_list, monitor_csv_list = NULL) {
 
     out <- data.frame(
 
-      run_name = name,
+            run_name = name,
 
-      workers = bench$workers,
+            workers = bench$workers,
 
-      duration_sec = bench$duration_sec,
+            duration_sec = bench$duration_sec,
 
-      stringsAsFactors = FALSE
+            stringsAsFactors = FALSE
 
     )
 
@@ -446,9 +446,9 @@ analyze_scalability <- function(gsea_res_list, monitor_csv_list = NULL) {
 
     if (!is.null(monitor_csv_list) && name %in% names(monitor_csv_list)) {
 
-      csv_path <- monitor_csv_list[[name]]
+            csv_path <- monitor_csv_list[[name]]
 
-      if (file.exists(csv_path)) {
+            if (file.exists(csv_path)) {
 
         monitor <- read.csv(csv_path, stringsAsFactors = FALSE)
 
@@ -456,17 +456,17 @@ analyze_scalability <- function(gsea_res_list, monitor_csv_list = NULL) {
 
         aligned <- monitor[monitor$timestamp_ms >= bench$start_ms &
 
-          monitor$timestamp_ms <= bench$end_ms, ]
+                    monitor$timestamp_ms <= bench$end_ms, ]
 
         if (nrow(aligned) > 0) {
 
-          out$mem_peak_mb <- max(aligned$rss_mb, na.rm = TRUE)
+                    out$mem_peak_mb <- max(aligned$rss_mb, na.rm = TRUE)
 
-          out$mem_avg_mb <- mean(aligned$rss_mb, na.rm = TRUE)
+                    out$mem_avg_mb <- mean(aligned$rss_mb, na.rm = TRUE)
 
         }
 
-      }
+            }
 
     }
 
@@ -474,11 +474,11 @@ analyze_scalability <- function(gsea_res_list, monitor_csv_list = NULL) {
 
     out
 
-  })
+    })
 
 
 
-  do.call(rbind, results)
+    do.call(rbind, results)
 
 }
 

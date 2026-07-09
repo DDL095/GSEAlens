@@ -62,27 +62,27 @@ NULL
 
 create_gsea_env <- function(backend_info, contrast_registry, de_store, expr_bundle, geneset, raw_obj) {
 
-  structure(
+    structure(
 
     list(
 
-      backend_info = backend_info,
+            backend_info = backend_info,
 
-      contrast_registry = contrast_registry,
+            contrast_registry = contrast_registry,
 
-      de_store = de_store,
+            de_store = de_store,
 
-      expr_bundle = expr_bundle,
+            expr_bundle = expr_bundle,
 
-      geneset = geneset,
+            geneset = geneset,
 
-      raw_backend_obj = raw_obj # 保留原始对象以备不时之需，但下游不应直接访问
+            raw_backend_obj = raw_obj # 保留原始对象以备不时之需，但下游不应直接访问
 
     ),
 
     class = "GseaEnv"
 
-  )
+    )
 
 }
 
@@ -134,29 +134,29 @@ create_gsea_env <- function(backend_info, contrast_registry, de_store, expr_bund
 
 create_gsea_res <- function(metadata, backend_info, contrast_registry, de_store, expr_bundle, geneset_info, results) {
 
-  structure(
+    structure(
 
     list(
 
-      metadata = metadata,
+            metadata = metadata,
 
-      backend_info = backend_info,
+            backend_info = backend_info,
 
-      contrast_registry = contrast_registry,
+            contrast_registry = contrast_registry,
 
-      de_store = de_store,
+            de_store = de_store,
 
-      expr_bundle = expr_bundle,
+            expr_bundle = expr_bundle,
 
-      geneset_info = geneset_info,
+            geneset_info = geneset_info,
 
-      results = results
+            results = results
 
     ),
 
     class = "GseaRes"
 
-  )
+    )
 
 }
 
@@ -188,19 +188,19 @@ create_gsea_res <- function(metadata, backend_info, contrast_registry, de_store,
 
 create_gsea_task <- function(gsea_res, meta) {
 
-  structure(
+    structure(
 
     list(
 
-      gsea_res = gsea_res,
+            gsea_res = gsea_res,
 
-      meta = meta
+            meta = meta
 
     ),
 
     class = "GseaTask"
 
-  )
+    )
 
 }
 
@@ -228,21 +228,21 @@ create_gsea_task <- function(gsea_res, meta) {
 
 .validate_limma_design <- function(fit) {
 
-  # 检查是否包含截距项
+    # 检查是否包含截距项
 
-  # Intercept / (Intercept) 是 R 中默认的截距命名
+    # Intercept / (Intercept) 是 R 中默认的截距命名
 
-  design_matrix <- fit$design
+    design_matrix <- fit$design
 
-  has_intercept <- any(grepl("Intercept", colnames(design_matrix), ignore.case = TRUE))
+    has_intercept <- any(grepl("Intercept", colnames(design_matrix), ignore.case = TRUE))
 
 
 
-  if (has_intercept) {
+    if (has_intercept) {
 
     rlang::abort(
 
-      c(
+            c(
 
         "Intercept term detected in limma design matrix.",
 
@@ -252,33 +252,33 @@ create_gsea_task <- function(gsea_res, meta) {
 
         i = "Reason: No-intercept design makes colnames(fit) directly correspond to group names."
 
-      ),
+            ),
 
-      .class = "GSEAlens_limma_intercept_detected"
+            .class = "GSEAlens_limma_intercept_detected"
 
     )
 
-  }
+    }
 
 
 
-  # 检查是否有足够的列进行对比
+    # 检查是否有足够的列进行对比
 
-  if (ncol(design_matrix) < 2) {
+    if (ncol(design_matrix) < 2) {
 
     rlang::warn(
 
-      "Design matrix contains only 1 column; no between-group comparisons possible.",
+            "Design matrix contains only 1 column; no between-group comparisons possible.",
 
-      .class = "GSEAlens_limma_single_col"
+            .class = "GSEAlens_limma_single_col"
 
     )
 
-  }
+    }
 
 
 
-  return(TRUE)
+    return(TRUE)
 
 }
 
@@ -300,51 +300,51 @@ create_gsea_task <- function(gsea_res, meta) {
 
 .validate_deseq2_design <- function(dds, target_factor) {
 
-  col_data <- as.data.frame(SummarizedExperiment::colData(dds))
+    col_data <- as.data.frame(SummarizedExperiment::colData(dds))
 
 
 
-  if (!target_factor %in% colnames(col_data)) {
+    if (!target_factor %in% colnames(col_data)) {
 
     rlang::abort(
 
-      c(
+            c(
 
         sprintf("target_factor '%s' not found in colData.", target_factor),
 
         i = sprintf("Available column names: %s", paste(colnames(col_data), collapse = ", "))
 
-      ),
+            ),
 
-      target_factor = target_factor,
+            target_factor = target_factor,
 
-      .class = "GSEAlens_deseq2_missing_factor"
+            .class = "GSEAlens_deseq2_missing_factor"
 
     )
 
-  }
+    }
 
 
 
-  # 检查是否为因子
+    # 检查是否为因子
 
-  if (!is.factor(col_data[[target_factor]])) {
+    if (!is.factor(col_data[[target_factor]])) {
 
     rlang::warn(
 
-      sprintf("target_factor '%s' is not a factor type; attempting automatic conversion...", target_factor),
+            sprintf("target_factor '%s' is not a factor type; attempting automatic conversion...", target_factor),
 
-      .class = "GSEAlens_deseq2_factor_coerce"
+            .class = "GSEAlens_deseq2_factor_coerce"
 
     )
 
     # 这里不实际转换，只是警告，因为 DESeq2 通常在构建时已处理
 
-  }
+    }
 
 
 
-  return(TRUE)
+    return(TRUE)
 
 }
 
@@ -364,67 +364,67 @@ create_gsea_task <- function(gsea_res, meta) {
 
 .check_gsea_env <- function(env_obj) {
 
-  if (!inherits(env_obj, "GseaEnv")) {
+    if (!inherits(env_obj, "GseaEnv")) {
 
     rlang::abort(
 
-      "Input object is not of class GseaEnv.",
+            "Input object is not of class GseaEnv.",
 
-      .class = "GSEAlens_bad_class"
+            .class = "GSEAlens_bad_class"
 
     )
 
-  }
+    }
 
 
 
-  required_slots <- c("backend_info", "contrast_registry", "de_store", "expr_bundle", "geneset")
+    required_slots <- c("backend_info", "contrast_registry", "de_store", "expr_bundle", "geneset")
 
-  missing_slots <- setdiff(required_slots, names(env_obj))
+    missing_slots <- setdiff(required_slots, names(env_obj))
 
 
 
-  if (length(missing_slots) > 0) {
+    if (length(missing_slots) > 0) {
 
     rlang::abort(
 
-      c(
+            c(
 
         "GseaEnv object structure is incomplete.",
 
         i = sprintf("Missing slots: %s", paste(missing_slots, collapse = ", "))
 
-      ),
+            ),
 
-      missing_slots = missing_slots,
+            missing_slots = missing_slots,
 
-      .class = "GSEAlens_incomplete_env"
+            .class = "GSEAlens_incomplete_env"
 
     )
 
-  }
+    }
 
 
 
-  # 检查 contrast_registry 必要字段
+    # 检查 contrast_registry 必要字段
 
-  reg <- env_obj$contrast_registry
+    reg <- env_obj$contrast_registry
 
-  if (!is.data.frame(reg) || !all(c("contrast_id", "left_group", "right_group") %in% colnames(reg))) {
+    if (!is.data.frame(reg) || !all(c("contrast_id", "left_group", "right_group") %in% colnames(reg))) {
 
     rlang::abort(
 
-      "contrast_registry must contain columns: contrast_id, left_group, right_group.",
+            "contrast_registry must contain columns: contrast_id, left_group, right_group.",
 
-      .class = "GSEAlens_bad_registry"
+            .class = "GSEAlens_bad_registry"
 
     )
 
-  }
+    }
 
 
 
-  return(TRUE)
+    return(TRUE)
 
 }
 
@@ -444,33 +444,33 @@ create_gsea_task <- function(gsea_res, meta) {
 
 .check_gsea_res <- function(res_obj) {
 
-  if (!inherits(res_obj, "GseaRes")) {
+    if (!inherits(res_obj, "GseaRes")) {
 
     rlang::abort(
 
-      "Input object is not of class GseaRes.",
+            "Input object is not of class GseaRes.",
 
-      .class = "GSEAlens_bad_class"
+            .class = "GSEAlens_bad_class"
 
     )
 
-  }
+    }
 
-  # 简单检查 results 列表是否存在
+    # 简单检查 results 列表是否存在
 
-  if (is.null(res_obj$results)) {
+    if (is.null(res_obj$results)) {
 
     rlang::abort(
 
-      "No computation results in GseaRes object.",
+            "No computation results in GseaRes object.",
 
-      .class = "GSEAlens_empty_res"
+            .class = "GSEAlens_empty_res"
 
     )
 
-  }
+    }
 
-  return(TRUE)
+    return(TRUE)
 
 }
 

@@ -57,7 +57,7 @@ Return an executable ggplot2 script reproducing the Quadrant
   group order.
 }
 \examples{
-\donttest{
+\dontrun{
 # Shown via the "Export Publication Plot" button in panel 4 of the
 # Quadrant module. Generates a self-contained ggplot2 script.
 box_long <- extract_boxplot_data(gsea_res, "untrt_vs_trt", "GAPDH")$long

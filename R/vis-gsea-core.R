@@ -24,55 +24,55 @@
 
 .gs_info <- function(object, geneSetID) {
 
-  gseaScores <- enrichit::gseaScores
+    gseaScores <- enrichit::gseaScores
 
 
 
-  geneList <- object@geneList
+    geneList <- object@geneList
 
 
 
-  if (is.numeric(geneSetID)) {
+    if (is.numeric(geneSetID)) {
 
     geneSetID <- object@result[geneSetID, "ID"]
 
-  }
+    }
 
 
 
-  geneSet <- object@geneSets[[geneSetID]]
+    geneSet <- object@geneSets[[geneSetID]]
 
-  if (is.null(geneSet)) {
+    if (is.null(geneSet)) {
 
     stop(sprintf("Gene set '%s' not found in the GSEA result object. It may belong to a different gene set collection.", geneSetID))
 
-  }
+    }
 
-  exponent <- object@params[["exponent"]]
-
-
-
-  df <- gseaScores(geneList, geneSet, exponent, fortify = TRUE)
-
-  df$ymin <- 0
-
-  df$ymax <- 0
-
-  pos <- df$position == 1
-
-  h <- diff(range(df$runningScore)) / 20
-
-  df$ymin[pos] <- -h
-
-  df$ymax[pos] <- h
-
-  df$geneList <- geneList
-
-  df$Description <- object@result[geneSetID, "Description"]
+    exponent <- object@params[["exponent"]]
 
 
 
-  return(df)
+    df <- gseaScores(geneList, geneSet, exponent, fortify = TRUE)
+
+    df$ymin <- 0
+
+    df$ymax <- 0
+
+    pos <- df$position == 1
+
+    h <- diff(range(df$runningScore)) / 20
+
+    df$ymin[pos] <- -h
+
+    df$ymax[pos] <- h
+
+    df$geneList <- geneList
+
+    df$Description <- object@result[geneSetID, "Description"]
+
+
+
+    return(df)
 
 }
 
@@ -138,61 +138,61 @@
 
 .gsea_nb_core <- function(object,
 
-                          geneSetID,
+                                                    geneSetID,
 
-                          subPlot = 3,
+                                                    subPlot = 3,
 
-                          curveCol = c("#76BA99", "#EB4747", "#996699"),
+                                                    curveCol = c("#76BA99", "#EB4747", "#996699"),
 
-                          htCol = c("#08519C", "#A50F15"),
+                                                    htCol = c("#08519C", "#A50F15"),
 
-                          lineSize = 0.8,
+                                                    lineSize = 0.8,
 
-                          addPval = FALSE,
+                                                    addPval = FALSE,
 
-                          pvalX = 0.9,
+                                                    pvalX = 0.9,
 
-                          pvalY = 0.9,
+                                                    pvalY = 0.9,
 
-                          pvalSize = 4,
+                                                    pvalSize = 4,
 
-                          pCol = "grey0",
+                                                    pCol = "grey0",
 
-                          nesDigit = 2,
+                                                    nesDigit = 2,
 
-                          pDigit = 2,
+                                                    pDigit = 2,
 
-                          show_contrast_in_axis = FALSE,
+                                                    show_contrast_in_axis = FALSE,
 
-                          left_group = "Left",
+                                                    left_group = "Left",
 
-                          right_group = "Right",
+                                                    right_group = "Right",
 
-                          base_size = 14,
+                                                    base_size = 14,
 
-                          subRatio = c(0.5, 0.2, 0.3),
+                                                    subRatio = c(0.5, 0.2, 0.3),
 
-                          rankSeq = 5000,
+                                                    rankSeq = 5000,
 
-                          htHeight = 0.3,
+                                                    htHeight = 0.3,
 
-                          htAlpha = 0.8) {
-
-
-
-  # ============================================================================
-
-  # 1. Data preparation
-
-  # ============================================================================
-
-  glist <- object@geneList
+                                                    htAlpha = 0.8) {
 
 
 
-  # Running score data for all pathways
+    # ============================================================================
 
-  gsdata_list <- lapply(geneSetID, function(setid) {
+    # 1. Data preparation
+
+    # ============================================================================
+
+    glist <- object@geneList
+
+
+
+    # Running score data for all pathways
+
+    gsdata_list <- lapply(geneSetID, function(setid) {
 
     tmp <- .gs_info(object, geneSetID = setid)
 
@@ -200,57 +200,57 @@
 
     tmp
 
-  })
+    })
 
-  gsdata <- dplyr::bind_rows(gsdata_list)
+    gsdata <- dplyr::bind_rows(gsdata_list)
 
 
 
-  # In-pathway gene positions (only used for tick marks in Panel 2)
+    # In-pathway gene positions (only used for tick marks in Panel 2)
 
-  gsdata1_list <- lapply(unique(gsdata$Description), function(setid) {
+    gsdata1_list <- lapply(unique(gsdata$Description), function(setid) {
 
     tmp <- gsdata[gsdata$Description == setid, ]
 
     tmp[tmp$position == 1, ]
 
-  })
+    })
 
-  gsdata1 <- dplyr::bind_rows(gsdata1_list)
-
-
-
-  # Pathway statistics
-
-  data_ga <- as.data.frame(object)
-
-  data_ga <- data_ga[data_ga$ID %in% geneSetID, ]
-
-  data_ga <- data_ga[match(unique(gsdata$id), data_ga$ID), ]
+    gsdata1 <- dplyr::bind_rows(gsdata1_list)
 
 
 
-  n_pathways <- length(geneSetID)
+    # Pathway statistics
+
+    data_ga <- as.data.frame(object)
+
+    data_ga <- data_ga[data_ga$ID %in% geneSetID, ]
+
+    data_ga <- data_ga[match(unique(gsdata$id), data_ga$ID), ]
 
 
 
-  # ============================================================================
+    n_pathways <- length(geneSetID)
 
-  # 2. Panel 1: Enrichment Curve
 
-  # ============================================================================
 
-  if (n_pathways == 1) {
+    # ============================================================================
+
+    # 2. Panel 1: Enrichment Curve
+
+    # ============================================================================
+
+    if (n_pathways == 1) {
 
     if (length(curveCol) == 1) {
 
-      p1 <- ggplot2::ggplot(gsdata, ggplot2::aes(x = .data$x, y = .data$runningScore)) +
+            p1 <- ggplot2::ggplot(gsdata, ggplot2::aes(x = .data$x, y = .data$runningScore)) +
 
         ggplot2::geom_line(color = curveCol[1], linewidth = lineSize)
 
     } else {
 
-      p1 <- ggplot2::ggplot(gsdata, ggplot2::aes(x = .data$x, y = .data$runningScore)) +
+            p1 <- ggplot2::ggplot(gsdata, ggplot2::aes(x = .data$x, y = .data$runningScore)) +
 
         ggplot2::geom_line(ggplot2::aes(color = .data$runningScore), linewidth = lineSize) +
 
@@ -258,7 +258,7 @@
 
     }
 
-  } else {
+    } else {
 
     mulcol <- curveCol[seq_len(min(n_pathways, length(curveCol)))]
 
@@ -270,15 +270,15 @@
 
     p1 <- ggplot2::ggplot(gsdata, ggplot2::aes(x = .data$x, y = .data$runningScore)) +
 
-      ggplot2::geom_line(ggplot2::aes(color = .data$id), linewidth = lineSize) +
+            ggplot2::geom_line(ggplot2::aes(color = .data$id), linewidth = lineSize) +
 
-      ggplot2::scale_color_manual(values = mulcol, name = "Term Name")
+            ggplot2::scale_color_manual(values = mulcol, name = "Term Name")
 
-  }
+    }
 
 
 
-  p1 <- p1 +
+    p1 <- p1 +
 
     ggplot2::geom_hline(yintercept = 0, color = "black", linetype = "dashed") +
 
@@ -288,19 +288,19 @@
 
     ggplot2::theme(
 
-      legend.position = if (n_pathways == 1) "none" else "right",
+            legend.position = if (n_pathways == 1) "none" else "right",
 
-      axis.text.x = ggplot2::element_blank(),
+            axis.text.x = ggplot2::element_blank(),
 
-      axis.ticks.x = ggplot2::element_blank(),
+            axis.ticks.x = ggplot2::element_blank(),
 
-      axis.title.x = ggplot2::element_blank(),
+            axis.title.x = ggplot2::element_blank(),
 
-      axis.line.x = ggplot2::element_blank(),
+            axis.line.x = ggplot2::element_blank(),
 
-      panel.grid = ggplot2::element_blank(),
+            panel.grid = ggplot2::element_blank(),
 
-      plot.margin = ggplot2::margin(t = 0.2, r = 0.2, b = 0, l = 0.2, unit = "cm")
+            plot.margin = ggplot2::margin(t = 0.2, r = 0.2, b = 0, l = 0.2, unit = "cm")
 
     ) +
 
@@ -308,17 +308,17 @@
 
 
 
-  # P-value annotation (single pathway only)
+    # P-value annotation (single pathway only)
 
-  if (isTRUE(addPval) && n_pathways == 1 && nrow(data_ga) > 0) {
+    if (isTRUE(addPval) && n_pathways == 1 && nrow(data_ga) > 0) {
 
     p_label <- paste0(
 
-      "NES: ", round(data_ga$NES[1], digits = nesDigit), "\n",
+            "NES: ", round(data_ga$NES[1], digits = nesDigit), "\n",
 
-      "Pvalue: ", ifelse(data_ga$pvalue[1] < 0.001, "< 0.001", round(data_ga$pvalue[1], digits = pDigit)), "\n",
+            "Pvalue: ", ifelse(data_ga$pvalue[1] < 0.001, "< 0.001", round(data_ga$pvalue[1], digits = pDigit)), "\n",
 
-      "Adjusted Pvalue: ", ifelse(data_ga$p.adjust[1] < 0.001, "< 0.001", round(data_ga$p.adjust[1], digits = pDigit))
+            "Adjusted Pvalue: ", ifelse(data_ga$p.adjust[1] < 0.001, "< 0.001", round(data_ga$p.adjust[1], digits = pDigit))
 
     )
 
@@ -332,7 +332,7 @@
 
     p1 <- p1 +
 
-      ggplot2::annotate(
+            ggplot2::annotate(
 
         "text",
 
@@ -350,23 +350,23 @@
 
         hjust = 1
 
-      )
+            )
 
-  }
-
-
-
-  # ============================================================================
-
-  # 3. Panel 2: Heatmap Strip + Gene Ticks
-
-  # ============================================================================
-
-  p2 <- NULL
+    }
 
 
 
-  if (subPlot >= 2) {
+    # ============================================================================
+
+    # 3. Panel 2: Heatmap Strip + Gene Ticks
+
+    # ============================================================================
+
+    p2 <- NULL
+
+
+
+    if (subPlot >= 2) {
 
     # Bin geneList into 10 intervals for heatmap
 
@@ -378,7 +378,7 @@
 
     df_rank <- df_rank |>
 
-      dplyr::mutate(fc = dplyr::case_when(
+            dplyr::mutate(fc = dplyr::case_when(
 
         .data$fc >= qt[2] ~ qt[2],
 
@@ -386,7 +386,7 @@
 
         .default = .data$fc
 
-      ))
+            ))
 
 
 
@@ -416,21 +416,21 @@
 
     result_df <- data.frame(
 
-      Interval = seq_len(10),
+            Interval = seq_len(10),
 
-      Start = interval_bounds[, 1],
+            Start = interval_bounds[, 1],
 
-      End = interval_bounds[, 2],
+            End = interval_bounds[, 2],
 
-      xmax = start_positions,
+            xmax = start_positions,
 
-      xmin = end_positions,
+            xmin = end_positions,
 
-      ymin = 0,
+            ymin = 0,
 
-      ymax = htHeight,
+            ymax = htHeight,
 
-      Mean_LogFC = as.numeric(interval_means)
+            Mean_LogFC = as.numeric(interval_means)
 
     )
 
@@ -440,9 +440,9 @@
 
     result_df_all <- dplyr::bind_rows(lapply(unique(gsdata$id), function(setid) {
 
-      result_df$id <- setid
+            result_df$id <- setid
 
-      result_df
+            result_df
 
     }))
 
@@ -452,15 +452,15 @@
 
     if (gsdata$id[1] == gsdata$Description[1]) {
 
-      result_df_all$id <- factor(result_df_all$id, levels = geneSetID)
+            result_df_all$id <- factor(result_df_all$id, levels = geneSetID)
 
-      gsdata1$id <- factor(gsdata1$id, levels = geneSetID)
+            gsdata1$id <- factor(gsdata1$id, levels = geneSetID)
 
     } else {
 
-      result_df_all$id <- factor(result_df_all$id, levels = data_ga$ID)
+            result_df_all$id <- factor(result_df_all$id, levels = data_ga$ID)
 
-      gsdata1$id <- factor(gsdata1$id, levels = data_ga$ID)
+            gsdata1$id <- factor(gsdata1$id, levels = data_ga$ID)
 
     }
 
@@ -470,39 +470,39 @@
 
     p2 <- ggplot2::ggplot() +
 
-      ggplot2::geom_rect(
+            ggplot2::geom_rect(
 
         data = result_df_all,
 
         ggplot2::aes(
 
-          xmin = .data$xmin, xmax = .data$xmax,
+                    xmin = .data$xmin, xmax = .data$xmax,
 
-          ymin = .data$ymin, ymax = .data$ymax,
+                    ymin = .data$ymin, ymax = .data$ymax,
 
-          fill = .data$Mean_LogFC
+                    fill = .data$Mean_LogFC
 
         ),
 
         color = NA, inherit.aes = FALSE, alpha = htAlpha, show.legend = FALSE
 
-      ) +
+            ) +
 
-      ggplot2::scale_fill_gradient2(low = htCol[1], mid = "white", high = htCol[2], midpoint = 0)
+            ggplot2::scale_fill_gradient2(low = htCol[1], mid = "white", high = htCol[2], midpoint = 0)
 
 
 
     if (n_pathways > 1) {
 
-      p2 <- p2 +
+            p2 <- p2 +
 
         ggplot2::geom_segment(
 
-          data = gsdata1,
+                    data = gsdata1,
 
-          ggplot2::aes(x = .data$x, xend = .data$x, y = 0, yend = 1, color = .data$id),
+                    ggplot2::aes(x = .data$x, xend = .data$x, y = 0, yend = 1, color = .data$id),
 
-          show.legend = FALSE
+                    show.legend = FALSE
 
         ) +
 
@@ -510,17 +510,17 @@
 
     } else {
 
-      p2 <- p2 +
+            p2 <- p2 +
 
         ggplot2::geom_segment(
 
-          data = gsdata1,
+                    data = gsdata1,
 
-          ggplot2::aes(x = .data$x, xend = .data$x, y = 0, yend = 1),
+                    ggplot2::aes(x = .data$x, xend = .data$x, y = 0, yend = 1),
 
-          color = "black",
+                    color = "black",
 
-          show.legend = FALSE
+                    show.legend = FALSE
 
         )
 
@@ -530,13 +530,13 @@
 
     p2 <- p2 +
 
-      ggplot2::scale_x_continuous(expand = c(0, 0)) +
+            ggplot2::scale_x_continuous(expand = c(0, 0)) +
 
-      ggplot2::scale_y_continuous(expand = c(0, 0)) +
+            ggplot2::scale_y_continuous(expand = c(0, 0)) +
 
-      ggplot2::theme_bw(base_size = base_size) +
+            ggplot2::theme_bw(base_size = base_size) +
 
-      ggplot2::theme(
+            ggplot2::theme(
 
         axis.ticks = ggplot2::element_blank(),
 
@@ -556,15 +556,15 @@
 
         plot.margin = ggplot2::margin(t = 0, r = 0.2, b = 0.2, l = 0.2, unit = "cm")
 
-      ) +
+            ) +
 
-      ggplot2::xlab("Rank in Ordered Dataset")
+            ggplot2::xlab("Rank in Ordered Dataset")
 
 
 
     if (n_pathways > 1) {
 
-      p2 <- p2 + ggplot2::facet_wrap(~id, ncol = 1)
+            p2 <- p2 + ggplot2::facet_wrap(~id, ncol = 1)
 
     }
 
@@ -572,25 +572,25 @@
 
     if (subPlot > 2) {
 
-      p2 <- p2 + ggplot2::theme(axis.title.x = ggplot2::element_blank())
+            p2 <- p2 + ggplot2::theme(axis.title.x = ggplot2::element_blank())
 
     }
 
-  }
+    }
 
 
 
-  # ============================================================================
+    # ============================================================================
 
-  # 4. Panel 3: Ranked List Distribution (Native Red-Blue)
+    # 4. Panel 3: Ranked List Distribution (Native Red-Blue)
 
-  # ============================================================================
+    # ============================================================================
 
-  p3 <- NULL
+    p3 <- NULL
 
 
 
-  if (subPlot == 3) {
+    if (subPlot == 3) {
 
     df_rank_plot <- data.frame(x = seq_along(glist), y = as.numeric(glist))
 
@@ -598,11 +598,11 @@
 
     x_axis_label <- if (isTRUE(show_contrast_in_axis)) {
 
-      sprintf("%s vs %s", left_group, right_group)
+            sprintf("%s vs %s", left_group, right_group)
 
     } else {
 
-      "Rank in Ordered Dataset"
+            "Rank in Ordered Dataset"
 
     }
 
@@ -610,17 +610,17 @@
 
     p3 <- ggplot2::ggplot(df_rank_plot, ggplot2::aes(x = .data$x, y = .data$y)) +
 
-      ggplot2::geom_col(ggplot2::aes(fill = .data$y), width = 1, color = NA, show.legend = FALSE) +
+            ggplot2::geom_col(ggplot2::aes(fill = .data$y), width = 1, color = NA, show.legend = FALSE) +
 
-      ggplot2::scale_fill_gradient2(low = "#08519C", mid = "white", high = "#A50F15", midpoint = 0) +
+            ggplot2::scale_fill_gradient2(low = "#08519C", mid = "white", high = "#A50F15", midpoint = 0) +
 
-      ggplot2::geom_hline(yintercept = 0, linewidth = 0.5, color = "black", linetype = "dashed") +
+            ggplot2::geom_hline(yintercept = 0, linewidth = 0.5, color = "black", linetype = "dashed") +
 
-      ggplot2::scale_x_continuous(breaks = seq(0, length(glist), rankSeq)) +
+            ggplot2::scale_x_continuous(breaks = seq(0, length(glist), rankSeq)) +
 
-      ggplot2::theme_bw(base_size = base_size) +
+            ggplot2::theme_bw(base_size = base_size) +
 
-      ggplot2::theme(
+            ggplot2::theme(
 
         panel.grid = ggplot2::element_blank(),
 
@@ -628,11 +628,11 @@
 
         plot.margin = ggplot2::margin(t = -0.1, r = 0.2, b = 0.2, l = 0.2, unit = "cm")
 
-      ) +
+            ) +
 
-      ggplot2::coord_cartesian(expand = 0) +
+            ggplot2::coord_cartesian(expand = 0) +
 
-      ggplot2::labs(x = x_axis_label, y = "Ranked List")
+            ggplot2::labs(x = x_axis_label, y = "Ranked List")
 
 
 
@@ -640,7 +640,7 @@
 
     if (isTRUE(show_contrast_in_axis)) {
 
-      p3 <- p3 +
+            p3 <- p3 +
 
         ggplot2::theme(axis.title.x = ggplot2::element_text(face = "bold", size = 18))
 
@@ -658,9 +658,9 @@
 
     p3 <- p3 +
 
-      ggplot2::geom_vline(xintercept = z_cross, linetype = "dashed", color = "grey50") +
+            ggplot2::geom_vline(xintercept = z_cross, linetype = "dashed", color = "grey50") +
 
-      ggplot2::annotate(
+            ggplot2::annotate(
 
         "text",
 
@@ -670,9 +670,9 @@
 
         vjust = 1.5, hjust = -0.05, size = 3, color = "grey30"
 
-      ) +
+            ) +
 
-      ggplot2::annotate(
+            ggplot2::annotate(
 
         "text",
 
@@ -682,9 +682,9 @@
 
         color = "#A50F15", hjust = 0, size = 4, fontface = "italic"
 
-      ) +
+            ) +
 
-      ggplot2::annotate(
+            ggplot2::annotate(
 
         "text",
 
@@ -694,19 +694,19 @@
 
         color = "#08519C", hjust = 1, size = 4, fontface = "italic"
 
-      )
+            )
 
-  }
+    }
 
 
 
-  # ============================================================================
+    # ============================================================================
 
-  # 5. Return
+    # 5. Return
 
-  # ============================================================================
+    # ============================================================================
 
-  return(list(
+    return(list(
 
     p1 = p1,
 
@@ -720,7 +720,7 @@
 
     glist = glist
 
-  ))
+    ))
 
 }
 

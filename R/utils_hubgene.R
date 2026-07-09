@@ -84,49 +84,49 @@
 
 build_hubgene_network <- function(gsea_task, pathway_ids,
 
-                                  min_hub_degree = 2,
+                                                                    min_hub_degree = 2,
 
-                                  de_df = NULL,
+                                                                    de_df = NULL,
 
-                                  res_df = NULL,
+                                                                    res_df = NULL,
 
-                                  seed = 123) {
+                                                                    seed = 123) {
 
-  # Extract hub genes (now includes leading edge info)
+    # Extract hub genes (now includes leading edge info)
 
-  # Fixed: Properly pass de_df parameter
+    # Fixed: Properly pass de_df parameter
 
-  hub_df <- extract_hub_genes(gsea_task, pathway_ids, min_hub_degree, de_df = de_df)
+    hub_df <- extract_hub_genes(gsea_task, pathway_ids, min_hub_degree, de_df = de_df)
 
 
 
-  if (is.null(hub_df) || nrow(hub_df) == 0) {
+    if (is.null(hub_df) || nrow(hub_df) == 0) {
 
     return(list(nodes = NULL, edges = NULL, hub_df = NULL))
 
-  }
+    }
 
 
 
-  # Extract gene sets from GSEA result
+    # Extract gene sets from GSEA result
 
-  gene_sets <- gsea_task$gsea_res@geneSets[pathway_ids]
+    gene_sets <- gsea_task$gsea_res@geneSets[pathway_ids]
 
 
 
-  # Get pathway result info if not provided
+    # Get pathway result info if not provided
 
-  if (is.null(res_df)) {
+    if (is.null(res_df)) {
 
     res_df <- as.data.frame(gsea_task$gsea_res@result)
 
-  }
+    }
 
 
 
-  # Build pathway nodes
+    # Build pathway nodes
 
-  pathway_nodes <- data.frame(
+    pathway_nodes <- data.frame(
 
     id = pathway_ids,
 
@@ -134,49 +134,49 @@ build_hubgene_network <- function(gsea_task, pathway_ids,
 
     stringsAsFactors = FALSE
 
-  )
+    )
 
 
 
-  # Add pathway statistics
+    # Add pathway statistics
 
-  pw_stats <- res_df[match(pathway_ids, res_df$ID), ]
+    pw_stats <- res_df[match(pathway_ids, res_df$ID), ]
 
-  pathway_nodes$NES <- pw_stats$NES
+    pathway_nodes$NES <- pw_stats$NES
 
-  pathway_nodes$FDR <- pw_stats$p.adjust
+    pathway_nodes$FDR <- pw_stats$p.adjust
 
-  pathway_nodes$pvalue <- pw_stats$pvalue
+    pathway_nodes$pvalue <- pw_stats$pvalue
 
-  pathway_nodes$n_core <- pw_stats$setSize
+    pathway_nodes$n_core <- pw_stats$setSize
 
-  pathway_nodes$direction <- ifelse(pathway_nodes$NES > 0, "up", "down")
+    pathway_nodes$direction <- ifelse(pathway_nodes$NES > 0, "up", "down")
 
 
 
-  # Count total genes per pathway
+    # Count total genes per pathway
 
-  pathway_nodes$n_total <- vapply(pathway_ids, function(pw) {
+    pathway_nodes$n_total <- vapply(pathway_ids, function(pw) {
 
     length(gene_sets[[pw]])
 
-  }, FUN.VALUE = integer(1L))
+    }, FUN.VALUE = integer(1L))
 
 
 
-  # Calculate core ratio
+    # Calculate core ratio
 
-  pathway_nodes$core_ratio <- pathway_nodes$n_core / pathway_nodes$n_total
-
-
-
-  # Build gene nodes (only hub genes)
-
-  hub_genes <- hub_df[hub_df$is_hub, ]
+    pathway_nodes$core_ratio <- pathway_nodes$n_core / pathway_nodes$n_total
 
 
 
-  gene_nodes <- data.frame(
+    # Build gene nodes (only hub genes)
+
+    hub_genes <- hub_df[hub_df$is_hub, ]
+
+
+
+    gene_nodes <- data.frame(
 
     id = hub_genes$gene,
 
@@ -190,23 +190,23 @@ build_hubgene_network <- function(gsea_task, pathway_ids,
 
     stringsAsFactors = FALSE
 
-  )
+    )
 
 
 
-  # Gene direction based on stat
+    # Gene direction based on stat
 
-  gene_nodes$direction <- ifelse(gene_nodes$stat > 0, "up",
+    gene_nodes$direction <- ifelse(gene_nodes$stat > 0, "up",
 
     ifelse(gene_nodes$stat < 0, "down", "neutral")
 
-  )
+    )
 
 
 
-  # Build edges with leading edge info
+    # Build edges with leading edge info
 
-  edges_list <- lapply(seq_len(nrow(hub_genes)), function(i) {
+    edges_list <- lapply(seq_len(nrow(hub_genes)), function(i) {
 
     g <- hub_genes$gene[i]
 
@@ -222,15 +222,15 @@ build_hubgene_network <- function(gsea_task, pathway_ids,
 
     if (length(connected_pws) > 0) {
 
-      edge_info <- lapply(connected_pws, function(pw) {
+            edge_info <- lapply(connected_pws, function(pw) {
 
         is_leading <- if (pw %in% names(leading_edges)) {
 
-          leading_edges[[pw]]
+                    leading_edges[[pw]]
 
         } else {
 
-          FALSE
+                    FALSE
 
         }
 
@@ -238,35 +238,35 @@ build_hubgene_network <- function(gsea_task, pathway_ids,
 
         data.frame(
 
-          source = g,
+                    source = g,
 
-          target = pw,
+                    target = pw,
 
-          is_leading_edge = is_leading,
+                    is_leading_edge = is_leading,
 
-          edge_width = ifelse(is_leading, 3, 1),
+                    edge_width = ifelse(is_leading, 3, 1),
 
-          stringsAsFactors = FALSE
+                    stringsAsFactors = FALSE
 
         )
 
-      })
+            })
 
 
 
-      return(do.call(rbind, edge_info))
+            return(do.call(rbind, edge_info))
 
     } else {
 
-      return(NULL)
+            return(NULL)
 
     }
 
-  })
+    })
 
 
 
-  if (length(edges_list) > 0 && !all(vapply(edges_list, is.null, FUN.VALUE = logical(1L)))) {
+    if (length(edges_list) > 0 && !all(vapply(edges_list, is.null, FUN.VALUE = logical(1L)))) {
 
     # plyr was removed from DESCRIPTION; dplyr::bind_rows produces an
 
@@ -280,15 +280,15 @@ build_hubgene_network <- function(gsea_task, pathway_ids,
 
     edges <- dplyr::bind_rows(edges_list)
 
-  } else {
+    } else {
 
     edges <- NULL
 
-  }
+    }
 
 
 
-  return(list(
+    return(list(
 
     nodes = list(pathway = pathway_nodes, gene = gene_nodes),
 
@@ -296,7 +296,7 @@ build_hubgene_network <- function(gsea_task, pathway_ids,
 
     hub_df = hub_df
 
-  ))
+    ))
 
 }
 
@@ -382,51 +382,51 @@ build_hubgene_network <- function(gsea_task, pathway_ids,
 
 extract_hub_genes <- function(gsea_task, pathway_ids, min_degree = 2, de_df = NULL) {
 
-  # Validate inputs
+    # Validate inputs
 
-  if (is.null(pathway_ids) || length(pathway_ids) == 0) {
-
-    return(NULL)
-
-  }
-
-
-
-  # Extract gene sets from GSEA result
-
-  gene_sets <- gsea_task$gsea_res@geneSets[pathway_ids]
-
-
-
-  if (length(gene_sets) == 0) {
+    if (is.null(pathway_ids) || length(pathway_ids) == 0) {
 
     return(NULL)
 
-  }
+    }
 
 
 
-  # ===========================================
+    # Extract gene sets from GSEA result
 
-  # Extract Leading Edge gene lists
-
-  # ===========================================
-
-  leading_edge_genes <- list()
-
-  res_df <- as.data.frame(gsea_task$gsea_res@result)
+    gene_sets <- gsea_task$gsea_res@geneSets[pathway_ids]
 
 
 
-  for (pw_id in pathway_ids) {
+    if (length(gene_sets) == 0) {
+
+    return(NULL)
+
+    }
+
+
+
+    # ===========================================
+
+    # Extract Leading Edge gene lists
+
+    # ===========================================
+
+    leading_edge_genes <- list()
+
+    res_df <- as.data.frame(gsea_task$gsea_res@result)
+
+
+
+    for (pw_id in pathway_ids) {
 
     row_idx <- which(res_df$ID == pw_id)
 
     if (length(row_idx) > 0) {
 
-      core_str <- as.character(res_df$core_enrichment[row_idx[1]])
+            core_str <- as.character(res_df$core_enrichment[row_idx[1]])
 
-      if (!is.na(core_str) && core_str != "") {
+            if (!is.na(core_str) && core_str != "") {
 
         core_genes <- unlist(strsplit(core_str, "/"))
 
@@ -436,99 +436,99 @@ extract_hub_genes <- function(gsea_task, pathway_ids, min_degree = 2, de_df = NU
 
         leading_edge_genes[[pw_id]] <- unique(core_genes)
 
-      } else {
+            } else {
 
         leading_edge_genes[[pw_id]] <- character(0)
 
-      }
+            }
 
     } else {
 
-      leading_edge_genes[[pw_id]] <- character(0)
+            leading_edge_genes[[pw_id]] <- character(0)
 
     }
 
-  }
+    }
 
 
 
-  # ===========================================
+    # ===========================================
 
-  # Source filtering: keep only expressed genes
+    # Source filtering: keep only expressed genes
 
-  # ===========================================
-
-
-
-  valid_genes <- NULL
+    # ===========================================
 
 
 
-  if (!is.null(de_df)) {
+    valid_genes <- NULL
+
+
+
+    if (!is.null(de_df)) {
 
     # Preferentially use genes with stat values from DE table
 
     if ("gene_symbol" %in% colnames(de_df) && "stat" %in% colnames(de_df)) {
 
-      valid_genes <- de_df$gene_symbol[!is.na(de_df$stat)]
+            valid_genes <- de_df$gene_symbol[!is.na(de_df$stat)]
 
-      valid_genes <- toupper(trimws(as.character(valid_genes)))
+            valid_genes <- toupper(trimws(as.character(valid_genes)))
 
-      valid_genes <- valid_genes[!is.na(valid_genes) & valid_genes != ""]
+            valid_genes <- valid_genes[!is.na(valid_genes) & valid_genes != ""]
 
-      valid_genes <- unique(valid_genes)
+            valid_genes <- unique(valid_genes)
 
-      message("[extract_hub_genes] Using stat from de_df, ", length(valid_genes), " genes with valid stat")
+            message("[extract_hub_genes] Using stat from de_df, ", length(valid_genes), " genes with valid stat")
 
     } else if ("gene_symbol" %in% colnames(de_df) && "logFC" %in% colnames(de_df)) {
 
-      valid_genes <- de_df$gene_symbol[!is.na(de_df$logFC)]
+            valid_genes <- de_df$gene_symbol[!is.na(de_df$logFC)]
 
-      valid_genes <- toupper(trimws(as.character(valid_genes)))
+            valid_genes <- toupper(trimws(as.character(valid_genes)))
 
-      valid_genes <- valid_genes[!is.na(valid_genes) & valid_genes != ""]
+            valid_genes <- valid_genes[!is.na(valid_genes) & valid_genes != ""]
 
-      valid_genes <- unique(valid_genes)
+            valid_genes <- unique(valid_genes)
 
-      message("[extract_hub_genes] Using logFC from de_df, ", length(valid_genes), " genes with valid logFC")
+            message("[extract_hub_genes] Using logFC from de_df, ", length(valid_genes), " genes with valid logFC")
 
     }
 
-  }
+    }
 
 
 
-  # Fallback to geneList if DE table is unavailable
+    # Fallback to geneList if DE table is unavailable
 
-  if (is.null(valid_genes) || length(valid_genes) == 0) {
+    if (is.null(valid_genes) || length(valid_genes) == 0) {
 
     if (!is.null(gsea_task$gsea_res@geneList)) {
 
-      valid_genes <- toupper(names(gsea_task$gsea_res@geneList))
+            valid_genes <- toupper(names(gsea_task$gsea_res@geneList))
 
-      valid_genes <- unique(valid_genes)
+            valid_genes <- unique(valid_genes)
 
-      message("[extract_hub_genes] Falling back to geneList, ", length(valid_genes), " genes")
+            message("[extract_hub_genes] Falling back to geneList, ", length(valid_genes), " genes")
 
     }
 
-  }
+    }
 
 
 
-  if (is.null(valid_genes) || length(valid_genes) == 0) {
+    if (is.null(valid_genes) || length(valid_genes) == 0) {
 
     warning("[extract_hub_genes] Cannot determine valid genes, returning NULL")
 
     return(NULL)
 
-  }
+    }
 
 
 
-  # Filter gene_sets
+    # Filter gene_sets
 
-  gene_sets <- lapply(gene_sets, function(genes) {
+    gene_sets <- lapply(gene_sets, function(genes) {
 
     genes_upper <- toupper(trimws(as.character(genes)))
 
@@ -536,37 +536,37 @@ extract_hub_genes <- function(gsea_task, pathway_ids, min_degree = 2, de_df = NU
 
     intersect(genes_upper, valid_genes)
 
-  })
+    })
 
 
 
-  gene_sets <- gene_sets[vapply(gene_sets, length, FUN.VALUE = integer(1L)) > 0]
+    gene_sets <- gene_sets[vapply(gene_sets, length, FUN.VALUE = integer(1L)) > 0]
 
 
 
-  if (length(gene_sets) == 0) {
+    if (length(gene_sets) == 0) {
 
     return(NULL)
 
-  }
+    }
 
 
 
-  # ===========================================
+    # ===========================================
 
-  # Count gene occurrences across pathways
+    # Count gene occurrences across pathways
 
-  # ===========================================
-
-
-
-  all_genes <- unlist(gene_sets)
-
-  gene_counts <- table(toupper(all_genes))
+    # ===========================================
 
 
 
-  gene_info <- data.frame(
+    all_genes <- unlist(gene_sets)
+
+    gene_counts <- table(toupper(all_genes))
+
+
+
+    gene_info <- data.frame(
 
     gene = names(gene_counts),
 
@@ -574,11 +574,11 @@ extract_hub_genes <- function(gsea_task, pathway_ids, min_degree = 2, de_df = NU
 
     stringsAsFactors = FALSE
 
-  )
+    )
 
 
 
-  gene_info$pathways <- vapply(gene_info$gene, function(g) {
+    gene_info$pathways <- vapply(gene_info$gene, function(g) {
 
     g_upper <- toupper(g)
 
@@ -586,27 +586,27 @@ extract_hub_genes <- function(gsea_task, pathway_ids, min_degree = 2, de_df = NU
 
     paste(pws, collapse = ", ")
 
-  }, FUN.VALUE = character(1L))
+    }, FUN.VALUE = character(1L))
 
 
 
-  # Determine leading edge status for each pathway
+    # Determine leading edge status for each pathway
 
-  gene_info$pathway_leading_edges <- lapply(gene_info$gene, function(g) {
+    gene_info$pathway_leading_edges <- lapply(gene_info$gene, function(g) {
 
     g_upper <- toupper(g)
 
     leading_status <- vapply(pathway_ids, function(pw_id) {
 
-      if (pw_id %in% names(leading_edge_genes)) {
+            if (pw_id %in% names(leading_edge_genes)) {
 
         g_upper %in% toupper(leading_edge_genes[[pw_id]])
 
-      } else {
+            } else {
 
         FALSE
 
-      }
+            }
 
     }, FUN.VALUE = logical(1L))
 
@@ -614,37 +614,37 @@ extract_hub_genes <- function(gsea_task, pathway_ids, min_degree = 2, de_df = NU
 
     return(leading_status)
 
-  })
+    })
 
 
 
-  gene_info$is_hub <- gene_info$degree >= min_degree
+    gene_info$is_hub <- gene_info$degree >= min_degree
 
 
 
-  # ===========================================
+    # ===========================================
 
-  # Critical fix: Properly read stat information
+    # Critical fix: Properly read stat information
 
-  # ===========================================
+    # ===========================================
 
 
 
-  if (!is.null(de_df) && is.data.frame(de_df)) {
+    if (!is.null(de_df) && is.data.frame(de_df)) {
 
     # Ensure gene_symbol column exists
 
     if ("gene_symbol" %in% colnames(de_df)) {
 
-      # Create gene name to stat mapping
+            # Create gene name to stat mapping
 
-      de_df$gene_upper <- toupper(as.character(de_df$gene_symbol))
+            de_df$gene_upper <- toupper(as.character(de_df$gene_symbol))
 
 
 
-      # Prefer stat column
+            # Prefer stat column
 
-      if ("stat" %in% colnames(de_df)) {
+            if ("stat" %in% colnames(de_df)) {
 
         stat_map <- setNames(de_df$stat, de_df$gene_upper)
 
@@ -652,11 +652,11 @@ extract_hub_genes <- function(gsea_task, pathway_ids, min_degree = 2, de_df = NU
 
         message("[extract_hub_genes] Mapped stat from de_df$stat")
 
-      }
+            }
 
-      # Use logFC if no stat column
+            # Use logFC if no stat column
 
-      else if ("logFC" %in% colnames(de_df)) {
+            else if ("logFC" %in% colnames(de_df)) {
 
         stat_map <- setNames(de_df$logFC, de_df$gene_upper)
 
@@ -664,11 +664,11 @@ extract_hub_genes <- function(gsea_task, pathway_ids, min_degree = 2, de_df = NU
 
         message("[extract_hub_genes] Mapped stat from de_df$logFC")
 
-      }
+            }
 
-      # Use log2FoldChange if no logFC column (DESeq2)
+            # Use log2FoldChange if no logFC column (DESeq2)
 
-      else if ("log2FoldChange" %in% colnames(de_df)) {
+            else if ("log2FoldChange" %in% colnames(de_df)) {
 
         stat_map <- setNames(de_df$log2FoldChange, de_df$gene_upper)
 
@@ -676,29 +676,29 @@ extract_hub_genes <- function(gsea_task, pathway_ids, min_degree = 2, de_df = NU
 
         message("[extract_hub_genes] Mapped stat from de_df$log2FoldChange")
 
-      } else {
+            } else {
 
         gene_info$stat <- 0
 
         warning("[extract_hub_genes] de_df has no stat/logFC/log2FoldChange column")
 
-      }
+            }
 
 
 
-      # Handle NA values
+            # Handle NA values
 
-      gene_info$stat[is.na(gene_info$stat)] <- 0
+            gene_info$stat[is.na(gene_info$stat)] <- 0
 
     } else {
 
-      gene_info$stat <- 0
+            gene_info$stat <- 0
 
-      warning("[extract_hub_genes] de_df has no gene_symbol column")
+            warning("[extract_hub_genes] de_df has no gene_symbol column")
 
     }
 
-  } else {
+    } else {
 
     # No de_df available, use geneList values as fallback
 
@@ -706,35 +706,35 @@ extract_hub_genes <- function(gsea_task, pathway_ids, min_degree = 2, de_df = NU
 
     if (!is.null(gene_list)) {
 
-      stat_map <- setNames(as.numeric(gene_list), toupper(names(gene_list)))
+            stat_map <- setNames(as.numeric(gene_list), toupper(names(gene_list)))
 
-      gene_info$stat <- as.numeric(stat_map[gene_info$gene])
+            gene_info$stat <- as.numeric(stat_map[gene_info$gene])
 
-      gene_info$stat[is.na(gene_info$stat)] <- 0
+            gene_info$stat[is.na(gene_info$stat)] <- 0
 
-      message("[extract_hub_genes] Mapped stat from geneList (fallback)")
+            message("[extract_hub_genes] Mapped stat from geneList (fallback)")
 
     } else {
 
-      gene_info$stat <- 0
+            gene_info$stat <- 0
 
     }
 
-  }
+    }
 
 
 
-  gene_info$log2FC <- gene_info$stat
+    gene_info$log2FC <- gene_info$stat
 
 
 
-  # Sort by degree descending
+    # Sort by degree descending
 
-  gene_info <- gene_info[order(gene_info$degree, decreasing = TRUE), ]
+    gene_info <- gene_info[order(gene_info$degree, decreasing = TRUE), ]
 
 
 
-  return(gene_info)
+    return(gene_info)
 
 }
 
@@ -824,39 +824,39 @@ extract_hub_genes <- function(gsea_task, pathway_ids, min_degree = 2, de_df = NU
 
 prepare_hubgene_nodes <- function(network_data, layout = "fr", seed = 42) {
 
-  if (is.null(network_data) || is.null(network_data$nodes)) {
+    if (is.null(network_data) || is.null(network_data$nodes)) {
 
     return(NULL)
 
-  }
+    }
 
 
 
-  nodes <- network_data$nodes
+    nodes <- network_data$nodes
 
-  edges <- network_data$edges
+    edges <- network_data$edges
 
 
 
-  if (nrow(edges) == 0) {
+    if (nrow(edges) == 0) {
 
     return(NULL)
 
-  }
+    }
 
 
 
-  # Combine all nodes for igraph
+    # Combine all nodes for igraph
 
-  all_nodes <- dplyr::bind_rows(nodes$pathway, nodes$gene)
+    all_nodes <- dplyr::bind_rows(nodes$pathway, nodes$gene)
 
-  all_nodes$id <- as.character(all_nodes$id)
+    all_nodes$id <- as.character(all_nodes$id)
 
 
 
-  # Build igraph graph
+    # Build igraph graph
 
-  g <- igraph::graph_from_data_frame(
+    g <- igraph::graph_from_data_frame(
 
     edges,
 
@@ -864,125 +864,125 @@ prepare_hubgene_nodes <- function(network_data, layout = "fr", seed = 42) {
 
     directed = FALSE
 
-  )
+    )
 
 
 
-  # Calculate layout
+    # Calculate layout
 
-  # Only stochastic layouts (Fruchterman-Reingold) require a seed for reproducibility.
+    # Only stochastic layouts (Fruchterman-Reingold) require a seed for reproducibility.
 
-  # kk and circle are deterministic. withr::with_seed sets the seed locally and
+    # kk and circle are deterministic. withr::with_seed sets the seed locally and
 
-  # restores the caller's RNG state on exit, so the user's global RNG is not polluted.
+    # restores the caller's RNG state on exit, so the user's global RNG is not polluted.
 
-  # The seed parameter (default 42) is exposed to callers for reproducibility control.
+    # The seed parameter (default 42) is exposed to callers for reproducibility control.
 
-  compute_layout <- function() {
+    compute_layout <- function() {
 
     if (layout == "fr") {
 
-      igraph::layout_with_fr(g)
+            igraph::layout_with_fr(g)
 
     } else if (layout == "kk") {
 
-      igraph::layout_with_kk(g)
+            igraph::layout_with_kk(g)
 
     } else if (layout == "circle") {
 
-      igraph::layout_in_circle(g)
+            igraph::layout_in_circle(g)
 
     } else {
 
-      igraph::layout_with_fr(g)
+            igraph::layout_with_fr(g)
 
     }
 
-  }
+    }
 
 
 
-  # Default empty/null layout falls back to FR (stochastic); otherwise respect the
+    # Default empty/null layout falls back to FR (stochastic); otherwise respect the
 
-  # deterministic algorithm choice.
+    # deterministic algorithm choice.
 
-  needs_seed <- is.null(layout) || layout == "" || layout == "fr"
+    needs_seed <- is.null(layout) || layout == "" || layout == "fr"
 
-  coords <- if (needs_seed) {
+    coords <- if (needs_seed) {
 
     withr::with_seed(seed, compute_layout())
 
-  } else {
+    } else {
 
     compute_layout()
 
-  }
+    }
 
 
 
-  # Add coordinates to nodes
+    # Add coordinates to nodes
 
-  all_nodes$x <- coords[, 1]
+    all_nodes$x <- coords[, 1]
 
-  all_nodes$y <- coords[, 2]
+    all_nodes$y <- coords[, 2]
 
 
 
-  # Calculate node sizes
+    # Calculate node sizes
 
-  # Pathway nodes: based on -log10(FDR) * scale
+    # Pathway nodes: based on -log10(FDR) * scale
 
-  if ("FDR" %in% colnames(all_nodes)) {
+    if ("FDR" %in% colnames(all_nodes)) {
 
     all_nodes$size_pathway <- -log10(all_nodes$FDR + 1e-10) * 8 + 15
 
     all_nodes$size_pathway <- pmin(all_nodes$size_pathway, 40)
 
-  } else {
+    } else {
 
     all_nodes$size_pathway <- 25
 
-  }
+    }
 
 
 
-  # Gene nodes: based on degree * scale
+    # Gene nodes: based on degree * scale
 
-  if ("degree" %in% colnames(all_nodes)) {
+    if ("degree" %in% colnames(all_nodes)) {
 
     all_nodes$size_gene <- all_nodes$degree * 5 + 10
 
     all_nodes$size_gene <- pmin(all_nodes$size_gene, 30)
 
-  } else {
+    } else {
 
     all_nodes$size_gene <- 15
 
-  }
+    }
 
 
 
-  # Assign final size based on type
+    # Assign final size based on type
 
-  all_nodes$size <- ifelse(all_nodes$type == "pathway",
+    all_nodes$size <- ifelse(all_nodes$type == "pathway",
 
     all_nodes$size_pathway,
 
     all_nodes$size_gene
 
-  )
+    )
 
 
 
-  # Split back into pathway and gene nodes
+    # Split back into pathway and gene nodes
 
-  pathway_nodes_out <- all_nodes[all_nodes$type == "pathway", ]
+    pathway_nodes_out <- all_nodes[all_nodes$type == "pathway", ]
 
-  gene_nodes_out <- all_nodes[all_nodes$type == "gene", ]
+    gene_nodes_out <- all_nodes[all_nodes$type == "gene", ]
 
 
 
-  return(list(
+    return(list(
 
     pathway = pathway_nodes_out,
 
@@ -990,7 +990,7 @@ prepare_hubgene_nodes <- function(network_data, layout = "fr", seed = 42) {
 
     all = all_nodes
 
-  ))
+    ))
 
 }
 
@@ -1048,21 +1048,21 @@ prepare_hubgene_nodes <- function(network_data, layout = "fr", seed = 42) {
 
 color_by_direction <- function(node_data, color_mode = "logFC",
 
-                               left_group = "A", right_group = "B") {
+                                                                left_group = "A", right_group = "B") {
 
-  # Define color palette (consistent with volcano/NES plots)
+    # Define color palette (consistent with volcano/NES plots)
 
-  color_up <- "#E41A1C" # Red for up-regulated
+    color_up <- "#E41A1C" # Red for up-regulated
 
-  color_down <- "#377EB8" # Blue for down-regulated
+    color_down <- "#377EB8" # Blue for down-regulated
 
-  color_neutral <- "#999999" # Gray for neutral
+    color_neutral <- "#999999" # Gray for neutral
 
-  color_hub <- "#FFD700" # Gold for hub genes
+    color_hub <- "#FFD700" # Gold for hub genes
 
 
 
-  if (color_mode == "logFC") {
+    if (color_mode == "logFC") {
 
     # For gene nodes: color by log2FC
 
@@ -1072,77 +1072,77 @@ color_by_direction <- function(node_data, color_mode = "logFC",
 
     node_data$color <- vapply(seq_len(nrow(node_data)), function(i) {
 
-      row <- node_data[i, ]
+            row <- node_data[i, ]
 
 
 
-      if (row$type == "pathway") {
+            if (row$type == "pathway") {
 
         # Pathway: color by NES direction
 
         if (!is.na(row$NES)) {
 
-          if (row$NES > 0) {
+                    if (row$NES > 0) {
 
             return(color_up)
 
-          } else if (row$NES < 0) {
+                    } else if (row$NES < 0) {
 
             return(color_down)
 
-          }
+                    }
 
         }
 
         return(color_neutral)
 
-      } else if (row$type == "gene") {
+            } else if (row$type == "gene") {
 
         # Gene: color by log2FC
 
         if (!is.na(row$log2FC)) {
 
-          if (row$log2FC > 0) {
+                    if (row$log2FC > 0) {
 
             return(color_up)
 
-          } else if (row$log2FC < 0) {
+                    } else if (row$log2FC < 0) {
 
             return(color_down)
 
-          }
+                    }
 
         }
 
         return(color_neutral)
 
-      }
+            }
 
 
 
-      return(color_neutral)
+            return(color_neutral)
 
     }, FUN.VALUE = character(1L))
 
-  } else if (color_mode == "pathway") {
+    } else if (color_mode == "pathway") {
 
     # Color genes by which pathway they connect to most
 
     node_data$color <- color_hub # Default hub color
 
-  } else {
+    } else {
 
     # Uniform color
 
     node_data$color <- color_neutral
 
-  }
+    }
 
 
 
-  # Add color legend labels
+    # Add color legend labels
 
-  node_data$color_label <- vapply(seq_len(nrow(node_data)), function(i) {
+    node_data$color_label <- vapply(seq_len(nrow(node_data)), function(i) {
 
     row <- node_data[i, ]
 
@@ -1150,47 +1150,47 @@ color_by_direction <- function(node_data, color_mode = "logFC",
 
     if (row$type == "pathway") {
 
-      if (!is.na(row$NES)) {
+            if (!is.na(row$NES)) {
 
         if (row$NES > 0) {
 
-          return(paste0("Up in ", left_group))
+                    return(paste0("Up in ", left_group))
 
         } else {
 
-          return(paste0("Up in ", right_group))
+                    return(paste0("Up in ", right_group))
 
         }
 
-      }
+            }
 
-      return("Neutral")
+            return("Neutral")
 
     } else {
 
-      if (!is.na(row$log2FC)) {
+            if (!is.na(row$log2FC)) {
 
         if (row$log2FC > 0) {
 
-          return(paste0("Up in ", left_group))
+                    return(paste0("Up in ", left_group))
 
         } else if (row$log2FC < 0) {
 
-          return(paste0("Up in ", right_group))
+                    return(paste0("Up in ", right_group))
 
         }
 
-      }
+            }
 
-      return("Neutral")
+            return("Neutral")
 
     }
 
-  }, FUN.VALUE = character(1L))
+    }, FUN.VALUE = character(1L))
 
 
 
-  return(node_data)
+    return(node_data)
 
 }
 
@@ -1258,13 +1258,13 @@ generate_hubgene_hover_text <- function(node, node_type,
 
                                         right_group = "B") {
 
-  # Safe type conversion - ensure all numeric fields are properly converted
+    # Safe type conversion - ensure all numeric fields are properly converted
 
-  safe_num <- function(x, default = 0) {
+    safe_num <- function(x, default = 0) {
 
     if (is.null(x) || is.na(x)) {
 
-      return(default)
+            return(default)
 
     }
 
@@ -1272,31 +1272,31 @@ generate_hubgene_hover_text <- function(node, node_type,
 
     if (is.na(x)) {
 
-      return(default)
+            return(default)
 
     }
 
     return(x)
 
-  }
+    }
 
 
 
-  safe_char <- function(x, default = "") {
+    safe_char <- function(x, default = "") {
 
     if (is.null(x) || is.na(x) || is.factor(x)) {
 
-      return(default)
+            return(default)
 
     }
 
     return(as.character(x))
 
-  }
+    }
 
 
 
-  if (node_type == "pathway") {
+    if (node_type == "pathway") {
 
     # Pathway hover text
 
@@ -1316,11 +1316,11 @@ generate_hubgene_hover_text <- function(node, node_type,
 
     direction_text <- if (nes > 0) {
 
-      paste0("Up in ", left_group)
+            paste0("Up in ", left_group)
 
     } else {
 
-      paste0("Up in ", right_group)
+            paste0("Up in ", right_group)
 
     }
 
@@ -1332,9 +1332,9 @@ generate_hubgene_hover_text <- function(node, node_type,
 
     hover <- sprintf(
 
-      "<b style='font-size:14px;'>%s</b><br><br>
+            "<b style='font-size:14px;'>%s</b><br><br>
 
-      <table style='font-size:12px;'>
+            <table style='font-size:12px;'>
 
         <tr><td><b>NES:</b></td><td>%.3f</td></tr>
 
@@ -1346,27 +1346,27 @@ generate_hubgene_hover_text <- function(node, node_type,
 
         <tr><td><b>Core Genes:</b></td><td>%d / %d (%.1f%%)</td></tr>
 
-      </table>",
+            </table>",
 
-      id,
+            id,
 
-      nes,
+            nes,
 
-      fdr,
+            fdr,
 
-      pval,
+            pval,
 
-      direction_text,
+            direction_text,
 
-      as.integer(n_core),
+            as.integer(n_core),
 
-      as.integer(n_total),
+            as.integer(n_total),
 
-      core_ratio * 100
+            core_ratio * 100
 
     )
 
-  } else if (node_type == "gene") {
+    } else if (node_type == "gene") {
 
     # Gene hover text
 
@@ -1384,15 +1384,15 @@ generate_hubgene_hover_text <- function(node, node_type,
 
     if (log2fc > 0) {
 
-      direction_text <- paste0("Up in ", left_group)
+            direction_text <- paste0("Up in ", left_group)
 
     } else if (log2fc < 0) {
 
-      direction_text <- paste0("Up in ", right_group)
+            direction_text <- paste0("Up in ", right_group)
 
     } else {
 
-      direction_text <- "Neutral"
+            direction_text <- "Neutral"
 
     }
 
@@ -1404,9 +1404,9 @@ generate_hubgene_hover_text <- function(node, node_type,
 
     hover <- sprintf(
 
-      "<b style='font-size:14px; color:%s;'>%s</b><br><br>
+            "<b style='font-size:14px; color:%s;'>%s</b><br><br>
 
-      <table style='font-size:12px;'>
+            <table style='font-size:12px;'>
 
         <tr><td><b>log2FC:</b></td><td>%.3f</td></tr>
 
@@ -1416,33 +1416,33 @@ generate_hubgene_hover_text <- function(node, node_type,
 
         <tr><td><b>Pathways:</b></td><td>%d</td></tr>
 
-      </table><br>
+            </table><br>
 
-      <b>Appears in:</b><br>
+            <b>Appears in:</b><br>
 
-      <small>%s</small>",
+            <small>%s</small>",
 
-      color,
+            color,
 
-      id,
+            id,
 
-      log2fc,
+            log2fc,
 
-      direction_text,
+            direction_text,
 
-      as.integer(degree),
+            as.integer(degree),
 
-      n_pathways,
+            n_pathways,
 
-      pathways
+            pathways
 
     )
 
-  }
+    }
 
 
 
-  return(hover)
+    return(hover)
 
 }
 
@@ -1488,7 +1488,7 @@ generate_hubgene_hover_text <- function(node, node_type,
 
 get_hubgene_legend <- function(left_group = "A", right_group = "B") {
 
-  list(
+    list(
 
     pathway_up = "#E41A1C",
 
@@ -1500,19 +1500,19 @@ get_hubgene_legend <- function(left_group = "A", right_group = "B") {
 
     labels = list(
 
-      pathway_up = paste0("Pathway: Up in ", left_group),
+            pathway_up = paste0("Pathway: Up in ", left_group),
 
-      pathway_down = paste0("Pathway: Up in ", right_group),
+            pathway_down = paste0("Pathway: Up in ", right_group),
 
-      gene_up = paste0("Gene: Up in ", left_group),
+            gene_up = paste0("Gene: Up in ", left_group),
 
-      gene_down = paste0("Gene: Up in ", right_group),
+            gene_down = paste0("Gene: Up in ", right_group),
 
-      hub_gene = "Hub Gene (degree >= 2)"
+            hub_gene = "Hub Gene (degree >= 2)"
 
     )
 
-  )
+    )
 
 }
 

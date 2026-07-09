@@ -49,32 +49,32 @@
 #' class(env)
 
 setup_gsea_env <- function(fit, pathway_obj, expr_data = NULL, target_factor = NULL,
-                          verbose = TRUE) {
+                                                    verbose = TRUE) {
 
-  # IRON FIX (2026-07-01, D-2): add `verbose` to allow silent batch-mode use.
-  if (isTRUE(verbose)) message("\nStarting GSEAlens engine...")
+    # IRON FIX (2026-07-01, D-2): add `verbose` to allow silent batch-mode use.
+    if (isTRUE(verbose)) message("\nStarting GSEAlens engine...")
 
 
 
-  # 1. 校验基因集对象
+    # 1. 校验基因集对象
 
-  if (is.null(pathway_obj) || is.null(pathway_obj$TERM2GENE)) {
+    if (is.null(pathway_obj) || is.null(pathway_obj$TERM2GENE)) {
 
     stop("Invalid pathway_obj! Please use build_gsea_pathways() to generate a valid gene set object.")
 
-  }
+    }
 
 
 
-  # 2. 识别后端类型并分发提取
+    # 2. 识别后端类型并分发提取
 
-  backend_data <- NULL
+    backend_data <- NULL
 
-  backend_info <- NULL
+    backend_info <- NULL
 
 
 
-  if (inherits(fit, "MArrayLM")) {
+    if (inherits(fit, "MArrayLM")) {
 
     message("Detected input type: [Limma-Voom]")
 
@@ -88,17 +88,17 @@ setup_gsea_env <- function(fit, pathway_obj, expr_data = NULL, target_factor = N
 
     backend_info <- list(
 
-      backend = "limma_voom",
+            backend = "limma_voom",
 
-      input_class = "MArrayLM",
+            input_class = "MArrayLM",
 
-      design_formula = NULL, # Limma fit 对象通常不直接保留公式
+            design_formula = NULL, # Limma fit 对象通常不直接保留公式
 
-      target_factor = NA
+            target_factor = NA
 
     )
 
-  } else if (inherits(fit, "DESeqDataSet")) {
+    } else if (inherits(fit, "DESeqDataSet")) {
 
     message("Detected input type: [DESeq2]")
 
@@ -114,11 +114,11 @@ setup_gsea_env <- function(fit, pathway_obj, expr_data = NULL, target_factor = N
 
     actual_factor <- if (is.null(target_factor)) {
 
-      utils::tail(attr(terms(DESeq2::design(fit)), "term.labels"), 1)
+            utils::tail(attr(terms(DESeq2::design(fit)), "term.labels"), 1)
 
     } else {
 
-      target_factor
+            target_factor
 
     }
 
@@ -126,29 +126,29 @@ setup_gsea_env <- function(fit, pathway_obj, expr_data = NULL, target_factor = N
 
     backend_info <- list(
 
-      backend = "deseq2",
+            backend = "deseq2",
 
-      input_class = "DESeqDataSet",
+            input_class = "DESeqDataSet",
 
-      design_formula = DESeq2::design(fit),
+            design_formula = DESeq2::design(fit),
 
-      target_factor = actual_factor
+            target_factor = actual_factor
 
     )
 
-  } else {
+    } else {
 
     stop("Unsupported input type! Please provide MArrayLM (limma) or DESeqDataSet (DESeq2) object.")
 
-  }
+    }
 
 
 
-  # 3. 组装基因集信息
+    # 3. 组装基因集信息
 
-  #
+    #
 
-  geneset_info <- list(
+    geneset_info <- list(
 
     name = pathway_obj$SuperTag %||% pathway_obj$name,
 
@@ -156,31 +156,31 @@ setup_gsea_env <- function(fit, pathway_obj, expr_data = NULL, target_factor = N
 
     meta_dict = {
 
-      md <- pathway_obj$meta_dict %||% pathway_obj$TERM2NAME
+            md <- pathway_obj$meta_dict %||% pathway_obj$TERM2NAME
 
-      if (!"Subcollection" %in% colnames(md)) md$Subcollection <- ""
+            if (!"Subcollection" %in% colnames(md)) md$Subcollection <- ""
 
-      if (!"Combo_Name" %in% colnames(md)) {
+            if (!"Combo_Name" %in% colnames(md)) {
 
         md$Combo_Name <- ifelse(
 
-          is.na(md$Subcollection) | md$Subcollection == "",
+                    is.na(md$Subcollection) | md$Subcollection == "",
 
-          md$Collection,
+                    md$Collection,
 
-          paste0(md$Collection, ":", md$Subcollection)
+                    paste0(md$Collection, ":", md$Subcollection)
 
         )
 
-      }
+            }
 
-      if (!"Species" %in% colnames(md)) {
+            if (!"Species" %in% colnames(md)) {
 
         md$Species <- pathway_obj$species %||% "HS"
 
-      }
+            }
 
-      md
+            md
 
     },
 
@@ -188,13 +188,13 @@ setup_gsea_env <- function(fit, pathway_obj, expr_data = NULL, target_factor = N
 
     species = pathway_obj$species %||% "HS" # 新增
 
-  )
+    )
 
 
 
-  # 4. 构建最终对象
+    # 4. 构建最终对象
 
-  env_obj <- create_gsea_env(
+    env_obj <- create_gsea_env(
 
     backend_info = backend_info,
 
@@ -208,17 +208,17 @@ setup_gsea_env <- function(fit, pathway_obj, expr_data = NULL, target_factor = N
 
     raw_obj = list(fit = fit) # 保留原始对象引用
 
-  )
+    )
 
 
 
-  # 5. 最终校验
+    # 5. 最终校验
 
-  .check_gsea_env(env_obj)
+    .check_gsea_env(env_obj)
 
 
 
-  if (isTRUE(verbose)) {
+    if (isTRUE(verbose)) {
 
     message("GseaEnv object built successfully!")
 
@@ -226,11 +226,11 @@ setup_gsea_env <- function(fit, pathway_obj, expr_data = NULL, target_factor = N
 
     message(sprintf("   Contains %d pathways", nrow(pathway_obj$meta_dict)))
 
-  }
+    }
 
 
 
-  return(env_obj)
+    return(env_obj)
 
 }
 
@@ -288,57 +288,57 @@ setup_gsea_env <- function(fit, pathway_obj, expr_data = NULL, target_factor = N
 
 inspect_gsea_env <- function(env_obj) {
 
-  if (!inherits(env_obj, "GseaEnv")) stop("Input object is not of class GseaEnv.")
+    if (!inherits(env_obj, "GseaEnv")) stop("Input object is not of class GseaEnv.")
 
 
 
-  # 解析信息
+    # 解析信息
 
-  bi <- env_obj$backend_info
+    bi <- env_obj$backend_info
 
-  reg <- env_obj$contrast_registry
+    reg <- env_obj$contrast_registry
 
-  gs <- env_obj$geneset
+    gs <- env_obj$geneset
 
-  expr <- env_obj$expr_bundle
-
-
-
-  # 控制台输出
-
-  message("")
-
-  message(paste(rep("=", 60), collapse = ""))
-
-  message("       GSEAlens Environment Summary")
-
-  message(paste(rep("=", 60), collapse = ""))
+    expr <- env_obj$expr_bundle
 
 
 
-  # 1. 后端信息
+    # 控制台输出
 
-  message("[1] Backend Information")
+    message("")
 
-  message(sprintf("   Type        : %s", bi$backend))
+    message(paste(rep("=", 60), collapse = ""))
 
-  message(sprintf("   Input Class : %s", bi$input_class))
+    message("       GSEAlens Environment Summary")
 
-  if (bi$backend == "deseq2") {
+    message(paste(rep("=", 60), collapse = ""))
+
+
+
+    # 1. 后端信息
+
+    message("[1] Backend Information")
+
+    message(sprintf("   Type        : %s", bi$backend))
+
+    message(sprintf("   Input Class : %s", bi$input_class))
+
+    if (bi$backend == "deseq2") {
 
     message(sprintf("   Target Factor: %s", bi$target_factor))
 
-  }
+    }
 
-  message("")
+    message("")
 
 
 
-  # 2. 对比组注册表
+    # 2. 对比组注册表
 
-  message(sprintf("[2] Contrast Registry (%d comparisons)", nrow(reg)))
+    message(sprintf("[2] Contrast Registry (%d comparisons)", nrow(reg)))
 
-  if (nrow(reg) > 0) {
+    if (nrow(reg) > 0) {
 
     # 打印前几个，防止刷屏
 
@@ -346,7 +346,7 @@ inspect_gsea_env <- function(env_obj) {
 
     for (i in seq_len(nrow(print_head))) {
 
-      message(sprintf(
+            message(sprintf(
 
         "   [%d] %s  ( %s vs %s )",
 
@@ -354,73 +354,73 @@ inspect_gsea_env <- function(env_obj) {
 
         print_head$left_group[i], print_head$right_group[i]
 
-      ))
+            ))
 
     }
 
     if (nrow(reg) > 5) message("   ... (remaining omitted)")
 
-  } else {
+    } else {
 
     message("   No contrasts detected!")
 
-  }
+    }
 
-  message("")
-
-
-
-  # 3. 基因集信息
-
-  message("[3] Gene Set Database")
-
-  message(sprintf("   Name        : %s", gs$name))
-
-  message(sprintf("   Pathways    : %d", nrow(gs$meta_dict)))
-
-  message("")
+    message("")
 
 
 
-  # 4. 表达数据状态
+    # 3. 基因集信息
 
-  message("[4] Expression Data Status")
+    message("[3] Gene Set Database")
 
-  if (!is.null(expr$raw_counts)) {
+    message(sprintf("   Name        : %s", gs$name))
+
+    message(sprintf("   Pathways    : %d", nrow(gs$meta_dict)))
+
+    message("")
+
+
+
+    # 4. 表达数据状态
+
+    message("[4] Expression Data Status")
+
+    if (!is.null(expr$raw_counts)) {
 
     message(sprintf(
 
-      "   Raw Counts  : %d genes x %d samples",
+            "   Raw Counts  : %d genes x %d samples",
 
-      nrow(expr$raw_counts), ncol(expr$raw_counts)
+            nrow(expr$raw_counts), ncol(expr$raw_counts)
 
     ))
 
     message(sprintf("   Display Mat : %s", ifelse(!is.null(expr$display_expr), "Ready", "Missing")))
 
-  } else {
+    } else {
 
     message("   Expression matrix not included (heatmap functionality will be unavailable)")
 
-  }
+    }
 
-  message("")
-
-
-
-  # 5. 下一步指引
-
-  message("[5] Next Step")
-
-  message("   Please run the computation engine:")
-
-  message("   > res <- batch_calc_gsea(env_obj)")
-
-  message(paste(rep("=", 60), collapse = ""))
+    message("")
 
 
 
-  invisible(env_obj)
+    # 5. 下一步指引
+
+    message("[5] Next Step")
+
+    message("   Please run the computation engine:")
+
+    message("   > res <- batch_calc_gsea(env_obj)")
+
+    message(paste(rep("=", 60), collapse = ""))
+
+
+
+    invisible(env_obj)
 
 }
 
@@ -430,7 +430,7 @@ inspect_gsea_env <- function(env_obj) {
 
 print.GseaEnv <- function(x, ...) {
 
-  inspect_gsea_env(x)
+    inspect_gsea_env(x)
 
 }
 

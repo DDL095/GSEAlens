@@ -34,17 +34,17 @@
 
 mod_data_prep_ui <- function(id) {
 
-  ns <- shiny::NS(id)
+    ns <- shiny::NS(id)
 
-  shiny::tagList(
+    shiny::tagList(
 
     shiny::selectInput(
 
-      ns("selected_contrast"),
+            ns("selected_contrast"),
 
-      label = "Select Contrast",
+            label = "Select Contrast",
 
-      choices = NULL
+            choices = NULL
 
     ),
 
@@ -52,25 +52,25 @@ mod_data_prep_ui <- function(id) {
 
     shiny::selectizeInput(
 
-      ns("selected_collections"),
+            ns("selected_collections"),
 
-      label = "Select Gene Set Subgroup:",
+            label = "Select Gene Set Subgroup:",
 
-      choices = NULL,
+            choices = NULL,
 
-      multiple = TRUE,
+            multiple = TRUE,
 
-      options = list(plugins = list("remove_button"), placeholder = "Select subgroup or keep ALL")
+            options = list(plugins = list("remove_button"), placeholder = "Select subgroup or keep ALL")
 
     ),
 
     shiny::selectInput(
 
-      ns("sort_by"),
+            ns("sort_by"),
 
-      label = "Global Sorting Strategy:",
+            label = "Global Sorting Strategy:",
 
-      choices = c(
+            choices = c(
 
         "By NES Absolute Value (Desc)" = "abs_nes_desc",
 
@@ -78,29 +78,29 @@ mod_data_prep_ui <- function(id) {
 
         "By P-value (Asc)" = "pval_asc"
 
-      ),
+            ),
 
-      selected = "abs_nes_desc"
+            selected = "abs_nes_desc"
 
     ),
 
     shiny::actionButton(
 
-      ns("run_btn"),
+            ns("run_btn"),
 
-      label = "Confirm Contrast and Gene Sets",
+            label = "Confirm Contrast and Gene Sets",
 
-      class = "btn-success",
+            class = "btn-success",
 
-      style = "width: 100%; font-weight: bold; margin-top: 15px; font-size: 16px;"
+            style = "width: 100%; font-weight: bold; margin-top: 15px; font-size: 16px;"
 
     ),
 
     shiny::helpText(
 
-      style = "margin-top: 10px; text-align: center; color: #28a745;",
+            style = "margin-top: 10px; text-align: center; color: #28a745;",
 
-      "Click this button after modifying settings"
+            "Click this button after modifying settings"
 
     ),
 
@@ -110,15 +110,15 @@ mod_data_prep_ui <- function(id) {
 
     shiny::selectizeInput(
 
-      ns("joint_contrasts"),
+            ns("joint_contrasts"),
 
-      label = "Select Contrasts (Multi-select, supports permutations):",
+            label = "Select Contrasts (Multi-select, supports permutations):",
 
-      choices = NULL,
+            choices = NULL,
 
-      multiple = TRUE,
+            multiple = TRUE,
 
-      options = list(
+            options = list(
 
         plugins = list("remove_button"),
 
@@ -126,35 +126,35 @@ mod_data_prep_ui <- function(id) {
 
         maxItems = 999
 
-      )
+            )
 
     ),
 
     shiny::numericInput(
 
-      ns("joint_ncol"),
+            ns("joint_ncol"),
 
-      "Number per row (ncol):",
+            "Number per row (ncol):",
 
-      value = 2,
+            value = 2,
 
-      min = 1,
+            min = 1,
 
-      max = 10,
+            max = 10,
 
-      step = 1
+            step = 1
 
     ),
 
     shiny::actionButton(
 
-      ns("joint_generate"),
+            ns("joint_generate"),
 
-      "Generate/Update Multi-Pathway Canvas",
+            "Generate/Update Multi-Pathway Canvas",
 
-      class = "btn-success",
+            class = "btn-success",
 
-      style = "width: 100%; font-weight: bold; margin-top: 10px;"
+            style = "width: 100%; font-weight: bold; margin-top: 10px;"
 
     ),
 
@@ -164,9 +164,9 @@ mod_data_prep_ui <- function(id) {
 
     shiny::div(
 
-      style = "background-color: #e8f4f8; padding: 10px; border-radius: 5px; border-left: 4px solid #17a2b8;",
+            style = "background-color: #e8f4f8; padding: 10px; border-radius: 5px; border-left: 4px solid #17a2b8;",
 
-      shiny::selectizeInput(
+            shiny::selectizeInput(
 
         ns("pending_genes"),
 
@@ -178,21 +178,21 @@ mod_data_prep_ui <- function(id) {
 
         options = list(
 
-          plugins = list("remove_button"),
+                    plugins = list("remove_button"),
 
-          placeholder = "Enter gene names (e.g., TP53)",
+                    placeholder = "Enter gene names (e.g., TP53)",
 
-          maxItems = 999,
+                    maxItems = 999,
 
-          closeAfterSelect = FALSE,
+                    closeAfterSelect = FALSE,
 
-          selectOnTab = TRUE
+                    selectOnTab = TRUE
 
         )
 
-      ),
+            ),
 
-      shiny::actionButton(
+            shiny::actionButton(
 
         ns("apply_genes_btn"),
 
@@ -202,9 +202,9 @@ mod_data_prep_ui <- function(id) {
 
         style = "width: 100%; margin-top: 10px; font-weight: bold;"
 
-      ),
+            ),
 
-      shiny::actionButton(
+            shiny::actionButton(
 
         ns("clear_all_genes_btn"),
 
@@ -214,15 +214,15 @@ mod_data_prep_ui <- function(id) {
 
         style = "width: 100%; margin-top: 10px; font-weight: bold;"
 
-      ),
+            ),
 
-      shiny::div(
+            shiny::div(
 
         style = "background-color: #d4edda; padding: 10px; border-radius: 5px; margin-top: 10px;",
 
         shiny::HTML(
 
-          "<strong style='color: #155724;'>Confirmed Gene Markers:</strong><br>
+                    "<strong style='color: #155724;'>Confirmed Gene Markers:</strong><br>
 
     <small style='color: #666;'>Retained after switching contrasts</small>"
 
@@ -230,39 +230,39 @@ mod_data_prep_ui <- function(id) {
 
         shiny::uiOutput(ns("confirmed_genes_display"))
 
-      ),
+            ),
 
-      shiny::uiOutput(ns("applied_genes_display")),
+            shiny::uiOutput(ns("applied_genes_display")),
 
-      shiny::hr(),
+            shiny::hr(),
 
-      shiny::h4("Group Display Order"),
+            shiny::h4("Group Display Order"),
 
-      shiny::div(
+            shiny::div(
 
         style = "background-color: #fff3cd; padding: 10px; border-radius: 5px; border-left: 4px solid #ffc107;",
 
         shiny::selectInput(
 
-          ns("boxplot_order_pending"),
+                    ns("boxplot_order_pending"),
 
-          label = "Group Ordering Options:",
+                    label = "Group Ordering Options:",
 
-          choices = c("Default Order" = "default"),
+                    choices = c("Default Order" = "default"),
 
-          selected = "default"
+                    selected = "default"
 
         ),
 
         shiny::actionButton(
 
-          ns("apply_order_btn"),
+                    ns("apply_order_btn"),
 
-          label = "Confirm Order (Refresh Boxplot)",
+                    label = "Confirm Order (Refresh Boxplot)",
 
-          class = "btn-warning",
+                    class = "btn-warning",
 
-          style = "width: 100%; margin-top: 10px; font-weight: bold;"
+                    style = "width: 100%; margin-top: 10px; font-weight: bold;"
 
         ),
 
@@ -270,19 +270,19 @@ mod_data_prep_ui <- function(id) {
 
         shiny::helpText(
 
-          style = "margin-top: 8px; color: #666;",
+                    style = "margin-top: 8px; color: #666;",
 
-          "Click confirm after selecting order; boxplot will auto-sort"
+                    "Click confirm after selecting order; boxplot will auto-sort"
 
         )
 
-      ),
+            ),
 
-      shiny::hr(),
+            shiny::hr(),
 
-      shiny::h4("Joint Plotting Control"),
+            shiny::h4("Joint Plotting Control"),
 
-      shiny::selectInput(
+            shiny::selectInput(
 
         ns("plot_subtype"),
 
@@ -292,9 +292,9 @@ mod_data_prep_ui <- function(id) {
 
         selected = "3"
 
-      ),
+            ),
 
-      shiny::textInput(
+            shiny::textInput(
 
         ns("custom_colors"),
 
@@ -304,13 +304,13 @@ mod_data_prep_ui <- function(id) {
 
         placeholder = "e.g., #FF0000, #00FF00"
 
-      ),
+            ),
 
-      shiny::hr(),
+            shiny::hr(),
 
-      shiny::h4("Expression Metrics"),
+            shiny::h4("Expression Metrics"),
 
-      shiny::selectInput(
+            shiny::selectInput(
 
         ns("expression_type"),
 
@@ -320,11 +320,11 @@ mod_data_prep_ui <- function(id) {
 
         selected = NULL
 
-      )
+            )
 
     )
 
-  )
+    )
 
 }
 
@@ -392,7 +392,7 @@ mod_data_prep_ui <- function(id) {
 
 mod_data_prep_server <- function(id, gsea_res) {
 
-  shiny::moduleServer(id, function(input, output, session) {
+    shiny::moduleServer(id, function(input, output, session) {
 
     ns <- session$ns
 
@@ -406,7 +406,7 @@ mod_data_prep_server <- function(id, gsea_res) {
 
     shiny::observe({
 
-      shiny::updateSelectizeInput(
+            shiny::updateSelectizeInput(
 
         session,
 
@@ -414,7 +414,7 @@ mod_data_prep_server <- function(id, gsea_res) {
 
         label = sprintf("Select Gene Set Subgroup [%s]:", species)
 
-      )
+            )
 
     })
 
@@ -452,21 +452,21 @@ mod_data_prep_server <- function(id, gsea_res) {
 
     shiny::observe({
 
-      backend <- gsea_res$backend_info$backend
+            backend <- gsea_res$backend_info$backend
 
 
 
-      if (backend == "limma_voom") {
+            if (backend == "limma_voom") {
 
         choices <- c(
 
-          "log2(CPM)" = "logcpm",
+                    "log2(CPM)" = "logcpm",
 
-          "CPM (raw)" = "cpm",
+                    "CPM (raw)" = "cpm",
 
-          "log2(FPKM)" = "logfpkm",
+                    "log2(FPKM)" = "logfpkm",
 
-          "FPKM (raw)" = "fpkm"
+                    "FPKM (raw)" = "fpkm"
 
         )
 
@@ -474,17 +474,17 @@ mod_data_prep_server <- function(id, gsea_res) {
 
         message("Detected Limma-voom backend, loading corresponding expression types")
 
-      } else if (backend == "deseq2") {
+            } else if (backend == "deseq2") {
 
         choices <- c(
 
-          "log2(CPM)" = "logcpm",
+                    "log2(CPM)" = "logcpm",
 
-          "CPM (raw)" = "cpm",
+                    "CPM (raw)" = "cpm",
 
-          "VST (Variance Stabilizing Transform)" = "vst",
+                    "VST (Variance Stabilizing Transform)" = "vst",
 
-          "log2(Normalized Counts + 1)" = "lognorm"
+                    "log2(Normalized Counts + 1)" = "lognorm"
 
         )
 
@@ -492,17 +492,17 @@ mod_data_prep_server <- function(id, gsea_res) {
 
         message("Detected DESeq2 backend, loading corresponding expression types")
 
-      } else {
+            } else {
 
         choices <- c("log2(CPM)" = "logcpm", "CPM (raw)" = "cpm")
 
         selected <- "cpm"
 
-      }
+            }
 
 
 
-      shiny::updateSelectInput(
+            shiny::updateSelectInput(
 
         session,
 
@@ -512,7 +512,7 @@ mod_data_prep_server <- function(id, gsea_res) {
 
         selected = selected
 
-      )
+            )
 
     })
 
@@ -522,15 +522,15 @@ mod_data_prep_server <- function(id, gsea_res) {
 
     shiny::observe({
 
-      registry <- gsea_res$contrast_registry
+            registry <- gsea_res$contrast_registry
 
-      all_contrasts <- list()
+            all_contrasts <- list()
 
 
 
-      # 构建排列：包含正向和反向
+            # 构建排列：包含正向和反向
 
-      for (i in seq_len(nrow(registry))) {
+            for (i in seq_len(nrow(registry))) {
 
         row <- registry[i, ]
 
@@ -546,17 +546,17 @@ mod_data_prep_server <- function(id, gsea_res) {
 
         all_contrasts[[rev_id]] <- rev_display
 
-      }
+            }
 
 
 
-      choices <- setNames(names(all_contrasts), unlist(all_contrasts))
+            choices <- setNames(names(all_contrasts), unlist(all_contrasts))
 
 
 
-      # 更新单选（主工作台）
+            # 更新单选（主工作台）
 
-      shiny::updateSelectInput(
+            shiny::updateSelectInput(
 
         session,
 
@@ -566,13 +566,13 @@ mod_data_prep_server <- function(id, gsea_res) {
 
         selected = registry$contrast_id[1]
 
-      )
+            )
 
 
 
-      # 更新多选（联合画布）- 默认全选所有排列
+            # 更新多选（联合画布）- 默认全选所有排列
 
-      shiny::updateSelectizeInput(
+            shiny::updateSelectizeInput(
 
         session,
 
@@ -582,7 +582,7 @@ mod_data_prep_server <- function(id, gsea_res) {
 
         selected = names(all_contrasts)[seq_len(min(4, length(all_contrasts)))]
 
-      )
+            )
 
     })
 
@@ -594,7 +594,7 @@ mod_data_prep_server <- function(id, gsea_res) {
 
     shiny::observeEvent(input$selected_contrast,
 
-      {
+            {
 
         contrast_id <- input$selected_contrast
 
@@ -604,7 +604,7 @@ mod_data_prep_server <- function(id, gsea_res) {
 
         if (!is.null(current_contrast_cache()) && current_contrast_cache() == contrast_id) {
 
-          return()
+                    return()
 
         }
 
@@ -618,41 +618,41 @@ mod_data_prep_server <- function(id, gsea_res) {
 
         tryCatch(
 
-          {
+                    {
 
             de_df <- get_de_table(gsea_res, contrast_id)
 
             if (!is.null(de_df) && "gene_symbol" %in% colnames(de_df)) {
 
-              gene_choices <- de_df$gene_symbol
+                            gene_choices <- de_df$gene_symbol
 
-              gene_choices <- gene_choices[!is.na(gene_choices)]
+                            gene_choices <- gene_choices[!is.na(gene_choices)]
 
-              gene_choices <- sort(unique(gene_choices))
-
-
-
-              current_applied <- applied_genes()
+                            gene_choices <- sort(unique(gene_choices))
 
 
 
-              applied_upper <- toupper(current_applied)
-
-              choices_upper <- toupper(gene_choices)
+                            current_applied <- applied_genes()
 
 
 
-              selected_upper <- applied_upper[applied_upper %in% choices_upper]
+                            applied_upper <- toupper(current_applied)
 
-              pending_selected <- gene_choices[choices_upper %in% selected_upper]
-
-
-
-              pending_selected <- unique(pending_selected)
+                            choices_upper <- toupper(gene_choices)
 
 
 
-              shiny::updateSelectizeInput(
+                            selected_upper <- applied_upper[applied_upper %in% choices_upper]
+
+                            pending_selected <- gene_choices[choices_upper %in% selected_upper]
+
+
+
+                            pending_selected <- unique(pending_selected)
+
+
+
+                            shiny::updateSelectizeInput(
 
                 session,
 
@@ -664,41 +664,41 @@ mod_data_prep_server <- function(id, gsea_res) {
 
                 server = length(gene_choices) > 1000
 
-              )
+                            )
 
 
 
-              pending_genes_internal(pending_selected)
+                            pending_genes_internal(pending_selected)
 
 
 
-              message(sprintf(
+                            message(sprintf(
 
                 "Pending refilled from applied (%d in current choices; %d total in applied)",
 
                 length(pending_selected), length(current_applied)
 
-              ))
+                            ))
 
 
 
-              message(sprintf("Confirmed gene markers remain unchanged (%d genes)", length(current_applied)))
+                            message(sprintf("Confirmed gene markers remain unchanged (%d genes)", length(current_applied)))
 
             }
 
-          },
+                    },
 
-          error = function(e) {
+                    error = function(e) {
 
             message("Failed to update gene list: ", e$message)
 
-          }
+                    }
 
         )
 
-      },
+            },
 
-      ignoreInit = FALSE
+            ignoreInit = FALSE
 
     )
 
@@ -708,65 +708,65 @@ mod_data_prep_server <- function(id, gsea_res) {
 
     generate_all_permutations <- function(groups) {
 
-      n <- length(groups)
+            n <- length(groups)
 
-      if (n <= 1) {
+            if (n <= 1) {
 
         return(list(default = "Default Order"))
 
-      }
+            }
 
 
 
-      # Use an environment as a mutable accumulator to avoid the `<<-` super-assignment.
+            # Use an environment as a mutable accumulator to avoid the `<<-` super-assignment.
 
-      # Semantics are equivalent to the previous recursive <<- pattern, but the
+            # Semantics are equivalent to the previous recursive <<- pattern, but the
 
-      # scope of the mutation is explicit and does not leak into parent frames.
+            # scope of the mutation is explicit and does not leak into parent frames.
 
-      state <- new.env(parent = emptyenv())
+            state <- new.env(parent = emptyenv())
 
-      state$perms <- list()
+            state$perms <- list()
 
 
 
-      permute <- function(arr, l, r) {
+            permute <- function(arr, l, r) {
 
         if (l == r) {
 
-          perm_str <- paste(arr, collapse = ",")
+                    perm_str <- paste(arr, collapse = ",")
 
-          label_str <- paste(arr, collapse = "->")
+                    label_str <- paste(arr, collapse = "->")
 
-          state$perms[[perm_str]] <- label_str
+                    state$perms[[perm_str]] <- label_str
 
-          return()
+                    return()
 
         }
 
         for (i in l:r) {
 
-          tmp <- arr[l]
+                    tmp <- arr[l]
 
-          arr[l] <- arr[i]
+                    arr[l] <- arr[i]
 
-          arr[i] <- tmp
+                    arr[i] <- tmp
 
-          permute(arr, l + 1, r)
+                    permute(arr, l + 1, r)
 
-          tmp <- arr[l]
+                    tmp <- arr[l]
 
-          arr[l] <- arr[i]
+                    arr[l] <- arr[i]
 
-          arr[i] <- tmp
+                    arr[i] <- tmp
 
         }
 
-      }
+            }
 
-      permute(groups, 1, n)
+            permute(groups, 1, n)
 
-      return(as.list(state$perms))
+            return(as.list(state$perms))
 
     }
 
@@ -774,27 +774,27 @@ mod_data_prep_server <- function(id, gsea_res) {
 
     generate_limited_perms <- function(groups, max_perms = 100, seed = 123) {
 
-      perms <- list()
+            perms <- list()
 
-      n <- length(groups)
+            n <- length(groups)
 
-      count <- 0
-
-
-
-      perms[[paste(groups, collapse = ",")]] <- paste(groups, collapse = "->")
-
-      count <- count + 1
+            count <- 0
 
 
 
-      perms[[paste(rev(groups), collapse = ",")]] <- paste(rev(groups), collapse = "->")
+            perms[[paste(groups, collapse = ",")]] <- paste(groups, collapse = "->")
 
-      count <- count + 1
+            count <- count + 1
 
 
 
-      for (i in 2:min(n, max_perms / 2)) {
+            perms[[paste(rev(groups), collapse = ",")]] <- paste(rev(groups), collapse = "->")
+
+            count <- count + 1
+
+
+
+            for (i in 2:min(n, max_perms / 2)) {
 
         shifted <- groups[c(i:n, seq_len(i - 1))]
 
@@ -804,11 +804,11 @@ mod_data_prep_server <- function(id, gsea_res) {
 
         if (count >= max_perms) break
 
-      }
+            }
 
 
 
-      if (count < max_perms) {
+            if (count < max_perms) {
 
         # Local RNG scope: seed is required for reproducible random permutation
 
@@ -822,23 +822,23 @@ mod_data_prep_server <- function(id, gsea_res) {
 
         for (i in seq_len(max_perms - count)) {
 
-          shuffled <- sample(groups)
+                    shuffled <- sample(groups)
 
-          perm_str <- paste(shuffled, collapse = ",")
+                    perm_str <- paste(shuffled, collapse = ",")
 
-          if (!(perm_str %in% names(perms))) {
+                    if (!(perm_str %in% names(perms))) {
 
             perms[[perm_str]] <- paste(shuffled, collapse = "->")
 
-          }
+                    }
 
         }
 
-      }
+            }
 
 
 
-      return(perms)
+            return(perms)
 
     }
 
@@ -848,49 +848,49 @@ mod_data_prep_server <- function(id, gsea_res) {
 
     shiny::observe({
 
-      sample_meta <- tryCatch(get_sample_meta(gsea_res), error = function(e) NULL)
+            sample_meta <- tryCatch(get_sample_meta(gsea_res), error = function(e) NULL)
 
-      if (is.null(sample_meta) || !"group" %in% colnames(sample_meta)) {
-
-        return()
-
-      }
-
-
-
-      all_groups <- levels(sample_meta$group)
-
-      if (length(all_groups) <= 1) {
+            if (is.null(sample_meta) || !"group" %in% colnames(sample_meta)) {
 
         return()
 
-      }
+            }
 
 
 
-      total_perms <- factorial(length(all_groups))
+            all_groups <- levels(sample_meta$group)
+
+            if (length(all_groups) <= 1) {
+
+        return()
+
+            }
 
 
 
-      if (total_perms > 100) {
+            total_perms <- factorial(length(all_groups))
+
+
+
+            if (total_perms > 100) {
 
         perms <- generate_limited_perms(all_groups, max_perms = 100)
 
         perms[["limited"]] <- "--- Showing first 100 only ---"
 
-      } else {
+            } else {
 
         perms <- generate_all_permutations(all_groups)
 
-      }
+            }
 
 
 
-      perms <- c(list(default = "Default Order"), perms)
+            perms <- c(list(default = "Default Order"), perms)
 
 
 
-      shiny::updateSelectInput(
+            shiny::updateSelectInput(
 
         session,
 
@@ -900,7 +900,7 @@ mod_data_prep_server <- function(id, gsea_res) {
 
         selected = "default"
 
-      )
+            )
 
     })
 
@@ -916,7 +916,7 @@ mod_data_prep_server <- function(id, gsea_res) {
 
     shiny::observeEvent(input$pending_genes,
 
-      {
+            {
 
         genes <- input$pending_genes
 
@@ -946,45 +946,45 @@ mod_data_prep_server <- function(id, gsea_res) {
 
         if (length(genes_clean) == 0) {
 
-          # 用户清空了输入框，保持pending不变
+                    # 用户清空了输入框，保持pending不变
 
-          pending_genes_internal(current_pending)
+                    pending_genes_internal(current_pending)
 
         } else if (length(current_pending) == 0) {
 
-          # 当前pending为空，直接设置
+                    # 当前pending为空，直接设置
 
-          pending_genes_internal(genes_clean)
+                    pending_genes_internal(genes_clean)
 
         } else {
 
-          # 当前pending有值，比较差异
+                    # 当前pending有值，比较差异
 
-          # 如果输入的内容比pending多很多，认为是手动输入（覆盖）
+                    # 如果输入的内容比pending多很多，认为是手动输入（覆盖）
 
-          # 否则认为是追加
+                    # 否则认为是追加
 
-          genes_not_in_pending <- setdiff(genes_clean, current_pending)
+                    genes_not_in_pending <- setdiff(genes_clean, current_pending)
 
-          pending_not_in_genes <- setdiff(current_pending, genes_clean)
+                    pending_not_in_genes <- setdiff(current_pending, genes_clean)
 
 
 
-          # 如果大部分pending都在输入中，且输入中有新基因，认为是追加
+                    # 如果大部分pending都在输入中，且输入中有新基因，认为是追加
 
-          if (length(pending_not_in_genes) < length(current_pending) * 0.5 && length(genes_not_in_pending) > 0) {
+                    if (length(pending_not_in_genes) < length(current_pending) * 0.5 && length(genes_not_in_pending) > 0) {
 
             # 追加模式：保留原有 + 添加新的
 
             pending_genes_internal(unique(c(current_pending, genes_clean)))
 
-          } else {
+                    } else {
 
             # 覆盖模式：直接替换
 
             pending_genes_internal(genes_clean)
 
-          }
+                    }
 
         }
 
@@ -992,11 +992,11 @@ mod_data_prep_server <- function(id, gsea_res) {
 
         message(sprintf("[PendingInput] User input updated: %d genes", length(genes_clean)))
 
-      },
+            },
 
-      ignoreNULL = FALSE,
+            ignoreNULL = FALSE,
 
-      ignoreInit = TRUE
+            ignoreInit = TRUE
 
     )
 
@@ -1004,33 +1004,33 @@ mod_data_prep_server <- function(id, gsea_res) {
 
     shiny::observeEvent(input$apply_genes_btn, {
 
-      genes_to_apply <- pending_genes_internal()
+            genes_to_apply <- pending_genes_internal()
 
 
 
-      # 合并：已有的 + 新输入的
+            # 合并：已有的 + 新输入的
 
-      current_applied <- applied_genes()
+            current_applied <- applied_genes()
 
-      new_applied <- union(toupper(current_applied), toupper(genes_to_apply))
+            new_applied <- union(toupper(current_applied), toupper(genes_to_apply))
 
-      applied_genes(new_applied)
+            applied_genes(new_applied)
 
 
 
-      message(sprintf(
+            message(sprintf(
 
         "Applied genes: %d (merged: %d existing + %d new)",
 
         length(new_applied), length(current_applied), length(genes_to_apply)
 
-      ))
+            ))
 
-      shiny::showNotification(sprintf("Applied genes: %d (merged)", length(new_applied)),
+            shiny::showNotification(sprintf("Applied genes: %d (merged)", length(new_applied)),
 
         type = "message", duration = 3
 
-      )
+            )
 
     })
 
@@ -1040,11 +1040,11 @@ mod_data_prep_server <- function(id, gsea_res) {
 
     shiny::observeEvent(input$clear_all_genes_btn, {
 
-      applied_genes(character(0))
+            applied_genes(character(0))
 
-      pending_genes_internal(character(0))
+            pending_genes_internal(character(0))
 
-      shiny::updateSelectizeInput(
+            shiny::updateSelectizeInput(
 
         session,
 
@@ -1052,11 +1052,11 @@ mod_data_prep_server <- function(id, gsea_res) {
 
         selected = character(0)
 
-      )
+            )
 
-      message("Cleared all applied genes")
+            message("Cleared all applied genes")
 
-      shiny::showNotification("Cleared all gene markers", type = "message", duration = 2)
+            shiny::showNotification("Cleared all gene markers", type = "message", duration = 2)
 
     })
 
@@ -1066,7 +1066,7 @@ mod_data_prep_server <- function(id, gsea_res) {
 
     shiny::observeEvent(input$apply_order_btn,
 
-      {
+            {
 
         order_to_apply <- input$boxplot_order_pending
 
@@ -1076,9 +1076,9 @@ mod_data_prep_server <- function(id, gsea_res) {
 
         message(sprintf(
 
-          "Order Confirm: User selected: %s | Quad-link module triggered update",
+                    "Order Confirm: User selected: %s | Quad-link module triggered update",
 
-          if (order_to_apply == "default") "default" else order_to_apply
+                    if (order_to_apply == "default") "default" else order_to_apply
 
         ))
 
@@ -1086,23 +1086,23 @@ mod_data_prep_server <- function(id, gsea_res) {
 
         shiny::showNotification(
 
-          sprintf(
+                    sprintf(
 
             "Order applied: %s | Boxplot refreshed",
 
             if (order_to_apply == "default") "Default order" else gsub(",", " -> ", order_to_apply)
 
-          ),
+                    ),
 
-          type = "message",
+                    type = "message",
 
-          duration = 2
+                    duration = 2
 
         )
 
-      },
+            },
 
-      ignoreInit = TRUE
+            ignoreInit = TRUE
 
     )
 
@@ -1112,43 +1112,43 @@ mod_data_prep_server <- function(id, gsea_res) {
 
     output$order_status_display <- shiny::renderUI({
 
-      pending <- input$boxplot_order_pending
+            pending <- input$boxplot_order_pending
 
-      confirmed <- applied_boxplot_order()
+            confirmed <- applied_boxplot_order()
 
 
 
-      status_text <- if (pending == "default") {
+            status_text <- if (pending == "default") {
 
         "Default Order"
 
-      } else {
+            } else {
 
         sprintf("Pending: %s", gsub(",", " -> ", pending))
 
-      }
+            }
 
 
 
-      confirmed_text <- if (confirmed != "default" && !is.na(confirmed) && confirmed != "") {
+            confirmed_text <- if (confirmed != "default" && !is.na(confirmed) && confirmed != "") {
 
         sprintf("<br>Applied: %s", gsub(",", " -> ", confirmed))
 
-      } else {
+            } else {
 
         ""
 
-      }
+            }
 
 
 
-      shiny::div(
+            shiny::div(
 
         style = "background: #e7f3ff; padding: 8px; border-radius: 4px; font-size: 12px; color: #004085; margin-top: 10px;",
 
         shiny::HTML(paste0(status_text, confirmed_text))
 
-      )
+            )
 
     })
 
@@ -1162,15 +1162,15 @@ mod_data_prep_server <- function(id, gsea_res) {
 
     output$confirmed_genes_display <- shiny::renderUI({
 
-      genes <- applied_genes()
+            genes <- applied_genes()
 
 
 
-      if (length(genes) == 0) {
+            if (length(genes) == 0) {
 
         shiny::span("(None)", style = "color: #999;")
 
-      } else {
+            } else {
 
         # 按需重建 symbol_map（获取原始大小写）
 
@@ -1178,13 +1178,13 @@ mod_data_prep_server <- function(id, gsea_res) {
 
         if (!is.null(current_contrast) && current_contrast != "") {
 
-          symbol_map <- .rebuild_symbol_map(gsea_res, current_contrast)
+                    symbol_map <- .rebuild_symbol_map(gsea_res, current_contrast)
 
-          display_genes <- .get_display_symbols(genes, symbol_map)
+                    display_genes <- .get_display_symbols(genes, symbol_map)
 
         } else {
 
-          display_genes <- genes
+                    display_genes <- genes
 
         }
 
@@ -1192,17 +1192,17 @@ mod_data_prep_server <- function(id, gsea_res) {
 
         shiny::div(
 
-          style = "margin-top: 5px; padding: 8px; background: #f1f8f4; border-radius: 3px;",
+                    style = "margin-top: 5px; padding: 8px; background: #f1f8f4; border-radius: 3px;",
 
-          shiny::strong(length(genes), " genes:", style = "color: #28a745;"),
+                    shiny::strong(length(genes), " genes:", style = "color: #28a745;"),
 
-          shiny::br(),
+                    shiny::br(),
 
-          shiny::span(paste(display_genes, collapse = ", "), style = "font-size: 12px; color: #555;")
+                    shiny::span(paste(display_genes, collapse = ", "), style = "font-size: 12px; color: #555;")
 
         )
 
-      }
+            }
 
     })
 
@@ -1212,13 +1212,13 @@ mod_data_prep_server <- function(id, gsea_res) {
 
     shiny::observeEvent(input$canvas_contrasts,
 
-      {
+            {
 
         canvas_contrasts_val(input$canvas_contrasts)
 
-      },
+            },
 
-      ignoreNULL = FALSE
+            ignoreNULL = FALSE
 
     )
 
@@ -1226,7 +1226,7 @@ mod_data_prep_server <- function(id, gsea_res) {
 
     shiny::observeEvent(input$canvas_ncol, {
 
-      canvas_ncol_val(input$canvas_ncol)
+            canvas_ncol_val(input$canvas_ncol)
 
     })
 
@@ -1238,61 +1238,61 @@ mod_data_prep_server <- function(id, gsea_res) {
 
     process_data_core <- function(contrast_id, collections, sort_by, expr_type, plot_subtype, colors, is_auto = FALSE) {
 
-      if (is.null(contrast_id)) {
+            if (is.null(contrast_id)) {
 
         return(NULL)
 
-      }
+            }
 
 
 
-      task_obj <- tryCatch(
+            task_obj <- tryCatch(
 
         {
 
-          extract_gsea_task(gsea_res, contrast_id, target_collection = collections)
+                    extract_gsea_task(gsea_res, contrast_id, target_collection = collections)
 
         },
 
         error = function(e) {
 
-          message(sprintf("Task extraction failed: %s", e$message))
+                    message(sprintf("Task extraction failed: %s", e$message))
 
-          return(NULL)
+                    return(NULL)
 
         }
 
-      )
+            )
 
 
 
-      if (is.null(task_obj)) {
-
-        return(NULL)
-
-      }
-
-
-
-      meta <- task_obj$meta
-
-      gsea_res_obj <- task_obj$gsea_res
-
-      df <- as.data.frame(gsea_res_obj@result)
-
-
-
-      if (nrow(df) == 0) {
+            if (is.null(task_obj)) {
 
         return(NULL)
 
-      }
+            }
 
 
 
-      df$abs_NES <- abs(df$NES)
+            meta <- task_obj$meta
 
-      sort_config <- switch(sort_by,
+            gsea_res_obj <- task_obj$gsea_res
+
+            df <- as.data.frame(gsea_res_obj@result)
+
+
+
+            if (nrow(df) == 0) {
+
+        return(NULL)
+
+            }
+
+
+
+            df$abs_NES <- abs(df$NES)
+
+            sort_config <- switch(sort_by,
 
         "nes_desc" = list(col = "NES", desc = TRUE),
 
@@ -1302,53 +1302,53 @@ mod_data_prep_server <- function(id, gsea_res) {
 
         list(col = "abs_NES", desc = TRUE)
 
-      )
+            )
 
 
 
-      sort_order <- order(df[[sort_config$col]], decreasing = sort_config$desc)
+            sort_order <- order(df[[sort_config$col]], decreasing = sort_config$desc)
 
-      df <- df[sort_order, ]
+            df <- df[sort_order, ]
 
-      df$Rank <- seq_len(nrow(df))
+            df$Rank <- seq_len(nrow(df))
 
-      df$Safe_ID <- gsub("'", "\\\\'", df$ID)
-
-
-
-      reg_row <- gsea_res$contrast_registry[gsea_res$contrast_registry$contrast_id == contrast_id, ]
+            df$Safe_ID <- gsub("'", "\\\\'", df$ID)
 
 
 
-      if (nrow(reg_row) == 0) {
+            reg_row <- gsea_res$contrast_registry[gsea_res$contrast_registry$contrast_id == contrast_id, ]
+
+
+
+            if (nrow(reg_row) == 0) {
 
         parts <- strsplit(contrast_id, "_vs_")[[1]]
 
         if (length(parts) == 2) {
 
-          left <- parts[1]
+                    left <- parts[1]
 
-          right <- parts[2]
+                    right <- parts[2]
 
         } else {
 
-          left <- contrast_id
+                    left <- contrast_id
 
-          right <- "Background"
+                    right <- "Background"
 
         }
 
-      } else {
+            } else {
 
         left <- reg_row$left_group[1]
 
         right <- reg_row$right_group[1]
 
-      }
+            }
 
 
 
-      list(
+            list(
 
         df = df,
 
@@ -1380,7 +1380,7 @@ mod_data_prep_server <- function(id, gsea_res) {
 
         collections = collections
 
-      )
+            )
 
     }
 
@@ -1390,11 +1390,11 @@ mod_data_prep_server <- function(id, gsea_res) {
 
     shiny::observeEvent(input$selected_contrast,
 
-      {
+            {
 
         if (has_initialized()) {
 
-          return()
+                    return()
 
         }
 
@@ -1406,103 +1406,103 @@ mod_data_prep_server <- function(id, gsea_res) {
 
         shiny::isolate({
 
-          if (is.null(input$selected_contrast)) {
+                    if (is.null(input$selected_contrast)) {
 
             return()
 
-          }
+                    }
 
 
 
-          task_temp <- tryCatch(
+                    task_temp <- tryCatch(
 
             extract_gsea_task(gsea_res, input$selected_contrast, "ALL"),
 
             error = function(e) NULL
 
-          )
+                    )
 
-          if (is.null(task_temp)) {
-
-            return()
-
-          }
-
-
-
-          df_temp <- as.data.frame(task_temp$gsea_res@result)
-
-          available <- unique(c(df_temp$Collection, df_temp$Combo_Name))
-
-          available <- setdiff(available, c(NA, "Unknown"))
-
-
-
-          if (length(available) == 0) {
+                    if (is.null(task_temp)) {
 
             return()
 
-          }
+                    }
 
 
 
-          # Sort collections: Hallmark (H/MH) first, then by main code
+                    df_temp <- as.data.frame(task_temp$gsea_res@result)
 
-          # (C1/M1, C2/M2, ...) in natural numeric order; within the same
+                    available <- unique(c(df_temp$Collection, df_temp$Combo_Name))
 
-          # main code the main collection precedes its sub-collections
+                    available <- setdiff(available, c(NA, "Unknown"))
 
-          # (e.g. C2 before C2:CGP, C2 before C2:CP:REACTOME).
 
-          avail_chr <- as.character(available)
 
-          main_code <- sub(":.*$", "", avail_chr)
+                    if (length(available) == 0) {
 
-          coll_num <- ifelse(
+            return()
+
+                    }
+
+
+
+                    # Sort collections: Hallmark (H/MH) first, then by main code
+
+                    # (C1/M1, C2/M2, ...) in natural numeric order; within the same
+
+                    # main code the main collection precedes its sub-collections
+
+                    # (e.g. C2 before C2:CGP, C2 before C2:CP:REACTOME).
+
+                    avail_chr <- as.character(available)
+
+                    main_code <- sub(":.*$", "", avail_chr)
+
+                    coll_num <- ifelse(
 
             main_code %in% c("H", "MH"), 0L,
 
             suppressWarnings(as.integer(gsub("[^0-9]", "", main_code)))
 
-          )
+                    )
 
-          coll_num[is.na(coll_num)] <- 99L
+                    coll_num[is.na(coll_num)] <- 99L
 
-          has_sub <- grepl(":", avail_chr)
+                    has_sub <- grepl(":", avail_chr)
 
-          sub_part <- ifelse(has_sub, sub("^[^:]+:", "", avail_chr), "")
+                    sub_part <- ifelse(has_sub, sub("^[^:]+:", "", avail_chr), "")
 
-          ord <- order(coll_num, has_sub, sub_part)
+                    ord <- order(coll_num, has_sub, sub_part)
 
-          sorted_available <- avail_chr[ord]
+                    sorted_available <- avail_chr[ord]
 
 
 
-          # Default to Hallmark when present; otherwise fall back to the
+                    # Default to Hallmark when present; otherwise fall back to the
 
-          # collection with the fewest entries (original heuristic).
+                    # collection with the fewest entries (original heuristic).
 
-          hallmark <- intersect(c("H", "MH"), sorted_available)
+                    hallmark <- intersect(c("H", "MH"), sorted_available)
 
-          if (length(hallmark) > 0) {
+                    if (length(hallmark) > 0) {
 
             min_col <- hallmark[1]
 
-          } else {
+                    } else {
 
             counts <- vapply(sorted_available, function(x) {
 
-              sum(startsWith(as.character(df_temp$Combo_Name), x))
+                            sum(startsWith(as.character(df_temp$Combo_Name), x))
 
             }, numeric(1))
 
             min_col <- sorted_available[which.min(counts)[1]]
 
-          }
+                    }
 
 
 
-          shiny::updateSelectizeInput(
+                    shiny::updateSelectizeInput(
 
             session,
 
@@ -1512,11 +1512,11 @@ mod_data_prep_server <- function(id, gsea_res) {
 
             selected = min_col
 
-          )
+                    )
 
 
 
-          auto_data <- process_data_core(
+                    auto_data <- process_data_core(
 
             input$selected_contrast,
 
@@ -1532,11 +1532,11 @@ mod_data_prep_server <- function(id, gsea_res) {
 
             TRUE
 
-          )
+                    )
 
 
 
-          if (!is.null(auto_data)) {
+                    if (!is.null(auto_data)) {
 
             result_data(auto_data)
 
@@ -1544,15 +1544,15 @@ mod_data_prep_server <- function(id, gsea_res) {
 
             shiny::showNotification(sprintf("Auto-loaded: %s", min_col), type = "default", duration = 3)
 
-          }
+                    }
 
         })
 
-      },
+            },
 
-      ignoreNULL = TRUE,
+            ignoreNULL = TRUE,
 
-      ignoreInit = TRUE
+            ignoreInit = TRUE
 
     )
 
@@ -1562,17 +1562,17 @@ mod_data_prep_server <- function(id, gsea_res) {
 
     shiny::observeEvent(input$run_btn, {
 
-      shiny::req(input$selected_contrast)
+            shiny::req(input$selected_contrast)
 
 
 
-      cols <- input$selected_collections
+            cols <- input$selected_collections
 
-      if (is.null(cols) || length(cols) == 0) cols <- "ALL"
+            if (is.null(cols) || length(cols) == 0) cols <- "ALL"
 
 
 
-      manual_data <- process_data_core(
+            manual_data <- process_data_core(
 
         input$selected_contrast,
 
@@ -1588,23 +1588,23 @@ mod_data_prep_server <- function(id, gsea_res) {
 
         FALSE
 
-      )
+            )
 
 
 
-      if (is.null(manual_data)) {
+            if (is.null(manual_data)) {
 
         shiny::showNotification("No data for selected configuration", type = "error", duration = 5)
 
         return()
 
-      }
+            }
 
 
 
-      result_data(manual_data)
+            result_data(manual_data)
 
-      shiny::showNotification("Workspace updated", type = "message", duration = 3)
+            shiny::showNotification("Workspace updated", type = "message", duration = 3)
 
     })
 
@@ -1614,21 +1614,21 @@ mod_data_prep_server <- function(id, gsea_res) {
 
     joint_generate_event <- shiny::eventReactive(input$joint_generate,
 
-      {
+            {
 
         list(
 
-          contrasts = input$joint_contrasts,
+                    contrasts = input$joint_contrasts,
 
-          ncol = input$joint_ncol,
+                    ncol = input$joint_ncol,
 
-          timestamp = Sys.time()
+                    timestamp = Sys.time()
 
         )
 
-      },
+            },
 
-      ignoreNULL = TRUE
+            ignoreNULL = TRUE
 
     )
 
@@ -1638,135 +1638,135 @@ mod_data_prep_server <- function(id, gsea_res) {
 
     update_pending_genes <- function(new_genes_from_modal) {
 
-      # 防御性检查
+            # 防御性检查
 
-      if (is.null(new_genes_from_modal) || length(new_genes_from_modal) == 0) {
+            if (is.null(new_genes_from_modal) || length(new_genes_from_modal) == 0) {
 
         message("[UpdatePending] No new genes from modal, skipping")
 
         return(invisible(NULL))
 
-      }
+            }
 
 
 
-      # 清理基因名：去除空白 + 转大写
+            # 清理基因名：去除空白 + 转大写
 
-      new_genes_clean <- toupper(trimws(as.character(new_genes_from_modal)))
+            new_genes_clean <- toupper(trimws(as.character(new_genes_from_modal)))
 
-      new_genes_clean <- new_genes_clean[!is.na(new_genes_clean)]
+            new_genes_clean <- new_genes_clean[!is.na(new_genes_clean)]
 
-      new_genes_clean <- new_genes_clean[new_genes_clean != ""]
+            new_genes_clean <- new_genes_clean[new_genes_clean != ""]
 
-      new_genes_clean <- unique(new_genes_clean)
+            new_genes_clean <- unique(new_genes_clean)
 
 
 
-      # 直接获取当前pending_genes_internal的值
+            # 直接获取当前pending_genes_internal的值
 
-      current_pending <- tryCatch(
+            current_pending <- tryCatch(
 
         {
 
-          shiny::isolate(pending_genes_internal())
+                    shiny::isolate(pending_genes_internal())
 
         },
 
         error = function(e) {
 
-          message(sprintf("[UpdatePending] Error: %s", e$message))
+                    message(sprintf("[UpdatePending] Error: %s", e$message))
 
-          character(0)
+                    character(0)
 
         }
 
-      )
+            )
 
 
 
-      # 追加合并（不是替换）
+            # 追加合并（不是替换）
 
-      updated_pending <- unique(c(current_pending, new_genes_clean))
-
-
-
-      # 更新reactive值
-
-      pending_genes_internal(updated_pending)
+            updated_pending <- unique(c(current_pending, new_genes_clean))
 
 
 
-      message(sprintf(
+            # 更新reactive值
+
+            pending_genes_internal(updated_pending)
+
+
+
+            message(sprintf(
 
         "[UpdatePending] Merged: %d existing + %d new = %d total (pending)",
 
         length(current_pending), length(new_genes_clean), length(updated_pending)
 
-      ))
+            ))
 
 
 
-      # 获取当前contrast的基因choices
+            # 获取当前contrast的基因choices
 
-      gene_choices_upper <- character(0)
+            gene_choices_upper <- character(0)
 
 
 
-      tryCatch(
+            tryCatch(
 
         {
 
-          contrast_id <- shiny::isolate(input$selected_contrast)
+                    contrast_id <- shiny::isolate(input$selected_contrast)
 
-          if (!is.null(contrast_id) && contrast_id != "") {
+                    if (!is.null(contrast_id) && contrast_id != "") {
 
             de_df <- get_de_table(gsea_res, contrast_id)
 
             if (!is.null(de_df) && "gene_symbol" %in% colnames(de_df)) {
 
-              gene_choices <- de_df$gene_symbol
+                            gene_choices <- de_df$gene_symbol
 
-              gene_choices <- gene_choices[!is.na(gene_choices)]
+                            gene_choices <- gene_choices[!is.na(gene_choices)]
 
-              gene_choices <- trimws(gene_choices)
+                            gene_choices <- trimws(gene_choices)
 
-              gene_choices <- gene_choices[gene_choices != ""]
+                            gene_choices <- gene_choices[gene_choices != ""]
 
-              gene_choices_upper <- toupper(sort(unique(gene_choices)))
+                            gene_choices_upper <- toupper(sort(unique(gene_choices)))
 
             }
 
-          }
+                    }
 
         },
 
         error = function(e) {
 
-          message(sprintf("[UpdatePending] Error getting gene choices: %s", e$message))
+                    message(sprintf("[UpdatePending] Error getting gene choices: %s", e$message))
 
         }
 
-      )
+            )
 
 
 
-      # 如果没有choices，使用pending作为choices
+            # 如果没有choices，使用pending作为choices
 
-      if (length(gene_choices_upper) == 0) {
+            if (length(gene_choices_upper) == 0) {
 
         gene_choices_upper <- updated_pending
 
-      }
+            }
 
 
 
-      # 刷新selectizeInput
+            # 刷新selectizeInput
 
-      tryCatch(
+            tryCatch(
 
         {
 
-          shiny::updateSelectizeInput(
+                    shiny::updateSelectizeInput(
 
             session,
 
@@ -1778,37 +1778,37 @@ mod_data_prep_server <- function(id, gsea_res) {
 
             options = list(
 
-              plugins = list("remove_button"),
+                            plugins = list("remove_button"),
 
-              placeholder = "Enter gene names (e.g., TP53)",
+                            placeholder = "Enter gene names (e.g., TP53)",
 
-              maxItems = 999,
+                            maxItems = 999,
 
-              closeAfterSelect = FALSE,
+                            closeAfterSelect = FALSE,
 
-              selectOnTab = TRUE
+                            selectOnTab = TRUE
 
             ),
 
             server = FALSE
 
-          )
+                    )
 
-          message("[UpdatePending] UI refreshed")
+                    message("[UpdatePending] UI refreshed")
 
         },
 
         error = function(e) {
 
-          message(sprintf("[UpdatePending] UI update error: %s", e$message))
+                    message(sprintf("[UpdatePending] UI update error: %s", e$message))
 
         }
 
-      )
+            )
 
 
 
-      invisible(NULL)
+            invisible(NULL)
 
     }
 
@@ -1818,41 +1818,41 @@ mod_data_prep_server <- function(id, gsea_res) {
 
     return(list(
 
-      data = shiny::reactive({
+            data = shiny::reactive({
 
         result_data()
 
-      }),
+            }),
 
-      highlight_genes = applied_genes,
+            highlight_genes = applied_genes,
 
-      boxplot_order = applied_boxplot_order,
+            boxplot_order = applied_boxplot_order,
 
-      joint_contrasts = shiny::reactive({
+            joint_contrasts = shiny::reactive({
 
         input$joint_contrasts
 
-      }),
+            }),
 
-      joint_ncol = shiny::reactive({
+            joint_ncol = shiny::reactive({
 
         input$joint_ncol
 
-      }),
+            }),
 
-      joint_generate = joint_generate_event,
+            joint_generate = joint_generate_event,
 
-      update_pending_genes = update_pending_genes,
+            update_pending_genes = update_pending_genes,
 
-      get_pending_genes = function() {
+            get_pending_genes = function() {
 
         shiny::isolate(pending_genes_internal())
 
-      }
+            }
 
     ))
 
-  })
+    })
 
 }
 

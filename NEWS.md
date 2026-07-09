@@ -2,6 +2,23 @@
 
 
 
+# GSEAlens 0.99.26
+
+Code style: convert 2-space indentation to 4-space across all R files.
+
+BiocCheck reported 6566 lines with non-4-space-multiple indentation.
+Fixed by converting all 2-space indentation to 4-space (multiplying
+leading whitespace by 2) across 24 R files (6371 lines fixed).
+
+After fix: 0 lines with non-4-space indentation in source R files
+(BiocCheck may still report a small number from cached `.Rproj.user`
+files, which are not part of the package source).
+
+`\dontrun` tags kept as-is (8 occurrences): all examples reference
+external data files or interactive menus, so `\donttest` would cause
+R CMD check WARNINGs. BiocCheck NOTE is acceptable.
+
+
 # GSEAlens 0.99.25
 
 R CMD check / BiocCheck compliance:

@@ -8,9 +8,9 @@
 
 mod_pathway_modal_ui <- function(id) {
 
-  ns <- shiny::NS(id)
+    ns <- shiny::NS(id)
 
-  NULL # Modal dynamically generated in server
+    NULL # Modal dynamically generated in server
 
 }
 
@@ -40,9 +40,9 @@ mod_pathway_modal_ui <- function(id) {
 
 mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
-                                     pending_genes_reactive, update_pending_genes) {
+                                                                            pending_genes_reactive, update_pending_genes) {
 
-  shiny::moduleServer(id, function(input, output, session) {
+    shiny::moduleServer(id, function(input, output, session) {
 
     ns <- session$ns
 
@@ -66,15 +66,15 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
     shiny::observe({
 
-      current_selection <- modal_checked_genes()
+            current_selection <- modal_checked_genes()
 
-      session$sendCustomMessage(
+            session$sendCustomMessage(
 
         type = ns("syncModalCheckbox"),
 
         message = list(ids = current_selection)
 
-      )
+            )
 
     })
 
@@ -84,53 +84,53 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
     shiny::observeEvent(trigger_event(), {
 
-      pathway_id <- trigger_event()
+            pathway_id <- trigger_event()
 
-      shiny::req(pathway_id)
-
-
-
-      # 清空modal内部状态
-
-      modal_checked_genes(character(0))
+            shiny::req(pathway_id)
 
 
 
-      data_list <- data_prep()
+            # 清空modal内部状态
 
-      shiny::req(data_list)
-
-
-
-      # 提取通路基因和核心基因
-
-      gsea_obj <- data_list$gsea_res
-
-      pathway_genes <- gsea_obj@geneSets[[pathway_id]]
+            modal_checked_genes(character(0))
 
 
 
-      res_df <- as.data.frame(gsea_obj@result)
+            data_list <- data_prep()
 
-      core_str <- res_df$core_enrichment[res_df$ID == pathway_id]
+            shiny::req(data_list)
 
-      core_genes <- if (length(core_str) > 0 && !is.na(core_str[1])) {
+
+
+            # 提取通路基因和核心基因
+
+            gsea_obj <- data_list$gsea_res
+
+            pathway_genes <- gsea_obj@geneSets[[pathway_id]]
+
+
+
+            res_df <- as.data.frame(gsea_obj@result)
+
+            core_str <- res_df$core_enrichment[res_df$ID == pathway_id]
+
+            core_genes <- if (length(core_str) > 0 && !is.na(core_str[1])) {
 
         unlist(strsplit(as.character(core_str[1]), "/"))
 
-      } else {
+            } else {
 
         character(0)
 
-      }
+            }
 
 
 
-      nes_val <- res_df$NES[res_df$ID == pathway_id]
+            nes_val <- res_df$NES[res_df$ID == pathway_id]
 
 
 
-      current_data(list(
+            current_data(list(
 
         pathway_id = pathway_id,
 
@@ -142,25 +142,25 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
         data_list = data_list
 
-      ))
+            ))
 
 
 
-      # Modal UI
+            # Modal UI
 
-      shiny::showModal(shiny::modalDialog(
+            shiny::showModal(shiny::modalDialog(
 
         title = shiny::HTML(sprintf(
 
-          "<b>%s</b><br><small>%s vs %s | NES: %.2f</small>",
+                    "<b>%s</b><br><small>%s vs %s | NES: %.2f</small>",
 
-          pathway_id,
+                    pathway_id,
 
-          data_list$left_group,
+                    data_list$left_group,
 
-          data_list$right_group,
+                    data_list$right_group,
 
-          nes_val
+                    nes_val
 
         )),
 
@@ -174,7 +174,7 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
         shiny::fluidRow(
 
-          shiny::column(5, shiny::div(
+                    shiny::column(5, shiny::div(
 
             class = "white-box",
 
@@ -182,9 +182,9 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
             shiny::plotOutput(ns("modal_gsea_plot"), height = "400px")
 
-          )),
+                    )),
 
-          shiny::column(7, shiny::div(
+                    shiny::column(7, shiny::div(
 
             class = "white-box",
 
@@ -192,13 +192,13 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
             shiny::div(
 
-              style = "height: 600px; overflow-y: auto; overflow-x: auto; border: 1px solid #ddd;",
+                            style = "height: 600px; overflow-y: auto; overflow-x: auto; border: 1px solid #ddd;",
 
-              shiny::plotOutput(ns("modal_heatmap"), height = "auto", width = "100%")
+                            shiny::plotOutput(ns("modal_heatmap"), height = "auto", width = "100%")
 
             )
 
-          ))
+                    ))
 
         ),
 
@@ -210,7 +210,7 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
         shiny::tags$head(shiny::tags$script(shiny::HTML(sprintf("
 
-          Shiny.addCustomMessageHandler('%s', function(message) {
+                    Shiny.addCustomMessageHandler('%s', function(message) {
 
             var ids = message.ids || [];
 
@@ -218,17 +218,17 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
             checkboxes.forEach(function(cb) {
 
-              var id = cb.getAttribute('data-id');
+                            var id = cb.getAttribute('data-id');
 
-              if (cb.checked !== ids.includes(id)) {
+                            if (cb.checked !== ids.includes(id)) {
 
                 cb.checked = ids.includes(id);
 
-              }
+                            }
 
             });
 
-          });
+                    });
 
         ", ns("syncModalCheckbox"))))),
 
@@ -238,99 +238,99 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
         shiny::div(
 
-          class = "white-box",
+                    class = "white-box",
 
-          shiny::h4("Leading Edge Gene Statistics Table"),
+                    shiny::h4("Leading Edge Gene Statistics Table"),
 
 
 
-          # CSS样式 - 按钮固定定位
+                    # CSS样式 - 按钮固定定位
 
-          shiny::tags$head(shiny::tags$style(shiny::HTML(sprintf("
+                    shiny::tags$head(shiny::tags$style(shiny::HTML(sprintf("
 
             .modal-gene-checkbox { width: 18px; height: 18px; cursor: pointer; }
 
-          ", ns(""))))),
+                    ", ns(""))))),
 
 
 
-          # 按钮行
+                    # 按钮行
 
-          shiny::fluidRow(
+                    shiny::fluidRow(
 
             shiny::column(
 
-              4,
+                            4,
 
-              shiny::div(
+                            shiny::div(
 
                 style = "color: #666; font-size: 13px;",
 
                 shiny::HTML("<b>Hint:</b> Click checkbox to select, then confirm")
 
-              )
+                            )
 
             ),
 
             shiny::column(
 
-              8,
+                            8,
 
-              shiny::div(
+                            shiny::div(
 
                 style = "display: flex; gap: 10px; justify-content: flex-end;",
 
                 shiny::actionButton(
 
-                  ns("select_all_leading"),
+                                    ns("select_all_leading"),
 
-                  label = "Select All Leading Edge",
+                                    label = "Select All Leading Edge",
 
-                  class = "btn-info"
-
-                ),
-
-                shiny::actionButton(
-
-                  ns("clear_modal_selection"),
-
-                  label = "Clear All",
-
-                  class = "btn-warning"
+                                    class = "btn-info"
 
                 ),
 
                 shiny::actionButton(
 
-                  ns("confirm_gene_selection"),
+                                    ns("clear_modal_selection"),
 
-                  label = "Confirm Selection + Send to Sidebar",
+                                    label = "Clear All",
 
-                  class = "btn-success btn-lg",
+                                    class = "btn-warning"
 
-                  style = "font-weight: bold;"
+                ),
+
+                shiny::actionButton(
+
+                                    ns("confirm_gene_selection"),
+
+                                    label = "Confirm Selection + Send to Sidebar",
+
+                                    class = "btn-success btn-lg",
+
+                                    style = "font-weight: bold;"
 
                 )
 
-              )
+                            )
 
             )
 
-          ),
+                    ),
 
-          shiny::hr(),
+                    shiny::hr(),
 
 
 
-          # 表格区域
+                    # 表格区域
 
-          DT::dataTableOutput(ns("modal_gene_table"))
+                    DT::dataTableOutput(ns("modal_gene_table"))
 
         ),
 
         footer = shiny::modalButton("Close")
 
-      ))
+            ))
 
     })
 
@@ -340,33 +340,33 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
     shiny::observeEvent(input$select_all_leading, {
 
-      pdata <- current_data()
+            pdata <- current_data()
 
-      if (is.null(pdata)) {
+            if (is.null(pdata)) {
 
         return()
 
-      }
+            }
 
 
 
-      core_genes <- pdata$core_genes
+            core_genes <- pdata$core_genes
 
-      if (length(core_genes) == 0) {
+            if (length(core_genes) == 0) {
 
         shiny::showNotification("No leading edge genes found", type = "warning")
 
         return()
 
-      }
+            }
 
 
 
-      # 更新reactive状态
+            # 更新reactive状态
 
-      modal_checked_genes(unique(toupper(core_genes)))
+            modal_checked_genes(unique(toupper(core_genes)))
 
-      message(sprintf("[Modal] Select All: %d leading edge genes", length(core_genes)))
+            message(sprintf("[Modal] Select All: %d leading edge genes", length(core_genes)))
 
     })
 
@@ -376,9 +376,9 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
     shiny::observeEvent(input$clear_modal_selection, {
 
-      modal_checked_genes(character(0))
+            modal_checked_genes(character(0))
 
-      message("[Modal] Clear all selection")
+            message("[Modal] Clear all selection")
 
     })
 
@@ -388,43 +388,43 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
     shiny::observeEvent(input$confirm_gene_selection, {
 
-      selected <- modal_checked_genes()
+            selected <- modal_checked_genes()
 
 
 
-      if (length(selected) == 0) {
+            if (length(selected) == 0) {
 
         shiny::showNotification("No genes selected! Please click checkboxes first.", type = "warning", duration = 3)
 
         return()
 
-      }
+            }
 
 
 
-      message(sprintf("[Modal Confirm] %d genes selected", length(selected)))
+            message(sprintf("[Modal Confirm] %d genes selected", length(selected)))
 
 
 
-      # 调用update_pending_genes更新sidebar
+            # 调用update_pending_genes更新sidebar
 
-      update_pending_genes(selected)
-
-
-
-      # 清空modal内部状态
-
-      modal_checked_genes(character(0))
+            update_pending_genes(selected)
 
 
 
-      # 关闭Modal
+            # 清空modal内部状态
 
-      shiny::removeModal()
+            modal_checked_genes(character(0))
 
 
 
-      shiny::showNotification(
+            # 关闭Modal
+
+            shiny::removeModal()
+
+
+
+            shiny::showNotification(
 
         sprintf("%d genes synced to 'Select Genes of Interest'. Click 'Confirm and Apply' to finalize.", length(selected)),
 
@@ -432,7 +432,7 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
         duration = 5
 
-      )
+            )
 
     })
 
@@ -442,39 +442,39 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
     shiny::observeEvent(input$modal_gene_toggle, {
 
-      toggle <- input$modal_gene_toggle
+            toggle <- input$modal_gene_toggle
 
-      if (is.null(toggle) || !is.list(toggle)) {
+            if (is.null(toggle) || !is.list(toggle)) {
 
         return()
 
-      }
+            }
 
 
 
-      gene_name <- toggle$id
+            gene_name <- toggle$id
 
-      is_checked <- isTRUE(toggle$checked) || identical(toggle$checked, "true")
-
-
-
-      current <- modal_checked_genes()
+            is_checked <- isTRUE(toggle$checked) || identical(toggle$checked, "true")
 
 
 
-      if (is_checked) {
+            current <- modal_checked_genes()
+
+
+
+            if (is_checked) {
 
         if (!(gene_name %in% current)) {
 
-          modal_checked_genes(c(current, gene_name))
+                    modal_checked_genes(c(current, gene_name))
 
         }
 
-      } else {
+            } else {
 
         modal_checked_genes(setdiff(current, gene_name))
 
-      }
+            }
 
     })
 
@@ -492,29 +492,29 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
     output$modal_gsea_plot <- shiny::renderPlot({
 
-      pdata <- current_data()
+            pdata <- current_data()
 
-      shiny::req(pdata)
+            shiny::req(pdata)
 
 
 
-      tryCatch(
+            tryCatch(
 
         {
 
-          print(plot_directional_gsea(
+                    print(plot_directional_gsea(
 
             directional_gsea_obj = list(
 
-              gsea_res = pdata$data_list$gsea_res,
+                            gsea_res = pdata$data_list$gsea_res,
 
-              meta = list(
+                            meta = list(
 
                 left_group = pdata$data_list$left_group,
 
                 right_group = pdata$data_list$right_group
 
-              )
+                            )
 
             ),
 
@@ -524,19 +524,19 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
             add_pval = TRUE
 
-          ))
+                    ))
 
         },
 
         error = function(e) {
 
-          graphics::plot(1, type = "n", axes = FALSE, xlab = "", ylab = "")
+                    graphics::plot(1, type = "n", axes = FALSE, xlab = "", ylab = "")
 
-          graphics::text(1, 1, sprintf("Plotting failed: %s", e$message), col = "red")
+                    graphics::text(1, 1, sprintf("Plotting failed: %s", e$message), col = "red")
 
         }
 
-      )
+            )
 
     })
 
@@ -546,7 +546,7 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
     output$modal_heatmap <- shiny::renderPlot(
 
-      {
+            {
 
         pdata <- current_data()
 
@@ -560,19 +560,19 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
         if (inherits(sample_meta_raw, "DFrame") || inherits(sample_meta_raw, "DataFrame")) {
 
-          sample_names <- rownames(sample_meta_raw)
+                    sample_names <- rownames(sample_meta_raw)
 
-          sample_meta <- as.data.frame(sample_meta_raw, stringsAsFactors = FALSE)
+                    sample_meta <- as.data.frame(sample_meta_raw, stringsAsFactors = FALSE)
 
-          if (!is.null(sample_names) && (is.null(rownames(sample_meta)) || all(rownames(sample_meta) == ""))) {
+                    if (!is.null(sample_names) && (is.null(rownames(sample_meta)) || all(rownames(sample_meta) == ""))) {
 
             rownames(sample_meta) <- sample_names
 
-          }
+                    }
 
         } else {
 
-          sample_meta <- as.data.frame(sample_meta_raw, stringsAsFactors = FALSE)
+                    sample_meta <- as.data.frame(sample_meta_raw, stringsAsFactors = FALSE)
 
         }
 
@@ -582,13 +582,13 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
         if (!is.null(gsea_res$backend_info$target_factor)) {
 
-          target <- gsea_res$backend_info$target_factor
+                    target <- gsea_res$backend_info$target_factor
 
-          if (target %in% colnames(sample_meta)) {
+                    if (target %in% colnames(sample_meta)) {
 
             group_col <- target
 
-          }
+                    }
 
         }
 
@@ -596,25 +596,25 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
         if (is.null(group_col)) {
 
-          candidates <- c(
+                    candidates <- c(
 
             "group", "Group", "condition", "Condition",
 
             "treatment", "Treatment", "type", "Type"
 
-          )
+                    )
 
-          for (col in candidates) {
+                    for (col in candidates) {
 
             if (col %in% colnames(sample_meta)) {
 
-              group_col <- col
+                            group_col <- col
 
-              break
+                            break
 
             }
 
-          }
+                    }
 
         }
 
@@ -622,13 +622,13 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
         if (is.null(group_col)) {
 
-          stop(sprintf(
+                    stop(sprintf(
 
             "Cannot find group column. Available columns: %s",
 
             paste(colnames(sample_meta), collapse = ", ")
 
-          ))
+                    ))
 
         }
 
@@ -648,13 +648,13 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
         if (length(sample_idx) == 0) {
 
-          stop(sprintf(
+                    stop(sprintf(
 
             "No samples found for groups '%s' or '%s'.",
 
             left_grp, right_grp
 
-          ))
+                    ))
 
         }
 
@@ -672,15 +672,15 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
         if (!is.null(expr_bundle$dds_obj)) {
 
-          tryCatch(
+                    tryCatch(
 
             {
 
-              raw_counts <- DESeq2::counts(expr_bundle$dds_obj, normalized = FALSE)
+                            raw_counts <- DESeq2::counts(expr_bundle$dds_obj, normalized = FALSE)
 
-              common_samples <- intersect(target_samples, colnames(raw_counts))
+                            common_samples <- intersect(target_samples, colnames(raw_counts))
 
-              if (length(common_samples) > 0) {
+                            if (length(common_samples) > 0) {
 
                 raw_counts <- raw_counts[, common_samples, drop = FALSE]
 
@@ -690,17 +690,17 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
                 target_samples <- common_samples
 
-              }
+                            }
 
             },
 
             error = function(e) {
 
-              message("DDS CPM calculation failed: ", e$message)
+                            message("DDS CPM calculation failed: ", e$message)
 
             }
 
-          )
+                    )
 
         }
 
@@ -708,9 +708,9 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
         if (is.null(cpm_mat) && !is.null(expr_bundle$raw_counts)) {
 
-          common_samples <- intersect(target_samples, colnames(expr_bundle$raw_counts))
+                    common_samples <- intersect(target_samples, colnames(expr_bundle$raw_counts))
 
-          if (length(common_samples) > 0) {
+                    if (length(common_samples) > 0) {
 
             rc <- expr_bundle$raw_counts[, common_samples, drop = FALSE]
 
@@ -720,7 +720,7 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
             target_samples <- common_samples
 
-          }
+                    }
 
         }
 
@@ -728,7 +728,7 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
         if (is.null(cpm_mat) || ncol(cpm_mat) == 0) {
 
-          stop("Cannot compute CPM matrix.")
+                    stop("Cannot compute CPM matrix.")
 
         }
 
@@ -760,13 +760,13 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
         if (length(matched_idx) < 2) {
 
-          stop(sprintf(
+                    stop(sprintf(
 
             "Gene matching failed: only %d/%d pathway genes matched.",
 
             length(matched_idx), length(pathway_genes)
 
-          ))
+                    ))
 
         }
 
@@ -784,7 +784,7 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
         if (sum(valid_genes) < 2) {
 
-          stop("Insufficient genes with variance after filtering")
+                    stop("Insufficient genes with variance after filtering")
 
         }
 
@@ -812,15 +812,15 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
         gene_metrics <- vapply(rownames(plot_mat), function(g) {
 
-          idx <- match(toupper(g), toupper(names(gene_list)))
+                    idx <- match(toupper(g), toupper(names(gene_list)))
 
-          if (is.na(idx)) {
+                    if (is.na(idx)) {
 
             return(0)
 
-          }
+                    }
 
-          return(gene_list[idx])
+                    return(gene_list[idx])
 
         }, numeric(1))
 
@@ -834,7 +834,7 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
         if (length(core_str) > 0 && !is.na(core_str[1])) {
 
-          core_genes <- unlist(strsplit(as.character(core_str[1]), "/"))
+                    core_genes <- unlist(strsplit(as.character(core_str[1]), "/"))
 
         }
 
@@ -844,11 +844,11 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
         if (pdata$nes > 0) {
 
-          sort_order <- order(gene_metrics, decreasing = TRUE)
+                    sort_order <- order(gene_metrics, decreasing = TRUE)
 
         } else {
 
-          sort_order <- order(gene_metrics, decreasing = FALSE)
+                    sort_order <- order(gene_metrics, decreasing = FALSE)
 
         }
 
@@ -878,9 +878,9 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
         group_factor <- factor(
 
-          sample_meta$group[match(colnames(plot_mat), rownames(sample_meta))],
+                    sample_meta$group[match(colnames(plot_mat), rownames(sample_meta))],
 
-          levels = c(left_grp, right_grp)
+                    levels = c(left_grp, right_grp)
 
         )
 
@@ -888,13 +888,13 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
         top_ann <- ComplexHeatmap::HeatmapAnnotation(
 
-          Group = group_factor,
+                    Group = group_factor,
 
-          col = list(Group = grp_col),
+                    col = list(Group = grp_col),
 
-          annotation_name_gp = grid::gpar(fontsize = 12, fontface = "bold"),
+                    annotation_name_gp = grid::gpar(fontsize = 12, fontface = "bold"),
 
-          simple_anno_size = grid::unit(0.6, "cm")
+                    simple_anno_size = grid::unit(0.6, "cm")
 
         )
 
@@ -908,13 +908,13 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
         right_ann <- ComplexHeatmap::rowAnnotation(
 
-          LeadingEdge = leading_status,
+                    LeadingEdge = leading_status,
 
-          col = list(LeadingEdge = leading_colors),
+                    col = list(LeadingEdge = leading_colors),
 
-          annotation_name_gp = grid::gpar(fontsize = 12, fontface = "bold"),
+                    annotation_name_gp = grid::gpar(fontsize = 12, fontface = "bold"),
 
-          simple_anno_size = grid::unit(0.4, "cm")
+                    simple_anno_size = grid::unit(0.4, "cm")
 
         )
 
@@ -922,15 +922,15 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
         layer_fun <- function(j, i, x, y, w, h, fill) {
 
-          vals <- ComplexHeatmap::pindex(display_numbers, i, j)
+                    vals <- ComplexHeatmap::pindex(display_numbers, i, j)
 
-          grid::grid.text(
+                    grid::grid.text(
 
             label = vals, x = x, y = y,
 
             gp = grid::gpar(fontsize = 13, col = "black", fontface = "bold")
 
-          )
+                    )
 
         }
 
@@ -938,23 +938,23 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
         if (pdata$nes > 0) {
 
-          row_split_factor <- factor(
+                    row_split_factor <- factor(
 
             ifelse(is_leading, "Leading Edge", "Other Genes"),
 
             levels = c("Leading Edge", "Other Genes")
 
-          )
+                    )
 
         } else {
 
-          row_split_factor <- factor(
+                    row_split_factor <- factor(
 
             ifelse(is_leading, "Other Genes", "Leading Edge"),
 
             levels = c("Other Genes", "Leading Edge")
 
-          )
+                    )
 
         }
 
@@ -962,11 +962,11 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
         row_names_gp <- grid::gpar(
 
-          fontsize = 15,
+                    fontsize = 15,
 
-          fontface = ifelse(is_leading, "bold", "plain"),
+                    fontface = ifelse(is_leading, "bold", "plain"),
 
-          col = ifelse(is_leading, "#FF9800", "black")
+                    col = ifelse(is_leading, "#FF9800", "black")
 
         )
 
@@ -974,43 +974,43 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
         ht <- ComplexHeatmap::Heatmap(
 
-          z_mat,
+                    z_mat,
 
-          name = "Z-Score",
+                    name = "Z-Score",
 
-          col = col_fun,
+                    col = col_fun,
 
-          cluster_rows = FALSE,
+                    cluster_rows = FALSE,
 
-          cluster_columns = FALSE,
+                    cluster_columns = FALSE,
 
-          column_split = group_factor,
+                    column_split = group_factor,
 
-          cluster_column_slices = FALSE,
+                    cluster_column_slices = FALSE,
 
-          row_split = row_split_factor,
+                    row_split = row_split_factor,
 
-          cluster_row_slices = FALSE,
+                    cluster_row_slices = FALSE,
 
-          row_gap = grid::unit(2, "mm"),
+                    row_gap = grid::unit(2, "mm"),
 
-          top_annotation = top_ann,
+                    top_annotation = top_ann,
 
-          right_annotation = right_ann,
+                    right_annotation = right_ann,
 
-          layer_fun = layer_fun,
+                    layer_fun = layer_fun,
 
-          row_names_gp = row_names_gp,
+                    row_names_gp = row_names_gp,
 
-          column_names_gp = grid::gpar(fontsize = 15, fontface = "bold"),
+                    column_names_gp = grid::gpar(fontsize = 15, fontface = "bold"),
 
-          rect_gp = grid::gpar(col = "white", lwd = 1),
+                    rect_gp = grid::gpar(col = "white", lwd = 1),
 
-          show_heatmap_legend = TRUE,
+                    show_heatmap_legend = TRUE,
 
-          width = NULL,
+                    width = NULL,
 
-          height = NULL
+                    height = NULL
 
         )
 
@@ -1020,9 +1020,9 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
         title_text <- sprintf(
 
-          "%s\nRow-Scaled Z-Score [-1, 1] | Enriched in: %s",
+                    "%s\nRow-Scaled Z-Score [-1, 1] | Enriched in: %s",
 
-          pdata$pathway_id, enriched_group
+                    pdata$pathway_id, enriched_group
 
         )
 
@@ -1030,29 +1030,29 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
         ComplexHeatmap::draw(ht,
 
-          merge_legend = TRUE,
+                    merge_legend = TRUE,
 
-          column_title = title_text,
+                    column_title = title_text,
 
-          column_title_gp = grid::gpar(fontsize = 14, fontface = "bold")
+                    column_title_gp = grid::gpar(fontsize = 14, fontface = "bold")
 
         )
 
-      },
+            },
 
-      height = function() {
+            height = function() {
 
         pdata <- current_data()
 
         if (is.null(pdata)) {
 
-          return(400)
+                    return(400)
 
         }
 
         max(400, length(pdata$pathway_genes) * 25 + 150)
 
-      }
+            }
 
     )
 
@@ -1066,7 +1066,7 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
     output$modal_gene_table <- DT::renderDataTable(
 
-      {
+            {
 
         pdata <- current_data()
 
@@ -1096,13 +1096,13 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
         gene_df <- data.frame(
 
-          Gene = display_gene_name,
+                    Gene = display_gene_name,
 
-          Rank_Metric = round(as.numeric(genelist), 3),
+                    Rank_Metric = round(as.numeric(genelist), 3),
 
-          Rank_in_List = seq_along(genelist),
+                    Rank_in_List = seq_along(genelist),
 
-          stringsAsFactors = FALSE
+                    stringsAsFactors = FALSE
 
         )
 
@@ -1112,11 +1112,11 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
         gene_df$Is_Core <- ifelse(
 
-          toupper(gene_df$Gene) %in% toupper(core_genes),
+                    toupper(gene_df$Gene) %in% toupper(core_genes),
 
-          "YES",
+                    "YES",
 
-          "-"
+                    "-"
 
         )
 
@@ -1124,11 +1124,11 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
         gene_df <- gene_df[order(
 
-          gene_df$Is_Core == "YES",
+                    gene_df$Is_Core == "YES",
 
-          abs(gene_df$Rank_Metric),
+                    abs(gene_df$Rank_Metric),
 
-          decreasing = TRUE
+                    decreasing = TRUE
 
         ), ]
 
@@ -1140,17 +1140,17 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
         gene_df$Select <- vapply(seq_len(nrow(gene_df)), function(i) {
 
-          g <- gene_df$Gene[i] # 已经是原始大小写
+                    g <- gene_df$Gene[i] # 已经是原始大小写
 
-          is_checked <- ifelse(g %in% current_selection, 'checked="checked"', "")
+                    is_checked <- ifelse(g %in% current_selection, 'checked="checked"', "")
 
-          sprintf(
+                    sprintf(
 
             '<input type="checkbox" class="modal-gene-checkbox" data-id="%s" %s onclick="Shiny.setInputValue(\'%s\', {id: \'%s\', checked: this.checked}, {priority: \'event\'});"/>',
 
             g, is_checked, ns("modal_gene_toggle"), g
 
-          )
+                    )
 
         }, character(1))
 
@@ -1164,17 +1164,17 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
         DT::datatable(
 
-          gene_df,
+                    gene_df,
 
-          rownames = FALSE,
+                    rownames = FALSE,
 
-          escape = FALSE,
+                    escape = FALSE,
 
-          selection = "none",
+                    selection = "none",
 
-          extensions = "Scroller",
+                    extensions = "Scroller",
 
-          options = list(
+                    options = list(
 
             scrollX = TRUE,
 
@@ -1190,23 +1190,23 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
             columnDefs = list(
 
-              list(width = "50px", targets = 0, orderable = FALSE, className = "dt-center"),
+                            list(width = "50px", targets = 0, orderable = FALSE, className = "dt-center"),
 
-              list(width = "100px", targets = 1, className = "dt-center"),
+                            list(width = "100px", targets = 1, className = "dt-center"),
 
-              list(width = "80px", targets = 2, className = "dt-center"),
+                            list(width = "80px", targets = 2, className = "dt-center"),
 
-              list(width = "80px", targets = 3, className = "dt-center"),
+                            list(width = "80px", targets = 3, className = "dt-center"),
 
-              list(width = "80px", targets = 4, className = "dt-center")
+                            list(width = "80px", targets = 4, className = "dt-center")
 
             )
 
-          )
+                    )
 
         ) |>
 
-          DT::formatStyle(
+                    DT::formatStyle(
 
             columns = "Leading Edge",
 
@@ -1216,15 +1216,15 @@ mod_pathway_modal_server <- function(id, data_prep, trigger_event, gsea_res,
 
             color = DT::styleEqual("YES", "white")
 
-          )
+                    )
 
-      },
+            },
 
-      server = FALSE
+            server = FALSE
 
     )
 
-  })
+    })
 
 }
 

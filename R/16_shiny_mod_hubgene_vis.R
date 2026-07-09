@@ -24,37 +24,37 @@
 
 mod_hubgene_vis_ui <- function(id) {
 
-  ns <- shiny::NS(id)
+    ns <- shiny::NS(id)
 
 
 
-  shiny::tagList(
+    shiny::tagList(
 
     shiny::fluidRow(
 
-      # ─── Left Control Panel ───
+            # ─── Left Control Panel ───
 
-      shiny::column(
+            shiny::column(
 
         width = 3,
 
         shiny::div(
 
-          class = "well",
+                    class = "well",
 
-          style = "padding: 15px; max-height: 90vh; overflow-y: auto;",
+                    style = "padding: 15px; max-height: 90vh; overflow-y: auto;",
 
-          shiny::h4("HubGene Network (visNetwork)"),
+                    shiny::h4("HubGene Network (visNetwork)"),
 
-          shiny::hr(),
+                    shiny::hr(),
 
 
 
-          # ── Mode Selection ──
+                    # ── Mode Selection ──
 
-          shiny::h5("Pathway Source Mode"),
+                    shiny::h5("Pathway Source Mode"),
 
-          shiny::radioButtons(
+                    shiny::radioButtons(
 
             ns("vis_mode"),
 
@@ -62,9 +62,9 @@ mod_hubgene_vis_ui <- function(id) {
 
             choices = c(
 
-              "Top N" = "mode_topN",
+                            "Top N" = "mode_topN",
 
-              "Selected from Table" = "mode_select"
+                            "Selected from Table" = "mode_select"
 
             ),
 
@@ -72,37 +72,37 @@ mod_hubgene_vis_ui <- function(id) {
 
             width = "100%"
 
-          ),
+                    ),
 
-          shiny::hr(),
+                    shiny::hr(),
 
 
 
-          # ── Top N Configuration ──
+                    # ── Top N Configuration ──
 
-          shiny::conditionalPanel(
+                    shiny::conditionalPanel(
 
             condition = sprintf("input['%s'] == 'mode_topN'", ns("vis_mode")),
 
             shiny::numericInput(
 
-              ns("vis_topN"),
+                            ns("vis_topN"),
 
-              label = "Top N Count:",
+                            label = "Top N Count:",
 
-              value = 5,
+                            value = 5,
 
-              min = 3,
+                            min = 3,
 
-              max = 50,
+                            max = 50,
 
-              step = 1
+                            step = 1
 
             )
 
-          ),
+                    ),
 
-          shiny::numericInput(
+                    shiny::numericInput(
 
             ns("vis_fdr"),
 
@@ -116,9 +116,9 @@ mod_hubgene_vis_ui <- function(id) {
 
             step = 0.01
 
-          ),
+                    ),
 
-          shiny::numericInput(
+                    shiny::numericInput(
 
             ns("vis_min_hub"),
 
@@ -132,17 +132,17 @@ mod_hubgene_vis_ui <- function(id) {
 
             step = 1
 
-          ),
+                    ),
 
-          shiny::hr(),
+                    shiny::hr(),
 
 
 
-          # ── Physics Engine Controls ──
+                    # ── Physics Engine Controls ──
 
-          shiny::h5("Physics & Interaction"),
+                    shiny::h5("Physics & Interaction"),
 
-          shiny::checkboxInput(
+                    shiny::checkboxInput(
 
             ns("vis_physics"),
 
@@ -150,17 +150,17 @@ mod_hubgene_vis_ui <- function(id) {
 
             value = TRUE
 
-          ),
+                    ),
 
-          shiny::conditionalPanel(
+                    shiny::conditionalPanel(
 
             condition = sprintf("input['%s'] == true", ns("vis_physics")),
 
             shiny::div(
 
-              style = "background: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 10px;",
+                            style = "background: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 10px;",
 
-              shiny::sliderInput(
+                            shiny::sliderInput(
 
                 ns("vis_gravitational"),
 
@@ -174,9 +174,9 @@ mod_hubgene_vis_ui <- function(id) {
 
                 step = 10
 
-              ),
+                            ),
 
-              shiny::sliderInput(
+                            shiny::sliderInput(
 
                 ns("vis_spring_length"),
 
@@ -190,9 +190,9 @@ mod_hubgene_vis_ui <- function(id) {
 
                 step = 5
 
-              ),
+                            ),
 
-              shiny::sliderInput(
+                            shiny::sliderInput(
 
                 ns("vis_spring_constant"),
 
@@ -206,9 +206,9 @@ mod_hubgene_vis_ui <- function(id) {
 
                 step = 0.001
 
-              ),
+                            ),
 
-              shiny::sliderInput(
+                            shiny::sliderInput(
 
                 ns("vis_central_gravity"),
 
@@ -222,9 +222,9 @@ mod_hubgene_vis_ui <- function(id) {
 
                 step = 0.05
 
-              ),
+                            ),
 
-              shiny::sliderInput(
+                            shiny::sliderInput(
 
                 ns("vis_damping"),
 
@@ -238,13 +238,13 @@ mod_hubgene_vis_ui <- function(id) {
 
                 step = 0.01
 
-              )
+                            )
 
             )
 
-          ),
+                    ),
 
-          shiny::checkboxInput(
+                    shiny::checkboxInput(
 
             ns("vis_nodes_draggable"),
 
@@ -252,9 +252,9 @@ mod_hubgene_vis_ui <- function(id) {
 
             value = TRUE
 
-          ),
+                    ),
 
-          shiny::checkboxInput(
+                    shiny::checkboxInput(
 
             ns("vis_smooth_edges"),
 
@@ -262,17 +262,17 @@ mod_hubgene_vis_ui <- function(id) {
 
             value = TRUE
 
-          ),
+                    ),
 
-          shiny::hr(),
+                    shiny::hr(),
 
 
 
-          # ── Node Sizing ──
+                    # ── Node Sizing ──
 
-          shiny::h5("Node Sizing"),
+                    shiny::h5("Node Sizing"),
 
-          shiny::selectInput(
+                    shiny::selectInput(
 
             ns("vis_pw_size_mode"),
 
@@ -280,19 +280,19 @@ mod_hubgene_vis_ui <- function(id) {
 
             choices = c(
 
-              "Fixed size (slider below)"        = "fixed",
+                            "Fixed size (slider below)"        = "fixed",
 
-              "By significance (-log10 FDR)"     = "fdr",
+                            "By significance (-log10 FDR)"     = "fdr",
 
-              "By gene-set size (setSize)"       = "setsize"
+                            "By gene-set size (setSize)"       = "setsize"
 
             ),
 
             selected = "setsize"
 
-          ),
+                    ),
 
-          shiny::helpText(
+                    shiny::helpText(
 
             style = "color: #666; font-size: 11px;",
 
@@ -300,9 +300,9 @@ mod_hubgene_vis_ui <- function(id) {
 
             "Size range scales around the slider value [0.6x, 1.4x]."
 
-          ),
+                    ),
 
-          shiny::sliderInput(
+                    shiny::sliderInput(
 
             ns("vis_pw_size"),
 
@@ -316,9 +316,9 @@ mod_hubgene_vis_ui <- function(id) {
 
             step = 1
 
-          ),
+                    ),
 
-          shiny::sliderInput(
+                    shiny::sliderInput(
 
             ns("vis_gene_size"),
 
@@ -332,15 +332,15 @@ mod_hubgene_vis_ui <- function(id) {
 
             step = 1
 
-          ),
+                    ),
 
-          shiny::hr(),
+                    shiny::hr(),
 
 
 
-          # ── Random Seed ──
+                    # ── Random Seed ──
 
-          shiny::numericInput(
+                    shiny::numericInput(
 
             ns("vis_seed"),
 
@@ -354,67 +354,67 @@ mod_hubgene_vis_ui <- function(id) {
 
             step = 1
 
-          ),
+                    ),
 
-          shiny::hr(),
+                    shiny::hr(),
 
 
 
-          # ── Statistics ──
+                    # ── Statistics ──
 
-          shiny::h5("Network Statistics"),
+                    shiny::h5("Network Statistics"),
 
-          shiny::verbatimTextOutput(ns("vis_stats")) |>
+                    shiny::verbatimTextOutput(ns("vis_stats")) |>
 
             shiny::tagAppendAttributes(style = "font-size: 10px; max-height: 100px; overflow-y: auto;"),
 
-          shiny::hr(),
+                    shiny::hr(),
 
 
 
-          # ── Pathway Preview ──
+                    # ── Pathway Preview ──
 
-          shiny::h5("Pathways Preview"),
+                    shiny::h5("Pathways Preview"),
 
-          shiny::uiOutput(ns("vis_pathway_list")) |>
+                    shiny::uiOutput(ns("vis_pathway_list")) |>
 
             shiny::tagAppendAttributes(style = "max-height: 150px; overflow-y: auto;")
 
         )
 
-      ),
+            ),
 
 
 
-      # ─── Main Plotting Area ───
+            # ─── Main Plotting Area ───
 
-      shiny::column(
+            shiny::column(
 
         width = 9,
 
         shiny::div(
 
-          class = "white-box",
+                    class = "white-box",
 
-          style = "min-height: 850px;",
+                    style = "min-height: 850px;",
 
 
 
-          # Status Bar
+                    # Status Bar
 
-          shiny::div(
+                    shiny::div(
 
             style = "background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 12px; border-radius: 5px; margin-bottom: 15px; color: white;",
 
             shiny::uiOutput(ns("vis_status_text"))
 
-          ),
+                    ),
 
 
 
-          # visNetwork Output
+                    # visNetwork Output
 
-          visNetwork::visNetworkOutput(
+                    visNetwork::visNetworkOutput(
 
             ns("vis_network"),
 
@@ -422,41 +422,41 @@ mod_hubgene_vis_ui <- function(id) {
 
             width = "100%"
 
-          ) |>
+                    ) |>
 
             shinycssloaders::withSpinner(type = 6, color = "#28a745"),
 
-          shiny::hr(),
+                    shiny::hr(),
 
-          shiny::div(
+                    shiny::div(
 
             style = "text-align: center;",
 
             shiny::actionButton(
 
-              ns("open_hubgene_export"),
+                            ns("open_hubgene_export"),
 
-              label = "Export Publication Plot",
+                            label = "Export Publication Plot",
 
-              icon = shiny::icon("file-image"),
+                            icon = shiny::icon("file-image"),
 
-              class = "btn-success",
+                            class = "btn-success",
 
-              style = "width: 60%;"
+                            style = "width: 60%;"
 
             )
 
-          ),
+                    ),
 
-          shiny::hr()
+                    shiny::hr()
 
         )
 
-      )
+            )
 
     )
 
-  )
+    )
 
 }
 
@@ -502,7 +502,7 @@ mod_hubgene_vis_ui <- function(id) {
 
 mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_res) {
 
-  shiny::moduleServer(id, function(input, output, session) {
+    shiny::moduleServer(id, function(input, output, session) {
 
     ns <- session$ns
 
@@ -520,13 +520,13 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
     add_debug <- function(msg, level = "INFO") {
 
-      timestamp <- format(Sys.time(), "%H:%M:%S")
+            timestamp <- format(Sys.time(), "%H:%M:%S")
 
-      new_entry <- sprintf("[%s] [%s] %s", timestamp, level, msg)
+            new_entry <- sprintf("[%s] [%s] %s", timestamp, level, msg)
 
-      session$userData$debug_log <- c(new_entry, session$userData$debug_log)[seq_len(min(50, length(session$userData$debug_log) + 1L))]
+            session$userData$debug_log <- c(new_entry, session$userData$debug_log)[seq_len(min(50, length(session$userData$debug_log) + 1L))]
 
-      message(sprintf("[HubGene-vis] %s", new_entry))
+            message(sprintf("[HubGene-vis] %s", new_entry))
 
     }
 
@@ -534,7 +534,7 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
     output$vis_debug <- shiny::renderText({
 
-      paste(session$userData$debug_log, collapse = "\n")
+            paste(session$userData$debug_log, collapse = "\n")
 
     })
 
@@ -558,9 +558,9 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
     shiny::observeEvent(input$vis_mode, {
 
-      vis_mode(input$vis_mode)
+            vis_mode(input$vis_mode)
 
-      add_debug(sprintf("Mode: %s", input$vis_mode))
+            add_debug(sprintf("Mode: %s", input$vis_mode))
 
     })
 
@@ -576,25 +576,25 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
     topN_candidates <- shiny::reactive({
 
-      if (vis_mode() != "mode_topN") {
+            if (vis_mode() != "mode_topN") {
 
         return(character(0))
 
-      }
+            }
 
-      data_list <- data_prep_list$data()
+            data_list <- data_prep_list$data()
 
-      shiny::req(data_list)
+            shiny::req(data_list)
 
-      df <- data_list$df
+            df <- data_list$df
 
-      top_n <- input$vis_topN
+            top_n <- input$vis_topN
 
-      if (is.null(top_n)) top_n <- 5
+            if (is.null(top_n)) top_n <- 5
 
-      top_n <- max(3, min(top_n, nrow(df)))
+            top_n <- max(3, min(top_n, nrow(df)))
 
-      df[seq_len(top_n), "ID"]
+            df[seq_len(top_n), "ID"]
 
     })
 
@@ -602,21 +602,21 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
     select_candidates <- shiny::reactive({
 
-      if (vis_mode() != "mode_select") {
+            if (vis_mode() != "mode_select") {
 
         return(character(0))
 
-      }
+            }
 
-      sel <- table_controller$selected_pathways()
+            sel <- table_controller$selected_pathways()
 
-      if (is.null(sel) || length(sel) == 0) {
+            if (is.null(sel) || length(sel) == 0) {
 
         return(character(0))
 
-      }
+            }
 
-      return(sel)
+            return(sel)
 
     })
 
@@ -624,7 +624,7 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
     candidate_raw <- shiny::reactive({
 
-      switch(vis_mode(),
+            switch(vis_mode(),
 
         "mode_topN" = topN_candidates(),
 
@@ -632,7 +632,7 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
         character(0)
 
-      )
+            )
 
     })
 
@@ -640,29 +640,29 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
     candidate_filtered <- shiny::reactive({
 
-      pathways <- candidate_raw()
+            pathways <- candidate_raw()
 
-      if (length(pathways) == 0) {
+            if (length(pathways) == 0) {
 
         return(character(0))
 
-      }
+            }
 
-      fdr_thresh <- input$vis_fdr
+            fdr_thresh <- input$vis_fdr
 
-      if (is.null(fdr_thresh)) fdr_thresh <- 0.25
+            if (is.null(fdr_thresh)) fdr_thresh <- 0.25
 
-      data_list <- data_prep_list$data()
+            data_list <- data_prep_list$data()
 
-      shiny::req(data_list)
+            shiny::req(data_list)
 
-      df <- data_list$df
+            df <- data_list$df
 
-      fdr_vec <- df$p.adjust[match(pathways, df$ID)]
+            fdr_vec <- df$p.adjust[match(pathways, df$ID)]
 
-      names(fdr_vec) <- pathways
+            names(fdr_vec) <- pathways
 
-      pathways[!is.na(fdr_vec) & fdr_vec < fdr_thresh]
+            pathways[!is.na(fdr_vec) & fdr_vec < fdr_thresh]
 
     })
 
@@ -674,9 +674,9 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
     shiny::observeEvent(candidate_filtered(), {
 
-      final_pathways(candidate_filtered())
+            final_pathways(candidate_filtered())
 
-      add_debug(sprintf("Pathways: %d", length(candidate_filtered())))
+            add_debug(sprintf("Pathways: %d", length(candidate_filtered())))
 
     })
 
@@ -692,33 +692,33 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
     net_data <- shiny::reactive({
 
-      data_list <- data_prep_list$data()
+            data_list <- data_prep_list$data()
 
-      shiny::req(!is.null(data_list))
+            shiny::req(!is.null(data_list))
 
-      pathway_ids <- final_pathways()
+            pathway_ids <- final_pathways()
 
-      shiny::req(length(pathway_ids) > 0)
-
-
-
-      add_debug(sprintf("Building: %d pathways", length(pathway_ids)))
+            shiny::req(length(pathway_ids) > 0)
 
 
 
-      net <- build_hubgene_network(
+            add_debug(sprintf("Building: %d pathways", length(pathway_ids)))
+
+
+
+            net <- build_hubgene_network(
 
         gsea_task = list(
 
-          gsea_res = data_list$gsea_res,
+                    gsea_res = data_list$gsea_res,
 
-          meta = list(
+                    meta = list(
 
             left_group = data_list$left_group,
 
             right_group = data_list$right_group
 
-          )
+                    )
 
         ),
 
@@ -732,21 +732,21 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
         seed = input$vis_seed
 
-      )
+            )
 
 
 
-      if (is.null(net)) {
+            if (is.null(net)) {
 
         add_debug("Build failed", "ERROR")
 
         return(NULL)
 
-      }
+            }
 
 
 
-      add_debug(sprintf(
+            add_debug(sprintf(
 
         "Built: %d pw + %d gene + %d edges",
 
@@ -756,9 +756,9 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
         ifelse(is.null(net$edges), 0, nrow(net$edges))
 
-      ))
+            ))
 
-      return(net)
+            return(net)
 
     })
 
@@ -774,129 +774,129 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
     output$vis_network <- visNetwork::renderVisNetwork({
 
-      net <- net_data()
+            net <- net_data()
 
-      shiny::req(!is.null(net))
-
-
-
-      add_debug("Preparing visNetwork...")
+            shiny::req(!is.null(net))
 
 
 
-      # Get group information
-
-      data_list <- data_prep_list$data()
-
-      left_group <- data_list$left_group
-
-      right_group <- data_list$right_group
+            add_debug("Preparing visNetwork...")
 
 
 
-      # ──────────────────────────────────────────────────────────────
+            # Get group information
 
-      # Fix: Rebuild gene name case mapping
+            data_list <- data_prep_list$data()
 
-      # ──────────────────────────────────────────────────────────────
+            left_group <- data_list$left_group
 
-      symbol_map <- NULL
+            right_group <- data_list$right_group
 
-      if (!is.null(gsea_res) && !is.null(data_list$contrast_id)) {
+
+
+            # ──────────────────────────────────────────────────────────────
+
+            # Fix: Rebuild gene name case mapping
+
+            # ──────────────────────────────────────────────────────────────
+
+            symbol_map <- NULL
+
+            if (!is.null(gsea_res) && !is.null(data_list$contrast_id)) {
 
         symbol_map <- tryCatch(
 
-          {
+                    {
 
             .rebuild_symbol_map(gsea_res, data_list$contrast_id)
 
-          },
+                    },
 
-          error = function(e) {
+                    error = function(e) {
 
             message("[HubGene-vis] symbol_map build failed: ", e$message)
 
             NULL
 
-          }
+                    }
 
         )
 
         add_debug(sprintf("symbol_map: %d genes mapped", length(symbol_map)))
 
-      } else {
+            } else {
 
         add_debug("symbol_map skipped: gsea_res or contrast_id is NULL", "WARN")
 
-      }
+            }
 
 
 
-      # Node size parameters
+            # Node size parameters
 
-      # ------------------------------------------------------------
+            # ------------------------------------------------------------
 
-      # Pathway node size is now driven by a user-selectable encoding
+            # Pathway node size is now driven by a user-selectable encoding
 
-      # (input$vis_pw_size_mode). The slider value (vis_pw_size) acts as
+            # (input$vis_pw_size_mode). The slider value (vis_pw_size) acts as
 
-      # the BASE size; the chosen encoding scales around it within
+            # the BASE size; the chosen encoding scales around it within
 
-      # [0.6x, 1.4x] to keep visNetwork's force-directed layout stable.
+            # [0.6x, 1.4x] to keep visNetwork's force-directed layout stable.
 
-      #   "fixed"   -> constant (legacy behavior)
+            #   "fixed"   -> constant (legacy behavior)
 
-      #   "fdr"     -> -log10(FDR) normalized to [0.6x, 1.4x] of base
+            #   "fdr"     -> -log10(FDR) normalized to [0.6x, 1.4x] of base
 
-      #   "setsize" -> sqrt(setSize) normalized to [0.6x, 1.4x] of base
+            #   "setsize" -> sqrt(setSize) normalized to [0.6x, 1.4x] of base
 
-      #                (cnetplot convention; sqrt avoids over-weighting
+            #                (cnetplot convention; sqrt avoids over-weighting
 
-      #                 large gene sets)
+            #                 large gene sets)
 
-      # ------------------------------------------------------------
+            # ------------------------------------------------------------
 
-      pw_base  <- ifelse(is.null(input$vis_pw_size),  30, input$vis_pw_size)
+            pw_base  <- ifelse(is.null(input$vis_pw_size),  30, input$vis_pw_size)
 
-      gene_size <- ifelse(is.null(input$vis_gene_size), 12, input$vis_gene_size)
+            gene_size <- ifelse(is.null(input$vis_gene_size), 12, input$vis_gene_size)
 
-      pw_size_mode <- if (is.null(input$vis_pw_size_mode)) "setsize"
+            pw_size_mode <- if (is.null(input$vis_pw_size_mode)) "setsize"
 
-                      else input$vis_pw_size_mode
-
-
-
-      # Per-pathway scaled size vector (matches row order of net$nodes$pathway)
-
-      #
-
-      # IRON FIX (2026-06-30): build_hubgene_network stores the gene-set
-
-      # size under column "n_core" (NOT "setSize"). The previous code
-
-      # unconditionally accessed net$nodes$pathway$setSize, which returned
-
-      # NULL, breaking sqrt()/range() with
-
-      # "non-numeric argument to mathematical function".
-
-      # Now: detect column name setSize -> n_core -> n_total -> fallback,
-
-      # and coerce all numeric inputs via as.numeric() to defend against
-
-      # character-typed columns from upstream GSEA objects.
-
-      pw_pathway <- net$nodes$pathway
-
-      pw_nrow <- if (is.null(pw_pathway)) 0 else nrow(pw_pathway)
+                                            else input$vis_pw_size_mode
 
 
 
-      pw_size <- switch(pw_size_mode,
+            # Per-pathway scaled size vector (matches row order of net$nodes$pathway)
+
+            #
+
+            # IRON FIX (2026-06-30): build_hubgene_network stores the gene-set
+
+            # size under column "n_core" (NOT "setSize"). The previous code
+
+            # unconditionally accessed net$nodes$pathway$setSize, which returned
+
+            # NULL, breaking sqrt()/range() with
+
+            # "non-numeric argument to mathematical function".
+
+            # Now: detect column name setSize -> n_core -> n_total -> fallback,
+
+            # and coerce all numeric inputs via as.numeric() to defend against
+
+            # character-typed columns from upstream GSEA objects.
+
+            pw_pathway <- net$nodes$pathway
+
+            pw_nrow <- if (is.null(pw_pathway)) 0 else nrow(pw_pathway)
+
+
+
+            pw_size <- switch(pw_size_mode,
 
         "fdr" = {
 
-          if (pw_nrow > 0) {
+                    if (pw_nrow > 0) {
 
             fdr_vals <- suppressWarnings(as.numeric(pw_pathway$FDR))
 
@@ -908,31 +908,31 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
             pw_base * (0.6 + 0.8 * (fdr_nl - r[1]) / diff(r))
 
-          } else rep(pw_base, 0)
+                    } else rep(pw_base, 0)
 
         },
 
         "setsize" = {
 
-          if (pw_nrow > 0) {
+                    if (pw_nrow > 0) {
 
             # Column-name fallback chain
 
             sv <- if ("setSize" %in% colnames(pw_pathway)) {
 
-              suppressWarnings(as.numeric(pw_pathway$setSize))
+                            suppressWarnings(as.numeric(pw_pathway$setSize))
 
             } else if ("n_core" %in% colnames(pw_pathway)) {
 
-              suppressWarnings(as.numeric(pw_pathway$n_core))
+                            suppressWarnings(as.numeric(pw_pathway$n_core))
 
             } else if ("n_total" %in% colnames(pw_pathway)) {
 
-              suppressWarnings(as.numeric(pw_pathway$n_total))
+                            suppressWarnings(as.numeric(pw_pathway$n_total))
 
             } else {
 
-              rep(100, pw_nrow)
+                            rep(100, pw_nrow)
 
             }
 
@@ -942,27 +942,27 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
             pw_base * (0.6 + 0.8 * (sqrt(sv) - sqrt(r[1])) /
 
-                                 (sqrt(r[2]) - sqrt(r[1])))
+                                                                    (sqrt(r[2]) - sqrt(r[1])))
 
-          } else rep(pw_base, 0)
+                    } else rep(pw_base, 0)
 
         },
 
         rep(pw_base, pw_nrow)
 
-      )
+            )
 
 
 
-      # ──────────────────────────────────────────────────────────────
+            # ──────────────────────────────────────────────────────────────
 
-      # Node Construction (add opacity column)
+            # Node Construction (add opacity column)
 
-      # ──────────────────────────────────────────────────────────────
+            # ──────────────────────────────────────────────────────────────
 
 
 
-      nodes <- data.frame(
+            nodes <- data.frame(
 
         id = character(),
 
@@ -982,13 +982,13 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
         stringsAsFactors = FALSE
 
-      )
+            )
 
 
 
-      # Pathway nodes
+            # Pathway nodes
 
-      if (!is.null(net$nodes$pathway) && nrow(net$nodes$pathway) > 0) {
+            if (!is.null(net$nodes$pathway) && nrow(net$nodes$pathway) > 0) {
 
         # IRON FIX (2026-06-30): build_hubgene_network stores the gene-set
 
@@ -1006,11 +1006,11 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
         pw_size_col <- if ("setSize" %in% colnames(net$nodes$pathway)) "setSize"
 
-                       else if ("n_core" %in% colnames(net$nodes$pathway)) "n_core"
+                                                else if ("n_core" %in% colnames(net$nodes$pathway)) "n_core"
 
-                       else if ("n_total" %in% colnames(net$nodes$pathway)) "n_total"
+                                                else if ("n_total" %in% colnames(net$nodes$pathway)) "n_total"
 
-                       else NA_character_
+                                                else NA_character_
 
         pw_NES_col  <- if ("NES" %in% colnames(net$nodes$pathway)) "NES" else NA_character_
 
@@ -1020,47 +1020,47 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
         for (i in seq_len(nrow(net$nodes$pathway))) {
 
-          row <- net$nodes$pathway[i, ]
+                    row <- net$nodes$pathway[i, ]
 
-          # Safe scalar extraction with NA fallback
+                    # Safe scalar extraction with NA fallback
 
-          row_nes <- if (is.na(pw_NES_col)) NA_real_
+                    row_nes <- if (is.na(pw_NES_col)) NA_real_
 
-                     else suppressWarnings(as.numeric(row[[pw_NES_col]][1]))
+                                            else suppressWarnings(as.numeric(row[[pw_NES_col]][1]))
 
-          row_fdr <- if (is.na(pw_FDR_col)) NA_real_
+                    row_fdr <- if (is.na(pw_FDR_col)) NA_real_
 
-                     else suppressWarnings(as.numeric(row[[pw_FDR_col]][1]))
+                                            else suppressWarnings(as.numeric(row[[pw_FDR_col]][1]))
 
-          row_size <- if (is.na(pw_size_col)) NA_integer_
+                    row_size <- if (is.na(pw_size_col)) NA_integer_
 
-                      else suppressWarnings(as.integer(row[[pw_size_col]][1]))
+                                            else suppressWarnings(as.integer(row[[pw_size_col]][1]))
 
-          row_nes[is.na(row_nes)]  <- 0
+                    row_nes[is.na(row_nes)]  <- 0
 
-          row_fdr[is.na(row_fdr)]  <- 1
+                    row_fdr[is.na(row_fdr)]  <- 1
 
-          row_size[is.na(row_size)] <- 0
-
-
-
-          direction <- ifelse(row_nes > 0, left_group, right_group)
+                    row_size[is.na(row_size)] <- 0
 
 
 
-          # Calculate LE connection count
+                    direction <- ifelse(row_nes > 0, left_group, right_group)
 
-          le_count <- 0
 
-          if (!is.null(net$edges) && nrow(net$edges) > 0) {
+
+                    # Calculate LE connection count
+
+                    le_count <- 0
+
+                    if (!is.null(net$edges) && nrow(net$edges) > 0) {
 
             le_count <- sum(net$edges$target == row$id & net$edges$is_leading_edge, na.rm = TRUE)
 
-          }
+                    }
 
 
 
-          nodes <- rbind(nodes, data.frame(
+                    nodes <- rbind(nodes, data.frame(
 
             id = paste0("pw_", row$id),
 
@@ -1078,25 +1078,25 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
             title = sprintf(
 
-              "<b>%s</b><br>Direction: %s<br>NES: %.3f<br>FDR: %.2e<br>LE Genes: %d<br>Set Size: %d",
+                            "<b>%s</b><br>Direction: %s<br>NES: %.3f<br>FDR: %.2e<br>LE Genes: %d<br>Set Size: %d",
 
-              row$id, direction, row_nes, row_fdr, le_count, row_size
+                            row$id, direction, row_nes, row_fdr, le_count, row_size
 
             ),
 
             stringsAsFactors = FALSE
 
-          ))
+                    ))
 
         }
 
-      }
+            }
 
 
 
-      # Gene nodes (add opacity for distinction)
+            # Gene nodes (add opacity for distinction)
 
-      if (!is.null(net$nodes$gene) && nrow(net$nodes$gene) > 0) {
+            if (!is.null(net$nodes$gene) && nrow(net$nodes$gene) > 0) {
 
         # Resolve gene column names defensively (mirrors the pathway fix
 
@@ -1110,37 +1110,37 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
         for (i in seq_len(nrow(net$nodes$gene))) {
 
-          row <- net$nodes$gene[i, ]
+                    row <- net$nodes$gene[i, ]
 
-          # Safe scalar extraction
+                    # Safe scalar extraction
 
-          row_stat <- if (is.na(gn_stat_col)) NA_real_
+                    row_stat <- if (is.na(gn_stat_col)) NA_real_
 
-                      else suppressWarnings(as.numeric(row[[gn_stat_col]][1]))
+                                            else suppressWarnings(as.numeric(row[[gn_stat_col]][1]))
 
-          row_degree <- if (is.na(gn_degree_col)) NA_integer_
+                    row_degree <- if (is.na(gn_degree_col)) NA_integer_
 
                         else suppressWarnings(as.integer(row[[gn_degree_col]][1]))
 
-          row_stat[is.na(row_stat)]    <- 0
+                    row_stat[is.na(row_stat)]    <- 0
 
-          row_degree[is.na(row_degree)] <- 1
-
-
-
-          # Restore original case
-
-          gene_label <- .get_display_symbol(row$id, symbol_map)
+                    row_degree[is.na(row_degree)] <- 1
 
 
 
-          # Check if Leading Edge
+                    # Restore original case
 
-          is_le <- FALSE
+                    gene_label <- .get_display_symbol(row$id, symbol_map)
 
-          pw_str <- "None"
 
-          if (!is.null(net$edges) && nrow(net$edges) > 0) {
+
+                    # Check if Leading Edge
+
+                    is_le <- FALSE
+
+                    pw_str <- "None"
+
+                    if (!is.null(net$edges) && nrow(net$edges) > 0) {
 
             is_le <- any(net$edges$source == row$id & net$edges$is_leading_edge, na.rm = TRUE)
 
@@ -1148,51 +1148,51 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
             if (length(connected_pws) > 0) {
 
-              pw_labels <- gsub("^[^_]*_", "", connected_pws)
+                            pw_labels <- gsub("^[^_]*_", "", connected_pws)
 
-              if (length(pw_labels) <= 5) {
+                            if (length(pw_labels) <= 5) {
 
                 pw_str <- paste(pw_labels, collapse = ", ")
 
-              } else {
+                            } else {
 
                 pw_str <- paste(pw_labels[seq_len(5)], collapse = ", ")
 
                 pw_str <- paste0(pw_str, sprintf(" (+%d)", length(pw_labels) - 5))
 
-              }
+                            }
 
             }
 
-          }
+                    }
 
 
 
-          # Direction
+                    # Direction
 
-          if (row_stat > 0) {
+                    if (row_stat > 0) {
 
             direction <- sprintf("Up in %s", left_group)
 
-          } else if (row_stat < 0) {
+                    } else if (row_stat < 0) {
 
             direction <- sprintf("Up in %s", right_group)
 
-          } else {
+                    } else {
 
             direction <- "Neutral"
 
-          }
+                    }
 
 
 
-          # Opacity: LE=1.0, non-LE=0.5
+                    # Opacity: LE=1.0, non-LE=0.5
 
-          gene_opacity <- ifelse(is_le, 1.0, 0.5)
+                    gene_opacity <- ifelse(is_le, 1.0, 0.5)
 
 
 
-          nodes <- rbind(nodes, data.frame(
+                    nodes <- rbind(nodes, data.frame(
 
             id = paste0("gene_", gene_label),
 
@@ -1210,33 +1210,33 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
             title = sprintf(
 
-              "<b>%s</b><br>Direction: %s<br>Stat: %.3f<br>Hub Degree: %d<br>LE: %s<br>Connected: %s",
+                            "<b>%s</b><br>Direction: %s<br>Stat: %.3f<br>Hub Degree: %d<br>LE: %s<br>Connected: %s",
 
-              gene_label, direction, row_stat, row_degree,
+                            gene_label, direction, row_stat, row_degree,
 
-              ifelse(is_le, "YES", "NO"), pw_str
+                            ifelse(is_le, "YES", "NO"), pw_str
 
             ),
 
             stringsAsFactors = FALSE
 
-          ))
+                    ))
 
         }
 
-      }
+            }
 
 
 
-      # ──────────────────────────────────────────────────────────────
+            # ──────────────────────────────────────────────────────────────
 
-      # Edge Construction (color follows gene stat)
+            # Edge Construction (color follows gene stat)
 
-      # ──────────────────────────────────────────────────────────────
+            # ──────────────────────────────────────────────────────────────
 
 
 
-      edges <- data.frame(
+            edges <- data.frame(
 
         from = character(),
 
@@ -1252,11 +1252,11 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
         stringsAsFactors = FALSE
 
-      )
+            )
 
 
 
-      if (!is.null(net$edges) && nrow(net$edges) > 0) {
+            if (!is.null(net$edges) && nrow(net$edges) > 0) {
 
         # Resolve edge column names defensively.
 
@@ -1266,79 +1266,79 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
         ed_le_col     <- if ("is_leading_edge" %in% colnames(net$edges)) "is_leading_edge"
 
-                         else NA_character_
+                                                    else NA_character_
 
 
 
         for (i in seq_len(nrow(net$edges))) {
 
-          row <- net$edges[i, ]
+                    row <- net$edges[i, ]
 
 
 
-          ed_source <- if (is.na(ed_source_col)) ""
+                    ed_source <- if (is.na(ed_source_col)) ""
 
-                       else as.character(row[[ed_source_col]][1])
+                                                else as.character(row[[ed_source_col]][1])
 
-          ed_target <- if (is.na(ed_target_col)) ""
+                    ed_target <- if (is.na(ed_target_col)) ""
 
-                       else as.character(row[[ed_target_col]][1])
+                                                else as.character(row[[ed_target_col]][1])
 
-          ed_is_le  <- if (is.na(ed_le_col)) FALSE
+                    ed_is_le  <- if (is.na(ed_le_col)) FALSE
 
-                       else isTRUE(as.logical(row[[ed_le_col]][1]))
+                                                else isTRUE(as.logical(row[[ed_le_col]][1]))
 
 
 
-          # Get source gene stat value to determine color
+                    # Get source gene stat value to determine color
 
-          gene_stat <- 0
+                    gene_stat <- 0
 
-          if (!is.null(net$nodes$gene) && nrow(net$nodes$gene) > 0) {
+                    if (!is.null(net$nodes$gene) && nrow(net$nodes$gene) > 0) {
 
             if (!is.na(gn_stat_col)) {
 
-              gene_row <- net$nodes$gene[net$nodes$gene$id == ed_source, ]
+                            gene_row <- net$nodes$gene[net$nodes$gene$id == ed_source, ]
 
-              if (nrow(gene_row) > 0) {
+                            if (nrow(gene_row) > 0) {
 
                 gene_stat <- suppressWarnings(as.numeric(gene_row[[gn_stat_col]][1]))
 
                 gene_stat <- if (is.na(gene_stat)) 0 else gene_stat
 
-              }
+                            }
 
             }
 
-          }
+                    }
 
 
 
-          # Color follows gene stat: light color (with opacity)
+                    # Color follows gene stat: light color (with opacity)
 
-          if (gene_stat > 0) {
+                    if (gene_stat > 0) {
 
             edge_color <- "#E41A1C80"
 
-          } else if (gene_stat < 0) {
+                    } else if (gene_stat < 0) {
 
             edge_color <- "#377EB880"
 
-          } else {
+                    } else {
 
             edge_color <- "#99999980"
 
-          }
+                    }
 
 
 
-          # Restore original case
+                    # Restore original case
 
-          gene_display <- .get_display_symbol(ed_source, symbol_map)
+                    gene_display <- .get_display_symbol(ed_source, symbol_map)
 
 
 
-          edges <- rbind(edges, data.frame(
+                    edges <- rbind(edges, data.frame(
 
             from = paste0("gene_", gene_display),
 
@@ -1352,67 +1352,67 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
             title = sprintf(
 
-              "<b>Gene:</b> %s<br><b>Pathway:</b> %s<br><b>Leading Edge:</b> %s",
+                            "<b>Gene:</b> %s<br><b>Pathway:</b> %s<br><b>Leading Edge:</b> %s",
 
-              gene_display, ed_target,
+                            gene_display, ed_target,
 
-              ifelse(ed_is_le, "YES", "NO")
+                            ifelse(ed_is_le, "YES", "NO")
 
             ),
 
             stringsAsFactors = FALSE
 
-          ))
+                    ))
 
         }
 
-      }
+            }
 
 
 
-      add_debug(sprintf("Nodes: %d, Edges: %d", nrow(nodes), nrow(edges)))
+            add_debug(sprintf("Nodes: %d, Edges: %d", nrow(nodes), nrow(edges)))
 
 
 
-      # ──────────────────────────────────────────────────────────────
+            # ──────────────────────────────────────────────────────────────
 
-      # Build visNetwork Object
+            # Build visNetwork Object
 
-      # ──────────────────────────────────────────────────────────────
-
-
-
-      vis <- visNetwork::visNetwork(nodes, edges, width = "100%", height = "650px")
+            # ──────────────────────────────────────────────────────────────
 
 
 
-      # Physics Engine
-
-      physics_enabled <- isTRUE(input$vis_physics)
-
-      grav <- ifelse(is.null(input$vis_gravitational), -400, input$vis_gravitational)
+            vis <- visNetwork::visNetwork(nodes, edges, width = "100%", height = "650px")
 
 
 
-      spring_length <- ifelse(is.null(input$vis_spring_length), 150, input$vis_spring_length)
+            # Physics Engine
 
-      spring_constant <- ifelse(is.null(input$vis_spring_constant), 0.01, input$vis_spring_constant)
+            physics_enabled <- isTRUE(input$vis_physics)
 
-      damping <- ifelse(is.null(input$vis_damping), 0.09, input$vis_damping)
-
-      central_gravity <- ifelse(is.null(input$vis_central_gravity), 0.3, input$vis_central_gravity)
+            grav <- ifelse(is.null(input$vis_gravitational), -400, input$vis_gravitational)
 
 
 
-      if (physics_enabled) {
+            spring_length <- ifelse(is.null(input$vis_spring_length), 150, input$vis_spring_length)
+
+            spring_constant <- ifelse(is.null(input$vis_spring_constant), 0.01, input$vis_spring_constant)
+
+            damping <- ifelse(is.null(input$vis_damping), 0.09, input$vis_damping)
+
+            central_gravity <- ifelse(is.null(input$vis_central_gravity), 0.3, input$vis_central_gravity)
+
+
+
+            if (physics_enabled) {
 
         vis <- vis |> visNetwork::visPhysics(
 
-          enabled = TRUE,
+                    enabled = TRUE,
 
-          solver = "barnesHut",
+                    solver = "barnesHut",
 
-          barnesHut = list(
+                    barnesHut = list(
 
             gravitationalConstant = grav,
 
@@ -1424,33 +1424,33 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
             damping = damping
 
-          )
+                    )
 
         )
 
         add_debug(sprintf("Physics: ON, solver=barnesHut, grav=%.0f", grav))
 
-      } else {
+            } else {
 
         vis <- vis |> visNetwork::visPhysics(enabled = FALSE)
 
         add_debug("Physics: OFF")
 
-      }
+            }
 
 
 
-      # Layout
+            # Layout
 
-      seed <- ifelse(is.null(input$vis_seed), 42, input$vis_seed)
+            seed <- ifelse(is.null(input$vis_seed), 42, input$vis_seed)
 
-      vis <- vis |> visNetwork::visLayout(randomSeed = seed)
+            vis <- vis |> visNetwork::visLayout(randomSeed = seed)
 
 
 
-      # Interaction
+            # Interaction
 
-      vis <- vis |> visNetwork::visInteraction(
+            vis <- vis |> visNetwork::visInteraction(
 
         dragNodes = TRUE,
 
@@ -1464,41 +1464,41 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
         navigationButtons = TRUE
 
-      )
+            )
 
 
 
-      # Click to highlight related nodes and edges
+            # Click to highlight related nodes and edges
 
-      vis <- vis |> visNetwork::visOptions(
+            vis <- vis |> visNetwork::visOptions(
 
         highlightNearest = TRUE,
 
         nodesIdSelection = TRUE
 
-      )
+            )
 
 
 
-      # Click Event
+            # Click Event
 
-      vis <- vis |> visNetwork::visEvents(
+            vis <- vis |> visNetwork::visEvents(
 
         click = sprintf("function(props) {
 
-      var n = props.nodes[0];
+            var n = props.nodes[0];
 
-      if(n) Shiny.setInputValue('%s', {id: n, ts: Date.now()}, {priority:'event'});
+            if(n) Shiny.setInputValue('%s', {id: n, ts: Date.now()}, {priority:'event'});
 
     }", ns("vis_click"))
 
-      )
+            )
 
 
 
-      add_debug("Render complete")
+            add_debug("Render complete")
 
-      vis
+            vis
 
     })
 
@@ -1514,7 +1514,7 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
     shiny::observeEvent(input$vis_click, {
 
-      add_debug(sprintf("Click: %s", input$vis_click$id), "CLICK")
+            add_debug(sprintf("Click: %s", input$vis_click$id), "CLICK")
 
     })
 
@@ -1530,31 +1530,31 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
     output$vis_stats <- shiny::renderPrint({
 
-      net <- tryCatch(net_data(), error = function(e) NULL)
+            net <- tryCatch(net_data(), error = function(e) NULL)
 
-      if (is.null(net)) {
+            if (is.null(net)) {
 
         cat("No data\n")
 
         return()
 
-      }
+            }
 
-      pw <- ifelse(is.null(net$nodes$pathway), 0, nrow(net$nodes$pathway))
+            pw <- ifelse(is.null(net$nodes$pathway), 0, nrow(net$nodes$pathway))
 
-      gene <- ifelse(is.null(net$nodes$gene), 0, nrow(net$nodes$gene))
+            gene <- ifelse(is.null(net$nodes$gene), 0, nrow(net$nodes$gene))
 
-      edge <- ifelse(is.null(net$edges), 0, nrow(net$edges))
+            edge <- ifelse(is.null(net$edges), 0, nrow(net$edges))
 
-      le_edges <- ifelse(is.null(net$edges), 0, sum(net$edges$is_leading_edge, na.rm = TRUE))
+            le_edges <- ifelse(is.null(net$edges), 0, sum(net$edges$is_leading_edge, na.rm = TRUE))
 
-      cat(sprintf("Pathways: %d\n", pw))
+            cat(sprintf("Pathways: %d\n", pw))
 
-      cat(sprintf("Hub Genes: %d\n", gene))
+            cat(sprintf("Hub Genes: %d\n", gene))
 
-      cat(sprintf("Total Edges: %d\n", edge))
+            cat(sprintf("Total Edges: %d\n", edge))
 
-      cat(sprintf("LE Edges: %d\n", le_edges))
+            cat(sprintf("LE Edges: %d\n", le_edges))
 
     })
 
@@ -1570,33 +1570,33 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
     output$vis_status_text <- shiny::renderUI({
 
-      net <- tryCatch(net_data(), error = function(e) NULL)
+            net <- tryCatch(net_data(), error = function(e) NULL)
 
-      if (is.null(net)) {
+            if (is.null(net)) {
 
         return(shiny::span("No data", style = "color: #ffcccc;"))
 
-      }
+            }
 
-      pw <- ifelse(is.null(net$nodes$pathway), 0, nrow(net$nodes$pathway))
+            pw <- ifelse(is.null(net$nodes$pathway), 0, nrow(net$nodes$pathway))
 
-      gene <- ifelse(is.null(net$nodes$gene), 0, nrow(net$nodes$gene))
+            gene <- ifelse(is.null(net$nodes$gene), 0, nrow(net$nodes$gene))
 
-      edge <- ifelse(is.null(net$edges), 0, nrow(net$edges))
+            edge <- ifelse(is.null(net$edges), 0, nrow(net$edges))
 
-      le_edges <- ifelse(is.null(net$edges), 0, sum(net$edges$is_leading_edge, na.rm = TRUE))
+            le_edges <- ifelse(is.null(net$edges), 0, sum(net$edges$is_leading_edge, na.rm = TRUE))
 
-      physics <- if (isTRUE(input$vis_physics)) "ON" else "OFF"
+            physics <- if (isTRUE(input$vis_physics)) "ON" else "OFF"
 
 
 
-      shiny::tagList(
+            shiny::tagList(
 
         shiny::strong(sprintf(
 
-          "HubGene Network | %d Pathways + %d Hub Genes + %d Edges (LE: %d)",
+                    "HubGene Network | %d Pathways + %d Hub Genes + %d Edges (LE: %d)",
 
-          pw, gene, edge, le_edges
+                    pw, gene, edge, le_edges
 
         )),
 
@@ -1604,13 +1604,13 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
         htmltools::tags$small(sprintf(
 
-          "Physics: %s (Barnes-Hut) | FDR < %.2f | tooltipDelay: 300ms ",
+                    "Physics: %s (Barnes-Hut) | FDR < %.2f | tooltipDelay: 300ms ",
 
-          physics, input$vis_fdr %||% 0.25
+                    physics, input$vis_fdr %||% 0.25
 
         ))
 
-      )
+            )
 
     })
 
@@ -1626,31 +1626,31 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
     output$vis_pathway_list <- shiny::renderUI({
 
-      pathways <- final_pathways()
+            pathways <- final_pathways()
 
-      net <- tryCatch(net_data(), error = function(e) NULL)
+            net <- tryCatch(net_data(), error = function(e) NULL)
 
 
 
-      if (length(pathways) == 0) {
+            if (length(pathways) == 0) {
 
         return(shiny::div("No pathways", style = "color: #856404;"))
 
-      }
+            }
 
-      data_list <- data_prep_list$data()
+            data_list <- data_prep_list$data()
 
-      df <- data_list$df
+            df <- data_list$df
 
 
 
-      lapply(pathways, function(pid) {
+            lapply(pathways, function(pid) {
 
         row_idx <- which(df$ID == pid)
 
         if (length(row_idx) == 0) {
 
-          return(NULL)
+                    return(NULL)
 
         }
 
@@ -1660,23 +1660,23 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
         if (!is.null(net) && !is.null(net$edges)) {
 
-          le_count <- sum(net$edges$target == pid & net$edges$is_leading_edge, na.rm = TRUE)
+                    le_count <- sum(net$edges$target == pid & net$edges$is_leading_edge, na.rm = TRUE)
 
         }
 
         shiny::div(
 
-          style = "background: #f8f9fa; padding: 5px; margin-bottom: 3px; border-left: 3px solid #007bff; font-size: 10px;",
+                    style = "background: #f8f9fa; padding: 5px; margin-bottom: 3px; border-left: 3px solid #007bff; font-size: 10px;",
 
-          shiny::strong(gsub("^[^_]*_", "", pid)),
+                    shiny::strong(gsub("^[^_]*_", "", pid)),
 
-          htmltools::tags$br(),
+                    htmltools::tags$br(),
 
-          sprintf("NES: %.2f | LE: %d", as.numeric(row$NES), le_count)
+                    sprintf("NES: %.2f | LE: %d", as.numeric(row$NES), le_count)
 
         )
 
-      })
+            })
 
     })
 
@@ -1692,57 +1692,57 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
     output$vis_node_detail <- DT::renderDataTable({
 
-      net <- tryCatch(net_data(), error = function(e) NULL)
+            net <- tryCatch(net_data(), error = function(e) NULL)
 
-      if (is.null(net) || (is.null(net$nodes$pathway) && is.null(net$nodes$gene))) {
+            if (is.null(net) || (is.null(net$nodes$pathway) && is.null(net$nodes$gene))) {
 
         return(DT::datatable(data.frame(Message = "No nodes"), options = list(dom = "t")))
 
-      }
+            }
 
 
 
-      # Get symbol_map for displaying original case
+            # Get symbol_map for displaying original case
 
-      symbol_map <- NULL
+            symbol_map <- NULL
 
-      data_list <- tryCatch(data_prep_list$data(), error = function(e) NULL)
+            data_list <- tryCatch(data_prep_list$data(), error = function(e) NULL)
 
-      if (!is.null(data_list) && !is.null(data_prep_list$gsea_res) && !is.null(data_list$contrast_id)) {
+            if (!is.null(data_list) && !is.null(data_prep_list$gsea_res) && !is.null(data_list$contrast_id)) {
 
         symbol_map <- tryCatch(
 
-          {
+                    {
 
             .rebuild_symbol_map(data_prep_list$gsea_res, data_list$contrast_id)
 
-          },
+                    },
 
-          error = function(e) NULL
+                    error = function(e) NULL
 
         )
 
-      }
+            }
 
 
 
-      rows <- list()
+            rows <- list()
 
 
 
-      # Pathway nodes
+            # Pathway nodes
 
-      if (!is.null(net$nodes$pathway) && nrow(net$nodes$pathway) > 0) {
+            if (!is.null(net$nodes$pathway) && nrow(net$nodes$pathway) > 0) {
 
         for (i in seq_len(nrow(net$nodes$pathway))) {
 
-          r <- net$nodes$pathway[i, ]
+                    r <- net$nodes$pathway[i, ]
 
-          le_count <- sum(net$edges$target == r$id & net$edges$is_leading_edge, na.rm = TRUE)
+                    le_count <- sum(net$edges$target == r$id & net$edges$is_leading_edge, na.rm = TRUE)
 
-          total_count <- sum(net$edges$target == r$id, na.rm = TRUE)
+                    total_count <- sum(net$edges$target == r$id, na.rm = TRUE)
 
-          rows[[length(rows) + 1]] <- data.frame(
+                    rows[[length(rows) + 1]] <- data.frame(
 
             ID = r$id,
 
@@ -1760,27 +1760,27 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
             stringsAsFactors = FALSE
 
-          )
+                    )
 
         }
 
-      }
+            }
 
 
 
-      # Gene nodes
+            # Gene nodes
 
-      if (!is.null(net$nodes$gene) && nrow(net$nodes$gene) > 0) {
+            if (!is.null(net$nodes$gene) && nrow(net$nodes$gene) > 0) {
 
         for (i in seq_len(nrow(net$nodes$gene))) {
 
-          r <- net$nodes$gene[i, ]
+                    r <- net$nodes$gene[i, ]
 
-          is_le <- any(net$edges$source == r$id & net$edges$is_leading_edge, na.rm = TRUE)
+                    is_le <- any(net$edges$source == r$id & net$edges$is_leading_edge, na.rm = TRUE)
 
-          gene_display <- .get_display_symbol(r$id, symbol_map)
+                    gene_display <- .get_display_symbol(r$id, symbol_map)
 
-          rows[[length(rows) + 1]] <- data.frame(
+                    rows[[length(rows) + 1]] <- data.frame(
 
             ID = gene_display,
 
@@ -1798,17 +1798,17 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
             stringsAsFactors = FALSE
 
-          )
+                    )
 
         }
 
-      }
+            }
 
 
 
-      df <- do.call(rbind, rows)
+            df <- do.call(rbind, rows)
 
-      DT::datatable(df, rownames = FALSE, options = list(pageLength = 10, dom = "t"))
+            DT::datatable(df, rownames = FALSE, options = list(pageLength = 10, dom = "t"))
 
     })
 
@@ -1816,41 +1816,41 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
     output$vis_edge_detail <- DT::renderDataTable({
 
-      net <- tryCatch(net_data(), error = function(e) NULL)
+            net <- tryCatch(net_data(), error = function(e) NULL)
 
-      if (is.null(net) || is.null(net$edges) || nrow(net$edges) == 0) {
+            if (is.null(net) || is.null(net$edges) || nrow(net$edges) == 0) {
 
         return(DT::datatable(data.frame(Message = "No edges"), options = list(dom = "t")))
 
-      }
+            }
 
 
 
-      # Get symbol_map for displaying original case
+            # Get symbol_map for displaying original case
 
-      symbol_map <- NULL
+            symbol_map <- NULL
 
-      data_list <- tryCatch(data_prep_list$data(), error = function(e) NULL)
+            data_list <- tryCatch(data_prep_list$data(), error = function(e) NULL)
 
-      if (!is.null(data_list) && !is.null(data_prep_list$gsea_res) && !is.null(data_list$contrast_id)) {
+            if (!is.null(data_list) && !is.null(data_prep_list$gsea_res) && !is.null(data_list$contrast_id)) {
 
         symbol_map <- tryCatch(
 
-          {
+                    {
 
             .rebuild_symbol_map(data_prep_list$gsea_res, data_list$contrast_id)
 
-          },
+                    },
 
-          error = function(e) NULL
+                    error = function(e) NULL
 
         )
 
-      }
+            }
 
 
 
-      rows <- lapply(seq_len(nrow(net$edges)), function(i) {
+            rows <- lapply(seq_len(nrow(net$edges)), function(i) {
 
         r <- net$edges[i, ]
 
@@ -1858,27 +1858,27 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
         data.frame(
 
-          Gene = gene_display,
+                    Gene = gene_display,
 
-          Pathway = r$target,
+                    Pathway = r$target,
 
-          LeadingEdge = ifelse(r$is_leading_edge, "YES", "NO"),
+                    LeadingEdge = ifelse(r$is_leading_edge, "YES", "NO"),
 
-          Width = ifelse(r$is_leading_edge, 3, 1.5),
+                    Width = ifelse(r$is_leading_edge, 3, 1.5),
 
-          Style = ifelse(r$is_leading_edge, "Solid", "Dashed"),
+                    Style = ifelse(r$is_leading_edge, "Solid", "Dashed"),
 
-          stringsAsFactors = FALSE
+                    stringsAsFactors = FALSE
 
         )
 
-      })
+            })
 
 
 
-      df <- do.call(rbind, rows)
+            df <- do.call(rbind, rows)
 
-      DT::datatable(df, rownames = FALSE, options = list(pageLength = 10, dom = "t"))
+            DT::datatable(df, rownames = FALSE, options = list(pageLength = 10, dom = "t"))
 
     })
 
@@ -1904,7 +1904,7 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
     .build_hubgene_export_modal <- function() {
 
-      shiny::modalDialog(
+            shiny::modalDialog(
 
         title = "Export Publication Plot - HubGene Network",
 
@@ -1912,23 +1912,23 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
         shiny::fluidRow(
 
-          shiny::column(5,
+                    shiny::column(5,
 
             shiny::h5("Dimensions"),
 
             shiny::fluidRow(
 
-              shiny::column(6,
+                            shiny::column(6,
 
                 shiny::numericInput(ns("hub_exp_width"),  "Width (inch)",  value = 10, min = 2, max = 24)
 
-              ),
+                            ),
 
-              shiny::column(6,
+                            shiny::column(6,
 
                 shiny::numericInput(ns("hub_exp_height"), "Height (inch)", value = 8, min = 2, max = 24)
 
-              )
+                            )
 
             ),
 
@@ -1940,13 +1940,13 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
             shiny::fluidRow(
 
-              shiny::column(3, shiny::numericInput(ns("hub_exp_margin_top"),    "Top",    value = 18, min = 0, max = 80)),
+                            shiny::column(3, shiny::numericInput(ns("hub_exp_margin_top"),    "Top",    value = 18, min = 0, max = 80)),
 
-              shiny::column(3, shiny::numericInput(ns("hub_exp_margin_bottom"), "Bottom", value = 18, min = 0, max = 80)),
+                            shiny::column(3, shiny::numericInput(ns("hub_exp_margin_bottom"), "Bottom", value = 18, min = 0, max = 80)),
 
-              shiny::column(3, shiny::numericInput(ns("hub_exp_margin_left"),   "Left",   value = 18, min = 0, max = 80)),
+                            shiny::column(3, shiny::numericInput(ns("hub_exp_margin_left"),   "Left",   value = 18, min = 0, max = 80)),
 
-              shiny::column(3, shiny::numericInput(ns("hub_exp_margin_right"),  "Right",  value = 18, min = 0, max = 80))
+                            shiny::column(3, shiny::numericInput(ns("hub_exp_margin_right"),  "Right",  value = 18, min = 0, max = 80))
 
             ),
 
@@ -1956,29 +1956,29 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
             shiny::fluidRow(
 
-              shiny::column(6,
+                            shiny::column(6,
 
                 shiny::downloadButton(ns("hub_exp_download_pdf"),
 
-                  "Download PDF",
+                                    "Download PDF",
 
-                  class = "btn-danger btn-block",
+                                    class = "btn-danger btn-block",
 
-                  icon  = shiny::icon("file-pdf"))
+                                    icon  = shiny::icon("file-pdf"))
 
-              ),
+                            ),
 
-              shiny::column(6,
+                            shiny::column(6,
 
                 shiny::downloadButton(ns("hub_exp_download_png"),
 
-                  "Download PNG",
+                                    "Download PNG",
 
-                  class = "btn-primary btn-block",
+                                    class = "btn-primary btn-block",
 
-                  icon  = shiny::icon("file-image"))
+                                    icon  = shiny::icon("file-image"))
 
-              )
+                            )
 
             ),
 
@@ -1986,27 +1986,27 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
             shiny::fluidRow(
 
-              shiny::column(6,
+                            shiny::column(6,
 
                 shiny::selectInput(ns("hub_exp_format"), "Other format",
 
-                  choices = c("SVG" = "svg", "TIFF" = "tiff"),
+                                    choices = c("SVG" = "svg", "TIFF" = "tiff"),
 
-                  selected = "svg")
+                                    selected = "svg")
 
-              ),
+                            ),
 
-              shiny::column(6,
+                            shiny::column(6,
 
                 shiny::div(style = "margin-top: 22px;",
 
-                  shiny::downloadButton(ns("hub_exp_download_other"),
+                                    shiny::downloadButton(ns("hub_exp_download_other"),
 
                     "Download", class = "btn-default btn-block")
 
                 )
 
-              )
+                            )
 
             ),
 
@@ -2014,39 +2014,39 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
             shiny::fluidRow(
 
-              shiny::column(6,
+                            shiny::column(6,
 
                 shiny::actionButton(ns("hub_exp_copy_code"),
 
-                  "Copy R Code",
+                                    "Copy R Code",
 
-                  class = "btn-info btn-block",
+                                    class = "btn-info btn-block",
 
-                  icon = shiny::icon("clipboard"))
+                                    icon = shiny::icon("clipboard"))
 
-              ),
+                            ),
 
-              shiny::column(6,
+                            shiny::column(6,
 
                 shiny::actionButton(ns("hub_exp_dismiss"),
 
-                  "Close",
+                                    "Close",
 
-                  class = "btn-default btn-block")
+                                    class = "btn-default btn-block")
 
-              )
+                            )
 
             )
 
-          ),
+                    ),
 
-          shiny::column(7,
+                    shiny::column(7,
 
             shiny::h5("Live Preview"),
 
             shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; width:100%; height:520px; display:flex; align-items:center; justify-content:center; overflow:auto;",
 
-              shiny::plotOutput(ns("hub_exp_preview")) |>
+                            shiny::plotOutput(ns("hub_exp_preview")) |>
 
                 shinycssloaders::withSpinner(type = 6, color = "#28a745")
 
@@ -2054,13 +2054,13 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
             shiny::tags$small(style = "color: #666; display:block; margin-top:6px;",
 
-              "Pathway nodes: diamonds; Gene nodes: circles. Preview auto-scaled to fit while keeping the export aspect ratio.")
+                            "Pathway nodes: diamonds; Gene nodes: circles. Preview auto-scaled to fit while keeping the export aspect ratio.")
 
-          )
+                    )
 
         )
 
-      )
+            )
 
     }
 
@@ -2068,15 +2068,15 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
     shiny::observeEvent(input$open_hubgene_export, {
 
-      net <- tryCatch(net_data(), error = function(e) NULL)
+            net <- tryCatch(net_data(), error = function(e) NULL)
 
-      if (is.null(net) || (is.null(net$nodes$pathway) && is.null(net$nodes$gene))) {
+            if (is.null(net) || (is.null(net$nodes$pathway) && is.null(net$nodes$gene))) {
 
         shiny::showNotification("No network to export.", type = "warning"); return()
 
-      }
+            }
 
-      shiny::showModal(.build_hubgene_export_modal())
+            shiny::showModal(.build_hubgene_export_modal())
 
     })
 
@@ -2108,68 +2108,68 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
     # Physical size = width_px / 72 = w_in inches, matching the export.
     .hub_preview_dims <- function(w_in, h_in, res = 72, max_px = 1600) {
 
-      w_in <- suppressWarnings(as.numeric(w_in[1]))
+            w_in <- suppressWarnings(as.numeric(w_in[1]))
 
-      h_in <- suppressWarnings(as.numeric(h_in[1]))
+            h_in <- suppressWarnings(as.numeric(h_in[1]))
 
-      if (length(w_in) == 0 || is.na(w_in) || w_in <= 0) w_in <- 10
+            if (length(w_in) == 0 || is.na(w_in) || w_in <= 0) w_in <- 10
 
-      if (length(h_in) == 0 || is.na(h_in) || h_in <= 0) h_in <- 8
+            if (length(h_in) == 0 || is.na(h_in) || h_in <= 0) h_in <- 8
 
-      scale <- min(1, max_px / (max(w_in, h_in) * res))
+            scale <- min(1, max_px / (max(w_in, h_in) * res))
 
-      list(width  = round(w_in * res * scale),
+            list(width  = round(w_in * res * scale),
 
-           height = round(h_in * res * scale))
+                        height = round(h_in * res * scale))
 
     }
 
     .hubgene_preview_plot <- shiny::reactive({
 
-      code <- tryCatch(.hubgene_export_code(),
+            code <- tryCatch(.hubgene_export_code(),
 
         error = function(e) {
 
-          shiny::showNotification(
+                    shiny::showNotification(
 
             sprintf("[hub preview] code generation failed: %s", e$message),
 
             type = "error", duration = 8)
 
-          ""
+                    ""
 
         })
 
-      if (!nzchar(code)) return(NULL)
+            if (!nzchar(code)) return(NULL)
 
-      eval_env <- new.env(parent = globalenv())
+            eval_env <- new.env(parent = globalenv())
 
-      eval_env$p <- NULL
+            eval_env$p <- NULL
 
-      eval_env$print <- base::invisible
-      eval_env$gsea_res <- gsea_res
+            eval_env$print <- base::invisible
+            eval_env$gsea_res <- gsea_res
 
-      tryCatch(eval(parse(text = code), envir = eval_env),
+            tryCatch(eval(parse(text = code), envir = eval_env),
 
-               error = function(e) {
+                                error = function(e) {
 
-                 shiny::showNotification(
+                                    shiny::showNotification(
 
-                   sprintf("[hub preview] %s", e$message),
+                                        sprintf("[hub preview] %s", e$message),
 
-                   type = "error", duration = 8)
+                                        type = "error", duration = 8)
 
-                 NULL
+                                    NULL
 
-               })
+                                })
 
-      eval_env$p
+            eval_env$p
 
     })
 
     output$hub_exp_preview <- shiny::renderPlot(
 
-      {
+            {
 
         p <- .hubgene_preview_plot()
 
@@ -2177,21 +2177,21 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
         p
 
-      },
+            },
 
-      res  = 72,
+            res  = 72,
 
-      width  = function() {
+            width  = function() {
 
         d <- .hub_preview_dims(input$hub_exp_width, input$hub_exp_height); d$width
 
-      },
+            },
 
-      height = function() {
+            height = function() {
 
         d <- .hub_preview_dims(input$hub_exp_width, input$hub_exp_height); d$height
 
-      }
+            }
 
     )
 
@@ -2199,15 +2199,15 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
     .hubgene_export_code <- function() {
 
-      data_list <- data_prep_list$data()
+            data_list <- data_prep_list$data()
 
-      if (is.null(data_list)) return("")
+            if (is.null(data_list)) return("")
 
-      seed_val <- if (is.null(input$vis_seed)) 42L else as.integer(input$vis_seed)
+            seed_val <- if (is.null(input$vis_seed)) 42L else as.integer(input$vis_seed)
 
-      pw_mode  <- if (is.null(input$vis_pw_size_mode)) "setsize" else input$vis_pw_size_mode
+            pw_mode  <- if (is.null(input$vis_pw_size_mode)) "setsize" else input$vis_pw_size_mode
 
-      generate_hubgene_code(gsea_res_var = "gsea_res",
+            generate_hubgene_code(gsea_res_var = "gsea_res",
 
                             contrast_id  = data_list$contrast_id,
 
@@ -2235,40 +2235,40 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
     .hubgene_render_to_file <- function(file, fmt) {
 
-      code <- .hubgene_export_code()
+            code <- .hubgene_export_code()
 
-      if (!nzchar(code)) return()
+            if (!nzchar(code)) return()
 
-      # parent=globalenv() so lexical lookup resolves attached packages.
+            # parent=globalenv() so lexical lookup resolves attached packages.
 
-      # (baseenv() reproduces the v0.99.11 "could not find function" bug +
+            # (baseenv() reproduces the v0.99.11 "could not find function" bug +
 
-      # the .htm fallback symptom; see IRON FIX comment in commit log.)
+            # the .htm fallback symptom; see IRON FIX comment in commit log.)
 
-      eval_env <- new.env(parent = globalenv())
+            eval_env <- new.env(parent = globalenv())
 
-      eval_env$p <- NULL
+            eval_env$p <- NULL
 
-      eval_env$print <- base::invisible   # suppress popup device; ggsave draws itself
-      eval_env$gsea_res <- gsea_res
+            eval_env$print <- base::invisible   # suppress popup device; ggsave draws itself
+            eval_env$gsea_res <- gsea_res
 
-      tryCatch(eval(parse(text = code), envir = eval_env),
+            tryCatch(eval(parse(text = code), envir = eval_env),
 
-               error = function(e) shiny::showNotification(
+                                error = function(e) shiny::showNotification(
 
-                 sprintf("Render failed: %s", e$message), type = "error", duration = 8))
+                                    sprintf("Render failed: %s", e$message), type = "error", duration = 8))
 
-      if (is.null(eval_env$p)) return()
+            if (is.null(eval_env$p)) return()
 
-      ggplot2::ggsave(file, eval_env$p,
+            ggplot2::ggsave(file, eval_env$p,
 
-                      width  = if (is.null(input$hub_exp_width))  10 else input$hub_exp_width,
+                                            width  = if (is.null(input$hub_exp_width))  10 else input$hub_exp_width,
 
-                      height = if (is.null(input$hub_exp_height))  8 else input$hub_exp_height,
+                                            height = if (is.null(input$hub_exp_height))  8 else input$hub_exp_height,
 
-                      dpi    = if (is.null(input$hub_exp_dpi))   300 else input$hub_exp_dpi,
+                                            dpi    = if (is.null(input$hub_exp_dpi))   300 else input$hub_exp_dpi,
 
-                      device = fmt)
+                                            device = fmt)
 
     }
 
@@ -2276,9 +2276,9 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
     output$hub_exp_download_pdf <- shiny::downloadHandler(
 
-      filename = function() sprintf("GSEAlens_hubgene_%s.pdf", Sys.Date()),
+            filename = function() sprintf("GSEAlens_hubgene_%s.pdf", Sys.Date()),
 
-      content  = function(file) .hubgene_render_to_file(file, "pdf")
+            content  = function(file) .hubgene_render_to_file(file, "pdf")
 
     )
 
@@ -2286,9 +2286,9 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
     output$hub_exp_download_png <- shiny::downloadHandler(
 
-      filename = function() sprintf("GSEAlens_hubgene_%s.png", Sys.Date()),
+            filename = function() sprintf("GSEAlens_hubgene_%s.png", Sys.Date()),
 
-      content  = function(file) .hubgene_render_to_file(file, "png")
+            content  = function(file) .hubgene_render_to_file(file, "png")
 
     )
 
@@ -2296,11 +2296,11 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
     output$hub_exp_download_other <- shiny::downloadHandler(
 
-      filename = function() sprintf("GSEAlens_hubgene_%s.%s", Sys.Date(),
+            filename = function() sprintf("GSEAlens_hubgene_%s.%s", Sys.Date(),
 
                                     if (is.null(input$hub_exp_format)) "svg" else input$hub_exp_format),
 
-      content  = function(file) .hubgene_render_to_file(file, input$hub_exp_format)
+            content  = function(file) .hubgene_render_to_file(file, input$hub_exp_format)
 
     )
 
@@ -2308,35 +2308,35 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
     shiny::observeEvent(input$hub_exp_copy_code, {
 
-      code <- .hubgene_export_code()
+            code <- .hubgene_export_code()
 
-      if (!nzchar(code)) {
+            if (!nzchar(code)) {
 
         shiny::showNotification("Nothing to copy.", type = "warning"); return()
 
-      }
+            }
 
-      ok <- tryCatch({ clipr::write_clip(code); TRUE }, error = function(e) FALSE)
+            ok <- tryCatch({ clipr::write_clip(code); TRUE }, error = function(e) FALSE)
 
-      if (isTRUE(ok)) {
+            if (isTRUE(ok)) {
 
         shiny::showNotification("R code copied to clipboard.", type = "message")
 
-      } else {
+            } else {
 
         shiny::showModal(shiny::modalDialog(
 
-          title = "Reproducible R Code (copy manually)",
+                    title = "Reproducible R Code (copy manually)",
 
-          size = "l", easyClose = TRUE,
+                    size = "l", easyClose = TRUE,
 
-          shiny::pre(style = "max-height: 60vh; overflow-y: auto; font-size: 11px;", code),
+                    shiny::pre(style = "max-height: 60vh; overflow-y: auto; font-size: 11px;", code),
 
-          footer = shiny::modalButton("Close")
+                    footer = shiny::modalButton("Close")
 
         ))
 
-      }
+            }
 
     })
 
@@ -2344,7 +2344,7 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
     return(list(final_pathways = final_pathways))
 
-  })
+    })
 
 }
 

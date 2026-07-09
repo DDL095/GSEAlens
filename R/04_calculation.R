@@ -81,57 +81,57 @@ batch_calc_gsea <- function(gsea_env,
 
                             chunk_size = NULL) {
 
-  .check_gsea_env(gsea_env)
+    .check_gsea_env(gsea_env)
 
 
 
-  start_time <- Sys.time()
+    start_time <- Sys.time()
 
-  start_ms <- as.numeric(start_time) * 1000
+    start_ms <- as.numeric(start_time) * 1000
 
 
 
-  series_dir <- file.path(output_dir, custom_series_name)
+    series_dir <- file.path(output_dir, custom_series_name)
 
-  if (!dir.exists(series_dir)) {
+    if (!dir.exists(series_dir)) {
 
     dir.create(series_dir, recursive = TRUE, showWarnings = FALSE)
 
-  }
+    }
 
 
 
-  rds_name <- sprintf(
+    rds_name <- sprintf(
 
     "GSEA_Capsule_[%s]_[%s].rds",
 
     custom_series_name, gsea_env$geneset$name
 
-  )
+    )
 
-  rds_path <- file.path(series_dir, rds_name)
+    rds_path <- file.path(series_dir, rds_name)
 
 
 
-  if (file.exists(rds_path) && !force) {
+    if (file.exists(rds_path) && !force) {
 
     message(sprintf("Cache hit! Existing GSEA capsule detected: %s", rds_name))
 
     return(readRDS(rds_path))
 
-  }
+    }
 
 
 
-  registry <- gsea_env$contrast_registry
+    registry <- gsea_env$contrast_registry
 
-  de_store <- gsea_env$de_store
+    de_store <- gsea_env$de_store
 
 
 
-  task_metadata <- list()
+    task_metadata <- list()
 
-  for (i in seq_len(nrow(registry))) {
+    for (i in seq_len(nrow(registry))) {
 
     row <- registry[i, ]
 
@@ -139,21 +139,21 @@ batch_calc_gsea <- function(gsea_env,
 
     task_metadata[[cid]] <- list(
 
-      task_id = cid,
+            task_id = cid,
 
-      left_group = row$left_group,
+            left_group = row$left_group,
 
-      right_group = row$right_group,
+            right_group = row$right_group,
 
-      is_reversed = FALSE
+            is_reversed = FALSE
 
     )
 
     if (bidirectional) {
 
-      rev_cid <- paste(row$right_group, row$left_group, sep = "_vs_")
+            rev_cid <- paste(row$right_group, row$left_group, sep = "_vs_")
 
-      task_metadata[[rev_cid]] <- list(
+            task_metadata[[rev_cid]] <- list(
 
         task_id = rev_cid,
 
@@ -163,76 +163,76 @@ batch_calc_gsea <- function(gsea_env,
 
         is_reversed = TRUE
 
-      )
+            )
 
     }
 
-  }
+    }
 
 
 
-  total_tasks <- length(task_metadata)
+    total_tasks <- length(task_metadata)
 
-  message(sprintf("Ready: %d contrast tasks pending calculation...", total_tasks))
-
-
-
-  # Raise future.globals.maxSize for the duration of this call to accommodate
-
-  # large globals (full DE table + gene set dictionary). Restore the user's
-
-  # original option on exit to avoid leaking the inflated limit.
-
-  old_max_size <- getOption("future.globals.maxSize")
-
-  options(future.globals.maxSize = 192 * 1024^3)
-
-  on.exit(options(future.globals.maxSize = old_max_size), add = TRUE)
+    message(sprintf("Ready: %d contrast tasks pending calculation...", total_tasks))
 
 
 
-  # Use future::availableCores() instead of parallel::detectCores() so that
+    # Raise future.globals.maxSize for the duration of this call to accommodate
 
-  # the package does not need to declare a dependency on the `parallel`
+    # large globals (full DE table + gene set dictionary). Restore the user's
 
-  # package. `future` is already in Imports and `availableCores()` honors
+    # original option on exit to avoid leaking the inflated limit.
 
-  # future options (e.g. future.availableWorkers) for finer control.
+    old_max_size <- getOption("future.globals.maxSize")
 
-  total_cores <- as.integer(future::availableCores())
+    options(future.globals.maxSize = 192 * 1024^3)
 
-  # B10 fix: guard against NA / non-integer workers input
-  workers <- suppressWarnings(as.integer(workers))
-  if (is.na(workers) || workers < 1) workers <- 1
-  use_cores <- min(total_cores, max(1L, workers))
-
-  message(sprintf("Hardware scheduling: Using %d cores for parallel computation...", use_cores))
+    on.exit(options(future.globals.maxSize = old_max_size), add = TRUE)
 
 
 
-  if (is.null(chunk_size)) {
+    # Use future::availableCores() instead of parallel::detectCores() so that
+
+    # the package does not need to declare a dependency on the `parallel`
+
+    # package. `future` is already in Imports and `availableCores()` honors
+
+    # future options (e.g. future.availableWorkers) for finer control.
+
+    total_cores <- as.integer(future::availableCores())
+
+    # B10 fix: guard against NA / non-integer workers input
+    workers <- suppressWarnings(as.integer(workers))
+    if (is.na(workers) || workers < 1) workers <- 1
+    use_cores <- min(total_cores, max(1L, workers))
+
+    message(sprintf("Hardware scheduling: Using %d cores for parallel computation...", use_cores))
+
+
+
+    if (is.null(chunk_size)) {
 
     chunk_size <- max(1, ceiling(total_tasks / (use_cores * 4)))
 
-  }
+    }
 
 
 
-  # B7 fix: Set the future backend for this call. Save the current plan so it
-  # can be restored on exit (avoid clobbering a plan the user set elsewhere,
-  # e.g. in global.R or another Shiny session). Restoring the old plan also
-  # avoids the global side-effect of forcing everyone back to `sequential`.
-  old_plan <- future::plan(future::multisession, workers = use_cores)
+    # B7 fix: Set the future backend for this call. Save the current plan so it
+    # can be restored on exit (avoid clobbering a plan the user set elsewhere,
+    # e.g. in global.R or another Shiny session). Restoring the old plan also
+    # avoids the global side-effect of forcing everyone back to `sequential`.
+    old_plan <- future::plan(future::multisession, workers = use_cores)
 
-  on.exit(future::plan(old_plan), add = TRUE)
+    on.exit(future::plan(old_plan), add = TRUE)
 
 
 
-  if (use_progress) {
+    if (use_progress) {
 
     if (!requireNamespace("progressr", quietly = TRUE)) {
 
-      stop("Please install progressr package: install.packages('progressr')")
+            stop("Please install progressr package: install.packages('progressr')")
 
     }
 
@@ -240,75 +240,75 @@ batch_calc_gsea <- function(gsea_env,
 
     progressr::handlers("progress")
 
-  }
+    }
 
 
 
-  worker_term2gene <- gsea_env$geneset$term2gene
+    worker_term2gene <- gsea_env$geneset$term2gene
 
-  worker_meta_dict <- gsea_env$geneset$meta_dict
+    worker_meta_dict <- gsea_env$geneset$meta_dict
 
-  worker_de_list <- as.list(de_store)
-
-
-
-  task_names <- names(task_metadata)
-
-  task_chunks <- split(task_names, ceiling(seq_along(task_names) / chunk_size))
+    worker_de_list <- as.list(de_store)
 
 
 
-  message(sprintf(
+    task_names <- names(task_metadata)
+
+    task_chunks <- split(task_names, ceiling(seq_along(task_names) / chunk_size))
+
+
+
+    message(sprintf(
 
     "Chunk strategy: %d chunks, up to %d tasks per chunk",
 
     length(task_chunks), chunk_size
 
-  ))
+    ))
 
 
 
-  p <- progressr::progressor(steps = total_tasks, enable = use_progress)
+    p <- progressr::progressor(steps = total_tasks, enable = use_progress)
 
 
 
-  res_list <- future.apply::future_lapply(
+    res_list <- future.apply::future_lapply(
 
     X = task_chunks,
 
     FUN = function(chunk_task_names,
 
-                   task_metadata,
+                                        task_metadata,
 
-                   de_list,
+                                        de_list,
 
-                   term2gene,
+                                        term2gene,
 
-                   meta_dict,
+                                        meta_dict,
 
-                   minGSSize,
+                                        minGSSize,
 
-                   maxGSSize,
+                                        maxGSSize,
 
-                   pvalueCutoff,
+                                        pvalueCutoff,
 
-                   progressor_fn) {
+                                        progressor_fn) {
 
-      if (!requireNamespace("clusterProfiler", quietly = TRUE) ||
+            if (!requireNamespace("clusterProfiler", quietly = TRUE) ||
 
         !requireNamespace("dplyr", quietly = TRUE)) {
 
         stop("Worker missing required packages")
 
-      }
+            }
 
 
 
-      chunk_results <- list()
+            chunk_results <- list()
 
 
 
-      for (task_name in chunk_task_names) {
+            for (task_name in chunk_task_names) {
 
         task_info <- task_metadata[[task_name]]
 
@@ -318,11 +318,11 @@ batch_calc_gsea <- function(gsea_env,
 
         if (task_info$is_reversed) {
 
-          original_cid <- paste(task_info$right_group, task_info$left_group, sep = "_vs_")
+                    original_cid <- paste(task_info$right_group, task_info$left_group, sep = "_vs_")
 
         } else {
 
-          original_cid <- task_id
+                    original_cid <- task_id
 
         }
 
@@ -334,7 +334,7 @@ batch_calc_gsea <- function(gsea_env,
 
         if (is.null(de_table) || nrow(de_table) == 0) {
 
-          chunk_results[[task_name]] <- list(
+                    chunk_results[[task_name]] <- list(
 
             name = task_id,
 
@@ -344,11 +344,11 @@ batch_calc_gsea <- function(gsea_env,
 
             genelist = c()
 
-          )
+                    )
 
-          if (!is.null(progressor_fn)) progressor_fn()
+                    if (!is.null(progressor_fn)) progressor_fn()
 
-          next
+                    next
 
         }
 
@@ -356,17 +356,17 @@ batch_calc_gsea <- function(gsea_env,
 
         genelist <- tryCatch(
 
-          {
+                    {
 
             .prepare_rank_vector_fast(de_table, flip = task_info$is_reversed)
 
-          },
+                    },
 
-          error = function(e) {
+                    error = function(e) {
 
             c()
 
-          }
+                    }
 
         )
 
@@ -374,7 +374,7 @@ batch_calc_gsea <- function(gsea_env,
 
         if (length(genelist) == 0) {
 
-          chunk_results[[task_name]] <- list(
+                    chunk_results[[task_name]] <- list(
 
             name = task_id,
 
@@ -384,11 +384,11 @@ batch_calc_gsea <- function(gsea_env,
 
             genelist = c()
 
-          )
+                    )
 
-          if (!is.null(progressor_fn)) progressor_fn()
+                    if (!is.null(progressor_fn)) progressor_fn()
 
-          next
+                    next
 
         }
 
@@ -396,33 +396,33 @@ batch_calc_gsea <- function(gsea_env,
 
         detect_case_format <- function(genes) {
 
-          sample <- head(unique(genes), 100)
+                    sample <- head(unique(genes), 100)
 
-          sample_filtered <- sample[!grepl("^[0-9]", sample)]
+                    sample_filtered <- sample[!grepl("^[0-9]", sample)]
 
-          if (length(sample_filtered) == 0) {
+                    if (length(sample_filtered) == 0) {
 
             return("mixed")
 
-          }
+                    }
 
-          n_title <- sum(grepl("^[A-Z][a-z]", sample_filtered))
+                    n_title <- sum(grepl("^[A-Z][a-z]", sample_filtered))
 
-          n_upper <- sum(grepl("^[A-Z]{2,}$", sample_filtered))
+                    n_upper <- sum(grepl("^[A-Z]{2,}$", sample_filtered))
 
-          if (n_title > n_upper) {
+                    if (n_title > n_upper) {
 
             return("title_case")
 
-          }
+                    }
 
-          if (n_upper > n_title) {
+                    if (n_upper > n_title) {
 
             return("upper_case")
 
-          }
+                    }
 
-          return("mixed")
+                    return("mixed")
 
         }
 
@@ -439,59 +439,59 @@ batch_calc_gsea <- function(gsea_env,
 
         if (term2gene_format == "upper_case") {
 
-          if (de_format == "title_case") {
+                    if (de_format == "title_case") {
 
             names(genelist) <- toupper(names(genelist))
 
-          } else if (de_format == "mixed") {
+                    } else if (de_format == "mixed") {
 
             warning(
 
-              "[Ambiguous Gene Symbol Case]\n",
+                            "[Ambiguous Gene Symbol Case]\n",
 
-              "Gene set format: Uppercase (HS / human); DE gene format: Mixed (cannot be auto-detected).\n",
+                            "Gene set format: Uppercase (HS / human); DE gene format: Mixed (cannot be auto-detected).\n",
 
-              "Common cause: a large fraction of gene symbols start with digits (e.g., '12R5', '7SK'), ",
+                            "Common cause: a large fraction of gene symbols start with digits (e.g., '12R5', '7SK'), ",
 
-              "or symbols are non-standard identifiers.\n",
+                            "or symbols are non-standard identifiers.\n",
 
-              "Case auto-conversion was SKIPPED. If DE genes are actually mouse title case (e.g., Gapdh, Irf7), ",
+                            "Case auto-conversion was SKIPPED. If DE genes are actually mouse title case (e.g., Gapdh, Irf7), ",
 
-              "this may silently return zero enrichments. Please manually verify symbol consistency."
+                            "this may silently return zero enrichments. Please manually verify symbol consistency."
 
             )
 
-          }
+                    }
 
         } else if (term2gene_format == "title_case") {
 
-          if (de_format == "upper_case") {
+                    if (de_format == "upper_case") {
 
             stop(
 
-              "[Species Mismatch Error]\nGene set species: Mouse (MM) - requires title case gene symbols\nDE gene format: Uppercase (e.g., GAPDH, IRF7) - appears to be human data\n\nPlease use human gene sets (species='HS') for uppercase DE data,\nor provide mouse DE data with title case gene symbols (e.g., Gapdh, Irf7)."
+                            "[Species Mismatch Error]\nGene set species: Mouse (MM) - requires title case gene symbols\nDE gene format: Uppercase (e.g., GAPDH, IRF7) - appears to be human data\n\nPlease use human gene sets (species='HS') for uppercase DE data,\nor provide mouse DE data with title case gene symbols (e.g., Gapdh, Irf7)."
 
             )
 
-          } else if (de_format == "mixed") {
+                    } else if (de_format == "mixed") {
 
             warning(
 
-              "[Ambiguous Gene Symbol Case]\n",
+                            "[Ambiguous Gene Symbol Case]\n",
 
-              "Gene set format: Title case (MM / mouse); DE gene format: Mixed (cannot be auto-detected).\n",
+                            "Gene set format: Title case (MM / mouse); DE gene format: Mixed (cannot be auto-detected).\n",
 
-              "Case auto-conversion was SKIPPED. If DE genes are actually human uppercase (e.g., GAPDH, IRF7), ",
+                            "Case auto-conversion was SKIPPED. If DE genes are actually human uppercase (e.g., GAPDH, IRF7), ",
 
-              "this may silently return zero enrichments. Please manually verify symbol consistency."
+                            "this may silently return zero enrichments. Please manually verify symbol consistency."
 
             )
 
-          }
+                    }
 
         } else if (term2gene_format == "mixed") {
 
-          warning(
+                    warning(
 
             "[Ambiguous Gene Symbol Case]\n",
 
@@ -501,7 +501,7 @@ batch_calc_gsea <- function(gsea_env,
 
             "Please manually verify that DE gene symbols and gene set symbols use the same convention."
 
-          )
+                    )
 
         }
 
@@ -509,37 +509,37 @@ batch_calc_gsea <- function(gsea_env,
 
         gsea_res <- tryCatch(
 
-          {
+                    {
 
             clusterProfiler::GSEA(
 
-              geneList = genelist,
+                            geneList = genelist,
 
-              TERM2GENE = term2gene,
+                            TERM2GENE = term2gene,
 
-              minGSSize = minGSSize,
+                            minGSSize = minGSSize,
 
-              maxGSSize = maxGSSize,
+                            maxGSSize = maxGSSize,
 
-              pvalueCutoff = pvalueCutoff,
+                            pvalueCutoff = pvalueCutoff,
 
-              pAdjustMethod = "BH",
+                            pAdjustMethod = "BH",
 
-              verbose = FALSE,
+                            verbose = FALSE,
 
-              seed = 123,
+                            seed = 123,
 
-              eps = 0
+                            eps = 0
 
             )
 
-          },
+                    },
 
-          error = function(e) {
+                    error = function(e) {
 
             NULL
 
-          }
+                    }
 
         )
 
@@ -551,7 +551,7 @@ batch_calc_gsea <- function(gsea_env,
 
         if (status == "Success" && !is.null(meta_dict)) {
 
-          gsea_res@result <- .enrich_gsea_result(gsea_res@result, meta_dict)
+                    gsea_res@result <- .enrich_gsea_result(gsea_res@result, meta_dict)
 
         }
 
@@ -559,13 +559,13 @@ batch_calc_gsea <- function(gsea_env,
 
         chunk_results[[task_name]] <- list(
 
-          name = task_id,
+                    name = task_id,
 
-          status = status,
+                    status = status,
 
-          data = gsea_res,
+                    data = gsea_res,
 
-          genelist = genelist
+                    genelist = genelist
 
         )
 
@@ -573,11 +573,11 @@ batch_calc_gsea <- function(gsea_env,
 
         if (!is.null(progressor_fn)) progressor_fn()
 
-      }
+            }
 
 
 
-      return(chunk_results)
+            return(chunk_results)
 
     },
 
@@ -601,63 +601,63 @@ batch_calc_gsea <- function(gsea_env,
 
     future.scheduling = 1.0
 
-  )
+    )
 
 
 
-  # future::plan(future::sequential) is handled by on.exit() above, so that the
+    # future::plan(future::sequential) is handled by on.exit() above, so that the
 
-  # plan is restored even if future_lapply throws.
+    # plan is restored even if future_lapply throws.
 
 
 
-  all_cons <- showConnections(all = TRUE)
+    all_cons <- showConnections(all = TRUE)
 
-  if (nrow(all_cons) > 1) {
+    if (nrow(all_cons) > 1) {
 
     for (con_idx in as.integer(rownames(all_cons))) {
 
-      if (con_idx > 2) {
+            if (con_idx > 2) {
 
         try(suppressWarnings(close.connection(getConnection(con_idx))), silent = TRUE)
 
-      }
+            }
 
     }
 
-  }
+    }
 
 # suppressWarnings: suppress "closing unused connection" noise during cleanup
 
         
 
-  invisible(gc(verbose = FALSE, full = TRUE))
+    invisible(gc(verbose = FALSE, full = TRUE))
 
 
 
-  res_list_flat <- do.call(c, res_list)
+    res_list_flat <- do.call(c, res_list)
 
-  names(res_list_flat) <- names(task_metadata)
-
-
-
-  end_time <- Sys.time()
-
-  end_ms <- as.numeric(end_time) * 1000
+    names(res_list_flat) <- names(task_metadata)
 
 
 
-  final_obj <- create_gsea_res(
+    end_time <- Sys.time()
+
+    end_ms <- as.numeric(end_time) * 1000
+
+
+
+    final_obj <- create_gsea_res(
 
     metadata = list(
 
-      run_time = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
+            run_time = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
 
-      workers_used = use_cores,
+            workers_used = use_cores,
 
-      chunk_size = chunk_size,
+            chunk_size = chunk_size,
 
-      parameters = list(
+            parameters = list(
 
         bidirectional = bidirectional,
 
@@ -667,9 +667,9 @@ batch_calc_gsea <- function(gsea_env,
 
         pvalueCutoff = pvalueCutoff
 
-      ),
+            ),
 
-      project_info = list(
+            project_info = list(
 
         custom_series_name = custom_series_name,
 
@@ -679,9 +679,9 @@ batch_calc_gsea <- function(gsea_env,
 
         rds_path = normalizePath(rds_path, mustWork = FALSE)
 
-      ),
+            ),
 
-      gsea_benchmark = list(
+            gsea_benchmark = list(
 
         start_time = format(start_time, "%Y-%m-%d %H:%M:%OS3"),
 
@@ -699,7 +699,7 @@ batch_calc_gsea <- function(gsea_env,
 
         successful_tasks = sum(vapply(res_list_flat, function(x) x$status == "Success", logical(1)))
 
-      )
+            )
 
     ),
 
@@ -715,33 +715,33 @@ batch_calc_gsea <- function(gsea_env,
 
     results = res_list_flat
 
-  )
+    )
 
 
 
-  saveRDS(final_obj, rds_path)
+    saveRDS(final_obj, rds_path)
 
 
 
-  success_count <- final_obj$metadata$gsea_benchmark$successful_tasks
+    success_count <- final_obj$metadata$gsea_benchmark$successful_tasks
 
 
 
-  message(sprintf(
+    message(sprintf(
 
     "\nCalculation complete! Time elapsed: %.2f seconds",
 
     final_obj$metadata$gsea_benchmark$duration_sec
 
-  ))
+    ))
 
-  message(sprintf("   Successfully analyzed: %d/%d contrasts", success_count, total_tasks))
+    message(sprintf("   Successfully analyzed: %d/%d contrasts", success_count, total_tasks))
 
-  message(sprintf("   Results saved to: %s", rds_path))
+    message(sprintf("   Results saved to: %s", rds_path))
 
 
 
-  return(final_obj)
+    return(final_obj)
 
 }
 
@@ -761,11 +761,11 @@ batch_calc_gsea <- function(gsea_env,
 
 .prepare_rank_vector_fast <- function(de_table, flip = FALSE) {
 
-  # Preserve original case; format standardization is performed in worker function
+    # Preserve original case; format standardization is performed in worker function
 
-  # based on TERM2GENE
+    # based on TERM2GENE
 
-  vals_df <- de_table |>
+    vals_df <- de_table |>
 
     dplyr::filter(!is.na(gene_symbol), gene_symbol != "") |>
 
@@ -777,15 +777,15 @@ batch_calc_gsea <- function(gsea_env,
 
 
 
-  vals <- vals_df$stat
+    vals <- vals_df$stat
 
-  names(vals) <- vals_df$gene_symbol
+    names(vals) <- vals_df$gene_symbol
 
 
 
-  if (flip) vals <- -vals
+    if (flip) vals <- -vals
 
-  sort(vals, decreasing = TRUE)
+    sort(vals, decreasing = TRUE)
 
 }
 
@@ -805,135 +805,135 @@ batch_calc_gsea <- function(gsea_env,
 
 .enrich_gsea_result <- function(result_df, meta_dict) {
 
-  if (!is.data.frame(result_df) || nrow(result_df) == 0) {
+    if (!is.data.frame(result_df) || nrow(result_df) == 0) {
 
     warning("result_df is invalid or empty")
 
     return(result_df)
 
-  }
+    }
 
 
 
-  if (!is.data.frame(meta_dict) || nrow(meta_dict) == 0) {
+    if (!is.data.frame(meta_dict) || nrow(meta_dict) == 0) {
 
     warning("meta_dict is empty, cannot enrich results")
 
     return(result_df)
 
-  }
+    }
 
 
 
-  if (!"ID" %in% colnames(result_df) || !"ID" %in% colnames(meta_dict)) {
+    if (!"ID" %in% colnames(result_df) || !"ID" %in% colnames(meta_dict)) {
 
     stop("Both result_df and meta_dict must contain 'ID' column")
 
-  }
+    }
 
 
 
-  original_rownames <- rownames(result_df)
+    original_rownames <- rownames(result_df)
 
-  original_ids <- result_df$ID
-
-
-
-  required_cols <- c("ID", "Description", "URL", "Collection", "Subcollection", "Combo_Name")
+    original_ids <- result_df$ID
 
 
 
-  for (col in required_cols) {
+    required_cols <- c("ID", "Description", "URL", "Collection", "Subcollection", "Combo_Name")
+
+
+
+    for (col in required_cols) {
 
     if (!col %in% colnames(meta_dict)) {
 
-      warning(sprintf("meta_dict missing column '%s', creating placeholder", col))
+            warning(sprintf("meta_dict missing column '%s', creating placeholder", col))
 
-      meta_dict[[col]] <- NA_character_
+            meta_dict[[col]] <- NA_character_
 
     }
 
-  }
+    }
 
 
 
-  if (all(is.na(meta_dict$Subcollection)) || is.null(meta_dict$Subcollection)) {
+    if (all(is.na(meta_dict$Subcollection)) || is.null(meta_dict$Subcollection)) {
 
     meta_dict$Subcollection <- ""
 
-  }
+    }
 
 
 
-  if (all(is.na(meta_dict$Combo_Name))) {
+    if (all(is.na(meta_dict$Combo_Name))) {
 
     meta_dict$Combo_Name <- ifelse(
 
-      is.na(meta_dict$Subcollection) | meta_dict$Subcollection == "",
+            is.na(meta_dict$Subcollection) | meta_dict$Subcollection == "",
 
-      meta_dict$Collection,
+            meta_dict$Collection,
 
-      paste0(meta_dict$Collection, ":", meta_dict$Subcollection)
+            paste0(meta_dict$Collection, ":", meta_dict$Subcollection)
 
     )
 
-  }
+    }
 
 
 
-  core_stat_cols <- c(
+    core_stat_cols <- c(
 
     "ID", "setSize", "enrichmentScore", "NES", "pvalue",
 
     "p.adjust", "qvalue", "rank", "leading_edge", "core_enrichment"
 
-  )
+    )
 
 
 
-  conflict_cols <- c("Description", "URL", "Collection", "Subcollection", "Combo_Name")
+    conflict_cols <- c("Description", "URL", "Collection", "Subcollection", "Combo_Name")
 
 
 
-  cols_to_keep <- setdiff(colnames(result_df), conflict_cols)
+    cols_to_keep <- setdiff(colnames(result_df), conflict_cols)
 
-  result_work <- result_df[, cols_to_keep, drop = FALSE]
-
-
-
-  meta_subset <- meta_dict[, required_cols, drop = FALSE]
+    result_work <- result_df[, cols_to_keep, drop = FALSE]
 
 
 
-  merged_df <- result_work |>
+    meta_subset <- meta_dict[, required_cols, drop = FALSE]
+
+
+
+    merged_df <- result_work |>
 
     dplyr::left_join(
 
-      meta_subset,
+            meta_subset,
 
-      by = "ID",
+            by = "ID",
 
-      suffix = c("", "_meta")
+            suffix = c("", "_meta")
 
     )
 
 
 
-  if (nrow(merged_df) != nrow(result_work)) {
+    if (nrow(merged_df) != nrow(result_work)) {
 
     warning(sprintf(
 
-      "Row count changed during merge: %d -> %d",
+            "Row count changed during merge: %d -> %d",
 
-      nrow(result_work), nrow(merged_df)
+            nrow(result_work), nrow(merged_df)
 
     ))
 
-  }
+    }
 
 
 
-  merged_df$Display_Collection <- dplyr::coalesce(
+    merged_df$Display_Collection <- dplyr::coalesce(
 
     merged_df$Combo_Name,
 
@@ -941,13 +941,13 @@ batch_calc_gsea <- function(gsea_env,
 
     "Unknown"
 
-  )
+    )
 
-  merged_df$Display_Collection <- as.factor(merged_df$Display_Collection)
+    merged_df$Display_Collection <- as.factor(merged_df$Display_Collection)
 
 
 
-  merged_df$Pathway_Link <- ifelse(
+    merged_df$Pathway_Link <- ifelse(
 
     is.na(merged_df$URL) | merged_df$URL == "",
 
@@ -955,69 +955,69 @@ batch_calc_gsea <- function(gsea_env,
 
     sprintf('<a href="%s" target="_blank">%s</a>', merged_df$URL, merged_df$ID)
 
-  )
+    )
 
 
 
-  if ("Description_meta" %in% colnames(merged_df)) {
+    if ("Description_meta" %in% colnames(merged_df)) {
 
     merged_df$Description <- dplyr::coalesce(
 
-      merged_df$Description_meta,
+            merged_df$Description_meta,
 
-      merged_df$ID
+            merged_df$ID
 
     )
 
     merged_df$Description_meta <- NULL
 
-  } else if (!"Description" %in% colnames(merged_df)) {
+    } else if (!"Description" %in% colnames(merged_df)) {
 
     merged_df$Description <- merged_df$ID
 
-  }
+    }
 
 
 
-  merged_df$Description[is.na(merged_df$Description)] <- merged_df$ID[is.na(merged_df$Description)]
+    merged_df$Description[is.na(merged_df$Description)] <- merged_df$ID[is.na(merged_df$Description)]
 
 
 
-  meta_temp_cols <- grep("_meta$", colnames(merged_df), value = TRUE)
+    meta_temp_cols <- grep("_meta$", colnames(merged_df), value = TRUE)
 
-  if (length(meta_temp_cols) > 0) {
+    if (length(meta_temp_cols) > 0) {
 
     merged_df <- merged_df[, !(colnames(merged_df) %in% meta_temp_cols), drop = FALSE]
 
-  }
+    }
 
 
 
-  merged_df <- as.data.frame(merged_df)
+    merged_df <- as.data.frame(merged_df)
 
-  if ("ID" %in% colnames(merged_df)) {
+    if ("ID" %in% colnames(merged_df)) {
 
     if (any(duplicated(merged_df$ID))) {
 
-      warning("Duplicate IDs found in result, using original rownames")
+            warning("Duplicate IDs found in result, using original rownames")
 
-      rownames(merged_df) <- original_rownames
+            rownames(merged_df) <- original_rownames
 
     } else {
 
-      rownames(merged_df) <- merged_df$ID
+            rownames(merged_df) <- merged_df$ID
 
     }
 
-  } else {
+    } else {
 
     rownames(merged_df) <- original_rownames
 
-  }
+    }
 
 
 
-  standard_cols <- c(
+    standard_cols <- c(
 
     "ID", "setSize", "enrichmentScore", "NES", "pvalue",
 
@@ -1027,51 +1027,51 @@ batch_calc_gsea <- function(gsea_env,
 
     "Display_Collection", "Pathway_Link"
 
-  )
+    )
 
 
 
-  missing_standard <- setdiff(standard_cols, colnames(merged_df))
+    missing_standard <- setdiff(standard_cols, colnames(merged_df))
 
-  if (length(missing_standard) > 0) {
+    if (length(missing_standard) > 0) {
 
     warning(sprintf(
 
-      "Final result missing standard columns: %s",
+            "Final result missing standard columns: %s",
 
-      paste(missing_standard, collapse = ", ")
+            paste(missing_standard, collapse = ", ")
 
     ))
 
     for (col in missing_standard) {
 
-      merged_df[[col]] <- NA_character_
+            merged_df[[col]] <- NA_character_
 
     }
 
-  }
+    }
 
 
 
-  present_cols <- intersect(standard_cols, colnames(merged_df))
+    present_cols <- intersect(standard_cols, colnames(merged_df))
 
-  extra_cols <- setdiff(colnames(merged_df), standard_cols)
+    extra_cols <- setdiff(colnames(merged_df), standard_cols)
 
-  merged_df <- merged_df[, c(present_cols, extra_cols), drop = FALSE]
+    merged_df <- merged_df[, c(present_cols, extra_cols), drop = FALSE]
 
 
 
-  message(sprintf(
+    message(sprintf(
 
     "[.enrich_gsea_result] Successfully enriched: %d rows x %d columns",
 
     nrow(merged_df), ncol(merged_df)
 
-  ))
+    ))
 
 
 
-  return(merged_df)
+    return(merged_df)
 
 }
 

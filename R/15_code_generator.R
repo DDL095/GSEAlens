@@ -50,93 +50,93 @@
 
 generate_pathway_plot_code <- function(GSEAlens_res,
 
-                                       contrast_id,
+                                                                                contrast_id,
 
-                                       target_pathways,
+                                                                                target_pathways,
 
-                                       user_genes = character(0),
+                                                                                user_genes = character(0),
 
-                                       pathway_genes = character(0),
+                                                                                pathway_genes = character(0),
 
-                                       expr_type = "logcpm") {
+                                                                                expr_type = "logcpm") {
 
-  # Extract necessary information
+    # Extract necessary information
 
-  GSEAlens_task <- tryCatch(
+    GSEAlens_task <- tryCatch(
 
     {
 
-      GSEAlens::extract_gsea_task(GSEAlens_res, contrast_id)
+            GSEAlens::extract_gsea_task(GSEAlens_res, contrast_id)
 
     },
 
     error = function(e) {
 
-      stop("Failed to extract task for contrast '", contrast_id, "': ", e$message)
+            stop("Failed to extract task for contrast '", contrast_id, "': ", e$message)
 
     }
 
-  )
+    )
 
 
 
-  left_group <- GSEAlens_task$meta$left_group
+    left_group <- GSEAlens_task$meta$left_group
 
-  right_group <- GSEAlens_task$meta$right_group
+    right_group <- GSEAlens_task$meta$right_group
 
 
 
-  # Color palette
+    # Color palette
 
-  colors <- c(
+    colors <- c(
 
     "#E41A1C", "#377EB8", "#4DAF4A", "#984EA3",
 
     "#FF7F00", "#A65628", "#F781BF", "#999999"
 
-  )
+    )
 
-  color_str <- paste(colors[seq_len(min(4, length(target_pathways)))], collapse = '", "')
-
-
-
-  # Format pathway vector
-
-  pathways_str <- paste(sprintf('    "%s"', target_pathways), collapse = ",\n")
+    color_str <- paste(colors[seq_len(min(4, length(target_pathways)))], collapse = '", "')
 
 
 
-  # Format user genes vector (no newline)
+    # Format pathway vector
 
-  if (length(user_genes) > 0) {
+    pathways_str <- paste(sprintf('    "%s"', target_pathways), collapse = ",\n")
+
+
+
+    # Format user genes vector (no newline)
+
+    if (length(user_genes) > 0) {
 
     genes_str <- paste0('GSEAlens_genes <- c("', paste(user_genes, collapse = '", "'), '")')
 
-  } else {
+    } else {
 
     genes_str <- "GSEAlens_genes <- character(0)  # No genes of interest specified"
 
-  }
+    }
 
 
 
-  # Format pathway genes vector (no newline)
+    # Format pathway genes vector (no newline)
 
-  if (length(pathway_genes) > 0) {
+    if (length(pathway_genes) > 0) {
 
     pathway_str <- paste0('GSEAlens_pathway_genes <- c("', paste(pathway_genes, collapse = '", "'), '")')
 
-  } else {
+    } else {
 
     pathway_str <- "GSEAlens_pathway_genes <- character(0)  # No pathway genes specified"
 
-  }
+    }
 
 
 
-  # Build code using paste0
+    # Build code using paste0
 
-  code <- paste0(
+    code <- paste0(
 
     '# =============================================================================
 
@@ -205,15 +205,15 @@ library(ggrepel)
 
 GSEAlens_combined_plot <- plot_directional_gsea(
 
-  directional_gsea_obj = GSEAlens_task,
+    directional_gsea_obj = GSEAlens_task,
 
-  target_pathways = GSEAlens_pathways,
+    target_pathways = GSEAlens_pathways,
 
-  subPlot = 3,
+    subPlot = 3,
 
-  curveCol = c("', color_str, '"),
+    curveCol = c("', color_str, '"),
 
-  main_title = paste0("Combined: ", length(GSEAlens_pathways), " Pathways")
+    main_title = paste0("Combined: ", length(GSEAlens_pathways), " Pathways")
 
 )
 
@@ -243,17 +243,17 @@ GSEAlens_pval_thresh <- 0.05
 
 GSEAlens_color_map <- c(
 
-  "both" = "#9C27B0",    # Purple: User & Pathway
+    "both" = "#9C27B0",    # Purple: User & Pathway
 
-  "user" = "#4DAF4A",    # Green: User only
+    "user" = "#4DAF4A",    # Green: User only
 
-  "pathway" = "#FF9800",  # Orange: Pathway only
+    "pathway" = "#FF9800",  # Orange: Pathway only
 
-  "up" = "#E41A1C",      # Red: Up-regulated
+    "up" = "#E41A1C",      # Red: Up-regulated
 
-  "down" = "#377EB8",     # Blue: Down-regulated
+    "down" = "#377EB8",     # Blue: Down-regulated
 
-  "ns" = "#C0C0C0"       # Gray: Not significant
+    "ns" = "#C0C0C0"       # Gray: Not significant
 
 )
 
@@ -277,17 +277,17 @@ GSEAlens_de_df$GSEAlens_is_significant <- abs(GSEAlens_de_df$logFC) > GSEAlens_l
 
 GSEAlens_de_df$GSEAlens_category <- dplyr::case_when(
 
-  GSEAlens_de_df$GSEAlens_is_user & GSEAlens_de_df$GSEAlens_is_pathway ~ "both",
+    GSEAlens_de_df$GSEAlens_is_user & GSEAlens_de_df$GSEAlens_is_pathway ~ "both",
 
-  GSEAlens_de_df$GSEAlens_is_user ~ "user",
+    GSEAlens_de_df$GSEAlens_is_user ~ "user",
 
-  GSEAlens_de_df$GSEAlens_is_pathway ~ "pathway",
+    GSEAlens_de_df$GSEAlens_is_pathway ~ "pathway",
 
-  GSEAlens_de_df$GSEAlens_is_significant & GSEAlens_de_df$logFC > 0 ~ "up",
+    GSEAlens_de_df$GSEAlens_is_significant & GSEAlens_de_df$logFC > 0 ~ "up",
 
-  GSEAlens_de_df$GSEAlens_is_significant & GSEAlens_de_df$logFC < 0 ~ "down",
+    GSEAlens_de_df$GSEAlens_is_significant & GSEAlens_de_df$logFC < 0 ~ "down",
 
-  TRUE ~ "ns"
+    TRUE ~ "ns"
 
 )
 
@@ -297,15 +297,15 @@ GSEAlens_de_df$GSEAlens_category <- dplyr::case_when(
 
 GSEAlens_de_df$GSEAlens_plot_order <- dplyr::case_when(
 
-  GSEAlens_de_df$GSEAlens_is_user & GSEAlens_de_df$GSEAlens_is_pathway ~ 5,  # both - top layer
+    GSEAlens_de_df$GSEAlens_is_user & GSEAlens_de_df$GSEAlens_is_pathway ~ 5,  # both - top layer
 
-  GSEAlens_de_df$GSEAlens_is_user ~ 4,  # user
+    GSEAlens_de_df$GSEAlens_is_user ~ 4,  # user
 
-  GSEAlens_de_df$GSEAlens_is_pathway ~ 3,  # pathway
+    GSEAlens_de_df$GSEAlens_is_pathway ~ 3,  # pathway
 
-  GSEAlens_de_df$GSEAlens_is_significant ~ 2,  # up/down
+    GSEAlens_de_df$GSEAlens_is_significant ~ 2,  # up/down
 
-  TRUE ~ 1  # ns - bottom layer
+    TRUE ~ 1  # ns - bottom layer
 
 )
 
@@ -337,11 +337,11 @@ GSEAlens_n_both <- sum(GSEAlens_de_df$GSEAlens_is_user & GSEAlens_de_df$GSEAlens
 
 GSEAlens_volcano_plot <- ggplot(GSEAlens_de_df, aes(x = logFC, y = -log10(pvalue))) +
 
-  geom_point(aes(color = GSEAlens_category), alpha = 0.6, size = 3) +
+    geom_point(aes(color = GSEAlens_category), alpha = 0.6, size = 3) +
 
-  # Add ggrepel labels for both and user genes
+    # Add ggrepel labels for both and user genes
 
-  ggrepel::geom_text_repel(
+    ggrepel::geom_text_repel(
 
     data = GSEAlens_de_df[GSEAlens_de_df$GSEAlens_is_user, ],
 
@@ -363,9 +363,9 @@ GSEAlens_volcano_plot <- ggplot(GSEAlens_de_df, aes(x = logFC, y = -log10(pvalue
 
     color = ifelse(GSEAlens_de_df$GSEAlens_is_user[GSEAlens_de_df$GSEAlens_is_user] & GSEAlens_de_df$GSEAlens_is_pathway[GSEAlens_de_df$GSEAlens_is_user], "#9C27B0", "#4DAF4A")
 
-  ) +
+    ) +
 
-  scale_color_manual(
+    scale_color_manual(
 
     values = GSEAlens_color_map,
 
@@ -373,19 +373,19 @@ GSEAlens_volcano_plot <- ggplot(GSEAlens_de_df, aes(x = logFC, y = -log10(pvalue
 
     labels = c("Both", "Selected", "Pathway", "Up", "Down", "NS")
 
-  ) +
+    ) +
 
-  labs(
+    labs(
 
     title = paste0(GSEAlens_left_group, " vs ", GSEAlens_right_group, " - DE Volcano"),
 
     subtitle = paste0(
 
-  "Both: ", GSEAlens_n_both, " | Selected: ", GSEAlens_n_user, " | Pathway: ", GSEAlens_n_pathway, " | Up: ", GSEAlens_n_up, " | Down: ", GSEAlens_n_down, " | NS: ", GSEAlens_n_ns,
+    "Both: ", GSEAlens_n_both, " | Selected: ", GSEAlens_n_user, " | Pathway: ", GSEAlens_n_pathway, " | Up: ", GSEAlens_n_up, " | Down: ", GSEAlens_n_down, " | NS: ", GSEAlens_n_ns,
 
-  "\n",
+    "\n",
 
-  tail(GSEAlens_pathways, 1)
+    tail(GSEAlens_pathways, 1)
 
 ),
 
@@ -393,11 +393,11 @@ GSEAlens_volcano_plot <- ggplot(GSEAlens_de_df, aes(x = logFC, y = -log10(pvalue
 
     y = "-log10(P-value)"
 
-  ) +
+    ) +
 
-  theme_bw() +
+    theme_bw() +
 
-  theme(
+    theme(
 
     legend.position = "bottom",
 
@@ -407,15 +407,15 @@ GSEAlens_volcano_plot <- ggplot(GSEAlens_de_df, aes(x = logFC, y = -log10(pvalue
 
     plot.subtitle = element_text(hjust = 0.5, color = "gray40", lineheight = 0.8)
 
-  ) +
+    ) +
 
-  geom_vline(xintercept = c(-GSEAlens_logfc_thresh, GSEAlens_logfc_thresh),
+    geom_vline(xintercept = c(-GSEAlens_logfc_thresh, GSEAlens_logfc_thresh),
 
-             linetype = "dashed", color = "gray50", alpha = 0.7) +
+                            linetype = "dashed", color = "gray50", alpha = 0.7) +
 
-  geom_hline(yintercept = -log10(GSEAlens_pval_thresh),
+    geom_hline(yintercept = -log10(GSEAlens_pval_thresh),
 
-             linetype = "dashed", color = "gray50", alpha = 0.7)
+                            linetype = "dashed", color = "gray50", alpha = 0.7)
 
 
 
@@ -435,11 +435,11 @@ print(GSEAlens_volcano_plot)
 
 '
 
-  )
+    )
 
 
 
-  return(code)
+    return(code)
 
 }
 
@@ -465,7 +465,7 @@ print(GSEAlens_volcano_plot)
 
 #' @examples
 
-#' \donttest{
+#' \dontrun{
 
 #' code <- generate_joint_canvas_code(GSEAlens_res = gsea_res,
 
@@ -479,41 +479,41 @@ print(GSEAlens_volcano_plot)
 
 generate_joint_canvas_code <- function(GSEAlens_res,
 
-                                       contrast_ids,
+                                                                                contrast_ids,
 
-                                       target_pathways,
+                                                                                target_pathways,
 
-                                       ncol = 2) {
+                                                                                ncol = 2) {
 
-  # Format contrast IDs
+    # Format contrast IDs
 
-  contrasts_str <- paste(sprintf('    "%s"', contrast_ids), collapse = ",\n")
-
-
-
-  # Format pathways
-
-  pathways_str <- paste(sprintf('    "%s"', target_pathways), collapse = ",\n")
+    contrasts_str <- paste(sprintf('    "%s"', contrast_ids), collapse = ",\n")
 
 
 
-  # Color palette
+    # Format pathways
 
-  colors <- c(
+    pathways_str <- paste(sprintf('    "%s"', target_pathways), collapse = ",\n")
+
+
+
+    # Color palette
+
+    colors <- c(
 
     "#E41A1C", "#377EB8", "#4DAF4A", "#984EA3",
 
     "#FF7F00", "#A65628", "#F781BF", "#999999"
 
-  )
+    )
 
-  color_str <- paste(colors[seq_len(min(4, length(target_pathways)))], collapse = '", "')
+    color_str <- paste(colors[seq_len(min(4, length(target_pathways)))], collapse = '", "')
 
 
 
-  # Build code
+    # Build code
 
-  code <- paste0(
+    code <- paste0(
 
     "# =============================================================================
 
@@ -570,15 +570,15 @@ GSEAlens_plot_list <- list()
 
 for (GSEAlens_i in seq_along(GSEAlens_contrasts)) {
 
-  GSEAlens_contrast_id <- GSEAlens_contrasts[GSEAlens_i]
+    GSEAlens_contrast_id <- GSEAlens_contrasts[GSEAlens_i]
 
 
 
-  GSEAlens_task <- GSEAlens::extract_gsea_task(GSEAlens_res, contrast_id = GSEAlens_contrast_id)
+    GSEAlens_task <- GSEAlens::extract_gsea_task(GSEAlens_res, contrast_id = GSEAlens_contrast_id)
 
 
 
-  GSEAlens_p <- plot_directional_gsea(
+    GSEAlens_p <- plot_directional_gsea(
 
     directional_gsea_obj = GSEAlens_task,
 
@@ -594,11 +594,11 @@ for (GSEAlens_i in seq_along(GSEAlens_contrasts)) {
 
     show_contrast_in_axis = TRUE
 
-  )
+    )
 
 
 
-  GSEAlens_plot_list[[GSEAlens_i]] <- GSEAlens_p
+    GSEAlens_plot_list[[GSEAlens_i]] <- GSEAlens_p
 
 }
 
@@ -608,29 +608,29 @@ for (GSEAlens_i in seq_along(GSEAlens_contrasts)) {
 
 GSEAlens_combined <- patchwork::wrap_plots(
 
-  GSEAlens_plot_list,
+    GSEAlens_plot_list,
 
-  ncol = GSEAlens_ncol,
+    ncol = GSEAlens_ncol,
 
-  nrow = ceiling(length(GSEAlens_plot_list) / GSEAlens_ncol),
+    nrow = ceiling(length(GSEAlens_plot_list) / GSEAlens_ncol),
 
-  byrow = TRUE,
+    byrow = TRUE,
 
-  guides = "collect"
+    guides = "collect"
 
 ) + patchwork::plot_annotation(
 
-  title = paste0("Joint GSEA Canvas: ", length(GSEAlens_contrasts), " contrasts x ", length(GSEAlens_pathways), " pathways"),
+    title = paste0("Joint GSEA Canvas: ", length(GSEAlens_contrasts), " contrasts x ", length(GSEAlens_pathways), " pathways"),
 
-  subtitle = paste0("Arrangement: ", paste(GSEAlens_contrasts, collapse = " -> ")),
+    subtitle = paste0("Arrangement: ", paste(GSEAlens_contrasts, collapse = " -> ")),
 
-  theme = theme(
+    theme = theme(
 
     plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
 
     plot.subtitle = element_text(size = 10, color = "gray50", hjust = 0.5)
 
-  )
+    )
 
 )
 
@@ -648,11 +648,11 @@ print(GSEAlens_combined)
 
 '
 
-  )
+    )
 
 
 
-  return(code)
+    return(code)
 }
 
 
@@ -686,25 +686,25 @@ print(GSEAlens_combined)
 #' cat(code)
 #' @export
 generate_combined_plot_code <- function(gsea_res_var = "gsea_res",
-                                         contrast_id,
-                                         target_pathways,
-                                         subPlot = 3,
-                                         curve_colors = NULL,
-                                         left_group = "Left",
-                                         right_group = "Right") {
-  if (length(target_pathways) == 0) {
+                                                                                    contrast_id,
+                                                                                    target_pathways,
+                                                                                    subPlot = 3,
+                                                                                    curve_colors = NULL,
+                                                                                    left_group = "Left",
+                                                                                    right_group = "Right") {
+    if (length(target_pathways) == 0) {
     return("# No pathways selected; nothing to plot.")
-  }
+    }
 
-  pathways_str <- paste(sprintf('    "%s"', target_pathways), collapse = ",\n")
+    pathways_str <- paste(sprintf('    "%s"', target_pathways), collapse = ",\n")
 
-  if (is.null(curve_colors) || length(curve_colors) == 0) {
+    if (is.null(curve_colors) || length(curve_colors) == 0) {
     curve_colors <- c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3",
-                      "#FF7F00", "#A65628", "#F781BF", "#999999")
-  }
-  color_str <- paste(curve_colors, collapse = '", "')
+                                            "#FF7F00", "#A65628", "#F781BF", "#999999")
+    }
+    color_str <- paste(curve_colors, collapse = '", "')
 
-  sprintf(
+    sprintf(
 '# =============================================================================
 # GSEAlens Combined Pathway Plotting Code
 # Generated by GSEAlens Shiny App
@@ -731,10 +731,10 @@ GSEAlens_task <- GSEAlens::extract_gsea_task(%s, contrast_id = GSEAlens_contrast
 
 # Step 5: Build the combined directional GSEA plot
 GSEAlens_p <- plot_directional_gsea(
-  directional_gsea_obj = GSEAlens_task,
-  target_pathways = GSEAlens_pathways,
-  subPlot = GSEAlens_subPlot,
-  curveCol = c("%s")
+    directional_gsea_obj = GSEAlens_task,
+    target_pathways = GSEAlens_pathways,
+    subPlot = GSEAlens_subPlot,
+    curveCol = c("%s")
 )
 
 # Step 6: Display
@@ -753,7 +753,7 @@ print(GSEAlens_p)
     right_group,
     gsea_res_var,
     color_str
-  )
+    )
 }
 
 
@@ -799,7 +799,7 @@ print(GSEAlens_p)
 
 #' @examples
 
-#' \donttest{
+#' \dontrun{
 
 #' # Show the code in the Shiny app via the "Export Boxplot Data Code" button
 
@@ -823,137 +823,137 @@ print(GSEAlens_p)
 
 generate_boxplot_data_code <- function(GSEAlens_res,
 
-                                       contrast_id,
+                                                                                contrast_id,
 
-                                       gene_symbol,
+                                                                                gene_symbol,
 
-                                       expr_type = "logcpm",
+                                                                                expr_type = "logcpm",
 
-                                       custom_order = NULL) {
+                                                                                custom_order = NULL) {
 
-  # ---- 1. Pull side-info from the live GseaRes (so the generated code is
+    # ---- 1. Pull side-info from the live GseaRes (so the generated code is
 
-  #         informative even if the user just copy-pastes it). ----
+    #         informative even if the user just copy-pastes it). ----
 
-  # Prefer GSEAlens::extract_gsea_task() (same source as generate_pathway_plot_code)
+    # Prefer GSEAlens::extract_gsea_task() (same source as generate_pathway_plot_code)
 
-  # for consistency; fall back to a heuristic split of the contrast ID.
+    # for consistency; fall back to a heuristic split of the contrast ID.
 
-  left_group  <- NA_character_
+    left_group  <- NA_character_
 
-  right_group <- NA_character_
+    right_group <- NA_character_
 
-  gtask <- tryCatch(GSEAlens::extract_gsea_task(GSEAlens_res, contrast_id), error = function(e) NULL)
+    gtask <- tryCatch(GSEAlens::extract_gsea_task(GSEAlens_res, contrast_id), error = function(e) NULL)
 
-  if (!is.null(gtask) && !is.null(gtask$meta)) {
+    if (!is.null(gtask) && !is.null(gtask$meta)) {
 
     left_group  <- gtask$meta$left_group  %||% NA_character_
 
     right_group <- gtask$meta$right_group %||% NA_character_
 
-  }
+    }
 
-  if (is.na(left_group) || is.na(right_group)) {
+    if (is.na(left_group) || is.na(right_group)) {
 
     if (grepl("_vs_", contrast_id, fixed = TRUE)) {
 
-      parts <- strsplit(contrast_id, "_vs_", fixed = TRUE)[[1]]
+            parts <- strsplit(contrast_id, "_vs_", fixed = TRUE)[[1]]
 
-      left_group  <- parts[1]
+            left_group  <- parts[1]
 
-      right_group <- parts[2]
+            right_group <- parts[2]
 
     }
 
-  }
+    }
 
 
 
-  # ---- 2. Determine whether to include the optional ordering block. ----
+    # ---- 2. Determine whether to include the optional ordering block. ----
 
-  has_custom_order <- !is.null(custom_order) &&
+    has_custom_order <- !is.null(custom_order) &&
 
-                      length(custom_order) == 1 &&
+                                            length(custom_order) == 1 &&
 
-                      nzchar(custom_order) &&
+                                            nzchar(custom_order) &&
 
-                      !identical(custom_order, "default")
-
-
-
-  # ---- 3. Build the R script as a single string. ----
-
-  # Use single quotes around user-provided strings; escape any embedded '.
-
-  safe_gene <- gsub("'", "''", gene_symbol %||% "")
-
-  safe_contrast <- gsub("'", "''", contrast_id %||% "")
+                                            !identical(custom_order, "default")
 
 
 
-  ordering_block <- if (has_custom_order) {
+    # ---- 3. Build the R script as a single string. ----
+
+    # Use single quotes around user-provided strings; escape any embedded '.
+
+    safe_gene <- gsub("'", "''", gene_symbol %||% "")
+
+    safe_contrast <- gsub("'", "''", contrast_id %||% "")
+
+
+
+    ordering_block <- if (has_custom_order) {
 
     safe_order <- gsub("'", "''", custom_order)
 
     paste0(
 
-      "\n",
+            "\n",
 
-      "# Optional: apply a custom group ordering (matches the Shiny boxplot)\n",
+            "# Optional: apply a custom group ordering (matches the Shiny boxplot)\n",
 
-      "GSEAlens_custom_order <- '", safe_order, "'\n",
+            "GSEAlens_custom_order <- '", safe_order, "'\n",
 
-      "if (!is.null(GSEAlens_custom_order) &&\n",
+            "if (!is.null(GSEAlens_custom_order) &&\n",
 
-      "    nzchar(GSEAlens_custom_order) &&\n",
+            "    nzchar(GSEAlens_custom_order) &&\n",
 
-      "    !identical(GSEAlens_custom_order, 'default')) {\n",
+            "    !identical(GSEAlens_custom_order, 'default')) {\n",
 
-      "  GSEAlens_sep <- if (grepl('->', GSEAlens_custom_order, fixed = TRUE)) '->' else ','\n",
+            "  GSEAlens_sep <- if (grepl('->', GSEAlens_custom_order, fixed = TRUE)) '->' else ','\n",
 
-      "  GSEAlens_order_parts <- trimws(strsplit(GSEAlens_custom_order, GSEAlens_sep)[[1]])\n",
+            "  GSEAlens_order_parts <- trimws(strsplit(GSEAlens_custom_order, GSEAlens_sep)[[1]])\n",
 
-      "  GSEAlens_actual_groups <- unique(as.character(GSEAlens_box_data$Group))\n",
+            "  GSEAlens_actual_groups <- unique(as.character(GSEAlens_box_data$Group))\n",
 
-      "  GSEAlens_valid_parts <- GSEAlens_order_parts[GSEAlens_order_parts %in% GSEAlens_actual_groups]\n",
+            "  GSEAlens_valid_parts <- GSEAlens_order_parts[GSEAlens_order_parts %in% GSEAlens_actual_groups]\n",
 
-      "  GSEAlens_x_categories <- c(GSEAlens_valid_parts,\n",
+            "  GSEAlens_x_categories <- c(GSEAlens_valid_parts,\n",
 
-      "                              setdiff(GSEAlens_actual_groups, GSEAlens_valid_parts))\n",
+            "                              setdiff(GSEAlens_actual_groups, GSEAlens_valid_parts))\n",
 
-      "  GSEAlens_box_data <- GSEAlens_box_data[GSEAlens_box_data$Group %in% GSEAlens_x_categories, ]\n",
+            "  GSEAlens_box_data <- GSEAlens_box_data[GSEAlens_box_data$Group %in% GSEAlens_x_categories, ]\n",
 
-      "  GSEAlens_box_data$Group <- factor(GSEAlens_box_data$Group,\n",
+            "  GSEAlens_box_data$Group <- factor(GSEAlens_box_data$Group,\n",
 
-      "                                     levels = GSEAlens_x_categories,\n",
+            "                                     levels = GSEAlens_x_categories,\n",
 
-      "                                     ordered = TRUE)\n",
+            "                                     ordered = TRUE)\n",
 
-      "} else {\n",
+            "} else {\n",
 
-      "  GSEAlens_box_data$Group <- factor(GSEAlens_box_data$Group)\n",
+            "  GSEAlens_box_data$Group <- factor(GSEAlens_box_data$Group)\n",
 
-      "}\n"
+            "}\n"
 
     )
 
-  } else {
+    } else {
 
     paste0(
 
-      "\n",
+            "\n",
 
-      "# Optional: order the Group factor (alphabetical by default)\n",
+            "# Optional: order the Group factor (alphabetical by default)\n",
 
-      "# GSEAlens_box_data$Group <- factor(GSEAlens_box_data$Group)\n"
+            "# GSEAlens_box_data$Group <- factor(GSEAlens_box_data$Group)\n"
 
     )
 
-  }
+    }
 
 
 
-  code <- paste0(
+    code <- paste0(
 
     '# =============================================================================
 
@@ -1007,13 +1007,13 @@ GSEAlens_expr_type   <- "', expr_type, '"
 
 ', if (!is.na(left_group) && !is.na(right_group)) {
 
-  paste0('GSEAlens_left_group  <- "', left_group, '"\n',
+    paste0('GSEAlens_left_group  <- "', left_group, '"\n',
 
-         'GSEAlens_right_group <- "', right_group, '"\n')
+                    'GSEAlens_right_group <- "', right_group, '"\n')
 
 } else {
 
-  paste0('# (Left/right group labels could not be inferred from the GseaRes.)\n')
+    paste0('# (Left/right group labels could not be inferred from the GseaRes.)\n')
 
 },
 
@@ -1047,23 +1047,23 @@ if (length(GSEAlens_match_idx) == 0 &&
 
     !is.null(GSEAlens_res$expr_bundle$gene_meta)) {
 
-  GSEAlens_gene_meta <- GSEAlens_res$expr_bundle$gene_meta
+    GSEAlens_gene_meta <- GSEAlens_res$expr_bundle$gene_meta
 
-  if (is.null(rownames(GSEAlens_gene_meta))) {
+    if (is.null(rownames(GSEAlens_gene_meta))) {
 
     rownames(GSEAlens_gene_meta) <- rownames(GSEAlens_expr_mat)
 
-  }
+    }
 
-  GSEAlens_symbol_col <- intersect(
+    GSEAlens_symbol_col <- intersect(
 
     c("SYMBOL", "symbol", "Gene", "gene_name", "gene_symbol"),
 
     colnames(GSEAlens_gene_meta)
 
-  )[1]
+    )[1]
 
-  if (!is.na(GSEAlens_symbol_col)) {
+    if (!is.na(GSEAlens_symbol_col)) {
 
     GSEAlens_meta_upper <- toupper(as.character(GSEAlens_gene_meta[[GSEAlens_symbol_col]]))
 
@@ -1071,13 +1071,13 @@ if (length(GSEAlens_match_idx) == 0 &&
 
     if (length(GSEAlens_meta_idx) > 0) {
 
-      GSEAlens_ensembl_id <- rownames(GSEAlens_gene_meta)[GSEAlens_meta_idx[1]]
+            GSEAlens_ensembl_id <- rownames(GSEAlens_gene_meta)[GSEAlens_meta_idx[1]]
 
-      GSEAlens_match_idx  <- which(rownames(GSEAlens_expr_mat) == GSEAlens_ensembl_id)
+            GSEAlens_match_idx  <- which(rownames(GSEAlens_expr_mat) == GSEAlens_ensembl_id)
 
     }
 
-  }
+    }
 
 }
 
@@ -1085,7 +1085,7 @@ if (length(GSEAlens_match_idx) == 0 &&
 
 if (length(GSEAlens_match_idx) == 0) {
 
-  stop(sprintf("Gene \'%s\' was not found in the expression matrix.", GSEAlens_gene_symbol))
+    stop(sprintf("Gene \'%s\' was not found in the expression matrix.", GSEAlens_gene_symbol))
 
 }
 
@@ -1103,7 +1103,7 @@ GSEAlens_sample_names <- names(GSEAlens_expr_values)
 
 GSEAlens_group_info   <- GSEAlens_sample_meta$group[
 
-  match(GSEAlens_sample_names, rownames(GSEAlens_sample_meta))
+    match(GSEAlens_sample_names, rownames(GSEAlens_sample_meta))
 
 ]
 
@@ -1111,13 +1111,13 @@ GSEAlens_group_info   <- GSEAlens_sample_meta$group[
 
 GSEAlens_box_data <- data.frame(
 
-  Sample     = GSEAlens_sample_names,
+    Sample     = GSEAlens_sample_names,
 
-  Group      = as.character(GSEAlens_group_info),
+    Group      = as.character(GSEAlens_group_info),
 
-  Expression = as.numeric(GSEAlens_expr_values),
+    Expression = as.numeric(GSEAlens_expr_values),
 
-  stringsAsFactors = FALSE
+    stringsAsFactors = FALSE
 
 )
 
@@ -1161,11 +1161,11 @@ print(GSEAlens_box_data)
 
 '
 
-  )
+    )
 
 
 
-  return(code)
+    return(code)
 
 }
 
@@ -1225,137 +1225,137 @@ print(GSEAlens_box_data)
 
 extract_boxplot_data <- function(GSEAlens_res,
 
-                                 contrast_id,
+                                                                    contrast_id,
 
-                                 gene_symbol,
+                                                                    gene_symbol,
 
-                                 expr_type = "logcpm") {
+                                                                    expr_type = "logcpm") {
 
-  # ---- 1. Pull side-info (left/right group labels, with safe fallback) ----
+    # ---- 1. Pull side-info (left/right group labels, with safe fallback) ----
 
-  left_group  <- NA_character_
+    left_group  <- NA_character_
 
-  right_group <- NA_character_
+    right_group <- NA_character_
 
-  gtask <- tryCatch(GSEAlens::extract_gsea_task(GSEAlens_res, contrast_id),
+    gtask <- tryCatch(GSEAlens::extract_gsea_task(GSEAlens_res, contrast_id),
 
                     error = function(e) NULL)
 
-  if (!is.null(gtask) && !is.null(gtask$meta)) {
+    if (!is.null(gtask) && !is.null(gtask$meta)) {
 
     left_group  <- gtask$meta$left_group  %||% NA_character_
 
     right_group <- gtask$meta$right_group %||% NA_character_
 
-  }
+    }
 
-  if (is.na(left_group) || is.na(right_group)) {
+    if (is.na(left_group) || is.na(right_group)) {
 
     if (grepl("_vs_", contrast_id, fixed = TRUE)) {
 
-      parts <- strsplit(contrast_id, "_vs_", fixed = TRUE)[[1]]
+            parts <- strsplit(contrast_id, "_vs_", fixed = TRUE)[[1]]
 
-      left_group  <- parts[1]
+            left_group  <- parts[1]
 
-      right_group <- parts[2]
+            right_group <- parts[2]
 
     }
 
-  }
+    }
 
 
 
-  # ---- 2. Expression matrix and sample metadata ----
+    # ---- 2. Expression matrix and sample metadata ----
 
-  expr_mat    <- get_expr_matrix(GSEAlens_res, type = expr_type)
+    expr_mat    <- get_expr_matrix(GSEAlens_res, type = expr_type)
 
-  sample_meta <- get_sample_meta(GSEAlens_res)
+    sample_meta <- get_sample_meta(GSEAlens_res)
 
 
 
-  if (is.null(expr_mat)) {
+    if (is.null(expr_mat)) {
 
     stop(sprintf("Expression matrix (type = '%s') is not available.", expr_type))
 
-  }
+    }
 
-  if (is.null(sample_meta)) {
+    if (is.null(sample_meta)) {
 
     stop("Sample metadata is not available in the GseaRes object.")
 
-  }
+    }
 
 
 
-  # ---- 3. Locate the gene (case-insensitive, with SYMBOL/Ensembl fallback) ----
+    # ---- 3. Locate the gene (case-insensitive, with SYMBOL/Ensembl fallback) ----
 
-  target_upper   <- toupper(gene_symbol)
+    target_upper   <- toupper(gene_symbol)
 
-  rownames_upper <- toupper(rownames(expr_mat))
+    rownames_upper <- toupper(rownames(expr_mat))
 
-  match_idx <- which(rownames_upper == target_upper)
+    match_idx <- which(rownames_upper == target_upper)
 
 
 
-  if (length(match_idx) == 0 && !is.null(GSEAlens_res$expr_bundle$gene_meta)) {
+    if (length(match_idx) == 0 && !is.null(GSEAlens_res$expr_bundle$gene_meta)) {
 
     gene_meta <- GSEAlens_res$expr_bundle$gene_meta
 
     if (is.null(rownames(gene_meta))) {
 
-      rownames(gene_meta) <- rownames(expr_mat)
+            rownames(gene_meta) <- rownames(expr_mat)
 
     }
 
     symbol_col <- intersect(
 
-      c("SYMBOL", "symbol", "Gene", "gene_name", "gene_symbol"),
+            c("SYMBOL", "symbol", "Gene", "gene_name", "gene_symbol"),
 
-      colnames(gene_meta)
+            colnames(gene_meta)
 
     )[1]
 
     if (!is.na(symbol_col)) {
 
-      meta_upper <- toupper(as.character(gene_meta[[symbol_col]]))
+            meta_upper <- toupper(as.character(gene_meta[[symbol_col]]))
 
-      meta_idx   <- which(meta_upper == target_upper)
+            meta_idx   <- which(meta_upper == target_upper)
 
-      if (length(meta_idx) > 0) {
+            if (length(meta_idx) > 0) {
 
         ensembl_id <- rownames(gene_meta)[meta_idx[1]]
 
         match_idx  <- which(rownames(expr_mat) == ensembl_id)
 
-      }
+            }
 
     }
 
-  }
+    }
 
 
 
-  if (length(match_idx) == 0) {
+    if (length(match_idx) == 0) {
 
     stop(sprintf("Gene '%s' was not found in the expression matrix.", gene_symbol))
 
-  }
+    }
 
 
 
-  # ---- 4. Build the per-sample data frame (preserves expr_mat column order) ----
+    # ---- 4. Build the per-sample data frame (preserves expr_mat column order) ----
 
-  actual_gene  <- rownames(expr_mat)[match_idx[1]]
+    actual_gene  <- rownames(expr_mat)[match_idx[1]]
 
-  expr_values  <- expr_mat[actual_gene, ]
+    expr_values  <- expr_mat[actual_gene, ]
 
-  sample_names <- names(expr_values)
+    sample_names <- names(expr_values)
 
-  group_info   <- sample_meta$group[match(sample_names, rownames(sample_meta))]
+    group_info   <- sample_meta$group[match(sample_names, rownames(sample_meta))]
 
 
 
-  long_df <- data.frame(
+    long_df <- data.frame(
 
     Sample     = sample_names,
 
@@ -1365,17 +1365,17 @@ extract_boxplot_data <- function(GSEAlens_res,
 
     stringsAsFactors = FALSE
 
-  )
+    )
 
-  # Drop samples without a group assignment
+    # Drop samples without a group assignment
 
-  long_df <- long_df[!is.na(long_df$Group), , drop = FALSE]
+    long_df <- long_df[!is.na(long_df$Group), , drop = FALSE]
 
 
 
-  # ---- 5. Build the wide data frame: first row = gene, columns = samples ----
+    # ---- 5. Build the wide data frame: first row = gene, columns = samples ----
 
-  wide_df <- data.frame(
+    wide_df <- data.frame(
 
     Gene = gene_symbol,
 
@@ -1385,13 +1385,13 @@ extract_boxplot_data <- function(GSEAlens_res,
 
     stringsAsFactors = FALSE
 
-  )
+    )
 
 
 
-  # ---- 6. Return ----
+    # ---- 6. Return ----
 
-  list(
+    list(
 
     long         = long_df,
 
@@ -1409,7 +1409,7 @@ extract_boxplot_data <- function(GSEAlens_res,
 
     sample_order = long_df$Sample
 
-  )
+    )
 
 }
 
@@ -1473,55 +1473,55 @@ extract_boxplot_data <- function(GSEAlens_res,
 #' cat(code)
 #' @export
 generate_dotplot_code <- function(gsea_res_var = "gsea_res",
-                                  contrast_id,
-                                  pathways,
-                                  color_mode = "padj",
-                                  size_mode = "core_size",
-                                  left_group = "Left",
-                                  right_group = "Right",
-                                  palette = "D",
-                                  point_range = c(3, 8),
-                                  target_collection = "ALL",
-                                  base_size = 12,
-                                  margin_top = 18,
-                                  margin_bottom = 18,
-                                  margin_left = 18,
-                                  margin_right = 18) {
+                                                                    contrast_id,
+                                                                    pathways,
+                                                                    color_mode = "padj",
+                                                                    size_mode = "core_size",
+                                                                    left_group = "Left",
+                                                                    right_group = "Right",
+                                                                    palette = "D",
+                                                                    point_range = c(3, 8),
+                                                                    target_collection = "ALL",
+                                                                    base_size = 12,
+                                                                    margin_top = 18,
+                                                                    margin_bottom = 18,
+                                                                    margin_left = 18,
+                                                                    margin_right = 18) {
 
-  if (length(pathways) == 0) {
+    if (length(pathways) == 0) {
     return("# No pathways selected; nothing to plot.")
-  }
+    }
 
-  pathways_str <- paste(sprintf('    "%s"', pathways), collapse = ",\n")
+    pathways_str <- paste(sprintf('    "%s"', pathways), collapse = ",\n")
 
-  # Format target_collection for R code output
-  tc_str <- if (length(target_collection) == 1 && toupper(target_collection) == "ALL") {
+    # Format target_collection for R code output
+    tc_str <- if (length(target_collection) == 1 && toupper(target_collection) == "ALL") {
     '"ALL"'
-  } else {
+    } else {
     paste0('c(', paste0('"', target_collection, '"', collapse = ", "), ')')
-  }
+    }
 
-  color_field <- switch(color_mode,
+    color_field <- switch(color_mode,
     "padj" = "-log10(p.adjust)",
     "pval" = "-log10(pvalue)",
     "nes"  = "abs(NES)",
     "-log10(p.adjust)")
-  color_title <- switch(color_mode,
+    color_title <- switch(color_mode,
     "padj" = "-log10(FDR)",
     "pval" = "-log10(P-value)",
     "nes"  = "|NES|",
     "-log10(FDR)")
 
-  size_field <- switch(size_mode,
+    size_field <- switch(size_mode,
     "core_size" = "CoreCount",
     "setsize"   = "setSize",
     "CoreCount")
-  size_title <- switch(size_mode,
+    size_title <- switch(size_mode,
     "core_size" = "Core Genes",
     "setsize"   = "Set Size",
     "Core Genes")
 
-  sprintf(
+    sprintf(
 '# =============================================================================
 # GSEAlens Publication DotPlot Code
 # =============================================================================
@@ -1539,14 +1539,14 @@ GSEAlens_pathways <- c(
 
 # --- Extract task and build plot data ----------------------------------------
 GSEAlens_task <- GSEAlens::extract_gsea_task(%s,
-  contrast_id = GSEAlens_contrast_id, target_collection = %s)
+    contrast_id = GSEAlens_contrast_id, target_collection = %s)
 df <- as.data.frame(GSEAlens_task$gsea_res@result)
 df <- df[df$ID %%in%% GSEAlens_pathways, ]
 
 # CoreCount via leading-edge (core) genes
 GSEAlens_core <- GSEAlens::get_core_genes_list(GSEAlens_task, GSEAlens_pathways)
 df$CoreCount <- vapply(GSEAlens_pathways, function(pid) {
-  if (is.null(GSEAlens_core[[pid]])) 0L else length(GSEAlens_core[[pid]])
+    if (is.null(GSEAlens_core[[pid]])) 0L else length(GSEAlens_core[[pid]])
 }, integer(1))
 
 # --- Type coercion (defensive) -----------------------------------------------
@@ -1572,32 +1572,32 @@ size_lim_hi <- if (size_field == "CoreCount") 50 else 500
 df[[size_field]] <- pmin(pmax(df[[size_field]], 0), size_lim_hi)
 
 p <- ggplot(df, aes(
-  x = NES,
-  y = reorder(ID, NES),
-  size  = .data[[size_field]],
-  fill  = if (color_field == "abs(NES)") abs(NES)
-          else if (color_field == "-log10(p.adjust)") -log10(p.adjust)
-          else -log10(pvalue)
+    x = NES,
+    y = reorder(ID, NES),
+    size  = .data[[size_field]],
+    fill  = if (color_field == "abs(NES)") abs(NES)
+                    else if (color_field == "-log10(p.adjust)") -log10(p.adjust)
+                    else -log10(pvalue)
 )) +
-  geom_point(shape = 21, color = "black", stroke = 0.3, alpha = 0.85) +
-  scale_size_continuous(name = size_title, range = c(%g, %g)) +
-  scale_fill_viridis_c(name = color_title, option = "%s", direction = -1) +
-  geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
-  theme_bw(base_size = %g) +
-  labs(
+    geom_point(shape = 21, color = "black", stroke = 0.3, alpha = 0.85) +
+    scale_size_continuous(name = size_title, range = c(%g, %g)) +
+    scale_fill_viridis_c(name = color_title, option = "%s", direction = -1) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
+    theme_bw(base_size = %g) +
+    labs(
     title    = sprintf("Pathway DotPlot: %%s vs %%s", "%s", "%s"),
     subtitle = sprintf("Color: %%s (viridis)  |  Size: %%s", color_title, size_title),
     x = "NES (Normalized Enrichment Score)",
     y = NULL
-  ) +
-  coord_cartesian(clip = "off") +
-  theme(
+    ) +
+    coord_cartesian(clip = "off") +
+    theme(
     plot.title    = element_text(face = "bold", hjust = 0.5),
     plot.subtitle = element_text(color = "gray40", hjust = 0.5, margin = margin(b = 20)),
     axis.text.y   = element_text(size = rel(0.85)),
     legend.position = "right",
     plot.margin     = margin(%d, %d, %d, %d)
-  )
+    )
 
 # --- Direction annotation: colored enriched-in labels above the plot ---------
 # Single-direction aware: if only one NES sign is present, show one label only.
@@ -1605,15 +1605,15 @@ p <- ggplot(df, aes(
 has_neg <- any(df$NES < 0, na.rm = TRUE)
 has_pos <- any(df$NES > 0, na.rm = TRUE)
 if (has_neg) {
-  p <- p + annotation_custom(
+    p <- p + annotation_custom(
     grid::textGrob("Enriched in %s", x = 0.02, y = 1.01, just = c("left", "bottom"),
-                   gp = grid::gpar(col = "#3B6EA5", fontface = "bold", fontsize = %g)),
+                                        gp = grid::gpar(col = "#3B6EA5", fontface = "bold", fontsize = %g)),
     xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf)
 }
 if (has_pos) {
-  p <- p + annotation_custom(
+    p <- p + annotation_custom(
     grid::textGrob("Enriched in %s", x = 0.98, y = 1.01, just = c("right", "bottom"),
-                   gp = grid::gpar(col = "#C0392B", fontface = "bold", fontsize = %g)),
+                                        gp = grid::gpar(col = "#C0392B", fontface = "bold", fontsize = %g)),
     xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf)
 }
 
@@ -1639,7 +1639,7 @@ print(p)
     base_size,
     left_group,
     base_size
-  )
+    )
 }
 
 
@@ -1669,29 +1669,29 @@ print(p)
 #' cat(code)
 #' @export
 generate_volcano_code <- function(gsea_res_var = "gsea_res",
-                                  contrast_id,
-                                  left_group = "Left",
-                                  right_group = "Right",
-                                  n_selected = 0L,
-                                  selected_ids = character(0),
-                                  show_annotations = FALSE,
-                                  target_collection = "ALL",
-                                  base_size = 12,
-                                  margin_top = 15, margin_bottom = 15,
-                                  margin_left = 18, margin_right = 18) {
+                                                                    contrast_id,
+                                                                    left_group = "Left",
+                                                                    right_group = "Right",
+                                                                    n_selected = 0L,
+                                                                    selected_ids = character(0),
+                                                                    show_annotations = FALSE,
+                                                                    target_collection = "ALL",
+                                                                    base_size = 12,
+                                                                    margin_top = 15, margin_bottom = 15,
+                                                                    margin_left = 18, margin_right = 18) {
 
-  selected_str <- if (length(selected_ids) > 0) {
+    selected_str <- if (length(selected_ids) > 0) {
     paste0('c(', paste0('"', selected_ids, '"', collapse = ", "), ')')
-  } else "character(0)"
+    } else "character(0)"
 
-  # Format target_collection for R code output
-  tc_str <- if (length(target_collection) == 1 && toupper(target_collection) == "ALL") {
+    # Format target_collection for R code output
+    tc_str <- if (length(target_collection) == 1 && toupper(target_collection) == "ALL") {
     '"ALL"'
-  } else {
+    } else {
     paste0('c(', paste0('"', target_collection, '"', collapse = ", "), ')')
-  }
+    }
 
-  labs_block <- if (show_annotations) {
+    labs_block <- if (show_annotations) {
     paste0(
 '  labs(\n',
 '    title = sprintf("Pathway Volcano: %s vs %s", "', left_group, '", "', right_group, '"),\n',
@@ -1703,7 +1703,7 @@ generate_volcano_code <- function(gsea_res_var = "gsea_res",
 '    y = "-log10(P-value)"\n',
 '  ) +'
     )
-  } else {
+    } else {
     paste0(
 '  labs(\n',
 '    title = sprintf("Pathway Volcano: %s vs %s", "', left_group, '", "', right_group, '"),\n',
@@ -1713,9 +1713,9 @@ generate_volcano_code <- function(gsea_res_var = "gsea_res",
 '    y = "-log10(P-value)"\n',
 '  ) +'
     )
-  }
+    }
 
-  sprintf(
+    sprintf(
 '# =============================================================================
 # GSEAlens Publication Pathway Volcano Code
 # =============================================================================
@@ -1730,7 +1730,7 @@ GSEAlens_contrast_id <- "%s"
 
 # --- Extract task and build plot data ----------------------------------------
 GSEAlens_task <- GSEAlens::extract_gsea_task(%s,
-  contrast_id = GSEAlens_contrast_id, target_collection = %s)
+    contrast_id = GSEAlens_contrast_id, target_collection = %s)
 df <- as.data.frame(GSEAlens_task$gsea_res@result)
 
 # --- Selected pathway IDs (for ggrepel labels) -------------------------------
@@ -1747,51 +1747,51 @@ df$p.adjust[is.na(df$p.adjust)]   <- 1
 
 # --- Direction: NES > 0 = enriched in left_group; NES < 0 = right_group ------
 df$direction <- with(df, ifelse(NES > 0,
-  "Enriched in %s", "Enriched in %s"))
+    "Enriched in %s", "Enriched in %s"))
 df$sig_level <- with(df,
-  cut(pvalue,
-      breaks = c(-Inf, 1e-10, 1e-5, 1e-2, 0.05, Inf),
-      labels = c("P<1e-10", "P<1e-5", "P<1e-2", "P<0.05", "NS"),
-      right  = FALSE))
+    cut(pvalue,
+            breaks = c(-Inf, 1e-10, 1e-5, 1e-2, 0.05, Inf),
+            labels = c("P<1e-10", "P<1e-5", "P<1e-2", "P<0.05", "NS"),
+            right  = FALSE))
 
 p <- ggplot(df, aes(x = NES, y = -log10(pvalue),
                     color = direction, alpha = sig_level)) +
-  geom_point(size = 2.5) +
-  scale_color_manual(
+    geom_point(size = 2.5) +
+    scale_color_manual(
     values = c("Enriched in %s" = "#E41A1C", "Enriched in %s" = "#377EB8"),
     name = "Direction") +
-  scale_alpha_manual(
+    scale_alpha_manual(
     values = c("P<1e-10" = 1.0, "P<1e-5" = 0.9, "P<1e-2" = 0.7,
-               "P<0.05" = 0.5, "NS" = 0.25),
+                                "P<0.05" = 0.5, "NS" = 0.25),
     name = "Significance", drop = FALSE) +
-  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "grey50") +
-  geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
-  theme_bw(base_size = %g) +
+    geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "grey50") +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
+    theme_bw(base_size = %g) +
 %s
-  theme(
+    theme(
     plot.title   = element_text(face = "bold", hjust = 0.5),
     plot.caption = element_text(color = "gray40", hjust = 0.5, size = rel(0.85)),
     legend.position = "right",
     plot.margin  = margin(%d, %d, %d, %d)
-  )
+    )
 
 # --- ggrepel labels for selected pathways ------------------------------------
 if (length(selected_ids) > 0) {
-  df_label <- df[df$ID %%in%% selected_ids, ]
-  if (nrow(df_label) > 0) {
+    df_label <- df[df$ID %%in%% selected_ids, ]
+    if (nrow(df_label) > 0) {
     library(ggrepel)
     p <- p + ggrepel::geom_label_repel(
-      data = df_label,
-      aes(label = ID),
-      size = 3, fontface = "bold",
-      fill = "white", color = "#222", alpha = 0.9,
-      box.padding = 0.5, label.padding = 0.18, linewidth = 0.2,
-      min.segment.length = 0,
-      segment.color = "grey55", segment.size = 0.3, segment.alpha = 0.7,
-      max.overlaps = 20, max.iter = 5000,
-      nudge_y = 0.3, direction = "both", force = 2
+            data = df_label,
+            aes(label = ID),
+            size = 3, fontface = "bold",
+            fill = "white", color = "#222", alpha = 0.9,
+            box.padding = 0.5, label.padding = 0.18, linewidth = 0.2,
+            min.segment.length = 0,
+            segment.color = "grey55", segment.size = 0.3, segment.alpha = 0.7,
+            max.overlaps = 20, max.iter = 5000,
+            nudge_y = 0.3, direction = "both", force = 2
     )
-  }
+    }
 }
 
 print(p)
@@ -1810,7 +1810,7 @@ print(p)
     base_size,
     labs_block,
     margin_top, margin_right, margin_bottom, margin_left
-  )
+    )
 }
 
 
@@ -1841,26 +1841,26 @@ print(p)
 #' cat(code)
 #' @export
 generate_de_volcano_code <- function(gsea_res_var = "gsea_res",
-                                     contrast_id,
-                                     user_genes = character(0),
-                                     pathway_genes = character(0),
-                                     logfc_thresh = 1,
-                                     pval_thresh = 0.05,
-                                     left_group = "Left",
-                                     right_group = "Right",
-                                     show_annotations = FALSE,
-                                     base_size = 12,
-                                     margin_top = 15, margin_bottom = 15,
-                                     margin_left = 18, margin_right = 18) {
+                                                                            contrast_id,
+                                                                            user_genes = character(0),
+                                                                            pathway_genes = character(0),
+                                                                            logfc_thresh = 1,
+                                                                            pval_thresh = 0.05,
+                                                                            left_group = "Left",
+                                                                            right_group = "Right",
+                                                                            show_annotations = FALSE,
+                                                                            base_size = 12,
+                                                                            margin_top = 15, margin_bottom = 15,
+                                                                            margin_left = 18, margin_right = 18) {
 
-  user_str <- if (length(user_genes) > 0) {
+    user_str <- if (length(user_genes) > 0) {
     paste0('c(', paste0('"', user_genes, '"', collapse = ", "), ')')
-  } else "character(0)"
-  pathway_str <- if (length(pathway_genes) > 0) {
+    } else "character(0)"
+    pathway_str <- if (length(pathway_genes) > 0) {
     paste0('c(', paste0('"', pathway_genes, '"', collapse = ", "), ')')
-  } else "character(0)"
+    } else "character(0)"
 
-  labs_annot_block <- if (show_annotations) {
+    labs_annot_block <- if (show_annotations) {
     paste0(
 '  labs(\n',
 '    title = sprintf("DE Volcano: %s vs %s", "', left_group, '", "', right_group, '"),\n',
@@ -1886,7 +1886,7 @@ generate_de_volcano_code <- function(gsea_res_var = "gsea_res",
 '    legend.position = "right"\n',
 '  )'
     )
-  } else {
+    } else {
     paste0(
 '  labs(\n',
 '    title = sprintf("DE Volcano: %s vs %s", "', left_group, '", "', right_group, '"),\n',
@@ -1899,9 +1899,9 @@ generate_de_volcano_code <- function(gsea_res_var = "gsea_res",
     sprintf('    plot.margin = margin(%d, %d, %d, %d)\n', margin_top, margin_right, margin_bottom, margin_left),
 '  )'
     )
-  }
+    }
 
-  sprintf(
+    sprintf(
 '# =============================================================================
 # GSEAlens Publication DE Volcano Code
 # =============================================================================
@@ -1939,55 +1939,55 @@ de_df$is_pathway  <- de_df$gene_upper %%in%% pathway_genes
 de_df$is_sig      <- abs(de_df$logFC) > logfc_thresh & de_df$pvalue < pval_thresh
 
 de_df$category <- dplyr::case_when(
-  de_df$is_user & de_df$is_pathway ~ "both",
-  de_df$is_user                    ~ "user",
-  de_df$is_pathway                 ~ "pathway",
-  de_df$is_sig & de_df$logFC > 0   ~ "up",
-  de_df$is_sig & de_df$logFC < 0   ~ "down",
-  TRUE                             ~ "ns"
+    de_df$is_user & de_df$is_pathway ~ "both",
+    de_df$is_user                    ~ "user",
+    de_df$is_pathway                 ~ "pathway",
+    de_df$is_sig & de_df$logFC > 0   ~ "up",
+    de_df$is_sig & de_df$logFC < 0   ~ "down",
+    TRUE                             ~ "ns"
 )
 
 color_map <- c(
-  both = "#9C27B0", user = "#4DAF4A", pathway = "#FF9800",
-  up = "#E41A1C",   down = "#377EB8", ns = "#C0C0C0"
+    both = "#9C27B0", user = "#4DAF4A", pathway = "#FF9800",
+    up = "#E41A1C",   down = "#377EB8", ns = "#C0C0C0"
 )
 de_df$category <- factor(de_df$category,
-  levels = c("ns", "down", "up", "pathway", "user", "both"))
+    levels = c("ns", "down", "up", "pathway", "user", "both"))
 
 # --- Layer ordering (mirrors interactive plotly) -----------------------------
 # Sort so special categories (pathway/user/both) are drawn LAST and appear
 # on top of the significant and NS points, making them easy to spot.
 de_df$plot_order <- dplyr::case_when(
-  de_df$category == "both"    ~ 6,
-  de_df$category == "user"    ~ 5,
-  de_df$category == "pathway" ~ 4,
-  de_df$category %%in%% c("up", "down") ~ 2,
-  TRUE ~ 1
+    de_df$category == "both"    ~ 6,
+    de_df$category == "user"    ~ 5,
+    de_df$category == "pathway" ~ 4,
+    de_df$category %%in%% c("up", "down") ~ 2,
+    TRUE ~ 1
 )
 de_df <- de_df[order(de_df$plot_order), ]
 
 p <- ggplot(de_df, aes(x = logFC, y = -log10(pvalue), color = category)) +
-  geom_point(aes(size = category, alpha = category)) +
-  scale_color_manual(values = color_map, name = "Category",
+    geom_point(aes(size = category, alpha = category)) +
+    scale_color_manual(values = color_map, name = "Category",
     labels = c(ns = "NS", down = "Down", up = "Up",
-               pathway = "Pathway", user = "Selected", both = "Both")) +
-  scale_size_manual(values = c(ns = 1, down = 2, up = 2,
-                               pathway = 3.5, user = 3.5, both = 4), guide = "none") +
-  scale_alpha_manual(values = c(ns = 0.4, down = 0.7, up = 0.7,
+                                pathway = "Pathway", user = "Selected", both = "Both")) +
+    scale_size_manual(values = c(ns = 1, down = 2, up = 2,
+                                                                pathway = 3.5, user = 3.5, both = 4), guide = "none") +
+    scale_alpha_manual(values = c(ns = 0.4, down = 0.7, up = 0.7,
                                 pathway = 0.9, user = 0.9, both = 1.0), guide = "none") +
-  geom_vline(xintercept = c(-logfc_thresh, logfc_thresh),
-             linetype = "dashed", color = "grey60") +
-  geom_hline(yintercept = -log10(pval_thresh),
-             linetype = "dashed", color = "grey60") +
-  theme_bw(base_size = %g) +
+    geom_vline(xintercept = c(-logfc_thresh, logfc_thresh),
+                            linetype = "dashed", color = "grey60") +
+    geom_hline(yintercept = -log10(pval_thresh),
+                            linetype = "dashed", color = "grey60") +
+    theme_bw(base_size = %g) +
 %s
 
 # --- ggrepel labels for Confirmed Gene Markers ONLY --------------------------
 de_df_label <- de_df[de_df$category %%in%% c("user", "both"), ]
 if (nrow(de_df_label) > 0) {
-  label_color_map <- c(user = "#4DAF4A", both = "#9C27B0")
-  library(ggrepel)
-  p <- p + ggrepel::geom_label_repel(
+    label_color_map <- c(user = "#4DAF4A", both = "#9C27B0")
+    library(ggrepel)
+    p <- p + ggrepel::geom_label_repel(
     data = de_df_label,
     aes(label = gene_symbol, fill = category),
     color = "white", size = 3, fontface = "bold",
@@ -1995,8 +1995,8 @@ if (nrow(de_df_label) > 0) {
     min.segment.length = 0, segment.color = "grey55",
     max.overlaps = Inf, max.iter = 5000,
     show.legend = FALSE
-  ) +
-  scale_fill_manual(values = label_color_map, guide = "none")
+    ) +
+    scale_fill_manual(values = label_color_map, guide = "none")
 }
 
 print(p)
@@ -2011,7 +2011,7 @@ print(p)
     logfc_thresh, pval_thresh,
     base_size,
     labs_annot_block
-  )
+    )
 }
 
 
@@ -2041,41 +2041,41 @@ print(p)
 #' cat(code)
 #' @export
 generate_network_code <- function(gsea_res_var = "gsea_res",
-                                  contrast_id,
-                                  pathways,
-                                  min_shared_genes = 2,
-                                  width_mode = "weight",
-                                  seed = 42L,
-                                  target_collection = "ALL",
-                                  base_size = 12,
-                                  margin_top = 18, margin_bottom = 18,
-                                  margin_left = 18, margin_right = 18) {
+                                                                    contrast_id,
+                                                                    pathways,
+                                                                    min_shared_genes = 2,
+                                                                    width_mode = "weight",
+                                                                    seed = 42L,
+                                                                    target_collection = "ALL",
+                                                                    base_size = 12,
+                                                                    margin_top = 18, margin_bottom = 18,
+                                                                    margin_left = 18, margin_right = 18) {
 
-  if (length(pathways) == 0) {
+    if (length(pathways) == 0) {
     return("# No pathways selected; nothing to plot.")
-  }
+    }
 
-  pathways_str <- paste(sprintf('    "%s"', pathways), collapse = ",\n")
+    pathways_str <- paste(sprintf('    "%s"', pathways), collapse = ",\n")
 
-  # Format target_collection for R code output
-  tc_str <- if (length(target_collection) == 1 && toupper(target_collection) == "ALL") {
+    # Format target_collection for R code output
+    tc_str <- if (length(target_collection) == 1 && toupper(target_collection) == "ALL") {
     '"ALL"'
-  } else {
+    } else {
     paste0('c(', paste0('"', target_collection, '"', collapse = ", "), ')')
-  }
+    }
 
-  width_block <- if (width_mode == "rank") {
+    width_block <- if (width_mode == "rank") {
 '  # rank-based: assign edge width by Jaccard rank (1..n -> 1..5 px)
-  edge_df <- edge_df[order(edge_df$weight, decreasing = TRUE), ]
-  n <- nrow(edge_df)
-  edge_df$width <- 5 - (seq_len(n) - 1) * 4 / max(1, n - 1)
-  edge_df$width <- pmax(1, pmin(5, edge_df$width))'
-  } else {
+    edge_df <- edge_df[order(edge_df$weight, decreasing = TRUE), ]
+    n <- nrow(edge_df)
+    edge_df$width <- 5 - (seq_len(n) - 1) * 4 / max(1, n - 1)
+    edge_df$width <- pmax(1, pmin(5, edge_df$width))'
+    } else {
 '  # weight-based: edge width proportional to Jaccard value (emapplot style)
-  edge_df$width <- 1 + edge_df$weight * 7   # Jaccard in [0,1] -> [1,8] px'
-  }
+    edge_df$width <- 1 + edge_df$weight * 7   # Jaccard in [0,1] -> [1,8] px'
+    }
 
-  sprintf(
+    sprintf(
 '# =============================================================================
 # GSEAlens Publication Pathway Network Code
 # =============================================================================
@@ -2095,7 +2095,7 @@ GSEAlens_pathways <- c(
 
 # --- Extract task and build network data -------------------------------------
 GSEAlens_task <- GSEAlens::extract_gsea_task(%s,
-  contrast_id = GSEAlens_contrast_id, target_collection = %s)
+    contrast_id = GSEAlens_contrast_id, target_collection = %s)
 df <- as.data.frame(GSEAlens_task$gsea_res@result)
 df <- df[df$ID %%in%% GSEAlens_pathways, ]
 
@@ -2118,8 +2118,8 @@ edge_df$weight[is.na(edge_df$weight)]     <- 0
 
 # --- Build graph and compute FR layout ---------------------------------------
 g <- graph_from_data_frame(edge_df[, c("from", "to")],
-                           directed = FALSE,
-                           vertices = node_df$name)
+                                                        directed = FALSE,
+                                                        vertices = node_df$name)
 set.seed(%d)
 layout_xy <- layout_with_fr(g)
 node_df$x <- layout_xy[, 1]
@@ -2136,18 +2136,18 @@ names(edge_plot)[names(edge_plot) == "y"] <- "y_to"
 node_df$direction <- ifelse(node_df$NES > 0, "Up", "Down")
 
 p <- ggplot() +
-  geom_segment(data = edge_plot,
-               aes(x = x_from, y = y_from, xend = x_to, yend = y_to,
-                   linewidth = width),
-               color = "grey70", alpha = 0.6) +
-  scale_linewidth_continuous(range = c(0.3, 2.5), name = "Edge width") +
-  geom_point(data = node_df,
-             aes(x = x, y = y, fill = direction, size = -log10(p.adjust)),
-             shape = 21, color = "black", stroke = 0.4, alpha = 0.85) +
-  scale_fill_manual(values = c("Up" = "#F28F8F", "Down" = "#8FB7E8"),
+    geom_segment(data = edge_plot,
+                                aes(x = x_from, y = y_from, xend = x_to, yend = y_to,
+                                        linewidth = width),
+                                color = "grey70", alpha = 0.6) +
+    scale_linewidth_continuous(range = c(0.3, 2.5), name = "Edge width") +
+    geom_point(data = node_df,
+                            aes(x = x, y = y, fill = direction, size = -log10(p.adjust)),
+                            shape = 21, color = "black", stroke = 0.4, alpha = 0.85) +
+    scale_fill_manual(values = c("Up" = "#F28F8F", "Down" = "#8FB7E8"),
                     name = "Direction") +
-  scale_size_continuous(range = c(3, 9), name = "-log10(FDR)") +
-  ggrepel::geom_label_repel(
+    scale_size_continuous(range = c(3, 9), name = "-log10(FDR)") +
+    ggrepel::geom_label_repel(
     data = node_df,
     aes(x = x, y = y, label = sub("^[^_]*_", "", name)),
     size = 3.2, fontface = "bold",
@@ -2156,16 +2156,16 @@ p <- ggplot() +
     min.segment.length = 0,
     segment.color = "grey55", segment.size = 0.3, segment.alpha = 0.7,
     max.overlaps = Inf, nudge_y = 0.18, direction = "both"
-  ) +
-  guides(
+    ) +
+    guides(
     fill = guide_legend(override.aes = list(size = 7, shape = 21, stroke = 1)),
     size = guide_legend(override.aes = list(shape = 21, fill = "grey50", stroke = 0.5))
-  ) +
-  theme_void(base_size = %g) +
-  theme(legend.position = "right",
+    ) +
+    theme_void(base_size = %g) +
+    theme(legend.position = "right",
         plot.margin = margin(%d, %d, %d, %d)) +
-  coord_cartesian(clip = "off") +
-  labs(title = "Pathway Relationship Network")
+    coord_cartesian(clip = "off") +
+    labs(title = "Pathway Relationship Network")
 
 print(p)
 
@@ -2181,7 +2181,7 @@ print(p)
     width_block,
     seed, base_size,
     margin_top, margin_right, margin_bottom, margin_left
-  )
+    )
 }
 
 
@@ -2211,45 +2211,45 @@ print(p)
 #' cat(code)
 #' @export
 generate_hubgene_code <- function(gsea_res_var = "gsea_res",
-                                  contrast_id,
-                                  pathways,
-                                  min_hub_degree = 2,
-                                  pw_size_mode = "setsize",
-                                  seed = 42L,
-                                  target_collection = "ALL",
-                                  base_size = 12,
-                                  margin_top = 18, margin_bottom = 18,
-                                  margin_left = 18, margin_right = 18) {
+                                                                    contrast_id,
+                                                                    pathways,
+                                                                    min_hub_degree = 2,
+                                                                    pw_size_mode = "setsize",
+                                                                    seed = 42L,
+                                                                    target_collection = "ALL",
+                                                                    base_size = 12,
+                                                                    margin_top = 18, margin_bottom = 18,
+                                                                    margin_left = 18, margin_right = 18) {
 
-  if (length(pathways) == 0) {
+    if (length(pathways) == 0) {
     return("# No pathways selected; nothing to plot.")
-  }
+    }
 
-  pathways_str <- paste(sprintf('    "%s"', pathways), collapse = ",\n")
+    pathways_str <- paste(sprintf('    "%s"', pathways), collapse = ",\n")
 
-  # Format target_collection for R code output
-  tc_str <- if (length(target_collection) == 1 && toupper(target_collection) == "ALL") {
+    # Format target_collection for R code output
+    tc_str <- if (length(target_collection) == 1 && toupper(target_collection) == "ALL") {
     '"ALL"'
-  } else {
+    } else {
     paste0('c(', paste0('"', target_collection, '"', collapse = ", "), ')')
-  }
+    }
 
-  size_block <- switch(pw_size_mode,
+    size_block <- switch(pw_size_mode,
     "fdr" =
 '  # FDR-driven sizing
-  pw$fdr_neglog <- -log10(pmax(pw$FDR, 1e-300))
-  r <- range(pw$fdr_neglog); if (diff(r) < 1e-6) r <- c(0, 10)
-  pw$size <- 30 * (0.6 + 0.8 * (pw$fdr_neglog - r[1]) / diff(r))',
+    pw$fdr_neglog <- -log10(pmax(pw$FDR, 1e-300))
+    r <- range(pw$fdr_neglog); if (diff(r) < 1e-6) r <- c(0, 10)
+    pw$size <- 30 * (0.6 + 0.8 * (pw$fdr_neglog - r[1]) / diff(r))',
     "setsize" =
 '  # setSize-driven sizing (cnetplot classic)
-  r <- range(pw$setSize); if (diff(r) < 1) r <- c(0, 200)
-  pw$size <- 30 * (0.6 + 0.8 * (sqrt(pw$setSize) - sqrt(r[1])) /
+    r <- range(pw$setSize); if (diff(r) < 1) r <- c(0, 200)
+    pw$size <- 30 * (0.6 + 0.8 * (sqrt(pw$setSize) - sqrt(r[1])) /
                             (sqrt(r[2]) - sqrt(r[1])))',
 '  # Fixed size (user-controlled constant)
-  pw$size <- 30'
-  )
+    pw$size <- 30'
+    )
 
-  sprintf(
+    sprintf(
 '# =============================================================================
 # GSEAlens Publication HubGene Network Code
 # =============================================================================
@@ -2269,12 +2269,12 @@ GSEAlens_pathways <- c(
 
 # --- Extract task and build HubGene network ----------------------------------
 GSEAlens_task <- GSEAlens::extract_gsea_task(%s,
-  contrast_id = GSEAlens_contrast_id, target_collection = %s)
+    contrast_id = GSEAlens_contrast_id, target_collection = %s)
 
 GSEAlens_net <- GSEAlens::build_hubgene_network(
-  GSEAlens_task,
-  pathway_ids    = GSEAlens_pathways,
-  min_hub_degree = %d
+    GSEAlens_task,
+    pathway_ids    = GSEAlens_pathways,
+    min_hub_degree = %d
 )
 
 pw    <- GSEAlens_net$nodes$pathway
@@ -2282,11 +2282,11 @@ genes <- GSEAlens_net$nodes$gene
 edges_raw <- GSEAlens_net$edges
 
 edges <- if (!is.null(edges_raw) && nrow(edges_raw) > 0) {
-  data.frame(from = as.character(edges_raw$source),
-             to   = as.character(edges_raw$target),
-             stringsAsFactors = FALSE)
+    data.frame(from = as.character(edges_raw$source),
+                            to   = as.character(edges_raw$target),
+                            stringsAsFactors = FALSE)
 } else {
-  data.frame(from = character(0), to = character(0), stringsAsFactors = FALSE)
+    data.frame(from = character(0), to = character(0), stringsAsFactors = FALSE)
 }
 
 # --- Type coercion (defensive) -----------------------------------------------
@@ -2313,9 +2313,9 @@ edges$from  <- paste0("gene_", edges$from)
 edges$to    <- paste0("pw_",   edges$to)
 
 all_verts <- data.frame(
-  name = c(pw$vname, genes$vname), stringsAsFactors = FALSE)
+    name = c(pw$vname, genes$vname), stringsAsFactors = FALSE)
 g <- graph_from_data_frame(edges[, c("from", "to")],
-                           directed = FALSE, vertices = all_verts)
+                                                        directed = FALSE, vertices = all_verts)
 set.seed(%d)
 layout_xy <- layout_with_fr(g)
 all_verts$x <- layout_xy[, 1]
@@ -2325,7 +2325,7 @@ genes <- cbind(genes, all_verts[match(genes$vname, all_verts$name), c("x", "y")]
 
 pw$direction <- ifelse(pw$NES > 0, "Up", "Down")
 genes$direction <- ifelse(genes$stat > 0, "Up",
-                   ifelse(genes$stat < 0, "Down", "Neutral"))
+                                        ifelse(genes$stat < 0, "Down", "Neutral"))
 
 edge_plot <- merge(edges, all_verts, by.x = "from", by.y = "name")
 names(edge_plot)[names(edge_plot) == "x"] <- "x_from"
@@ -2335,20 +2335,20 @@ names(edge_plot)[names(edge_plot) == "x"] <- "x_to"
 names(edge_plot)[names(edge_plot) == "y"] <- "y_to"
 
 p <- ggplot() +
-  geom_segment(data = edge_plot,
-               aes(x = x_from, y = y_from, xend = x_to, yend = y_to),
-               color = "grey75", alpha = 0.5, linewidth = 0.4) +
-  geom_point(data = genes,
-             aes(x = x, y = y, color = direction, size = degree),
-             alpha = 0.85) +
-  scale_color_manual(
+    geom_segment(data = edge_plot,
+                                aes(x = x_from, y = y_from, xend = x_to, yend = y_to),
+                                color = "grey75", alpha = 0.5, linewidth = 0.4) +
+    geom_point(data = genes,
+                            aes(x = x, y = y, color = direction, size = degree),
+                            alpha = 0.85) +
+    scale_color_manual(
     values = c("Up" = "#F28F8F", "Down" = "#8FB7E8", "Neutral" = "#BDBDBD"),
     name = "Direction") +
-  scale_size_continuous(range = c(2, 8), name = "Hub degree") +
-  geom_point(data = pw,
-             aes(x = x, y = y, size = size),
-             shape = 23, fill = "#FFC107", color = "black", stroke = 0.5) +
-  ggrepel::geom_label_repel(
+    scale_size_continuous(range = c(2, 8), name = "Hub degree") +
+    geom_point(data = pw,
+                            aes(x = x, y = y, size = size),
+                            shape = 23, fill = "#FFC107", color = "black", stroke = 0.5) +
+    ggrepel::geom_label_repel(
     data = pw,
     aes(x = x, y = y, label = sub("^[^_]*_", "", id)),
     size = 3.2, fontface = "bold",
@@ -2357,16 +2357,16 @@ p <- ggplot() +
     min.segment.length = 0,
     segment.color = "grey55", segment.size = 0.3, segment.alpha = 0.7,
     max.overlaps = Inf, nudge_y = 0.18, direction = "both"
-  ) +
-  guides(
+    ) +
+    guides(
     color = guide_legend(override.aes = list(size = 7)),
     size  = guide_legend()
-  ) +
-  theme_void(base_size = %g) +
-  theme(legend.position = "right",
+    ) +
+    theme_void(base_size = %g) +
+    theme(legend.position = "right",
         plot.margin = margin(%d, %d, %d, %d)) +
-  coord_cartesian(clip = "off") +
-  labs(title = "HubGene Pathway-Gene Network")
+    coord_cartesian(clip = "off") +
+    labs(title = "HubGene Pathway-Gene Network")
 
 print(p)
 
@@ -2382,7 +2382,7 @@ print(p)
     size_block,
     seed, base_size,
     margin_top, margin_right, margin_bottom, margin_left
-  )
+    )
 }
 
 
@@ -2406,23 +2406,23 @@ print(p)
 
 .serialize_df_tsv <- function(df) {
 
-  if (!is.data.frame(df) || nrow(df) == 0) {
+    if (!is.data.frame(df) || nrow(df) == 0) {
 
     return("")
 
-  }
+    }
 
 
 
-  needs_quote <- function(s) {
+    needs_quote <- function(s) {
 
     !is.na(s) && nzchar(s) && grepl("[\t\n\"]", s)
 
-  }
+    }
 
 
 
-  encode_cell <- function(val) {
+    encode_cell <- function(val) {
 
     if (is.na(val)) return("")
 
@@ -2432,23 +2432,23 @@ print(p)
 
     if (needs_quote(s)) shQuote(s, type = "sh") else s
 
-  }
+    }
 
 
 
-  header <- paste(vapply(colnames(df), encode_cell, character(1)), collapse = "\t")
+    header <- paste(vapply(colnames(df), encode_cell, character(1)), collapse = "\t")
 
-  body_lines <- vapply(seq_len(nrow(df)), function(i) {
+    body_lines <- vapply(seq_len(nrow(df)), function(i) {
 
     paste(vapply(df, function(col) encode_cell(col[i]), character(1)),
 
-          collapse = "\t")
+                    collapse = "\t")
 
-  }, character(1))
+    }, character(1))
 
 
 
-  paste(c(header, body_lines), collapse = "\n")
+    paste(c(header, body_lines), collapse = "\n")
 
 }
 
@@ -2504,7 +2504,7 @@ print(p)
 
 #' @examples
 
-#' \donttest{
+#' \dontrun{
 
 #' # Shown via the "Export Publication Plot" button in panel 4 of the
 
@@ -2550,41 +2550,41 @@ generate_boxplot_image_code <- function(box_data_long,
 
                                         margin_left = 18, margin_right = 18) {
 
-  # Subset to the three essential columns + drop NA groups, mirroring the
+    # Subset to the three essential columns + drop NA groups, mirroring the
 
-  # interactive plotly rendering path.
+    # interactive plotly rendering path.
 
-  keep_cols <- intersect(c("Sample", "Group", "Expression"),
+    keep_cols <- intersect(c("Sample", "Group", "Expression"),
 
-                         colnames(box_data_long))
+                                                    colnames(box_data_long))
 
-  box_subset <- box_data_long[, keep_cols, drop = FALSE]
+    box_subset <- box_data_long[, keep_cols, drop = FALSE]
 
-  box_subset <- box_subset[!is.na(box_subset$Group), , drop = FALSE]
+    box_subset <- box_subset[!is.na(box_subset$Group), , drop = FALSE]
 
-  data_literal <- paste(utils::capture.output(dput(box_subset)), collapse = "\n")
-
-
-
-  safe_gene <- gsub("'", "''", gene_symbol %||% "")
-
-  safe_expr <- gsub("'", "''", expr_type %||% "Expression")
+    data_literal <- paste(utils::capture.output(dput(box_subset)), collapse = "\n")
 
 
 
-  # Build the optional custom-ordering block (mirrors
+    safe_gene <- gsub("'", "''", gene_symbol %||% "")
 
-  # generate_boxplot_data_code's logic, inlined for a self-contained script).
+    safe_expr <- gsub("'", "''", expr_type %||% "Expression")
 
-  has_custom_order <- !is.null(custom_order) &&
 
-                      length(custom_order) == 1 &&
 
-                      nzchar(custom_order) &&
+    # Build the optional custom-ordering block (mirrors
 
-                      !identical(custom_order, "default")
+    # generate_boxplot_data_code's logic, inlined for a self-contained script).
 
-  ordering_block <- if (has_custom_order) {
+    has_custom_order <- !is.null(custom_order) &&
+
+                                            length(custom_order) == 1 &&
+
+                                            nzchar(custom_order) &&
+
+                                            !identical(custom_order, "default")
+
+    ordering_block <- if (has_custom_order) {
 
     safe_order <- gsub("'", "''", custom_order)
 
@@ -2610,31 +2610,31 @@ generate_boxplot_image_code <- function(box_data_long,
 
     )
 
-  } else {
+    } else {
 
 '# --- Group ordering (alphabetical by default) -------------------------------\n# df$Group <- factor(df$Group)\nx_categories <- unique(as.character(df$Group))\ndf$Group <- factor(df$Group, levels = x_categories)\n'
 
-  }
+    }
 
 
 
-  # Zero-baseline line block
+    # Zero-baseline line block
 
-  baseline_block <- if (isTRUE(use_zero_baseline)) {
+    baseline_block <- if (isTRUE(use_zero_baseline)) {
 
 '  geom_hline(yintercept = 0, linetype = "dashed",
 
-             color = "red", alpha = 0.7, linewidth = 0.8) +'
+                            color = "red", alpha = 0.7, linewidth = 0.8) +'
 
-  } else {
+    } else {
 
 '  # (zero baseline line disabled) #'
 
-  }
+    }
 
 
 
-  sprintf(
+    sprintf(
 
 '# =============================================================================
 
@@ -2694,15 +2694,15 @@ if (length(unique_groups) == 0) unique_groups <- unique(as.character(df$Group))
 
 group_colors <- if (length(unique_groups) == 2) {
 
-  setNames(c("#E41A1C", "#377EB8"), unique_groups[1:2])
+    setNames(c("#E41A1C", "#377EB8"), unique_groups[1:2])
 
 } else {
 
-  cols <- c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3",
+    cols <- c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3",
 
             "#FF7F00", "#A65628", "#F781BF", "#999999")[seq_along(unique_groups)]
 
-  setNames(cols, unique_groups)
+    setNames(cols, unique_groups)
 
 }
 
@@ -2726,21 +2726,21 @@ y_max <- y_max + y_range * 0.1
 
 p <- ggplot(df, aes(x = Group, y = Expression, fill = Group)) +
 
-  geom_boxplot(alpha = 0.7, outlier.shape = NA) +
+    geom_boxplot(alpha = 0.7, outlier.shape = NA) +
 
-  geom_jitter(width = 0.2, size = 2, alpha = 0.6) +
+    geom_jitter(width = 0.2, size = 2, alpha = 0.6) +
 
-  scale_fill_manual(values = group_colors) +
+    scale_fill_manual(values = group_colors) +
 
-  scale_x_discrete(limits = levels(df$Group), drop = FALSE) +
+    scale_x_discrete(limits = levels(df$Group), drop = FALSE) +
 
 %s
 
-  coord_cartesian(ylim = c(y_min, y_max)) +
+    coord_cartesian(ylim = c(y_min, y_max)) +
 
-  theme_bw(base_size = %g) +
+    theme_bw(base_size = %g) +
 
-  labs(
+    labs(
 
     title = "%s",
 
@@ -2748,9 +2748,9 @@ p <- ggplot(df, aes(x = Group, y = Expression, fill = Group)) +
 
     x = NULL
 
-  ) +
+    ) +
 
-  theme(
+    theme(
 
     legend.position = "none",
 
@@ -2760,7 +2760,7 @@ p <- ggplot(df, aes(x = Group, y = Expression, fill = Group)) +
 
     plot.margin = margin(%d, %d, %d, %d)
 
-  )
+    )
 
 
 
@@ -2792,7 +2792,7 @@ print(p)
 
     margin_top, margin_right, margin_bottom, margin_left
 
-  )
+    )
 
 }
 

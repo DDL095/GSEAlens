@@ -32,13 +32,13 @@
 
 mod_quadrant_ui <- function(id) {
 
-  ns <- shiny::NS(id)
+    ns <- shiny::NS(id)
 
-  shiny::tagList(
+    shiny::tagList(
 
     shiny::fluidRow(
 
-      shiny::column(6, shiny::div(
+            shiny::column(6, shiny::div(
 
         class = "white-box",
 
@@ -46,17 +46,17 @@ mod_quadrant_ui <- function(id) {
 
         shiny::div(
 
-          style = "position: relative;",
+                    style = "position: relative;",
 
-          plotly::plotlyOutput(ns("volcano_pathway"), height = "400px"),
+                    plotly::plotlyOutput(ns("volcano_pathway"), height = "400px"),
 
-          shiny::div(
+                    shiny::div(
 
             style = "position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.9); padding: 5px 10px; border-radius: 4px; font-size: 11px; color: #666;",
 
             "Click pathway to highlight | Check 'Joint Plot' in table"
 
-          )
+                    )
 
         ),
 
@@ -64,9 +64,9 @@ mod_quadrant_ui <- function(id) {
 
         shiny::div(
 
-          style = "margin-top: 10px;",
+                    style = "margin-top: 10px;",
 
-          shiny::actionButton(
+                    shiny::actionButton(
 
             ns("open_volcano_export"),
 
@@ -78,13 +78,13 @@ mod_quadrant_ui <- function(id) {
 
             style = "width: 100%;"
 
-          )
+                    )
 
         )
 
-      )),
+            )),
 
-      shiny::column(6, shiny::div(
+            shiny::column(6, shiny::div(
 
         class = "white-box",
 
@@ -92,13 +92,13 @@ mod_quadrant_ui <- function(id) {
 
         plotly::plotlyOutput(ns("volcano_gene"), height = "400px")
 
-      ))
+            ))
 
     ),
 
     shiny::fluidRow(
 
-      shiny::column(6, shiny::div(
+            shiny::column(6, shiny::div(
 
         class = "white-box",
 
@@ -106,17 +106,17 @@ mod_quadrant_ui <- function(id) {
 
         shiny::div(
 
-          style = "margin-bottom: 10px;",
+                    style = "margin-bottom: 10px;",
 
-          shiny::checkboxInput(ns("toggle_volcano_settings"), label = "Settings", value = FALSE)
+                    shiny::checkboxInput(ns("toggle_volcano_settings"), label = "Settings", value = FALSE)
 
         ),
 
         shiny::conditionalPanel(
 
-          condition = sprintf("input['%s']", ns("toggle_volcano_settings")),
+                    condition = sprintf("input['%s']", ns("toggle_volcano_settings")),
 
-          shiny::div(
+                    shiny::div(
 
             style = "background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px;",
 
@@ -124,7 +124,7 @@ mod_quadrant_ui <- function(id) {
 
             shiny::numericInput(ns("volcano_pval_thresh"), "P-value Threshold:", value = 0.05, min = 0.001, max = 1, step = 0.01)
 
-          )
+                    )
 
         ),
 
@@ -132,9 +132,9 @@ mod_quadrant_ui <- function(id) {
 
         shiny::div(
 
-          style = "margin-top: 10px;",
+                    style = "margin-top: 10px;",
 
-          shiny::actionButton(
+                    shiny::actionButton(
 
             ns("open_de_volcano_export"),
 
@@ -146,13 +146,13 @@ mod_quadrant_ui <- function(id) {
 
             style = "width: 100%;"
 
-          )
+                    )
 
         )
 
-      )),
+            )),
 
-      shiny::column(6, shiny::div(
+            shiny::column(6, shiny::div(
 
         class = "white-box",
 
@@ -160,9 +160,9 @@ mod_quadrant_ui <- function(id) {
 
         shiny::div(
 
-          style = "margin-bottom: 10px;",
+                    style = "margin-bottom: 10px;",
 
-          shiny::checkboxInput(ns("zero_baseline"), label = "Use 0 as baseline", value = TRUE)
+                    shiny::checkboxInput(ns("zero_baseline"), label = "Use 0 as baseline", value = TRUE)
 
         ),
 
@@ -172,9 +172,9 @@ mod_quadrant_ui <- function(id) {
 
         shiny::div(
 
-          style = "margin-top: 10px;",
+                    style = "margin-top: 10px;",
 
-          shiny::actionButton(
+                    shiny::actionButton(
 
             ns("export_boxplot_data_btn"),
 
@@ -186,9 +186,9 @@ mod_quadrant_ui <- function(id) {
 
             style = "width: 100%;"
 
-          ),
+                    ),
 
-          shiny::helpText(
+                    shiny::helpText(
 
             "Opens a table of the per-sample expression values (long and wide",
 
@@ -196,11 +196,11 @@ mod_quadrant_ui <- function(id) {
 
             "GraphPad Prism or download as CSV."
 
-          ),
+                    ),
 
-          shiny::hr(),
+                    shiny::hr(),
 
-          shiny::actionButton(
+                    shiny::actionButton(
 
             ns("open_boxplot_image_export"),
 
@@ -212,9 +212,9 @@ mod_quadrant_ui <- function(id) {
 
             style = "width: 100%;"
 
-          ),
+                    ),
 
-          shiny::helpText(
+                    shiny::helpText(
 
             "Opens a publication-grade ggplot2 export modal (PDF/PNG/SVG +",
 
@@ -222,11 +222,11 @@ mod_quadrant_ui <- function(id) {
 
             "boxplot. Matches the interactive plotly styling."
 
-          )
+                    )
 
         )
 
-      ))
+            ))
 
     ),
 
@@ -234,7 +234,7 @@ mod_quadrant_ui <- function(id) {
 
     shiny::fluidRow(
 
-      shiny::column(12, shiny::div(
+            shiny::column(12, shiny::div(
 
         class = "white-box",
 
@@ -242,29 +242,29 @@ mod_quadrant_ui <- function(id) {
 
         shiny::div(
 
-          style = "margin-bottom: 10px;",
+                    style = "margin-bottom: 10px;",
 
-          shiny::actionButton(ns("clear_all_genes_btn_quadrant"), label = "Clear Table", class = "btn-warning btn-sm"),
+                    shiny::actionButton(ns("clear_all_genes_btn_quadrant"), label = "Clear Table", class = "btn-warning btn-sm"),
 
-          shiny::helpText("Click 'Clear Table' to remove all genes from the table")
+                    shiny::helpText("Click 'Clear Table' to remove all genes from the table")
 
         ),
 
         shiny::div(
 
-          style = "margin-bottom: 10px; font-size: 12px; color: #666;",
+                    style = "margin-bottom: 10px; font-size: 12px; color: #666;",
 
-          shiny::HTML("<b>Gene Sources:</b> Interest genes from sidebar | DE volcano clicks | Pathway genes (orange)")
+                    shiny::HTML("<b>Gene Sources:</b> Interest genes from sidebar | DE volcano clicks | Pathway genes (orange)")
 
         ),
 
         DT::dataTableOutput(ns("gene_expr_table"))
 
-      ))
+            ))
 
     ),
 
-  )
+    )
 
 }
 
@@ -296,7 +296,7 @@ mod_quadrant_ui <- function(id) {
 
 mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) {
 
-  shiny::moduleServer(id, function(input, output, session) {
+    shiny::moduleServer(id, function(input, output, session) {
 
     ns <- session$ns
 
@@ -348,13 +348,13 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     shiny::observe({
 
-      # 监听 table_controller$selected_pathways 的变化
+            # 监听 table_controller$selected_pathways 的变化
 
-      table_selected <- table_controller$selected_pathways()
+            table_selected <- table_controller$selected_pathways()
 
 
 
-      if (!is.null(table_selected) && length(table_selected) > 0) {
+            if (!is.null(table_selected) && length(table_selected) > 0) {
 
         current <- selected_pathway_ids()
 
@@ -362,49 +362,49 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         if (!identical(sort(current), sort(table_selected))) {
 
-          selected_pathway_ids(table_selected)
+                    selected_pathway_ids(table_selected)
 
-          message(sprintf("[Quad] Table selection changed: %s", paste(table_selected, collapse = ", ")))
+                    message(sprintf("[Quad] Table selection changed: %s", paste(table_selected, collapse = ", ")))
 
 
 
-          # 更新pathway基因标记（使用最后一个选中的）
+                    # 更新pathway基因标记（使用最后一个选中的）
 
-          data_list <- data_prep_data()
+                    data_list <- data_prep_data()
 
-          if (!is.null(data_list)) {
+                    if (!is.null(data_list)) {
 
             last_id <- tail(table_selected, 1)
 
             if (!is.null(data_list$gsea_res@geneSets[[last_id]])) {
 
-              pathway_genes <- data_list$gsea_res@geneSets[[last_id]]
+                            pathway_genes <- data_list$gsea_res@geneSets[[last_id]]
 
-              selected_pathway_genes(toupper(pathway_genes))
+                            selected_pathway_genes(toupper(pathway_genes))
 
-              message(sprintf("[Quad] Updated pathway genes from: %s (%d genes)", last_id, length(pathway_genes)))
+                            message(sprintf("[Quad] Updated pathway genes from: %s (%d genes)", last_id, length(pathway_genes)))
 
             }
 
-          }
+                    }
 
         }
 
-      } else {
+            } else {
 
         # Table清空时同步清空
 
         if (length(selected_pathway_ids()) > 0) {
 
-          selected_pathway_ids(character(0))
+                    selected_pathway_ids(character(0))
 
-          selected_pathway_genes(character(0))
+                    selected_pathway_genes(character(0))
 
-          message("[Quad] Table selection cleared")
+                    message("[Quad] Table selection cleared")
 
         }
 
-      }
+            }
 
     })
 
@@ -414,13 +414,13 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     shiny::observeEvent(data_prep_data(), {
 
-      selected_pathway_ids(character(0))
+            selected_pathway_ids(character(0))
 
-      selected_pathway_genes(character(0))
+            selected_pathway_genes(character(0))
 
-      current_boxplot_gene(NULL)
+            current_boxplot_gene(NULL)
 
-      boxplot_order_ref("default")
+            boxplot_order_ref("default")
 
     })
 
@@ -430,25 +430,25 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     output$selected_pathways_display <- shiny::renderUI({
 
-      sel_ids <- selected_pathway_ids()
+            sel_ids <- selected_pathway_ids()
 
 
 
-      if (length(sel_ids) == 0) {
+            if (length(sel_ids) == 0) {
 
         shiny::div(
 
-          style = "margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 5px;",
+                    style = "margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 5px;",
 
-          shiny::div(style = "color: #999; font-style: italic;", "No pathways selected")
+                    shiny::div(style = "color: #999; font-style: italic;", "No pathways selected")
 
         )
 
-      } else {
+            } else {
 
         tag_list <- lapply(sel_ids, function(pid) {
 
-          shiny::tags$span(
+                    shiny::tags$span(
 
             style = "display: inline-block; margin-right: 5px; margin-bottom: 5px; padding: 5px 10px; background: #FF9800; color: white; border-radius: 3px; font-size: 12px;",
 
@@ -456,17 +456,17 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             shiny::tags$button(
 
-              class = "btn btn-xs",
+                            class = "btn btn-xs",
 
-              style = "margin-left: 5px; padding: 0 5px; background: rgba(255,255,255,0.3); border: none; color: white;",
+                            style = "margin-left: 5px; padding: 0 5px; background: rgba(255,255,255,0.3); border: none; color: white;",
 
-              onclick = sprintf("Shiny.setInputValue('%s', '%s', {priority: 'event'})", ns("remove_pathway"), pid),
+                            onclick = sprintf("Shiny.setInputValue('%s', '%s', {priority: 'event'})", ns("remove_pathway"), pid),
 
-              "x"
+                            "x"
 
             )
 
-          )
+                    )
 
         })
 
@@ -474,7 +474,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         tag_list <- c(tag_list, list(
 
-          shiny::tags$button(
+                    shiny::tags$button(
 
             class = "btn btn-sm btn-warning",
 
@@ -484,7 +484,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             "Clear All"
 
-          )
+                    )
 
         ))
 
@@ -492,15 +492,15 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         shiny::div(
 
-          style = "margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 5px;",
+                    style = "margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 5px;",
 
-          shiny::tags$strong("Selected Pathways: "),
+                    shiny::tags$strong("Selected Pathways: "),
 
-          tag_list
+                    tag_list
 
         )
 
-      }
+            }
 
     })
 
@@ -510,13 +510,13 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     shiny::observeEvent(input$remove_pathway, {
 
-      pathway_to_remove <- input$remove_pathway
+            pathway_to_remove <- input$remove_pathway
 
-      data_list <- data_prep_data()
+            data_list <- data_prep_data()
 
 
 
-      if (pathway_to_remove == "CLEAR_ALL") {
+            if (pathway_to_remove == "CLEAR_ALL") {
 
         selected_pathway_ids(character(0))
 
@@ -526,13 +526,13 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         if (!is.null(table_controller$update_selection)) {
 
-          table_controller$update_selection("clear")
+                    table_controller$update_selection("clear")
 
         }
 
         message("[Pathway] Cleared all selected pathways")
 
-      } else {
+            } else {
 
         current <- selected_pathway_ids()
 
@@ -546,7 +546,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         if (!is.null(table_controller$update_selection)) {
 
-          table_controller$update_selection("remove", pathway_to_remove)
+                    table_controller$update_selection("remove", pathway_to_remove)
 
         }
 
@@ -554,25 +554,25 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         if (length(new_selection) > 0) {
 
-          last_id <- tail(new_selection, 1)
+                    last_id <- tail(new_selection, 1)
 
-          if (!is.null(data_list) && !is.null(data_list$gsea_res@geneSets[[last_id]])) {
+                    if (!is.null(data_list) && !is.null(data_list$gsea_res@geneSets[[last_id]])) {
 
             pathway_genes <- data_list$gsea_res@geneSets[[last_id]]
 
             selected_pathway_genes(toupper(pathway_genes))
 
-          }
+                    }
 
         } else {
 
-          selected_pathway_genes(character(0))
+                    selected_pathway_genes(character(0))
 
         }
 
         message(sprintf("[Pathway] Removed: %s", pathway_to_remove))
 
-      }
+            }
 
     })
 
@@ -582,9 +582,9 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     shiny::observeEvent(input$clear_all_genes_btn_quadrant, {
 
-      highlight_genes_reactive(character(0))
+            highlight_genes_reactive(character(0))
 
-      message("[Gene] Cleared all gene markers from quadrant")
+            message("[Gene] Cleared all gene markers from quadrant")
 
     })
 
@@ -594,47 +594,47 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     output$volcano_pathway <- plotly::renderPlotly({
 
-      data_list <- data_prep_data()
+            data_list <- data_prep_data()
 
-      shiny::req(data_list)
+            shiny::req(data_list)
 
-      df <- data_list$df
+            df <- data_list$df
 
-      current_selections <- selected_pathway_ids()
+            current_selections <- selected_pathway_ids()
 
 
 
-      df$color <- ifelse(df$ID %in% current_selections, COLOR_PATHWAY,
+            df$color <- ifelse(df$ID %in% current_selections, COLOR_PATHWAY,
 
         ifelse(df$NES > 0, COLOR_LEFT, COLOR_RIGHT)
 
-      )
+            )
 
-      df$size <- ifelse(df$ID %in% current_selections, 18, 10)
+            df$size <- ifelse(df$ID %in% current_selections, 18, 10)
 
-      df$opacity <- ifelse(length(current_selections) == 0, 0.8,
+            df$opacity <- ifelse(length(current_selections) == 0, 0.8,
 
         ifelse(df$ID %in% current_selections, 1.0, 0.35)
 
-      )
+            )
 
-      df$linewidth <- ifelse(df$ID %in% current_selections, 3, 1)
+            df$linewidth <- ifelse(df$ID %in% current_selections, 3, 1)
 
 
 
-      annotations_list <- list()
+            annotations_list <- list()
 
-      if (length(current_selections) > 0) {
+            if (length(current_selections) > 0) {
 
         selected_df <- df[df$ID %in% current_selections, ]
 
         for (i in seq_len(nrow(selected_df))) {
 
-          row <- selected_df[i, ]
+                    row <- selected_df[i, ]
 
-          ax_offset <- ifelse(i %% 2 == 1, 0, 50)
+                    ax_offset <- ifelse(i %% 2 == 1, 0, 50)
 
-          annotations_list[[i]] <- list(
+                    annotations_list[[i]] <- list(
 
             x = row$NES,
 
@@ -666,15 +666,15 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             borderpad = 4
 
-          )
+                    )
 
         }
 
-      }
+            }
 
 
 
-      plotly::plot_ly(
+            plotly::plot_ly(
 
         data = df,
 
@@ -688,13 +688,13 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         marker = list(
 
-          color = ~color,
+                    color = ~color,
 
-          size = ~size,
+                    size = ~size,
 
-          opacity = ~opacity,
+                    opacity = ~opacity,
 
-          line = list(color = "white", width = ~linewidth)
+                    line = list(color = "white", width = ~linewidth)
 
         ),
 
@@ -706,19 +706,19 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         source = ns("pathway_volcano")
 
-      ) |>
+            ) |>
 
         plotly::layout(
 
-          title = list(
+                    title = list(
 
             text = sprintf(
 
-              "Pathway Volcano: %s vs %s<br><sub>%d pathways | %d selected | %d significant (P<0.05)</sub>",
+                            "Pathway Volcano: %s vs %s<br><sub>%d pathways | %d selected | %d significant (P<0.05)</sub>",
 
-              data_list$left_group, data_list$right_group,
+                            data_list$left_group, data_list$right_group,
 
-              nrow(df), length(current_selections), sum(df$p.adjust < 0.25, na.rm = TRUE)
+                            nrow(df), length(current_selections), sum(df$p.adjust < 0.25, na.rm = TRUE)
 
             ),
 
@@ -728,17 +728,17 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             xanchor = "center"
 
-          ),
+                    ),
 
-          xaxis = list(title = "NES", zeroline = FALSE),
+                    xaxis = list(title = "NES", zeroline = FALSE),
 
-          yaxis = list(title = "-log10 (P-value)", zeroline = FALSE),
+                    yaxis = list(title = "-log10 (P-value)", zeroline = FALSE),
 
-          showlegend = FALSE,
+                    showlegend = FALSE,
 
-          dragmode = "pan",
+                    dragmode = "pan",
 
-          annotations = annotations_list
+                    annotations = annotations_list
 
         )
 
@@ -750,25 +750,25 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     shiny::observeEvent(plotly::event_data("plotly_click", source = ns("pathway_volcano")), {
 
-      click <- plotly::event_data("plotly_click", source = ns("pathway_volcano"))
+            click <- plotly::event_data("plotly_click", source = ns("pathway_volcano"))
 
-      if (is.null(click) || is.null(click$key)) {
+            if (is.null(click) || is.null(click$key)) {
 
         return()
 
-      }
+            }
 
 
 
-      clicked_id <- click$key
+            clicked_id <- click$key
 
-      current <- selected_pathway_ids()
+            current <- selected_pathway_ids()
 
-      data_list <- data_prep_data()
+            data_list <- data_prep_data()
 
 
 
-      if (clicked_id %in% current) {
+            if (clicked_id %in% current) {
 
         # 点击已选中的 → 取消选中
 
@@ -782,7 +782,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         if (!is.null(table_controller$update_selection)) {
 
-          table_controller$update_selection("remove", clicked_id)
+                    table_controller$update_selection("remove", clicked_id)
 
         }
 
@@ -790,25 +790,25 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         if (length(new_selection) > 0) {
 
-          last_id <- tail(new_selection, 1)
+                    last_id <- tail(new_selection, 1)
 
-          if (!is.null(data_list) && !is.null(data_list$gsea_res@geneSets[[last_id]])) {
+                    if (!is.null(data_list) && !is.null(data_list$gsea_res@geneSets[[last_id]])) {
 
             pathway_genes <- data_list$gsea_res@geneSets[[last_id]]
 
             selected_pathway_genes(toupper(pathway_genes))
 
-          }
+                    }
 
         } else {
 
-          selected_pathway_genes(character(0))
+                    selected_pathway_genes(character(0))
 
         }
 
         message(sprintf("[Pathway] Deselected: %s", clicked_id))
 
-      } else {
+            } else {
 
         # 点击未选中的 → 添加选中
 
@@ -822,7 +822,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         if (!is.null(table_controller$update_selection)) {
 
-          table_controller$update_selection("add", clicked_id)
+                    table_controller$update_selection("add", clicked_id)
 
         }
 
@@ -830,9 +830,9 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         if (!is.null(data_list) && !is.null(data_list$gsea_res@geneSets[[clicked_id]])) {
 
-          pathway_genes <- data_list$gsea_res@geneSets[[clicked_id]]
+                    pathway_genes <- data_list$gsea_res@geneSets[[clicked_id]]
 
-          selected_pathway_genes(toupper(pathway_genes))
+                    selected_pathway_genes(toupper(pathway_genes))
 
         }
 
@@ -840,7 +840,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         message(sprintf("[Pathway] Selected: %s", clicked_id))
 
-      }
+            }
 
     })
 
@@ -850,15 +850,15 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     output$volcano_gene <- plotly::renderPlotly({
 
-      data_list <- data_prep_data()
+            data_list <- data_prep_data()
 
-      shiny::req(data_list)
+            shiny::req(data_list)
 
 
 
-      genelist <- data_list$gsea_res@geneList
+            genelist <- data_list$gsea_res@geneList
 
-      rank_df <- data.frame(
+            rank_df <- data.frame(
 
         Rank = seq_along(genelist),
 
@@ -868,35 +868,35 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         stringsAsFactors = FALSE
 
-      )
+            )
 
 
 
-      pathway_genes <- selected_pathway_genes()
+            pathway_genes <- selected_pathway_genes()
 
-      rank_df$Color <- COLOR_NS
+            rank_df$Color <- COLOR_NS
 
-      rank_df$Size <- 4
+            rank_df$Size <- 4
 
 
 
-      if (length(pathway_genes) > 0) {
+            if (length(pathway_genes) > 0) {
 
         match_idx <- which(toupper(rank_df$Gene) %in% pathway_genes)
 
         if (length(match_idx) > 0) {
 
-          rank_df$Color[match_idx] <- COLOR_PATHWAY
+                    rank_df$Color[match_idx] <- COLOR_PATHWAY
 
-          rank_df$Size[match_idx] <- 12
+                    rank_df$Size[match_idx] <- 12
 
         }
 
-      }
+            }
 
 
 
-      plotly::plot_ly(
+            plotly::plot_ly(
 
         data = rank_df,
 
@@ -914,29 +914,29 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         hoverinfo = "text"
 
-      ) |>
+            ) |>
 
         plotly::layout(
 
-          xaxis = list(title = "Gene Rank"),
+                    xaxis = list(title = "Gene Rank"),
 
-          yaxis = list(title = "Ranking Metric (Stat)"),
+                    yaxis = list(title = "Ranking Metric (Stat)"),
 
-          showlegend = FALSE,
+                    showlegend = FALSE,
 
-          title = list(
+                    title = list(
 
             text = ifelse(length(pathway_genes) > 0,
 
-              sprintf("Selected: %d pathway genes highlighted", length(pathway_genes)),
+                            sprintf("Selected: %d pathway genes highlighted", length(pathway_genes)),
 
-              "Click pathway in volcano above to mark"
+                            "Click pathway in volcano above to mark"
 
             ),
 
             font = list(size = 12)
 
-          )
+                    )
 
         )
 
@@ -948,111 +948,111 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     output$de_volcano <- plotly::renderPlotly({
 
-      data_list <- data_prep_data()
+            data_list <- data_prep_data()
 
-      shiny::req(data_list)
-
-
-
-      contrast_id <- data_list$contrast_id
-
-      left_group <- data_list$left_group
-
-      right_group <- data_list$right_group
+            shiny::req(data_list)
 
 
 
-      de_df <- tryCatch(
+            contrast_id <- data_list$contrast_id
+
+            left_group <- data_list$left_group
+
+            right_group <- data_list$right_group
+
+
+
+            de_df <- tryCatch(
 
         {
 
-          get_de_table(gsea_res, contrast_id)
+                    get_de_table(gsea_res, contrast_id)
 
         },
 
         error = function(e) NULL
 
-      )
+            )
 
 
 
-      shiny::req(de_df)
+            shiny::req(de_df)
 
 
 
-      if (!"logFC" %in% colnames(de_df)) de_df$logFC <- de_df$log2FoldChange
+            if (!"logFC" %in% colnames(de_df)) de_df$logFC <- de_df$log2FoldChange
 
-      if (!"pvalue" %in% colnames(de_df)) de_df$pvalue <- de_df$p.value
+            if (!"pvalue" %in% colnames(de_df)) de_df$pvalue <- de_df$p.value
 
-      if (!"padj" %in% colnames(de_df)) de_df$padj <- de_df$p.adjust
+            if (!"padj" %in% colnames(de_df)) de_df$padj <- de_df$p.adjust
 
 
 
-      de_df <- de_df[!is.na(de_df$logFC) & !is.na(de_df$pvalue), ]
+            de_df <- de_df[!is.na(de_df$logFC) & !is.na(de_df$pvalue), ]
 
-      if (nrow(de_df) == 0) {
+            if (nrow(de_df) == 0) {
 
         return(NULL)
 
-      }
+            }
 
 
 
-      logfc_thresh <- if (!is.null(input$volcano_logfc_thresh)) input$volcano_logfc_thresh else 1
+            logfc_thresh <- if (!is.null(input$volcano_logfc_thresh)) input$volcano_logfc_thresh else 1
 
-      pval_thresh <- if (!is.null(input$volcano_pval_thresh)) input$volcano_pval_thresh else 0.05
-
-
-
-      de_df$x_axis <- de_df$logFC
-
-      de_df$y_axis <- -log10(de_df$pvalue)
+            pval_thresh <- if (!is.null(input$volcano_pval_thresh)) input$volcano_pval_thresh else 0.05
 
 
 
-      inf_y <- is.infinite(de_df$y_axis)
+            de_df$x_axis <- de_df$logFC
 
-      if (any(inf_y)) {
+            de_df$y_axis <- -log10(de_df$pvalue)
+
+
+
+            inf_y <- is.infinite(de_df$y_axis)
+
+            if (any(inf_y)) {
 
         max_y <- max(de_df$y_axis[!inf_y], na.rm = TRUE)
 
         de_df$y_axis[inf_y] <- max_y * 1.1
 
-      }
+            }
 
 
 
-      user_genes <- toupper(highlight_genes_reactive())
+            user_genes <- toupper(highlight_genes_reactive())
 
-      pathway_genes <- selected_pathway_genes()
+            pathway_genes <- selected_pathway_genes()
 
-      de_df$gene_upper <- toupper(de_df$gene_symbol)
-
-
-
-      de_df$is_user <- de_df$gene_upper %in% user_genes
-
-      de_df$is_pathway <- de_df$gene_upper %in% pathway_genes
-
-      de_df$is_significant <- abs(de_df$logFC) > logfc_thresh & de_df$pvalue < pval_thresh
+            de_df$gene_upper <- toupper(de_df$gene_symbol)
 
 
 
-      n_up <- sum(de_df$is_significant & de_df$logFC > 0, na.rm = TRUE)
+            de_df$is_user <- de_df$gene_upper %in% user_genes
 
-      n_down <- sum(de_df$is_significant & de_df$logFC < 0, na.rm = TRUE)
+            de_df$is_pathway <- de_df$gene_upper %in% pathway_genes
 
-      n_not_sig <- sum(!de_df$is_significant, na.rm = TRUE)
-
-      n_user <- sum(de_df$is_user, na.rm = TRUE)
-
-      n_pathway <- sum(de_df$is_pathway, na.rm = TRUE)
-
-      n_both <- sum(de_df$is_user & de_df$is_pathway, na.rm = TRUE)
+            de_df$is_significant <- abs(de_df$logFC) > logfc_thresh & de_df$pvalue < pval_thresh
 
 
 
-      de_df$color <- dplyr::case_when(
+            n_up <- sum(de_df$is_significant & de_df$logFC > 0, na.rm = TRUE)
+
+            n_down <- sum(de_df$is_significant & de_df$logFC < 0, na.rm = TRUE)
+
+            n_not_sig <- sum(!de_df$is_significant, na.rm = TRUE)
+
+            n_user <- sum(de_df$is_user, na.rm = TRUE)
+
+            n_pathway <- sum(de_df$is_pathway, na.rm = TRUE)
+
+            n_both <- sum(de_df$is_user & de_df$is_pathway, na.rm = TRUE)
+
+
+
+            de_df$color <- dplyr::case_when(
 
         de_df$is_user & de_df$is_pathway ~ COLOR_BOTH,
 
@@ -1066,11 +1066,11 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         TRUE ~ COLOR_NS
 
-      )
+            )
 
 
 
-      de_df$size <- dplyr::case_when(
+            de_df$size <- dplyr::case_when(
 
         de_df$is_user | de_df$is_pathway ~ 15,
 
@@ -1078,11 +1078,11 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         TRUE ~ 4
 
-      )
+            )
 
 
 
-      de_df$opacity <- dplyr::case_when(
+            de_df$opacity <- dplyr::case_when(
 
         de_df$is_user | de_df$is_pathway ~ 1.0,
 
@@ -1090,21 +1090,21 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         TRUE ~ 0.5
 
-      )
+            )
 
 
 
-      de_df$linewidth <- dplyr::case_when(
+            de_df$linewidth <- dplyr::case_when(
 
         de_df$is_user | de_df$is_pathway ~ 1.0,
 
         TRUE ~ 0
 
-      )
+            )
 
 
 
-      de_df$plot_order <- dplyr::case_when(
+            de_df$plot_order <- dplyr::case_when(
 
         de_df$is_user | de_df$is_pathway ~ 3,
 
@@ -1112,43 +1112,43 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         TRUE ~ 1
 
-      )
+            )
 
-      de_df <- de_df[order(de_df$plot_order), ]
+            de_df <- de_df[order(de_df$plot_order), ]
 
 
 
-      current_selected <- selected_pathway_ids()
+            current_selected <- selected_pathway_ids()
 
-      pathway_label <- if (length(current_selected) > 0) {
+            pathway_label <- if (length(current_selected) > 0) {
 
         sprintf(" | From: %s", tail(current_selected, 1))
 
-      } else {
+            } else {
 
         ""
 
-      }
+            }
 
 
 
-      title_text <- sprintf(
+            title_text <- sprintf(
 
         "%s vs %s<br><sup>Up %d | Down %d | NS %d | Selected %d | Pway %d | Both %d%s</sup>",
 
         left_group, right_group, n_up, n_down, n_not_sig, n_user, n_pathway, n_both, pathway_label
 
-      )
+            )
 
 
 
-      annotations_list <- list()
+            annotations_list <- list()
 
-      max_y_val <- max(de_df$y_axis, na.rm = TRUE)
+            max_y_val <- max(de_df$y_axis, na.rm = TRUE)
 
 
 
-      annotations_list[[1]] <- list(
+            annotations_list[[1]] <- list(
 
         x = 0.99, y = 0.99, xref = "paper", yref = "paper",
 
@@ -1162,9 +1162,9 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         bordercolor = COLOR_LEFT, borderwidth = 2, borderpad = 6
 
-      )
+            )
 
-      annotations_list[[2]] <- list(
+            annotations_list[[2]] <- list(
 
         x = 0.01, y = 0.99, xref = "paper", yref = "paper",
 
@@ -1178,21 +1178,21 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         bordercolor = COLOR_RIGHT, borderwidth = 2, borderpad = 6
 
-      )
+            )
 
 
 
-      user_genes_df <- de_df[de_df$is_user, ]
+            user_genes_df <- de_df[de_df$is_user, ]
 
-      if (nrow(user_genes_df) > 0) {
+            if (nrow(user_genes_df) > 0) {
 
         for (i in seq_len(min(nrow(user_genes_df), 20))) {
 
-          gene <- user_genes_df[i, ]
+                    gene <- user_genes_df[i, ]
 
-          gene_color <- if (gene$is_user && gene$is_pathway) COLOR_BOTH else COLOR_USER
+                    gene_color <- if (gene$is_user && gene$is_pathway) COLOR_BOTH else COLOR_USER
 
-          annotations_list[[length(annotations_list) + 1]] <- list(
+                    annotations_list[[length(annotations_list) + 1]] <- list(
 
             x = gene$x_axis,
 
@@ -1222,337 +1222,337 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             font = list(size = 12, color = gene_color)
 
-          )
+                    )
 
         }
 
-      }
+            }
 
 
 
-      if (logfc_thresh > 0) {
+            if (logfc_thresh > 0) {
 
         annotations_list[[length(annotations_list) + 1]] <- list(
 
-          x = logfc_thresh, y = max_y_val * 0.95,
+                    x = logfc_thresh, y = max_y_val * 0.95,
 
-          text = sprintf("|logFC|=%.1f", logfc_thresh),
+                    text = sprintf("|logFC|=%.1f", logfc_thresh),
 
-          showarrow = FALSE, font = list(size = 10, color = "gray")
+                    showarrow = FALSE, font = list(size = 10, color = "gray")
 
         )
 
         annotations_list[[length(annotations_list) + 1]] <- list(
 
-          x = -logfc_thresh, y = max_y_val * 0.95,
+                    x = -logfc_thresh, y = max_y_val * 0.95,
 
-          text = sprintf("|logFC|=%.1f", logfc_thresh),
+                    text = sprintf("|logFC|=%.1f", logfc_thresh),
 
-          showarrow = FALSE, font = list(size = 10, color = "gray")
+                    showarrow = FALSE, font = list(size = 10, color = "gray")
 
         )
 
-      }
+            }
 
 
 
 
 
-      # ============================================================
+            # ============================================================
 
-      # 分层渲染：拆分数据为多个子集（从底到顶）
+            # 分层渲染：拆分数据为多个子集（从底到顶）
 
-      # ============================================================
-
-
-
-      df_ns <- de_df[!de_df$is_significant, ]
-
-      df_up <- de_df[de_df$is_significant & de_df$logFC > 0, ]
-
-      df_down <- de_df[de_df$is_significant & de_df$logFC < 0, ]
-
-      df_pathway <- de_df[de_df$is_pathway & !de_df$is_user, ]
-
-      df_user <- de_df[de_df$is_user & !de_df$is_pathway, ]
-
-      df_both <- de_df[de_df$is_user & de_df$is_pathway, ]
+            # ============================================================
 
 
 
-      # 初始化 plot_ly 时设置 source（点击事件需要）
+            df_ns <- de_df[!de_df$is_significant, ]
 
-      p <- plotly::plot_ly(
+            df_up <- de_df[de_df$is_significant & de_df$logFC > 0, ]
+
+            df_down <- de_df[de_df$is_significant & de_df$logFC < 0, ]
+
+            df_pathway <- de_df[de_df$is_pathway & !de_df$is_user, ]
+
+            df_user <- de_df[de_df$is_user & !de_df$is_pathway, ]
+
+            df_both <- de_df[de_df$is_user & de_df$is_pathway, ]
+
+
+
+            # 初始化 plot_ly 时设置 source（点击事件需要）
+
+            p <- plotly::plot_ly(
 
         data = de_df,
 
         source = ns("deg_volcano")
 
-      )
+            )
 
 
 
-      # Layer 1: NS (灰色，最底层)
+            # Layer 1: NS (灰色，最底层)
 
-      if (nrow(df_ns) > 0) {
-
-        p <- p |> plotly::add_trace(
-
-          data = df_ns,
-
-          x = df_ns$x_axis,
-
-          y = df_ns$y_axis,
-
-          type = "scatter",
-
-          mode = "markers",
-
-          marker = list(color = COLOR_NS, size = 4, opacity = 0.5, line = list(color = "white", width = 0)),
-
-          text = sprintf("%s<br>logFC: %.2f<br>-log10(p): %.2f<br>FDR: %.2e", df_ns$gene_symbol, df_ns$logFC, df_ns$y_axis, df_ns$padj),
-
-          hoverinfo = "text",
-
-          key = df_ns$gene_upper,
-
-          showlegend = FALSE,
-
-          inherit = FALSE
-
-        )
-
-      }
-
-
-
-      # Layer 2: UP (红色)
-
-      if (nrow(df_up) > 0) {
+            if (nrow(df_ns) > 0) {
 
         p <- p |> plotly::add_trace(
 
-          data = df_up,
+                    data = df_ns,
 
-          x = df_up$x_axis,
+                    x = df_ns$x_axis,
 
-          y = df_up$y_axis,
+                    y = df_ns$y_axis,
 
-          type = "scatter",
+                    type = "scatter",
 
-          mode = "markers",
+                    mode = "markers",
 
-          marker = list(color = COLOR_LEFT, size = 9, opacity = 0.7, line = list(color = "white", width = 0)),
+                    marker = list(color = COLOR_NS, size = 4, opacity = 0.5, line = list(color = "white", width = 0)),
 
-          text = sprintf("%s<br>logFC: %.2f<br>-log10(p): %.2f<br>FDR: %.2e", df_up$gene_symbol, df_up$logFC, df_up$y_axis, df_up$padj),
+                    text = sprintf("%s<br>logFC: %.2f<br>-log10(p): %.2f<br>FDR: %.2e", df_ns$gene_symbol, df_ns$logFC, df_ns$y_axis, df_ns$padj),
 
-          hoverinfo = "text",
+                    hoverinfo = "text",
 
-          key = df_up$gene_upper,
+                    key = df_ns$gene_upper,
 
-          showlegend = FALSE,
+                    showlegend = FALSE,
 
-          inherit = FALSE
+                    inherit = FALSE
 
         )
 
-      }
+            }
 
 
 
-      # Layer 3: DOWN (蓝色)
+            # Layer 2: UP (红色)
 
-      if (nrow(df_down) > 0) {
+            if (nrow(df_up) > 0) {
 
         p <- p |> plotly::add_trace(
 
-          data = df_down,
+                    data = df_up,
 
-          x = df_down$x_axis,
+                    x = df_up$x_axis,
 
-          y = df_down$y_axis,
+                    y = df_up$y_axis,
 
-          type = "scatter",
+                    type = "scatter",
 
-          mode = "markers",
+                    mode = "markers",
 
-          marker = list(color = COLOR_RIGHT, size = 9, opacity = 0.7, line = list(color = "white", width = 0)),
+                    marker = list(color = COLOR_LEFT, size = 9, opacity = 0.7, line = list(color = "white", width = 0)),
 
-          text = sprintf("%s<br>logFC: %.2f<br>-log10(p): %.2f<br>FDR: %.2e", df_down$gene_symbol, df_down$logFC, df_down$y_axis, df_down$padj),
+                    text = sprintf("%s<br>logFC: %.2f<br>-log10(p): %.2f<br>FDR: %.2e", df_up$gene_symbol, df_up$logFC, df_up$y_axis, df_up$padj),
 
-          hoverinfo = "text",
+                    hoverinfo = "text",
 
-          key = df_down$gene_upper,
+                    key = df_up$gene_upper,
 
-          showlegend = FALSE,
+                    showlegend = FALSE,
 
-          inherit = FALSE
+                    inherit = FALSE
 
         )
 
-      }
+            }
 
 
 
-      # Layer 4: 仅Pathway (橙色)
+            # Layer 3: DOWN (蓝色)
 
-      if (nrow(df_pathway) > 0) {
+            if (nrow(df_down) > 0) {
 
         p <- p |> plotly::add_trace(
 
-          data = df_pathway,
+                    data = df_down,
 
-          x = df_pathway$x_axis,
+                    x = df_down$x_axis,
 
-          y = df_pathway$y_axis,
+                    y = df_down$y_axis,
 
-          type = "scatter",
+                    type = "scatter",
 
-          mode = "markers",
+                    mode = "markers",
 
-          marker = list(color = COLOR_PATHWAY, size = 15, opacity = 1.0, line = list(color = "white", width = 1.5)),
+                    marker = list(color = COLOR_RIGHT, size = 9, opacity = 0.7, line = list(color = "white", width = 0)),
 
-          text = sprintf("%s<br>logFC: %.2f<br>-log10(p): %.2f<br>FDR: %.2e<br>[Pathway]", df_pathway$gene_symbol, df_pathway$logFC, df_pathway$y_axis, df_pathway$padj),
+                    text = sprintf("%s<br>logFC: %.2f<br>-log10(p): %.2f<br>FDR: %.2e", df_down$gene_symbol, df_down$logFC, df_down$y_axis, df_down$padj),
 
-          hoverinfo = "text",
+                    hoverinfo = "text",
 
-          key = df_pathway$gene_upper,
+                    key = df_down$gene_upper,
 
-          showlegend = FALSE,
+                    showlegend = FALSE,
 
-          inherit = FALSE
+                    inherit = FALSE
 
         )
 
-      }
+            }
 
 
 
-      # Layer 5: 仅User (绿色)
+            # Layer 4: 仅Pathway (橙色)
 
-      if (nrow(df_user) > 0) {
+            if (nrow(df_pathway) > 0) {
 
         p <- p |> plotly::add_trace(
 
-          data = df_user,
+                    data = df_pathway,
 
-          x = df_user$x_axis,
+                    x = df_pathway$x_axis,
 
-          y = df_user$y_axis,
+                    y = df_pathway$y_axis,
 
-          type = "scatter",
+                    type = "scatter",
 
-          mode = "markers",
+                    mode = "markers",
 
-          marker = list(color = COLOR_USER, size = 15, opacity = 1.0, line = list(color = "white", width = 1.5)),
+                    marker = list(color = COLOR_PATHWAY, size = 15, opacity = 1.0, line = list(color = "white", width = 1.5)),
 
-          text = sprintf("%s<br>logFC: %.2f<br>-log10(p): %.2f<br>FDR: %.2e<br>[Selected]", df_user$gene_symbol, df_user$logFC, df_user$y_axis, df_user$padj),
+                    text = sprintf("%s<br>logFC: %.2f<br>-log10(p): %.2f<br>FDR: %.2e<br>[Pathway]", df_pathway$gene_symbol, df_pathway$logFC, df_pathway$y_axis, df_pathway$padj),
 
-          hoverinfo = "text",
+                    hoverinfo = "text",
 
-          key = df_user$gene_upper,
+                    key = df_pathway$gene_upper,
 
-          showlegend = FALSE,
+                    showlegend = FALSE,
 
-          inherit = FALSE
+                    inherit = FALSE
 
         )
 
-      }
+            }
 
 
 
-      # Layer 6: Both (紫色，最顶层)
+            # Layer 5: 仅User (绿色)
 
-      if (nrow(df_both) > 0) {
+            if (nrow(df_user) > 0) {
 
         p <- p |> plotly::add_trace(
 
-          data = df_both,
+                    data = df_user,
 
-          x = df_both$x_axis,
+                    x = df_user$x_axis,
 
-          y = df_both$y_axis,
+                    y = df_user$y_axis,
 
-          type = "scatter",
+                    type = "scatter",
 
-          mode = "markers",
+                    mode = "markers",
 
-          marker = list(color = COLOR_BOTH, size = 18, opacity = 1.0, line = list(color = "white", width = 2)),
+                    marker = list(color = COLOR_USER, size = 15, opacity = 1.0, line = list(color = "white", width = 1.5)),
 
-          text = sprintf("%s<br>logFC: %.2f<br>-log10(p): %.2f<br>FDR: %.2e<br>[Both]", df_both$gene_symbol, df_both$logFC, df_both$y_axis, df_both$padj),
+                    text = sprintf("%s<br>logFC: %.2f<br>-log10(p): %.2f<br>FDR: %.2e<br>[Selected]", df_user$gene_symbol, df_user$logFC, df_user$y_axis, df_user$padj),
 
-          hoverinfo = "text",
+                    hoverinfo = "text",
 
-          key = df_both$gene_upper,
+                    key = df_user$gene_upper,
 
-          showlegend = FALSE,
+                    showlegend = FALSE,
 
-          inherit = FALSE
+                    inherit = FALSE
 
         )
 
-      }
+            }
 
 
 
-      # 布局设置
+            # Layer 6: Both (紫色，最顶层)
 
-      p <- p |>
+            if (nrow(df_both) > 0) {
+
+        p <- p |> plotly::add_trace(
+
+                    data = df_both,
+
+                    x = df_both$x_axis,
+
+                    y = df_both$y_axis,
+
+                    type = "scatter",
+
+                    mode = "markers",
+
+                    marker = list(color = COLOR_BOTH, size = 18, opacity = 1.0, line = list(color = "white", width = 2)),
+
+                    text = sprintf("%s<br>logFC: %.2f<br>-log10(p): %.2f<br>FDR: %.2e<br>[Both]", df_both$gene_symbol, df_both$logFC, df_both$y_axis, df_both$padj),
+
+                    hoverinfo = "text",
+
+                    key = df_both$gene_upper,
+
+                    showlegend = FALSE,
+
+                    inherit = FALSE
+
+        )
+
+            }
+
+
+
+            # 布局设置
+
+            p <- p |>
 
         plotly::layout(
 
-          title = list(text = title_text, font = list(size = 14), x = 0.5, xanchor = "center"),
+                    title = list(text = title_text, font = list(size = 14), x = 0.5, xanchor = "center"),
 
-          xaxis = list(title = "logFC", zeroline = FALSE, showgrid = TRUE, gridcolor = "lightgray"),
+                    xaxis = list(title = "logFC", zeroline = FALSE, showgrid = TRUE, gridcolor = "lightgray"),
 
-          yaxis = list(title = "-log10 (P-value)", zeroline = FALSE, showgrid = TRUE, gridcolor = "lightgray"),
+                    yaxis = list(title = "-log10 (P-value)", zeroline = FALSE, showgrid = TRUE, gridcolor = "lightgray"),
 
-          showlegend = FALSE,
+                    showlegend = FALSE,
 
-          dragmode = "pan",
+                    dragmode = "pan",
 
-          annotations = annotations_list,
+                    annotations = annotations_list,
 
-          shapes = list(
+                    shapes = list(
 
             list(
 
-              type = "line", x0 = logfc_thresh, x1 = logfc_thresh,
+                            type = "line", x0 = logfc_thresh, x1 = logfc_thresh,
 
-              y0 = 0, y1 = max_y_val * 1.05,
+                            y0 = 0, y1 = max_y_val * 1.05,
 
-              line = list(color = "gray", dash = "dash", width = 1)
+                            line = list(color = "gray", dash = "dash", width = 1)
 
             ),
 
             list(
 
-              type = "line", x0 = -logfc_thresh, x1 = -logfc_thresh,
+                            type = "line", x0 = -logfc_thresh, x1 = -logfc_thresh,
 
-              y0 = 0, y1 = max_y_val * 1.05,
+                            y0 = 0, y1 = max_y_val * 1.05,
 
-              line = list(color = "gray", dash = "dash", width = 1)
+                            line = list(color = "gray", dash = "dash", width = 1)
 
             ),
 
             list(
 
-              type = "line", x0 = min(de_df$x_axis) * 1.1, x1 = max(de_df$x_axis) * 1.1,
+                            type = "line", x0 = min(de_df$x_axis) * 1.1, x1 = max(de_df$x_axis) * 1.1,
 
-              y0 = -log10(pval_thresh), y1 = -log10(pval_thresh),
+                            y0 = -log10(pval_thresh), y1 = -log10(pval_thresh),
 
-              line = list(color = "gray", dash = "dash", width = 1)
+                            line = list(color = "gray", dash = "dash", width = 1)
 
             )
 
-          )
+                    )
 
         )
 
 
 
-      p
+            p
 
     })
 
@@ -1562,25 +1562,25 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     shiny::observeEvent(plotly::event_data("plotly_click", source = ns("deg_volcano")), {
 
-      click <- plotly::event_data("plotly_click", source = ns("deg_volcano"))
+            click <- plotly::event_data("plotly_click", source = ns("deg_volcano"))
 
-      if (is.null(click) || is.null(click$key)) {
+            if (is.null(click) || is.null(click$key)) {
 
         return()
 
-      }
+            }
 
 
 
-      clicked_gene <- click$key
+            clicked_gene <- click$key
 
-      current_boxplot_gene(clicked_gene)
+            current_boxplot_gene(clicked_gene)
 
 
 
-      current_applied <- highlight_genes_reactive()
+            current_applied <- highlight_genes_reactive()
 
-      highlight_genes_reactive(union(toupper(current_applied), toupper(clicked_gene)))
+            highlight_genes_reactive(union(toupper(current_applied), toupper(clicked_gene)))
 
     })
 
@@ -1590,55 +1590,55 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     output$gene_expr_table <- DT::renderDataTable({
 
-      genes <- highlight_genes_reactive()
+            genes <- highlight_genes_reactive()
 
-      shiny::req(length(genes) > 0)
-
-
-
-      data_list <- data_prep_data()
-
-      shiny::req(data_list)
-
-      symbol_map <- .rebuild_symbol_map(gsea_res, data_list$contrast_id)
+            shiny::req(length(genes) > 0)
 
 
 
-      left_grp <- data_list$left_group
+            data_list <- data_prep_data()
 
-      right_grp <- data_list$right_group
+            shiny::req(data_list)
 
-
-
-      # 获取 DE volcano 的阈值
-
-      pval_thresh <- input$volcano_pval_thresh %||% 0.05
-
-      logfc_thresh <- input$volcano_logfc_thresh %||% 1
+            symbol_map <- .rebuild_symbol_map(gsea_res, data_list$contrast_id)
 
 
 
-      user_genes <- toupper(highlight_genes_reactive())
+            left_grp <- data_list$left_group
 
-      pathway_genes <- selected_pathway_genes()
+            right_grp <- data_list$right_group
 
 
 
-      de_df <- tryCatch(
+            # 获取 DE volcano 的阈值
+
+            pval_thresh <- input$volcano_pval_thresh %||% 0.05
+
+            logfc_thresh <- input$volcano_logfc_thresh %||% 1
+
+
+
+            user_genes <- toupper(highlight_genes_reactive())
+
+            pathway_genes <- selected_pathway_genes()
+
+
+
+            de_df <- tryCatch(
 
         {
 
-          get_de_table(gsea_res, data_list$contrast_id)
+                    get_de_table(gsea_res, data_list$contrast_id)
 
         },
 
         error = function(e) NULL
 
-      )
+            )
 
 
 
-      table_data <- lapply(genes, function(g) {
+            table_data <- lapply(genes, function(g) {
 
         gene_upper <- toupper(g)
 
@@ -1656,17 +1656,17 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         if (!is.null(de_df)) {
 
-          if ("gene_symbol" %in% colnames(de_df)) {
+                    if ("gene_symbol" %in% colnames(de_df)) {
 
             idx <- which(toupper(de_df$gene_symbol) == gene_upper)
 
-          } else {
+                    } else {
 
             idx <- which(rownames(de_df) == g)
 
-          }
+                    }
 
-          if (length(idx) > 0) {
+                    if (length(idx) > 0) {
 
             row <- de_df[idx[1], ]
 
@@ -1676,7 +1676,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             padj_val <- row$padj
 
-          }
+                    }
 
         }
 
@@ -1700,23 +1700,23 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         sig_label <- {
 
-          if (is.na(pval) || is.na(logfc)) {
+                    if (is.na(pval) || is.na(logfc)) {
 
             "-"
 
-          } else if (pval < pval_thresh && logfc > logfc_thresh) {
+                    } else if (pval < pval_thresh && logfc > logfc_thresh) {
 
             "upreg"
 
-          } else if (pval < pval_thresh && logfc < -logfc_thresh) {
+                    } else if (pval < pval_thresh && logfc < -logfc_thresh) {
 
             "downreg"
 
-          } else {
+                    } else {
 
             "ns"
 
-          }
+                    }
 
         }
 
@@ -1726,9 +1726,9 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         delete_btn <- sprintf(
 
-          '<button class="btn btn-xs btn-danger" onclick="Shiny.setInputValue(\'%s\', {gene_to_remove: \'%s\', time: Date.now()}, {priority: \'event\'});" style="margin-right: 5px;">X</button>',
+                    '<button class="btn btn-xs btn-danger" onclick="Shiny.setInputValue(\'%s\', {gene_to_remove: \'%s\', time: Date.now()}, {priority: \'event\'});" style="margin-right: 5px;">X</button>',
 
-          ns("delete_gene_action"), g
+                    ns("delete_gene_action"), g
 
         )
 
@@ -1736,9 +1736,9 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         view_btn <- sprintf(
 
-          '<button class="btn btn-xs btn-primary" onclick="Shiny.setInputValue(\'%s\', {gene_to_view: \'%s\', time: Date.now()}, {priority: \'event\'});">View</button>',
+                    '<button class="btn btn-xs btn-primary" onclick="Shiny.setInputValue(\'%s\', {gene_to_view: \'%s\', time: Date.now()}, {priority: \'event\'});">View</button>',
 
-          ns("view_boxplot_action"), g
+                    ns("view_boxplot_action"), g
 
         )
 
@@ -1746,67 +1746,67 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         data.frame(
 
-          Gene = .get_display_symbol(g, symbol_map),
+                    Gene = .get_display_symbol(g, symbol_map),
 
-          Log2FC = ifelse(is.na(logfc), "-", sprintf("%.3f", logfc)),
+                    Log2FC = ifelse(is.na(logfc), "-", sprintf("%.3f", logfc)),
 
-          Pvalue = pval_display,
+                    Pvalue = pval_display,
 
-          Padjust = padj_display,
+                    Padjust = padj_display,
 
-          UpDown = updown,
+                    UpDown = updown,
 
-          Significant = sig_label,
+                    Significant = sig_label,
 
-          HighIn = high_in,
+                    HighIn = high_in,
 
-          IsPathway = ifelse(is_pathway, "Yes", "No"),
+                    IsPathway = ifelse(is_pathway, "Yes", "No"),
 
-          Delete = delete_btn,
+                    Delete = delete_btn,
 
-          ViewBox = view_btn,
+                    ViewBox = view_btn,
 
-          stringsAsFactors = FALSE,
+                    stringsAsFactors = FALSE,
 
-          check.names = FALSE
+                    check.names = FALSE
 
         )
 
-      })
+            })
 
 
 
-      table_df <- do.call(rbind, table_data)
+            table_df <- do.call(rbind, table_data)
 
 
 
-      # 按 P-value 升序排序
+            # 按 P-value 升序排序
 
-      table_df <- table_df[order(table_df[["Pvalue"]], na.last = TRUE), ]
+            table_df <- table_df[order(table_df[["Pvalue"]], na.last = TRUE), ]
 
 
 
-      # JS 渲染函数：科学计数法
+            # JS 渲染函数：科学计数法
 
-      js_pval_render <- "
+            js_pval_render <- "
 
         function(data, type) {
 
-          if (type === 'sort' || type === 'type') return data;
+                    if (type === 'sort' || type === 'type') return data;
 
-          if (data === null || isNaN(data)) return '-';
+                    if (data === null || isNaN(data)) return '-';
 
-          if (Math.abs(data) < 0.001) return data.toExponential(2);
+                    if (Math.abs(data) < 0.001) return data.toExponential(2);
 
-          return data.toFixed(4);
+                    return data.toFixed(4);
 
         }
 
-      "
+            "
 
 
 
-      dt <- DT::datatable(
+            dt <- DT::datatable(
 
         table_df,
 
@@ -1820,17 +1820,17 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         options = list(
 
-          pageLength = 10,
+                    pageLength = 10,
 
-          scrollY = "50vh",
+                    scrollY = "50vh",
 
-          scroller = TRUE,
+                    scroller = TRUE,
 
-          dom = "frtip",
+                    dom = "frtip",
 
-          search = list(caseInsensitive = TRUE),
+                    search = list(caseInsensitive = TRUE),
 
-          columnDefs = list(
+                    columnDefs = list(
 
             list(orderable = FALSE, targets = c(7, 8)),
 
@@ -1838,33 +1838,33 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             list(
 
-              targets = 2,
+                            targets = 2,
 
-              render = htmlwidgets::JS(js_pval_render)
+                            render = htmlwidgets::JS(js_pval_render)
 
             ),
 
             list(
 
-              targets = 3,
+                            targets = 3,
 
-              render = htmlwidgets::JS(js_pval_render)
+                            render = htmlwidgets::JS(js_pval_render)
 
             )
 
-          ),
+                    ),
 
-          order = list(list(2, "asc"))
+                    order = list(list(2, "asc"))
 
         )
 
-      )
+            )
 
 
 
-      # Up/Down 列样式
+            # Up/Down 列样式
 
-      dt <- dt |> DT::formatStyle(
+            dt <- dt |> DT::formatStyle(
 
         columns = "UpDown",
 
@@ -1874,13 +1874,13 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         fontWeight = DT::styleEqual(c("UP", "DOWN"), c("bold", "bold"))
 
-      )
+            )
 
 
 
-      # Significant 列样式
+            # Significant 列样式
 
-      dt <- dt |> DT::formatStyle(
+            dt <- dt |> DT::formatStyle(
 
         columns = "Significant",
 
@@ -1888,25 +1888,25 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         fontWeight = "bold"
 
-      )
+            )
 
 
 
-      # High In 列样式
+            # High In 列样式
 
-      dt <- dt |> DT::formatStyle(
+            dt <- dt |> DT::formatStyle(
 
         columns = "HighIn",
 
         color = DT::styleEqual(c(left_grp, right_grp, "-"), c("#E41A1C", "#377EB8", "#999999"))
 
-      )
+            )
 
 
 
-      # In Pathway 列样式
+            # In Pathway 列样式
 
-      dt <- dt |> DT::formatStyle(
+            dt <- dt |> DT::formatStyle(
 
         columns = "IsPathway",
 
@@ -1916,13 +1916,13 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         fontWeight = DT::styleEqual(c("Yes", "No"), c("bold", "normal"))
 
-      )
+            )
 
 
 
-      # P-value 列样式
+            # P-value 列样式
 
-      dt <- dt |> DT::formatStyle(
+            dt <- dt |> DT::formatStyle(
 
         columns = "Pvalue",
 
@@ -1930,13 +1930,13 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         fontWeight = DT::styleInterval(0.05, c("bold", "normal"))
 
-      )
+            )
 
 
 
-      # Adj P-value 列样式
+            # Adj P-value 列样式
 
-      dt <- dt |> DT::formatStyle(
+            dt <- dt |> DT::formatStyle(
 
         columns = "Padjust",
 
@@ -1944,11 +1944,11 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         fontWeight = DT::styleInterval(0.05, c("bold", "normal"))
 
-      )
+            )
 
 
 
-      dt
+            dt
 
     })
 
@@ -1958,13 +1958,13 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     shiny::observeEvent(input$delete_gene_action,
 
-      {
+            {
 
         action_data <- input$delete_gene_action
 
         if (is.null(action_data) || is.null(action_data$gene_to_remove)) {
 
-          return()
+                    return()
 
         }
 
@@ -1984,7 +1984,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         if (!is.null(current_boxplot_gene()) && toupper(current_boxplot_gene()) == toupper(gene_to_remove)) {
 
-          current_boxplot_gene(NULL)
+                    current_boxplot_gene(NULL)
 
         }
 
@@ -1994,9 +1994,9 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         shiny::showNotification(sprintf("Gene removed: %s", gene_to_remove), type = "message", duration = 2)
 
-      },
+            },
 
-      ignoreNULL = TRUE
+            ignoreNULL = TRUE
 
     )
 
@@ -2006,13 +2006,13 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     shiny::observeEvent(input$view_boxplot_action,
 
-      {
+            {
 
         action_data <- input$view_boxplot_action
 
         if (is.null(action_data) || is.null(action_data$gene_to_view)) {
 
-          return()
+                    return()
 
         }
 
@@ -2028,9 +2028,9 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         shiny::showNotification(sprintf("Showing boxplot for: %s", gene_name), type = "message", duration = 2)
 
-      },
+            },
 
-      ignoreNULL = TRUE
+            ignoreNULL = TRUE
 
     )
 
@@ -2040,65 +2040,65 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     output$gene_expr_box <- plotly::renderPlotly({
 
-      current_gene <- current_boxplot_gene()
+            current_gene <- current_boxplot_gene()
 
 
 
-      if (is.null(current_gene)) {
+            if (is.null(current_gene)) {
 
         return(plotly::plot_ly() |> plotly::layout(
 
-          title = list(text = "Click gene in DE volcano or table to view expression", font = list(size = 14))
+                    title = list(text = "Click gene in DE volcano or table to view expression", font = list(size = 14))
 
         ))
 
-      }
+            }
 
 
 
-      data_list <- data_prep_data()
+            data_list <- data_prep_data()
 
-      shiny::req(data_list)
+            shiny::req(data_list)
 
 
 
-      tryCatch(
+            tryCatch(
 
         {
 
-          expr_mat <- get_expr_matrix(gsea_res, type = data_list$expression_type)
+                    expr_mat <- get_expr_matrix(gsea_res, type = data_list$expression_type)
 
-          sample_meta <- get_sample_meta(gsea_res)
+                    sample_meta <- get_sample_meta(gsea_res)
 
 
 
-          if (is.null(expr_mat) || is.null(sample_meta)) {
+                    if (is.null(expr_mat) || is.null(sample_meta)) {
 
             return(plotly::plot_ly() |> plotly::layout(title = "Expression matrix not available"))
 
-          }
+                    }
 
 
 
-          target_gene_upper <- toupper(current_gene)
+                    target_gene_upper <- toupper(current_gene)
 
-          gene_names_upper <- toupper(rownames(expr_mat))
+                    gene_names_upper <- toupper(rownames(expr_mat))
 
-          match_idx <- which(gene_names_upper == target_gene_upper)
+                    match_idx <- which(gene_names_upper == target_gene_upper)
 
 
 
-          if (length(match_idx) == 0) {
+                    if (length(match_idx) == 0) {
 
             gene_meta <- gsea_res$expr_bundle$gene_meta
 
             if (!is.null(gene_meta) && nrow(gene_meta) > 0) {
 
-              rownames(gene_meta) <- if (is.null(rownames(gene_meta))) rownames(expr_mat) else rownames(gene_meta)
+                            rownames(gene_meta) <- if (is.null(rownames(gene_meta))) rownames(expr_mat) else rownames(gene_meta)
 
-              symbol_col <- intersect(c("SYMBOL", "symbol", "Gene", "gene_name", "gene_symbol"), colnames(gene_meta))[1]
+                            symbol_col <- intersect(c("SYMBOL", "symbol", "Gene", "gene_name", "gene_symbol"), colnames(gene_meta))[1]
 
-              if (!is.na(symbol_col)) {
+                            if (!is.na(symbol_col)) {
 
                 meta_symbols_upper <- toupper(as.character(gene_meta[[symbol_col]]))
 
@@ -2106,49 +2106,49 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
                 if (length(meta_matches) > 0) {
 
-                  ensembl_id <- rownames(gene_meta)[meta_matches[1]]
+                                    ensembl_id <- rownames(gene_meta)[meta_matches[1]]
 
-                  match_idx <- which(rownames(expr_mat) == ensembl_id)
+                                    match_idx <- which(rownames(expr_mat) == ensembl_id)
 
                 }
 
-              }
+                            }
 
             }
 
-          }
+                    }
 
 
 
-          if (length(match_idx) == 0 || is.na(match_idx)) {
+                    if (length(match_idx) == 0 || is.na(match_idx)) {
 
             return(plotly::plot_ly() |> plotly::layout(
 
-              title = sprintf("Gene '%s' not found", current_gene)
+                            title = sprintf("Gene '%s' not found", current_gene)
 
             ))
 
-          }
+                    }
 
 
 
-          symbol_map <- .rebuild_symbol_map(gsea_res, data_list$contrast_id)
+                    symbol_map <- .rebuild_symbol_map(gsea_res, data_list$contrast_id)
 
-          actual_gene <- rownames(expr_mat)[match_idx[1]]
+                    actual_gene <- rownames(expr_mat)[match_idx[1]]
 
-          display_gene_name <- .get_display_symbol(current_gene, symbol_map)
-
-
-
-          expr_values <- expr_mat[actual_gene, ]
-
-          sample_names <- names(expr_values)
-
-          group_info <- sample_meta$group[match(sample_names, rownames(sample_meta))]
+                    display_gene_name <- .get_display_symbol(current_gene, symbol_map)
 
 
 
-          plot_data <- data.frame(
+                    expr_values <- expr_mat[actual_gene, ]
+
+                    sample_names <- names(expr_values)
+
+                    group_info <- sample_meta$group[match(sample_names, rownames(sample_meta))]
+
+
+
+                    plot_data <- data.frame(
 
             Sample = sample_names,
 
@@ -2158,23 +2158,23 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             stringsAsFactors = FALSE
 
-          )
+                    )
 
 
 
-          plot_data <- plot_data[!is.na(plot_data$Group), ]
+                    plot_data <- plot_data[!is.na(plot_data$Group), ]
 
-          if (nrow(plot_data) == 0) {
+                    if (nrow(plot_data) == 0) {
 
             return(plotly::plot_ly() |> plotly::layout(title = "No valid group data"))
 
-          }
+                    }
 
 
 
-          current_confirmed_order <- boxplot_order_ref()
+                    current_confirmed_order <- boxplot_order_ref()
 
-          final_order_to_use <- if (!is.null(current_confirmed_order) &&
+                    final_order_to_use <- if (!is.null(current_confirmed_order) &&
 
             current_confirmed_order != "default" &&
 
@@ -2182,21 +2182,21 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             current_confirmed_order
 
-          } else {
+                    } else {
 
             "default"
 
-          }
+                    }
 
 
 
-          actual_groups <- unique(as.character(plot_data$Group))
+                    actual_groups <- unique(as.character(plot_data$Group))
 
-          x_categories <- NULL
+                    x_categories <- NULL
 
 
 
-          if (final_order_to_use != "default" && final_order_to_use != "" && !is.na(final_order_to_use)) {
+                    if (final_order_to_use != "default" && final_order_to_use != "" && !is.na(final_order_to_use)) {
 
             sep <- if (grepl("->", final_order_to_use, fixed = TRUE)) "->" else ","
 
@@ -2208,87 +2208,87 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             x_categories <- c(valid_parts, setdiff(actual_groups, valid_parts))
 
-          } else {
+                    } else {
 
             x_categories <- actual_groups
 
-          }
+                    }
 
 
 
-          plot_data <- plot_data[plot_data$Group %in% x_categories, ]
+                    plot_data <- plot_data[plot_data$Group %in% x_categories, ]
 
-          plot_data$Group <- factor(plot_data$Group, levels = x_categories, ordered = TRUE)
+                    plot_data$Group <- factor(plot_data$Group, levels = x_categories, ordered = TRUE)
 
 
 
-          unique_groups <- levels(plot_data$Group)
+                    unique_groups <- levels(plot_data$Group)
 
-          if (length(unique_groups) == 2) {
+                    if (length(unique_groups) == 2) {
 
             group_colors <- c(COLOR_LEFT, COLOR_RIGHT)
 
             names(group_colors) <- unique_groups
 
-          } else {
+                    } else {
 
             group_colors <- c(
 
-              "#E41A1C", "#377EB8", "#4DAF4A", "#984EA3",
+                            "#E41A1C", "#377EB8", "#4DAF4A", "#984EA3",
 
-              "#FF7F00", "#A65628", "#F781BF", "#999999"
+                            "#FF7F00", "#A65628", "#F781BF", "#999999"
 
             )[seq_along(unique_groups)]
 
             names(group_colors) <- unique_groups
 
-          }
+                    }
 
 
 
-          use_zero_baseline <- input$zero_baseline %||% FALSE
+                    use_zero_baseline <- input$zero_baseline %||% FALSE
 
 
 
-          y_min <- min(plot_data$Expression, na.rm = TRUE)
+                    y_min <- min(plot_data$Expression, na.rm = TRUE)
 
-          y_max <- max(plot_data$Expression, na.rm = TRUE)
+                    y_max <- max(plot_data$Expression, na.rm = TRUE)
 
 
 
-          if (use_zero_baseline) {
+                    if (use_zero_baseline) {
 
             y_min <- min(y_min, 0)
 
             y_max <- max(y_max, 0)
 
-          }
+                    }
 
 
 
-          y_range <- y_max - y_min
+                    y_range <- y_max - y_min
 
-          y_min <- y_min - y_range * 0.1
+                    y_min <- y_min - y_range * 0.1
 
-          y_max <- y_max + y_range * 0.1
+                    y_max <- y_max + y_range * 0.1
 
 
 
-          p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = Group, y = Expression, fill = Group)) +
+                    p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = Group, y = Expression, fill = Group)) +
 
             ggplot2::geom_boxplot(alpha = 0.7, outlier.shape = NA) +
 
             ggplot2::geom_jitter(
 
-              width = 0.2, size = 3, alpha = 0.6,
+                            width = 0.2, size = 3, alpha = 0.6,
 
-              ggplot2::aes(text = sprintf(
+                            ggplot2::aes(text = sprintf(
 
                 "<b>Sample:</b> %s<br><b>Group:</b> %s<br><b>Expression:</b> %.3f",
 
                 Sample, Group, Expression
 
-              ))
+                            ))
 
             ) +
 
@@ -2302,59 +2302,59 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             ggplot2::labs(
 
-              title = sprintf("%s", display_gene_name),
+                            title = sprintf("%s", display_gene_name),
 
-              y = data_list$expression_type, x = NULL
+                            y = data_list$expression_type, x = NULL
 
             ) +
 
             ggplot2::theme(
 
-              legend.position = "none",
+                            legend.position = "none",
 
-              axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
+                            axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
 
             )
 
 
 
-          if (use_zero_baseline) {
+                    if (use_zero_baseline) {
 
             p <- p + ggplot2::geom_hline(
 
-              yintercept = 0, linetype = "dashed",
+                            yintercept = 0, linetype = "dashed",
 
-              color = "red", alpha = 0.7, size = 0.8
+                            color = "red", alpha = 0.7, size = 0.8
 
             )
 
-          }
+                    }
 
 
 
-          ply <- plotly::ggplotly(p, tooltip = "text")
+                    ply <- plotly::ggplotly(p, tooltip = "text")
 
-          ply |> plotly::layout(
+                    ply |> plotly::layout(
 
             xaxis = list(categoryorder = "array", categoryarray = x_categories, title = ""),
 
             dragmode = FALSE
 
-          )
+                    )
 
         },
 
         error = function(e) {
 
-          return(plotly::plot_ly() |> plotly::layout(
+                    return(plotly::plot_ly() |> plotly::layout(
 
             title = sprintf("Error: %s", e$message)
 
-          ))
+                    ))
 
         }
 
-      )
+            )
 
     })
 
@@ -2364,23 +2364,23 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     output$boxplot_order_status <- shiny::renderUI({
 
-      order_info <- boxplot_order_ref()
+            order_info <- boxplot_order_ref()
 
-      if (is.null(order_info) || order_info == "default") {
+            if (is.null(order_info) || order_info == "default") {
 
         shiny::div(style = "font-size: 12px; color: #666;", "Order: Default")
 
-      } else {
+            } else {
 
         shiny::div(
 
-          style = "font-size: 12px; color: #666;",
+                    style = "font-size: 12px; color: #666;",
 
-          "Order:", gsub(",", " -> ", order_info)
+                    "Order:", gsub(",", " -> ", order_info)
 
         )
 
-      }
+            }
 
     })
 
@@ -2412,13 +2412,13 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     .sanitize_filename <- function(x) {
 
-      x <- gsub("[^A-Za-z0-9_.-]+", "_", x %||% "gene")
+            x <- gsub("[^A-Za-z0-9_.-]+", "_", x %||% "gene")
 
-      x <- gsub("^_+|_+$", "", x)
+            x <- gsub("^_+|_+$", "", x)
 
-      if (!nzchar(x)) x <- "gene"
+            if (!nzchar(x)) x <- "gene"
 
-      x
+            x
 
     }
 
@@ -2428,21 +2428,21 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     .write_to_clipboard <- function(text) {
 
-      if (requireNamespace("clipr", quietly = TRUE)) {
+            if (requireNamespace("clipr", quietly = TRUE)) {
 
         clipr::write_clip(text)
 
         return(invisible(TRUE))
 
-      }
+            }
 
-      con <- file("clipboard", "w")
+            con <- file("clipboard", "w")
 
-      on.exit(close(con), add = TRUE)
+            on.exit(close(con), add = TRUE)
 
-      writeLines(text, con)
+            writeLines(text, con)
 
-      invisible(TRUE)
+            invisible(TRUE)
 
     }
 
@@ -2450,57 +2450,57 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     shiny::observeEvent(input$export_boxplot_data_btn, {
 
-      data_list <- data_prep_data()
+            data_list <- data_prep_data()
 
-      shiny::req(data_list)
+            shiny::req(data_list)
 
 
 
-      current_gene <- current_boxplot_gene()
+            current_gene <- current_boxplot_gene()
 
-      if (is.null(current_gene) || !nzchar(current_gene)) {
+            if (is.null(current_gene) || !nzchar(current_gene)) {
 
         shiny::showNotification(
 
-          "No gene selected. Click a gene in the DE volcano or in the gene table first.",
+                    "No gene selected. Click a gene in the DE volcano or in the gene table first.",
 
-          type = "warning",
+                    type = "warning",
 
-          duration = 3
+                    duration = 3
 
         )
 
         return()
 
-      }
+            }
 
 
 
-      # Use the same display symbol that the boxplot title shows
+            # Use the same display symbol that the boxplot title shows
 
-      symbol_map <- .rebuild_symbol_map(gsea_res, data_list$contrast_id)
+            symbol_map <- .rebuild_symbol_map(gsea_res, data_list$contrast_id)
 
-      display_gene <- .get_display_symbol(current_gene, symbol_map)
+            display_gene <- .get_display_symbol(current_gene, symbol_map)
 
 
 
-      result <- tryCatch(
+            result <- tryCatch(
 
         extract_boxplot_data(
 
-          GSEAlens_res = gsea_res,
+                    GSEAlens_res = gsea_res,
 
-          contrast_id  = data_list$contrast_id,
+                    contrast_id  = data_list$contrast_id,
 
-          gene_symbol  = display_gene,
+                    gene_symbol  = display_gene,
 
-          expr_type    = data_list$expression_type
+                    expr_type    = data_list$expression_type
 
         ),
 
         error = function(e) {
 
-          shiny::showNotification(
+                    shiny::showNotification(
 
             sprintf("Failed to extract boxplot data: %s", e$message),
 
@@ -2508,65 +2508,65 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             duration = 5
 
-          )
+                    )
 
-          NULL
+                    NULL
 
         }
 
-      )
+            )
 
-      if (is.null(result)) return()
-
-
-
-      current_boxplot_data(result)
+            if (is.null(result)) return()
 
 
 
-      # Pre-build the two TSV strings and the safe filenames
+            current_boxplot_data(result)
 
-      tsv_long <- .serialize_df_tsv(result$long)
 
-      tsv_wide <- .serialize_df_tsv(result$wide)
 
-      safe_gene     <- .sanitize_filename(result$gene)
+            # Pre-build the two TSV strings and the safe filenames
 
-      safe_contrast <- .sanitize_filename(result$contrast_id)
+            tsv_long <- .serialize_df_tsv(result$long)
 
-      current_boxplot_filenames(list(
+            tsv_wide <- .serialize_df_tsv(result$wide)
+
+            safe_gene     <- .sanitize_filename(result$gene)
+
+            safe_contrast <- .sanitize_filename(result$contrast_id)
+
+            current_boxplot_filenames(list(
 
         long = sprintf("GSEAlens_%s_%s_box_long.csv", safe_gene, safe_contrast),
 
         wide = sprintf("GSEAlens_%s_%s_box_wide.csv", safe_gene, safe_contrast)
 
-      ))
+            ))
 
 
 
-      # Format the sample-count line for the header
+            # Format the sample-count line for the header
 
-      n_samples <- nrow(result$long)
+            n_samples <- nrow(result$long)
 
-      group_counts <- table(result$long$Group)
+            group_counts <- table(result$long$Group)
 
-      group_summary <- paste(
+            group_summary <- paste(
 
         sprintf("%s: %d", names(group_counts), as.integer(group_counts)),
 
         collapse = ", "
 
-      )
+            )
 
 
 
-      shiny::showModal(shiny::modalDialog(
+            shiny::showModal(shiny::modalDialog(
 
         title = sprintf(
 
-          "Expression Data: %s (n = %d samples; %s)",
+                    "Expression Data: %s (n = %d samples; %s)",
 
-          result$gene, n_samples, group_summary
+                    result$gene, n_samples, group_summary
 
         ),
 
@@ -2578,9 +2578,9 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         shiny::tagList(
 
-          # ---- Section 1: Wide format ------------------------------------
+                    # ---- Section 1: Wide format ------------------------------------
 
-          shiny::div(
+                    shiny::div(
 
             style = "margin-top: 4px;",
 
@@ -2588,129 +2588,129 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             shiny::helpText(
 
-              style = "margin: 0 0 6px 0;",
+                            style = "margin: 0 0 6px 0;",
 
-              "First row = sample IDs, second row = expression values. ",
+                            "First row = sample IDs, second row = expression values. ",
 
-              "Left-most cell = gene name. Paste into GraphPad Prism (Column data) ",
+                            "Left-most cell = gene name. Paste into GraphPad Prism (Column data) ",
 
-              "or Excel."
+                            "or Excel."
 
             )
 
-          ),
+                    ),
 
-          shiny::div(
+                    shiny::div(
 
             style = "display: flex; gap: 8px; align-items: center; margin-bottom: 6px;",
 
             shiny::actionButton(
 
-              ns("copy_wide_tsv_btn"),
+                            ns("copy_wide_tsv_btn"),
 
-              label = "Copy Wide",
+                            label = "Copy Wide",
 
-              icon = shiny::icon("copy"),
+                            icon = shiny::icon("copy"),
 
-              class = "btn-success btn-sm"
+                            class = "btn-success btn-sm"
 
             ),
 
             shiny::downloadButton(
 
-              ns("download_wide_csv_btn"),
+                            ns("download_wide_csv_btn"),
 
-              label = "Download Wide CSV",
+                            label = "Download Wide CSV",
 
-              class = "btn-info btn-sm"
+                            class = "btn-info btn-sm"
 
             )
 
-          ),
+                    ),
 
-          shiny::div(
+                    shiny::div(
 
             style = "background: #f5f5f5; padding: 12px; border-radius: 5px; max-height: 160px; overflow: auto;",
 
             shiny::tags$pre(
 
-              shiny::code(tsv_wide),
+                            shiny::code(tsv_wide),
 
-              style = "font-size: 11px; white-space: pre; word-break: keep-all; margin: 0;"
+                            style = "font-size: 11px; white-space: pre; word-break: keep-all; margin: 0;"
 
             )
 
-          ),
+                    ),
 
 
 
-          shiny::hr(),
+                    shiny::hr(),
 
 
 
-          # ---- Section 2: Long format ------------------------------------
+                    # ---- Section 2: Long format ------------------------------------
 
-          shiny::div(
+                    shiny::div(
 
             shiny::tags$b("Long format"),
 
             shiny::helpText(
 
-              style = "margin: 0 0 6px 0;",
+                            style = "margin: 0 0 6px 0;",
 
-              "One row per sample. Suitable for GraphPad Prism (Grouped data) ",
+                            "One row per sample. Suitable for GraphPad Prism (Grouped data) ",
 
-              "and most R / Python plotting tools."
+                            "and most R / Python plotting tools."
 
             )
 
-          ),
+                    ),
 
-          shiny::div(
+                    shiny::div(
 
             style = "display: flex; gap: 8px; align-items: center; margin-bottom: 6px;",
 
             shiny::actionButton(
 
-              ns("copy_long_tsv_btn"),
+                            ns("copy_long_tsv_btn"),
 
-              label = "Copy Long",
+                            label = "Copy Long",
 
-              icon = shiny::icon("copy"),
+                            icon = shiny::icon("copy"),
 
-              class = "btn-success btn-sm"
+                            class = "btn-success btn-sm"
 
             ),
 
             shiny::downloadButton(
 
-              ns("download_long_csv_btn"),
+                            ns("download_long_csv_btn"),
 
-              label = "Download Long CSV",
+                            label = "Download Long CSV",
 
-              class = "btn-info btn-sm"
+                            class = "btn-info btn-sm"
 
             )
 
-          ),
+                    ),
 
-          shiny::div(
+                    shiny::div(
 
             style = "background: #f5f5f5; padding: 12px; border-radius: 5px; max-height: 220px; overflow: auto;",
 
             shiny::tags$pre(
 
-              shiny::code(tsv_long),
+                            shiny::code(tsv_long),
 
-              style = "font-size: 11px; white-space: pre; word-break: keep-all; margin: 0;"
+                            style = "font-size: 11px; white-space: pre; word-break: keep-all; margin: 0;"
 
             )
 
-          )
+                    )
 
         )
 
-      ))
+            ))
 
     })
 
@@ -2720,15 +2720,15 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     shiny::observeEvent(input$copy_wide_tsv_btn, {
 
-      result <- current_boxplot_data()
+            result <- current_boxplot_data()
 
-      shiny::req(result)
+            shiny::req(result)
 
-      tsv <- .serialize_df_tsv(result$wide)
+            tsv <- .serialize_df_tsv(result$wide)
 
-      .write_to_clipboard(tsv)
+            .write_to_clipboard(tsv)
 
-      shiny::showNotification("Wide table copied to clipboard.", type = "message", duration = 2)
+            shiny::showNotification("Wide table copied to clipboard.", type = "message", duration = 2)
 
     })
 
@@ -2736,15 +2736,15 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     shiny::observeEvent(input$copy_long_tsv_btn, {
 
-      result <- current_boxplot_data()
+            result <- current_boxplot_data()
 
-      shiny::req(result)
+            shiny::req(result)
 
-      tsv <- .serialize_df_tsv(result$long)
+            tsv <- .serialize_df_tsv(result$long)
 
-      .write_to_clipboard(tsv)
+            .write_to_clipboard(tsv)
 
-      shiny::showNotification("Long table copied to clipboard.", type = "message", duration = 2)
+            shiny::showNotification("Long table copied to clipboard.", type = "message", duration = 2)
 
     })
 
@@ -2754,9 +2754,9 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     output$download_wide_csv_btn <- shiny::downloadHandler(
 
-      filename = function() current_boxplot_filenames()$wide,
+            filename = function() current_boxplot_filenames()$wide,
 
-      content  = function(file) {
+            content  = function(file) {
 
         result <- current_boxplot_data()
 
@@ -2766,7 +2766,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         writeLines(if (nzchar(tsv)) tsv else "Gene\t(empty)\n", file, useBytes = TRUE)
 
-      }
+            }
 
     )
 
@@ -2774,9 +2774,9 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     output$download_long_csv_btn <- shiny::downloadHandler(
 
-      filename = function() current_boxplot_filenames()$long,
+            filename = function() current_boxplot_filenames()$long,
 
-      content  = function(file) {
+            content  = function(file) {
 
         result <- current_boxplot_data()
 
@@ -2784,7 +2784,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         writeLines(if (nzchar(tsv)) tsv else "Sample\tGroup\tExpression\n", file, useBytes = TRUE)
 
-      }
+            }
 
     )
 
@@ -2804,7 +2804,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     .build_boxplot_export_modal <- function() {
 
-      shiny::modalDialog(
+            shiny::modalDialog(
 
         title = "Export Publication Plot - Gene Boxplot",
 
@@ -2812,23 +2812,23 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         shiny::fluidRow(
 
-          shiny::column(5,
+                    shiny::column(5,
 
             shiny::h5("Dimensions"),
 
             shiny::fluidRow(
 
-              shiny::column(6,
+                            shiny::column(6,
 
                 shiny::numericInput(ns("box_exp_width"),  "Width (inch)",  value = 5, min = 2, max = 20)
 
-              ),
+                            ),
 
-              shiny::column(6,
+                            shiny::column(6,
 
                 shiny::numericInput(ns("box_exp_height"), "Height (inch)", value = 5, min = 2, max = 20)
 
-              )
+                            )
 
             ),
 
@@ -2840,13 +2840,13 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             shiny::fluidRow(
 
-              shiny::column(3, shiny::numericInput(ns("box_exp_margin_top"),    "Top",    value = 15, min = 0, max = 80)),
+                            shiny::column(3, shiny::numericInput(ns("box_exp_margin_top"),    "Top",    value = 15, min = 0, max = 80)),
 
-              shiny::column(3, shiny::numericInput(ns("box_exp_margin_bottom"), "Bottom", value = 15, min = 0, max = 80)),
+                            shiny::column(3, shiny::numericInput(ns("box_exp_margin_bottom"), "Bottom", value = 15, min = 0, max = 80)),
 
-              shiny::column(3, shiny::numericInput(ns("box_exp_margin_left"),   "Left",   value = 18, min = 0, max = 80)),
+                            shiny::column(3, shiny::numericInput(ns("box_exp_margin_left"),   "Left",   value = 18, min = 0, max = 80)),
 
-              shiny::column(3, shiny::numericInput(ns("box_exp_margin_right"),  "Right",  value = 18, min = 0, max = 80))
+                            shiny::column(3, shiny::numericInput(ns("box_exp_margin_right"),  "Right",  value = 18, min = 0, max = 80))
 
             ),
 
@@ -2856,25 +2856,25 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             shiny::fluidRow(
 
-              shiny::column(6,
+                            shiny::column(6,
 
                 shiny::downloadButton(ns("box_exp_download_pdf"),
 
-                  "Download PDF", class = "btn-danger btn-block",
+                                    "Download PDF", class = "btn-danger btn-block",
 
-                  icon = shiny::icon("file-pdf"))
+                                    icon = shiny::icon("file-pdf"))
 
-              ),
+                            ),
 
-              shiny::column(6,
+                            shiny::column(6,
 
                 shiny::downloadButton(ns("box_exp_download_png"),
 
-                  "Download PNG", class = "btn-primary btn-block",
+                                    "Download PNG", class = "btn-primary btn-block",
 
-                  icon = shiny::icon("file-image"))
+                                    icon = shiny::icon("file-image"))
 
-              )
+                            )
 
             ),
 
@@ -2882,25 +2882,25 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             shiny::fluidRow(
 
-              shiny::column(6,
+                            shiny::column(6,
 
                 shiny::selectInput(ns("box_exp_format"), "Other format",
 
-                  choices = c("SVG" = "svg", "TIFF" = "tiff"), selected = "svg")
+                                    choices = c("SVG" = "svg", "TIFF" = "tiff"), selected = "svg")
 
-              ),
+                            ),
 
-              shiny::column(6,
+                            shiny::column(6,
 
                 shiny::div(style = "margin-top: 22px;",
 
-                  shiny::downloadButton(ns("box_exp_download_other"),
+                                    shiny::downloadButton(ns("box_exp_download_other"),
 
                     "Download", class = "btn-default btn-block")
 
                 )
 
-              )
+                            )
 
             ),
 
@@ -2908,35 +2908,35 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             shiny::fluidRow(
 
-              shiny::column(6,
+                            shiny::column(6,
 
                 shiny::actionButton(ns("box_exp_copy_code"),
 
-                  "Copy R Code", class = "btn-info btn-block",
+                                    "Copy R Code", class = "btn-info btn-block",
 
-                  icon = shiny::icon("clipboard"))
+                                    icon = shiny::icon("clipboard"))
 
-              ),
+                            ),
 
-              shiny::column(6,
+                            shiny::column(6,
 
                 shiny::actionButton(ns("box_exp_dismiss"),
 
-                  "Close", class = "btn-default btn-block")
+                                    "Close", class = "btn-default btn-block")
 
-              )
+                            )
 
             )
 
-          ),
+                    ),
 
-          shiny::column(7,
+                    shiny::column(7,
 
             shiny::h5("Live Preview"),
 
             shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; width:100%; height:520px; display:flex; align-items:center; justify-content:center; overflow:auto;",
 
-              shiny::plotOutput(ns("box_exp_preview")) |>
+                            shiny::plotOutput(ns("box_exp_preview")) |>
 
                 shinycssloaders::withSpinner(type = 6, color = "#28a745")
 
@@ -2944,13 +2944,13 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             shiny::tags$small(style = "color: #666; display:block; margin-top:6px;",
 
-              "Preview is auto-scaled to fit the window while keeping the export aspect ratio (tall figures appear as vertical thumbnails, wide figures as horizontal ones).")
+                            "Preview is auto-scaled to fit the window while keeping the export aspect ratio (tall figures appear as vertical thumbnails, wide figures as horizontal ones).")
 
-          )
+                    )
 
         )
 
-      )
+            )
 
     }
 
@@ -2958,13 +2958,13 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     shiny::observeEvent(input$open_boxplot_image_export, {
 
-      # Auto-extract data if not already cached (so the user doesn't need
+            # Auto-extract data if not already cached (so the user doesn't need
 
-      # to click "Export Boxplot Data" first)
+            # to click "Export Boxplot Data" first)
 
-      result <- current_boxplot_data()
+            result <- current_boxplot_data()
 
-      if (is.null(result) || is.null(result$long) || nrow(result$long) == 0) {
+            if (is.null(result) || is.null(result$long) || nrow(result$long) == 0) {
 
         data_list <- data_prep_data()
 
@@ -2972,7 +2972,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         if (is.null(data_list) || is.null(current_gene) || !nzchar(current_gene)) {
 
-          shiny::showNotification(
+                    shiny::showNotification(
 
             "No gene selected. Click a gene in the DE volcano or gene table first.",
 
@@ -2986,27 +2986,27 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         result <- tryCatch(
 
-          extract_boxplot_data(
+                    extract_boxplot_data(
 
             GSEAlens_res = gsea_res, contrast_id  = data_list$contrast_id,
 
             gene_symbol  = display_gene, expr_type = data_list$expression_type),
 
-          error = function(e) {
+                    error = function(e) {
 
             shiny::showNotification(
 
-              sprintf("Failed to extract boxplot data: %s", e$message),
+                            sprintf("Failed to extract boxplot data: %s", e$message),
 
-              type = "error", duration = 5); NULL })
+                            type = "error", duration = 5); NULL })
 
         if (is.null(result)) return()
 
         current_boxplot_data(result)
 
-      }
+            }
 
-      shiny::showModal(.build_boxplot_export_modal())
+            shiny::showModal(.build_boxplot_export_modal())
 
     })
 
@@ -3016,19 +3016,19 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     .boxplot_export_code <- function() {
 
-      result <- current_boxplot_data()
+            result <- current_boxplot_data()
 
-      if (is.null(result)) return("")
+            if (is.null(result)) return("")
 
-      data_list <- data_prep_data()
+            data_list <- data_prep_data()
 
-      if (is.null(data_list)) return("")
+            if (is.null(data_list)) return("")
 
-      lg <- if (is.null(data_list$left_group))  "Left"  else data_list$left_group
+            lg <- if (is.null(data_list$left_group))  "Left"  else data_list$left_group
 
-      rg <- if (is.null(data_list$right_group)) "Right" else data_list$right_group
+            rg <- if (is.null(data_list$right_group)) "Right" else data_list$right_group
 
-      generate_boxplot_image_code(
+            generate_boxplot_image_code(
 
         box_data_long     = result$long,
 
@@ -3050,7 +3050,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         margin_right  = if (is.null(input$box_exp_margin_right)  || is.na(input$box_exp_margin_right))  18 else input$box_exp_margin_right
 
-      )
+            )
 
     }
 
@@ -3058,43 +3058,43 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     .boxplot_preview_plot <- shiny::reactive({
 
-      code <- tryCatch(.boxplot_export_code(),
+            code <- tryCatch(.boxplot_export_code(),
 
         error = function(e) {
 
-          shiny::showNotification(
+                    shiny::showNotification(
 
             sprintf("[boxplot preview] code generation failed: %s", e$message),
 
             type = "error", duration = 8)
 
-          ""
+                    ""
 
         })
 
-      if (!nzchar(code)) return(NULL)
+            if (!nzchar(code)) return(NULL)
 
-      eval_env <- new.env(parent = globalenv())
+            eval_env <- new.env(parent = globalenv())
 
-      eval_env$p <- NULL
+            eval_env$p <- NULL
 
-      eval_env$print <- base::invisible
+            eval_env$print <- base::invisible
 
-      tryCatch(eval(parse(text = code), envir = eval_env),
+            tryCatch(eval(parse(text = code), envir = eval_env),
 
-               error = function(e) {
+                                error = function(e) {
 
-                 shiny::showNotification(
+                                    shiny::showNotification(
 
-                   sprintf("[boxplot preview] %s", e$message),
+                                        sprintf("[boxplot preview] %s", e$message),
 
-                   type = "error", duration = 8)
+                                        type = "error", duration = 8)
 
-                 NULL
+                                    NULL
 
-               })
+                                })
 
-      eval_env$p
+            eval_env$p
 
     })
 
@@ -3102,7 +3102,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     output$box_exp_preview <- shiny::renderPlot(
 
-      {
+            {
 
         p <- .boxplot_preview_plot()
 
@@ -3110,21 +3110,21 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         p
 
-      },
+            },
 
-      res  = 72,
+            res  = 72,
 
-      width  = function() {
+            width  = function() {
 
         d <- .vol_preview_dims(input$box_exp_width, input$box_exp_height); d$width
 
-      },
+            },
 
-      height = function() {
+            height = function() {
 
         d <- .vol_preview_dims(input$box_exp_width, input$box_exp_height); d$height
 
-      }
+            }
 
     )
 
@@ -3132,33 +3132,33 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     .boxplot_render_to_file <- function(file, fmt) {
 
-      code <- .boxplot_export_code()
+            code <- .boxplot_export_code()
 
-      if (!nzchar(code)) return()
+            if (!nzchar(code)) return()
 
-      eval_env <- new.env(parent = globalenv())
+            eval_env <- new.env(parent = globalenv())
 
-      eval_env$p <- NULL
+            eval_env$p <- NULL
 
-      eval_env$print <- base::invisible
+            eval_env$print <- base::invisible
 
-      tryCatch(eval(parse(text = code), envir = eval_env),
+            tryCatch(eval(parse(text = code), envir = eval_env),
 
-               error = function(e) shiny::showNotification(
+                                error = function(e) shiny::showNotification(
 
-                 sprintf("Render failed: %s", e$message), type = "error", duration = 8))
+                                    sprintf("Render failed: %s", e$message), type = "error", duration = 8))
 
-      if (is.null(eval_env$p)) return()
+            if (is.null(eval_env$p)) return()
 
-      ggplot2::ggsave(file, eval_env$p,
+            ggplot2::ggsave(file, eval_env$p,
 
-                      width  = if (is.null(input$box_exp_width))  5 else input$box_exp_width,
+                                            width  = if (is.null(input$box_exp_width))  5 else input$box_exp_width,
 
-                      height = if (is.null(input$box_exp_height)) 5 else input$box_exp_height,
+                                            height = if (is.null(input$box_exp_height)) 5 else input$box_exp_height,
 
-                      dpi    = if (is.null(input$box_exp_dpi))   300 else input$box_exp_dpi,
+                                            dpi    = if (is.null(input$box_exp_dpi))   300 else input$box_exp_dpi,
 
-                      device = fmt)
+                                            device = fmt)
 
     }
 
@@ -3166,27 +3166,27 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     output$box_exp_download_pdf <- shiny::downloadHandler(
 
-      filename = function() sprintf("GSEAlens_boxplot_%s.pdf", Sys.Date()),
+            filename = function() sprintf("GSEAlens_boxplot_%s.pdf", Sys.Date()),
 
-      content  = function(file) .boxplot_render_to_file(file, "pdf")
+            content  = function(file) .boxplot_render_to_file(file, "pdf")
 
     )
 
     output$box_exp_download_png <- shiny::downloadHandler(
 
-      filename = function() sprintf("GSEAlens_boxplot_%s.png", Sys.Date()),
+            filename = function() sprintf("GSEAlens_boxplot_%s.png", Sys.Date()),
 
-      content  = function(file) .boxplot_render_to_file(file, "png")
+            content  = function(file) .boxplot_render_to_file(file, "png")
 
     )
 
     output$box_exp_download_other <- shiny::downloadHandler(
 
-      filename = function() sprintf("GSEAlens_boxplot_%s.%s", Sys.Date(),
+            filename = function() sprintf("GSEAlens_boxplot_%s.%s", Sys.Date(),
 
                                     if (is.null(input$box_exp_format)) "svg" else input$box_exp_format),
 
-      content  = function(file) .boxplot_render_to_file(file, input$box_exp_format)
+            content  = function(file) .boxplot_render_to_file(file, input$box_exp_format)
 
     )
 
@@ -3194,35 +3194,35 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     shiny::observeEvent(input$box_exp_copy_code, {
 
-      code <- .boxplot_export_code()
+            code <- .boxplot_export_code()
 
-      if (!nzchar(code)) {
+            if (!nzchar(code)) {
 
         shiny::showNotification("Nothing to copy.", type = "warning"); return()
 
-      }
+            }
 
-      ok <- tryCatch({ clipr::write_clip(code); TRUE }, error = function(e) FALSE)
+            ok <- tryCatch({ clipr::write_clip(code); TRUE }, error = function(e) FALSE)
 
-      if (isTRUE(ok)) {
+            if (isTRUE(ok)) {
 
         shiny::showNotification("R code copied to clipboard.", type = "message")
 
-      } else {
+            } else {
 
         shiny::showModal(shiny::modalDialog(
 
-          title = "Reproducible R Code (copy manually)",
+                    title = "Reproducible R Code (copy manually)",
 
-          size = "l", easyClose = TRUE,
+                    size = "l", easyClose = TRUE,
 
-          shiny::pre(style = "max-height: 60vh; overflow-y: auto; font-size: 11px;", code),
+                    shiny::pre(style = "max-height: 60vh; overflow-y: auto; font-size: 11px;", code),
 
-          footer = shiny::modalButton("Close")
+                    footer = shiny::modalButton("Close")
 
         ))
 
-      }
+            }
 
     })
 
@@ -3244,7 +3244,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     .build_volcano_export_modal <- function() {
 
-      shiny::modalDialog(
+            shiny::modalDialog(
 
         title = "Export Publication Plot - Pathway Volcano",
 
@@ -3252,23 +3252,23 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         shiny::fluidRow(
 
-          shiny::column(5,
+                    shiny::column(5,
 
             shiny::h5("Dimensions"),
 
             shiny::fluidRow(
 
-              shiny::column(6,
+                            shiny::column(6,
 
                 shiny::numericInput(ns("vol_exp_width"),  "Width (inch)",  value = 8, min = 2, max = 24)
 
-              ),
+                            ),
 
-              shiny::column(6,
+                            shiny::column(6,
 
                 shiny::numericInput(ns("vol_exp_height"), "Height (inch)", value = 6, min = 2, max = 24)
 
-              )
+                            )
 
             ),
 
@@ -3280,13 +3280,13 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             shiny::fluidRow(
 
-              shiny::column(3, shiny::numericInput(ns("vol_exp_margin_top"),    "Top",    value = 15, min = 0, max = 80)),
+                            shiny::column(3, shiny::numericInput(ns("vol_exp_margin_top"),    "Top",    value = 15, min = 0, max = 80)),
 
-              shiny::column(3, shiny::numericInput(ns("vol_exp_margin_bottom"), "Bottom", value = 15, min = 0, max = 80)),
+                            shiny::column(3, shiny::numericInput(ns("vol_exp_margin_bottom"), "Bottom", value = 15, min = 0, max = 80)),
 
-              shiny::column(3, shiny::numericInput(ns("vol_exp_margin_left"),   "Left",   value = 18, min = 0, max = 80)),
+                            shiny::column(3, shiny::numericInput(ns("vol_exp_margin_left"),   "Left",   value = 18, min = 0, max = 80)),
 
-              shiny::column(3, shiny::numericInput(ns("vol_exp_margin_right"),  "Right",  value = 18, min = 0, max = 80))
+                            shiny::column(3, shiny::numericInput(ns("vol_exp_margin_right"),  "Right",  value = 18, min = 0, max = 80))
 
             ),
 
@@ -3294,9 +3294,9 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             shiny::checkboxInput(ns("vol_exp_show_stats"),
 
-              label = "Show stats subtitle (pathways / selected / significant)",
+                            label = "Show stats subtitle (pathways / selected / significant)",
 
-              value = FALSE),
+                            value = FALSE),
 
             shiny::hr(),
 
@@ -3304,29 +3304,29 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             shiny::fluidRow(
 
-              shiny::column(6,
+                            shiny::column(6,
 
                 shiny::downloadButton(ns("vol_exp_download_pdf"),
 
-                  "Download PDF",
+                                    "Download PDF",
 
-                  class = "btn-danger btn-block",
+                                    class = "btn-danger btn-block",
 
-                  icon  = shiny::icon("file-pdf"))
+                                    icon  = shiny::icon("file-pdf"))
 
-              ),
+                            ),
 
-              shiny::column(6,
+                            shiny::column(6,
 
                 shiny::downloadButton(ns("vol_exp_download_png"),
 
-                  "Download PNG",
+                                    "Download PNG",
 
-                  class = "btn-primary btn-block",
+                                    class = "btn-primary btn-block",
 
-                  icon  = shiny::icon("file-image"))
+                                    icon  = shiny::icon("file-image"))
 
-              )
+                            )
 
             ),
 
@@ -3334,27 +3334,27 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             shiny::fluidRow(
 
-              shiny::column(6,
+                            shiny::column(6,
 
                 shiny::selectInput(ns("vol_exp_format"), "Other format",
 
-                  choices = c("SVG" = "svg", "TIFF" = "tiff"),
+                                    choices = c("SVG" = "svg", "TIFF" = "tiff"),
 
-                  selected = "svg")
+                                    selected = "svg")
 
-              ),
+                            ),
 
-              shiny::column(6,
+                            shiny::column(6,
 
                 shiny::div(style = "margin-top: 22px;",
 
-                  shiny::downloadButton(ns("vol_exp_download_other"),
+                                    shiny::downloadButton(ns("vol_exp_download_other"),
 
                     "Download", class = "btn-default btn-block")
 
                 )
 
-              )
+                            )
 
             ),
 
@@ -3362,39 +3362,39 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             shiny::fluidRow(
 
-              shiny::column(6,
+                            shiny::column(6,
 
                 shiny::actionButton(ns("vol_exp_copy_code"),
 
-                  "Copy R Code",
+                                    "Copy R Code",
 
-                  class = "btn-info btn-block",
+                                    class = "btn-info btn-block",
 
-                  icon = shiny::icon("clipboard"))
+                                    icon = shiny::icon("clipboard"))
 
-              ),
+                            ),
 
-              shiny::column(6,
+                            shiny::column(6,
 
                 shiny::actionButton(ns("vol_exp_dismiss"),
 
-                  "Close",
+                                    "Close",
 
-                  class = "btn-default btn-block")
+                                    class = "btn-default btn-block")
 
-              )
+                            )
 
             )
 
-          ),
+                    ),
 
-          shiny::column(7,
+                    shiny::column(7,
 
             shiny::h5("Live Preview"),
 
             shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; width:100%; height:520px; display:flex; align-items:center; justify-content:center; overflow:auto;",
 
-              shiny::plotOutput(ns("vol_exp_preview")) |>
+                            shiny::plotOutput(ns("vol_exp_preview")) |>
 
                 shinycssloaders::withSpinner(type = 6, color = "#28a745")
 
@@ -3402,13 +3402,13 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             shiny::tags$small(style = "color: #666; display:block; margin-top:6px;",
 
-              "X axis: NES | Y axis: -log10(pvalue). Preview auto-scaled to fit while keeping the export aspect ratio.")
+                            "X axis: NES | Y axis: -log10(pvalue). Preview auto-scaled to fit while keeping the export aspect ratio.")
 
-          )
+                    )
 
         )
 
-      )
+            )
 
     }
 
@@ -3416,11 +3416,11 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     volcano_export_df <- shiny::reactive({
 
-      data_list <- data_prep_data()
+            data_list <- data_prep_data()
 
-      shiny::req(data_list)
+            shiny::req(data_list)
 
-      data_list$df[, c("ID", "NES", "pvalue", "p.adjust")]
+            data_list$df[, c("ID", "NES", "pvalue", "p.adjust")]
 
     })
 
@@ -3428,7 +3428,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     shiny::observeEvent(input$open_volcano_export, {
 
-      shiny::showModal(.build_volcano_export_modal())
+            shiny::showModal(.build_volcano_export_modal())
 
     })
 
@@ -3457,68 +3457,68 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
     # via the cap / res relationship).
     .vol_preview_dims <- function(w_in, h_in, res = 72, max_px = 1600) {
 
-      w_in <- suppressWarnings(as.numeric(w_in[1]))
+            w_in <- suppressWarnings(as.numeric(w_in[1]))
 
-      h_in <- suppressWarnings(as.numeric(h_in[1]))
+            h_in <- suppressWarnings(as.numeric(h_in[1]))
 
-      if (length(w_in) == 0 || is.na(w_in) || w_in <= 0) w_in <- 8
+            if (length(w_in) == 0 || is.na(w_in) || w_in <= 0) w_in <- 8
 
-      if (length(h_in) == 0 || is.na(h_in) || h_in <= 0) h_in <- 6
+            if (length(h_in) == 0 || is.na(h_in) || h_in <= 0) h_in <- 6
 
-      scale <- min(1, max_px / (max(w_in, h_in) * res))
+            scale <- min(1, max_px / (max(w_in, h_in) * res))
 
-      list(width  = round(w_in * res * scale),
+            list(width  = round(w_in * res * scale),
 
-           height = round(h_in * res * scale))
+                        height = round(h_in * res * scale))
 
     }
 
     .volcano_preview_plot <- shiny::reactive({
 
-      code <- tryCatch(.volcano_export_code(),
+            code <- tryCatch(.volcano_export_code(),
 
         error = function(e) {
 
-          shiny::showNotification(
+                    shiny::showNotification(
 
             sprintf("[vol preview] code generation failed: %s", e$message),
 
             type = "error", duration = 8)
 
-          ""
+                    ""
 
         })
 
-      if (!nzchar(code)) return(NULL)
+            if (!nzchar(code)) return(NULL)
 
-      eval_env <- new.env(parent = globalenv())
+            eval_env <- new.env(parent = globalenv())
 
-      eval_env$p <- NULL
+            eval_env$p <- NULL
 
-      eval_env$print <- base::invisible
-      eval_env$gsea_res <- gsea_res
+            eval_env$print <- base::invisible
+            eval_env$gsea_res <- gsea_res
 
-      tryCatch(eval(parse(text = code), envir = eval_env),
+            tryCatch(eval(parse(text = code), envir = eval_env),
 
-               error = function(e) {
+                                error = function(e) {
 
-                 shiny::showNotification(
+                                    shiny::showNotification(
 
-                   sprintf("[vol preview] %s", e$message),
+                                        sprintf("[vol preview] %s", e$message),
 
-                   type = "error", duration = 8)
+                                        type = "error", duration = 8)
 
-                 NULL
+                                    NULL
 
-               })
+                                })
 
-      eval_env$p
+            eval_env$p
 
     })
 
     output$vol_exp_preview <- shiny::renderPlot(
 
-      {
+            {
 
         p <- .volcano_preview_plot()
 
@@ -3526,21 +3526,21 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         p
 
-      },
+            },
 
-      res  = 72,
+            res  = 72,
 
-      width  = function() {
+            width  = function() {
 
         d <- .vol_preview_dims(input$vol_exp_width, input$vol_exp_height); d$width
 
-      },
+            },
 
-      height = function() {
+            height = function() {
 
         d <- .vol_preview_dims(input$vol_exp_width, input$vol_exp_height); d$height
 
-      }
+            }
 
     )
 
@@ -3548,19 +3548,19 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     .volcano_export_code <- function() {
 
-      data_list <- data_prep_data()
+            data_list <- data_prep_data()
 
-      lg <- if (is.null(data_list$left_group))  "Left"  else data_list$left_group
+            lg <- if (is.null(data_list$left_group))  "Left"  else data_list$left_group
 
-      rg <- if (is.null(data_list$right_group)) "Right" else data_list$right_group
+            rg <- if (is.null(data_list$right_group)) "Right" else data_list$right_group
 
-      sel_ids <- selected_pathway_ids()
+            sel_ids <- selected_pathway_ids()
 
-      n_sel <- length(sel_ids)
+            n_sel <- length(sel_ids)
 
-      show_stats <- isTRUE(input$vol_exp_show_stats)
+            show_stats <- isTRUE(input$vol_exp_show_stats)
 
-      generate_volcano_code(
+            generate_volcano_code(
 
                             gsea_res_var = "gsea_res",
 
@@ -3590,36 +3590,36 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     .volcano_render_to_file <- function(file, fmt) {
 
-      code <- .volcano_export_code()
+            code <- .volcano_export_code()
 
-      if (!nzchar(code)) return()
+            if (!nzchar(code)) return()
 
-      # parent=globalenv() so lexical lookup resolves attached packages.
+            # parent=globalenv() so lexical lookup resolves attached packages.
 
-      eval_env <- new.env(parent = globalenv())
+            eval_env <- new.env(parent = globalenv())
 
-      eval_env$p <- NULL
+            eval_env$p <- NULL
 
-      eval_env$print <- base::invisible   # suppress popup device; ggsave draws itself
-      eval_env$gsea_res <- gsea_res
+            eval_env$print <- base::invisible   # suppress popup device; ggsave draws itself
+            eval_env$gsea_res <- gsea_res
 
-      tryCatch(eval(parse(text = code), envir = eval_env),
+            tryCatch(eval(parse(text = code), envir = eval_env),
 
-               error = function(e) shiny::showNotification(
+                                error = function(e) shiny::showNotification(
 
-                 sprintf("Render failed: %s", e$message), type = "error", duration = 8))
+                                    sprintf("Render failed: %s", e$message), type = "error", duration = 8))
 
-      if (is.null(eval_env$p)) return()
+            if (is.null(eval_env$p)) return()
 
-      ggplot2::ggsave(file, eval_env$p,
+            ggplot2::ggsave(file, eval_env$p,
 
-                      width  = if (is.null(input$vol_exp_width))  8 else input$vol_exp_width,
+                                            width  = if (is.null(input$vol_exp_width))  8 else input$vol_exp_width,
 
-                      height = if (is.null(input$vol_exp_height)) 6 else input$vol_exp_height,
+                                            height = if (is.null(input$vol_exp_height)) 6 else input$vol_exp_height,
 
-                      dpi    = if (is.null(input$vol_exp_dpi))   300 else input$vol_exp_dpi,
+                                            dpi    = if (is.null(input$vol_exp_dpi))   300 else input$vol_exp_dpi,
 
-                      device = fmt)
+                                            device = fmt)
 
     }
 
@@ -3627,9 +3627,9 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     output$vol_exp_download_pdf <- shiny::downloadHandler(
 
-      filename = function() sprintf("GSEAlens_volcano_%s.pdf", Sys.Date()),
+            filename = function() sprintf("GSEAlens_volcano_%s.pdf", Sys.Date()),
 
-      content  = function(file) .volcano_render_to_file(file, "pdf")
+            content  = function(file) .volcano_render_to_file(file, "pdf")
 
     )
 
@@ -3637,9 +3637,9 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     output$vol_exp_download_png <- shiny::downloadHandler(
 
-      filename = function() sprintf("GSEAlens_volcano_%s.png", Sys.Date()),
+            filename = function() sprintf("GSEAlens_volcano_%s.png", Sys.Date()),
 
-      content  = function(file) .volcano_render_to_file(file, "png")
+            content  = function(file) .volcano_render_to_file(file, "png")
 
     )
 
@@ -3647,11 +3647,11 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     output$vol_exp_download_other <- shiny::downloadHandler(
 
-      filename = function() sprintf("GSEAlens_volcano_%s.%s", Sys.Date(),
+            filename = function() sprintf("GSEAlens_volcano_%s.%s", Sys.Date(),
 
                                     if (is.null(input$vol_exp_format)) "svg" else input$vol_exp_format),
 
-      content  = function(file) .volcano_render_to_file(file, input$vol_exp_format)
+            content  = function(file) .volcano_render_to_file(file, input$vol_exp_format)
 
     )
 
@@ -3659,29 +3659,29 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     shiny::observeEvent(input$vol_exp_copy_code, {
 
-      code <- .volcano_export_code()
+            code <- .volcano_export_code()
 
-      ok <- tryCatch({ clipr::write_clip(code); TRUE }, error = function(e) FALSE)
+            ok <- tryCatch({ clipr::write_clip(code); TRUE }, error = function(e) FALSE)
 
-      if (isTRUE(ok)) {
+            if (isTRUE(ok)) {
 
         shiny::showNotification("R code copied to clipboard.", type = "message")
 
-      } else {
+            } else {
 
         shiny::showModal(shiny::modalDialog(
 
-          title = "Reproducible R Code (copy manually)",
+                    title = "Reproducible R Code (copy manually)",
 
-          size = "l", easyClose = TRUE,
+                    size = "l", easyClose = TRUE,
 
-          shiny::pre(style = "max-height: 60vh; overflow-y: auto; font-size: 11px;", code),
+                    shiny::pre(style = "max-height: 60vh; overflow-y: auto; font-size: 11px;", code),
 
-          footer = shiny::modalButton("Close")
+                    footer = shiny::modalButton("Close")
 
         ))
 
-      }
+            }
 
     })
 
@@ -3701,7 +3701,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     .build_de_volcano_export_modal <- function() {
 
-      shiny::modalDialog(
+            shiny::modalDialog(
 
         title = "Export Publication Plot - DE Volcano",
 
@@ -3709,23 +3709,23 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         shiny::fluidRow(
 
-          shiny::column(5,
+                    shiny::column(5,
 
             shiny::h5("Dimensions"),
 
             shiny::fluidRow(
 
-              shiny::column(6,
+                            shiny::column(6,
 
                 shiny::numericInput(ns("de_exp_width"),  "Width (inch)",  value = 8, min = 2, max = 24)
 
-              ),
+                            ),
 
-              shiny::column(6,
+                            shiny::column(6,
 
                 shiny::numericInput(ns("de_exp_height"), "Height (inch)", value = 6, min = 2, max = 24)
 
-              )
+                            )
 
             ),
 
@@ -3737,13 +3737,13 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             shiny::fluidRow(
 
-              shiny::column(3, shiny::numericInput(ns("de_exp_margin_top"),    "Top",    value = 15, min = 0, max = 80)),
+                            shiny::column(3, shiny::numericInput(ns("de_exp_margin_top"),    "Top",    value = 15, min = 0, max = 80)),
 
-              shiny::column(3, shiny::numericInput(ns("de_exp_margin_bottom"), "Bottom", value = 15, min = 0, max = 80)),
+                            shiny::column(3, shiny::numericInput(ns("de_exp_margin_bottom"), "Bottom", value = 15, min = 0, max = 80)),
 
-              shiny::column(3, shiny::numericInput(ns("de_exp_margin_left"),   "Left",   value = 18, min = 0, max = 80)),
+                            shiny::column(3, shiny::numericInput(ns("de_exp_margin_left"),   "Left",   value = 18, min = 0, max = 80)),
 
-              shiny::column(3, shiny::numericInput(ns("de_exp_margin_right"),  "Right",  value = 18, min = 0, max = 80))
+                            shiny::column(3, shiny::numericInput(ns("de_exp_margin_right"),  "Right",  value = 18, min = 0, max = 80))
 
             ),
 
@@ -3771,9 +3771,9 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             shiny::checkboxInput(ns("de_exp_show_stats"),
 
-              label = "Show stats + direction banners (Up/Down | High-in)",
+                            label = "Show stats + direction banners (Up/Down | High-in)",
 
-              value = FALSE),
+                            value = FALSE),
 
             shiny::hr(),
 
@@ -3781,25 +3781,25 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             shiny::fluidRow(
 
-              shiny::column(6,
+                            shiny::column(6,
 
                 shiny::downloadButton(ns("de_exp_download_pdf"),
 
-                  "Download PDF", class = "btn-danger btn-block",
+                                    "Download PDF", class = "btn-danger btn-block",
 
-                  icon = shiny::icon("file-pdf"))
+                                    icon = shiny::icon("file-pdf"))
 
-              ),
+                            ),
 
-              shiny::column(6,
+                            shiny::column(6,
 
                 shiny::downloadButton(ns("de_exp_download_png"),
 
-                  "Download PNG", class = "btn-primary btn-block",
+                                    "Download PNG", class = "btn-primary btn-block",
 
-                  icon = shiny::icon("file-image"))
+                                    icon = shiny::icon("file-image"))
 
-              )
+                            )
 
             ),
 
@@ -3807,25 +3807,25 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             shiny::fluidRow(
 
-              shiny::column(6,
+                            shiny::column(6,
 
                 shiny::selectInput(ns("de_exp_format"), "Other format",
 
-                  choices = c("SVG" = "svg", "TIFF" = "tiff"), selected = "svg")
+                                    choices = c("SVG" = "svg", "TIFF" = "tiff"), selected = "svg")
 
-              ),
+                            ),
 
-              shiny::column(6,
+                            shiny::column(6,
 
                 shiny::div(style = "margin-top: 22px;",
 
-                  shiny::downloadButton(ns("de_exp_download_other"),
+                                    shiny::downloadButton(ns("de_exp_download_other"),
 
                     "Download", class = "btn-default btn-block")
 
                 )
 
-              )
+                            )
 
             ),
 
@@ -3833,35 +3833,35 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             shiny::fluidRow(
 
-              shiny::column(6,
+                            shiny::column(6,
 
                 shiny::actionButton(ns("de_exp_copy_code"),
 
-                  "Copy R Code", class = "btn-info btn-block",
+                                    "Copy R Code", class = "btn-info btn-block",
 
-                  icon = shiny::icon("clipboard"))
+                                    icon = shiny::icon("clipboard"))
 
-              ),
+                            ),
 
-              shiny::column(6,
+                            shiny::column(6,
 
                 shiny::actionButton(ns("de_exp_dismiss"),
 
-                  "Close", class = "btn-default btn-block")
+                                    "Close", class = "btn-default btn-block")
 
-              )
+                            )
 
             )
 
-          ),
+                    ),
 
-          shiny::column(7,
+                    shiny::column(7,
 
             shiny::h5("Live Preview"),
 
             shiny::div(style = "background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; width:100%; height:520px; display:flex; align-items:center; justify-content:center; overflow:auto;",
 
-              shiny::plotOutput(ns("de_exp_preview")) |>
+                            shiny::plotOutput(ns("de_exp_preview")) |>
 
                 shinycssloaders::withSpinner(type = 6, color = "#28a745")
 
@@ -3869,13 +3869,13 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
             shiny::tags$small(style = "color: #666; display:block; margin-top:6px;",
 
-              "Six categories: Both (purple) / Selected (green) / Pathway (orange) / Up (red) / Down (blue) / NS (gray). Preview auto-scaled to fit while keeping the export aspect ratio.")
+                            "Six categories: Both (purple) / Selected (green) / Pathway (orange) / Up (red) / Down (blue) / NS (gray). Preview auto-scaled to fit while keeping the export aspect ratio.")
 
-          )
+                    )
 
         )
 
-      )
+            )
 
     }
 
@@ -3883,19 +3883,19 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     shiny::observeEvent(input$open_de_volcano_export, {
 
-      data_list <- data_prep_data()
+            data_list <- data_prep_data()
 
-      de_df <- tryCatch(get_de_table(gsea_res, data_list$contrast_id),
+            de_df <- tryCatch(get_de_table(gsea_res, data_list$contrast_id),
 
                         error = function(e) NULL)
 
-      if (is.null(de_df) || nrow(de_df) == 0) {
+            if (is.null(de_df) || nrow(de_df) == 0) {
 
         shiny::showNotification("No DE data to export.", type = "warning"); return()
 
-      }
+            }
 
-      shiny::showModal(.build_de_volcano_export_modal())
+            shiny::showModal(.build_de_volcano_export_modal())
 
     })
 
@@ -3905,25 +3905,25 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     .de_volcano_export_df <- shiny::reactive({
 
-      data_list <- data_prep_data()
+            data_list <- data_prep_data()
 
-      shiny::req(data_list)
+            shiny::req(data_list)
 
-      de_df <- tryCatch(get_de_table(gsea_res, data_list$contrast_id),
+            de_df <- tryCatch(get_de_table(gsea_res, data_list$contrast_id),
 
                         error = function(e) NULL)
 
-      shiny::req(de_df)
+            shiny::req(de_df)
 
-      if (!"logFC" %in% colnames(de_df)) de_df$logFC <- de_df$log2FoldChange
+            if (!"logFC" %in% colnames(de_df)) de_df$logFC <- de_df$log2FoldChange
 
-      if (!"pvalue" %in% colnames(de_df)) de_df$pvalue <- de_df$p.value
+            if (!"pvalue" %in% colnames(de_df)) de_df$pvalue <- de_df$p.value
 
-      if (!"padj" %in% colnames(de_df)) de_df$padj <- de_df$p.adjust
+            if (!"padj" %in% colnames(de_df)) de_df$padj <- de_df$p.adjust
 
-      de_df <- de_df[!is.na(de_df$logFC) & !is.na(de_df$pvalue), ]
+            de_df <- de_df[!is.na(de_df$logFC) & !is.na(de_df$pvalue), ]
 
-      de_df
+            de_df
 
     })
 
@@ -3931,29 +3931,29 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     .de_volcano_export_code <- function() {
 
-      de_df <- .de_volcano_export_df()
+            de_df <- .de_volcano_export_df()
 
-      if (is.null(de_df) || nrow(de_df) == 0) return("")
+            if (is.null(de_df) || nrow(de_df) == 0) return("")
 
-      data_list <- data_prep_data()
+            data_list <- data_prep_data()
 
-      if (is.null(data_list)) return("")
+            if (is.null(data_list)) return("")
 
-      lg <- if (is.null(data_list$left_group))  "Left"  else data_list$left_group
+            lg <- if (is.null(data_list$left_group))  "Left"  else data_list$left_group
 
-      rg <- if (is.null(data_list$right_group)) "Right" else data_list$right_group
+            rg <- if (is.null(data_list$right_group)) "Right" else data_list$right_group
 
-      user_genes <- toupper(highlight_genes_reactive())
+            user_genes <- toupper(highlight_genes_reactive())
 
-      pathway_genes <- toupper(selected_pathway_genes())
+            pathway_genes <- toupper(selected_pathway_genes())
 
-      logfc_t <- if (is.null(input$de_exp_logfc)) 1 else input$de_exp_logfc
+            logfc_t <- if (is.null(input$de_exp_logfc)) 1 else input$de_exp_logfc
 
-      pval_t  <- if (is.null(input$de_exp_pval))  0.05 else input$de_exp_pval
+            pval_t  <- if (is.null(input$de_exp_pval))  0.05 else input$de_exp_pval
 
-      show_stats <- isTRUE(input$de_exp_show_stats)
+            show_stats <- isTRUE(input$de_exp_show_stats)
 
-      generate_de_volcano_code(
+            generate_de_volcano_code(
 
         gsea_res_var  = "gsea_res",
 
@@ -3979,7 +3979,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         margin_right  = if (is.null(input$de_exp_margin_right)  || is.na(input$de_exp_margin_right))  18 else input$de_exp_margin_right
 
-      )
+            )
 
     }
 
@@ -3987,44 +3987,44 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     .de_volcano_preview_plot <- shiny::reactive({
 
-      code <- tryCatch(.de_volcano_export_code(),
+            code <- tryCatch(.de_volcano_export_code(),
 
         error = function(e) {
 
-          shiny::showNotification(
+                    shiny::showNotification(
 
             sprintf("[de vol preview] code generation failed: %s", e$message),
 
             type = "error", duration = 8)
 
-          ""
+                    ""
 
         })
 
-      if (!nzchar(code)) return(NULL)
+            if (!nzchar(code)) return(NULL)
 
-      eval_env <- new.env(parent = globalenv())
+            eval_env <- new.env(parent = globalenv())
 
-      eval_env$p <- NULL
+            eval_env$p <- NULL
 
-      eval_env$print <- base::invisible
-      eval_env$gsea_res <- gsea_res
+            eval_env$print <- base::invisible
+            eval_env$gsea_res <- gsea_res
 
-      tryCatch(eval(parse(text = code), envir = eval_env),
+            tryCatch(eval(parse(text = code), envir = eval_env),
 
-               error = function(e) {
+                                error = function(e) {
 
-                 shiny::showNotification(
+                                    shiny::showNotification(
 
-                   sprintf("[de vol preview] %s", e$message),
+                                        sprintf("[de vol preview] %s", e$message),
 
-                   type = "error", duration = 8)
+                                        type = "error", duration = 8)
 
-                 NULL
+                                    NULL
 
-               })
+                                })
 
-      eval_env$p
+            eval_env$p
 
     })
 
@@ -4032,7 +4032,7 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     output$de_exp_preview <- shiny::renderPlot(
 
-      {
+            {
 
         p <- .de_volcano_preview_plot()
 
@@ -4040,21 +4040,21 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         p
 
-      },
+            },
 
-      res  = 72,
+            res  = 72,
 
-      width  = function() {
+            width  = function() {
 
         d <- .vol_preview_dims(input$de_exp_width, input$de_exp_height); d$width
 
-      },
+            },
 
-      height = function() {
+            height = function() {
 
         d <- .vol_preview_dims(input$de_exp_width, input$de_exp_height); d$height
 
-      }
+            }
 
     )
 
@@ -4062,34 +4062,34 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     .de_volcano_render_to_file <- function(file, fmt) {
 
-      code <- .de_volcano_export_code()
+            code <- .de_volcano_export_code()
 
-      if (!nzchar(code)) return()
+            if (!nzchar(code)) return()
 
-      eval_env <- new.env(parent = globalenv())
+            eval_env <- new.env(parent = globalenv())
 
-      eval_env$p <- NULL
+            eval_env$p <- NULL
 
-      eval_env$print <- base::invisible
-      eval_env$gsea_res <- gsea_res
+            eval_env$print <- base::invisible
+            eval_env$gsea_res <- gsea_res
 
-      tryCatch(eval(parse(text = code), envir = eval_env),
+            tryCatch(eval(parse(text = code), envir = eval_env),
 
-               error = function(e) shiny::showNotification(
+                                error = function(e) shiny::showNotification(
 
-                 sprintf("Render failed: %s", e$message), type = "error", duration = 8))
+                                    sprintf("Render failed: %s", e$message), type = "error", duration = 8))
 
-      if (is.null(eval_env$p)) return()
+            if (is.null(eval_env$p)) return()
 
-      ggplot2::ggsave(file, eval_env$p,
+            ggplot2::ggsave(file, eval_env$p,
 
-                      width  = if (is.null(input$de_exp_width))  8 else input$de_exp_width,
+                                            width  = if (is.null(input$de_exp_width))  8 else input$de_exp_width,
 
-                      height = if (is.null(input$de_exp_height)) 6 else input$de_exp_height,
+                                            height = if (is.null(input$de_exp_height)) 6 else input$de_exp_height,
 
-                      dpi    = if (is.null(input$de_exp_dpi))   300 else input$de_exp_dpi,
+                                            dpi    = if (is.null(input$de_exp_dpi))   300 else input$de_exp_dpi,
 
-                      device = fmt)
+                                            device = fmt)
 
     }
 
@@ -4097,27 +4097,27 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     output$de_exp_download_pdf <- shiny::downloadHandler(
 
-      filename = function() sprintf("GSEAlens_de_volcano_%s.pdf", Sys.Date()),
+            filename = function() sprintf("GSEAlens_de_volcano_%s.pdf", Sys.Date()),
 
-      content  = function(file) .de_volcano_render_to_file(file, "pdf")
+            content  = function(file) .de_volcano_render_to_file(file, "pdf")
 
     )
 
     output$de_exp_download_png <- shiny::downloadHandler(
 
-      filename = function() sprintf("GSEAlens_de_volcano_%s.png", Sys.Date()),
+            filename = function() sprintf("GSEAlens_de_volcano_%s.png", Sys.Date()),
 
-      content  = function(file) .de_volcano_render_to_file(file, "png")
+            content  = function(file) .de_volcano_render_to_file(file, "png")
 
     )
 
     output$de_exp_download_other <- shiny::downloadHandler(
 
-      filename = function() sprintf("GSEAlens_de_volcano_%s.%s", Sys.Date(),
+            filename = function() sprintf("GSEAlens_de_volcano_%s.%s", Sys.Date(),
 
                                     if (is.null(input$de_exp_format)) "svg" else input$de_exp_format),
 
-      content  = function(file) .de_volcano_render_to_file(file, input$de_exp_format)
+            content  = function(file) .de_volcano_render_to_file(file, input$de_exp_format)
 
     )
 
@@ -4125,39 +4125,39 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
     shiny::observeEvent(input$de_exp_copy_code, {
 
-      code <- .de_volcano_export_code()
+            code <- .de_volcano_export_code()
 
-      if (!nzchar(code)) {
+            if (!nzchar(code)) {
 
         shiny::showNotification("Nothing to copy.", type = "warning"); return()
 
-      }
+            }
 
-      ok <- tryCatch({ clipr::write_clip(code); TRUE }, error = function(e) FALSE)
+            ok <- tryCatch({ clipr::write_clip(code); TRUE }, error = function(e) FALSE)
 
-      if (isTRUE(ok)) {
+            if (isTRUE(ok)) {
 
         shiny::showNotification("R code copied to clipboard.", type = "message")
 
-      } else {
+            } else {
 
         shiny::showModal(shiny::modalDialog(
 
-          title = "Reproducible R Code (copy manually)",
+                    title = "Reproducible R Code (copy manually)",
 
-          size = "l", easyClose = TRUE,
+                    size = "l", easyClose = TRUE,
 
-          shiny::pre(style = "max-height: 60vh; overflow-y: auto; font-size: 11px;", code),
+                    shiny::pre(style = "max-height: 60vh; overflow-y: auto; font-size: 11px;", code),
 
-          footer = shiny::modalButton("Close")
+                    footer = shiny::modalButton("Close")
 
         ))
 
-      }
+            }
 
     })
 
-  })
+    })
 
 }
 

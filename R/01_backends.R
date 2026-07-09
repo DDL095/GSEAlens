@@ -38,57 +38,57 @@ NULL
 
 .extract_limma_data <- function(fit, expr_data = NULL) {
 
-  # 1. 强制校验：无截距设计
+    # 1. 强制校验：无截距设计
 
-  .validate_limma_design(fit)
-
-
-
-  # 2. 解析对比组
-
-  coef_names <- colnames(fit)
+    .validate_limma_design(fit)
 
 
 
-  # 检查是否包含对比符号 " - " (标准 limma contrast 命名)
+    # 2. 解析对比组
 
-  is_contrast_obj <- !is.null(fit$contrasts) || any(grepl(" - ", coef_names))
+    coef_names <- colnames(fit)
 
 
 
-  if (!is_contrast_obj) {
+    # 检查是否包含对比符号 " - " (标准 limma contrast 命名)
+
+    is_contrast_obj <- !is.null(fit$contrasts) || any(grepl(" - ", coef_names))
+
+
+
+    if (!is_contrast_obj) {
 
     stop(
 
-      "\n[Limma Input Error] Design matrix column names detected as group names (e.g., 'GroupA', 'GroupB') instead of contrasts (e.g., 'GroupA - GroupB').\nGSEAlens requires a fit object with contrasts already defined.\nPlease use makeContrasts and contrasts.fit to define your comparison groups."
+            "\n[Limma Input Error] Design matrix column names detected as group names (e.g., 'GroupA', 'GroupB') instead of contrasts (e.g., 'GroupA - GroupB').\nGSEAlens requires a fit object with contrasts already defined.\nPlease use makeContrasts and contrasts.fit to define your comparison groups."
 
     )
 
-  }
+    }
 
 
 
-  # 3. 构建 contrast_registry
+    # 3. 构建 contrast_registry
 
-  parsed_contrasts <- lapply(coef_names, function(name) {
+    parsed_contrasts <- lapply(coef_names, function(name) {
 
     parts <- strsplit(name, " - ")[[1]]
 
     if (length(parts) == 2) {
 
-      return(list(left = trimws(parts[1]), right = trimws(parts[2])))
+            return(list(left = trimws(parts[1]), right = trimws(parts[2])))
 
     } else {
 
-      return(list(left = name, right = "Background"))
+            return(list(left = name, right = "Background"))
 
     }
 
-  })
+    })
 
 
 
-  contrast_registry <- tibble::tibble(
+    contrast_registry <- tibble::tibble(
 
     contrast_id = vapply(parsed_contrasts, function(x) paste(x$left, x$right, sep = "_vs_"), character(1)),
 
@@ -100,17 +100,17 @@ NULL
 
     backend = "limma_voom"
 
-  )
+    )
 
 
 
-  # 4. 提取 DE 结果
+    # 4. 提取 DE 结果
 
-  de_store <- list()
+    de_store <- list()
 
 
 
-  for (i in seq_len(nrow(contrast_registry))) {
+    for (i in seq_len(nrow(contrast_registry))) {
 
     reg_row <- contrast_registry[i, ]
 
@@ -118,17 +118,17 @@ NULL
 
     de_store[[reg_row$contrast_id]] <- .standardize_de_columns(df = tt, backend = "limma_voom")
 
-  }
+    }
 
 
 
-  # 5. 构建 expr_bundle
+    # 5. 构建 expr_bundle
 
-  expr_bundle <- .build_expr_bundle(expr_data, backend = "limma_voom")
+    expr_bundle <- .build_expr_bundle(expr_data, backend = "limma_voom")
 
 
 
-  return(list(
+    return(list(
 
     contrast_registry = contrast_registry,
 
@@ -136,7 +136,7 @@ NULL
 
     expr_bundle = expr_bundle
 
-  ))
+    ))
 
 }
 
@@ -166,59 +166,59 @@ NULL
 
 .extract_deseq2_data <- function(dds, target_factor = NULL) {
 
-  # 1. 确定 target_factor
+    # 1. 确定 target_factor
 
-  design_formula <- DESeq2::design(dds)
+    design_formula <- DESeq2::design(dds)
 
-  design_terms <- attr(terms(design_formula), "term.labels")
+    design_terms <- attr(terms(design_formula), "term.labels")
 
 
 
-  if (is.null(target_factor)) {
+    if (is.null(target_factor)) {
 
     target_factor <- utils::tail(design_terms, 1)
 
     message(sprintf("[DESeq2] target_factor not specified, automatically inferred as: '%s'", target_factor))
 
-  }
+    }
 
 
 
-  # 校验 target_factor
+    # 校验 target_factor
 
-  .validate_deseq2_design(dds, target_factor)
-
-
-
-  # 2. 获取所有 levels
-
-  col_data <- as.data.frame(SummarizedExperiment::colData(dds))
-
-  factor_levels <- levels(col_data[[target_factor]])
+    .validate_deseq2_design(dds, target_factor)
 
 
 
-  if (length(factor_levels) < 2) {
+    # 2. 获取所有 levels
+
+    col_data <- as.data.frame(SummarizedExperiment::colData(dds))
+
+    factor_levels <- levels(col_data[[target_factor]])
+
+
+
+    if (length(factor_levels) < 2) {
 
     stop(sprintf("Factor '%s' has fewer than 2 levels, cannot perform comparison.", target_factor))
 
-  }
+    }
 
 
 
-  # 3. 生成所有成对比较
+    # 3. 生成所有成对比较
 
-  combos <- combn(factor_levels, 2, simplify = FALSE)
-
-
-
-  contrast_registry_list <- list()
-
-  de_store_list <- list() # 定义列表变量
+    combos <- combn(factor_levels, 2, simplify = FALSE)
 
 
 
-  for (combo in combos) {
+    contrast_registry_list <- list()
+
+    de_store_list <- list() # 定义列表变量
+
+
+
+    for (combo in combos) {
 
     left <- combo[1]
 
@@ -238,19 +238,19 @@ NULL
 
     res <- tryCatch(
 
-      {
+            {
 
         DESeq2::results(dds, contrast = contrast_vec)
 
-      },
+            },
 
-      error = function(e) {
+            error = function(e) {
 
         warning(sprintf("Error extracting contrast %s: %s", contrast_id, e$message))
 
         return(NULL)
 
-      }
+            }
 
     )
 
@@ -258,9 +258,9 @@ NULL
 
     if (!is.null(res)) {
 
-      # 添加到 registry
+            # 添加到 registry
 
-      contrast_registry_list[[contrast_id]] <- tibble::tibble(
+            contrast_registry_list[[contrast_id]] <- tibble::tibble(
 
         contrast_id = contrast_id,
 
@@ -272,39 +272,39 @@ NULL
 
         backend = "deseq2"
 
-      )
+            )
 
 
 
-      # 标准化列名
+            # 标准化列名
 
-      de_store_list[[contrast_id]] <- .standardize_de_columns(
+            de_store_list[[contrast_id]] <- .standardize_de_columns(
 
         df = as.data.frame(res),
 
         backend = "deseq2"
 
-      )
+            )
 
     }
 
-  }
+    }
 
 
 
-  contrast_registry <- dplyr::bind_rows(contrast_registry_list)
+    contrast_registry <- dplyr::bind_rows(contrast_registry_list)
 
 
 
-  # 4. 构建 expr_bundle
+    # 4. 构建 expr_bundle
 
-  expr_bundle <- .build_expr_bundle(dds, backend = "deseq2")
+    expr_bundle <- .build_expr_bundle(dds, backend = "deseq2")
 
 
 
-  # 🌟 修复点：返回 de_store_list 而非 de_store
+    # 🌟 修复点：返回 de_store_list 而非 de_store
 
-  return(list(
+    return(list(
 
     contrast_registry = contrast_registry,
 
@@ -312,7 +312,7 @@ NULL
 
     expr_bundle = expr_bundle
 
-  ))
+    ))
 
 }
 
@@ -328,31 +328,31 @@ NULL
 
 .standardize_de_columns <- function(df, backend) {
 
-  # 添加基因名列（保持大小写敏感，但确保存在）
+    # 添加基因名列（保持大小写敏感，但确保存在）
 
-  if ("gene_symbol" %in% colnames(df)) {
+    if ("gene_symbol" %in% colnames(df)) {
 
     # 保持原样
 
-  } else if ("SYMBOL" %in% colnames(df)) {
+    } else if ("SYMBOL" %in% colnames(df)) {
 
     df$gene_symbol <- df$SYMBOL
 
-  } else if ("row.names" %in% colnames(df)) {
+    } else if ("row.names" %in% colnames(df)) {
 
     df$gene_symbol <- df$row.names
 
-  } else {
+    } else {
 
     df$gene_symbol <- rownames(df)
 
-  }
+    }
 
 
 
-  # 标准化统计列（根据后端类型）
+    # 标准化统计列（根据后端类型）
 
-  if (backend == "deseq2") {
+    if (backend == "deseq2") {
 
     # DESeq2: stat, log2FoldChange, pvalue, padj
 
@@ -364,7 +364,7 @@ NULL
 
     df$padj <- df$padj %||% df$adj.P.Val %||% NA_real_
 
-  } else if (backend == "limma_voom") {
+    } else if (backend == "limma_voom") {
 
     # Limma-Voom: t统计量作为stat, P.Value作为pvalue, adj.P.Val作为padj
 
@@ -376,29 +376,29 @@ NULL
 
     df$padj <- df$padj %||% df$adj.P.Val %||% NA_real_
 
-  }
+    }
 
 
 
-  # 核心列检查
+    # 核心列检查
 
-  core_cols <- c("gene_symbol", "logFC", "stat", "pvalue", "padj")
+    core_cols <- c("gene_symbol", "logFC", "stat", "pvalue", "padj")
 
-  missing <- setdiff(core_cols, colnames(df))
+    missing <- setdiff(core_cols, colnames(df))
 
-  if (length(missing) > 0) {
+    if (length(missing) > 0) {
 
     stop(sprintf("Standardization failed, missing columns: %s", paste(missing, collapse = ", ")))
 
-  }
+    }
 
 
 
-  # 保留所有原始列，但确保核心列在前
+    # 保留所有原始列，但确保核心列在前
 
-  other_cols <- setdiff(colnames(df), core_cols)
+    other_cols <- setdiff(colnames(df), core_cols)
 
-  return(df[, c(core_cols, other_cols), drop = FALSE])
+    return(df[, c(core_cols, other_cols), drop = FALSE])
 
 }
 
@@ -414,49 +414,49 @@ NULL
 
 .build_expr_bundle <- function(obj, backend) {
 
-  if (is.null(obj)) {
+    if (is.null(obj)) {
 
     return(list(
 
-      raw_counts = NULL,
+            raw_counts = NULL,
 
-      display_expr = NULL,
+            display_expr = NULL,
 
-      sample_meta = NULL,
+            sample_meta = NULL,
 
-      gene_meta = NULL
+            gene_meta = NULL
 
     ))
 
-  }
+    }
 
 
 
-  if (backend == "limma_voom") {
+    if (backend == "limma_voom") {
 
     if (inherits(obj, "DGEList")) {
 
-      raw_counts <- obj$counts
+            raw_counts <- obj$counts
 
-      sample_meta <- obj$samples
+            sample_meta <- obj$samples
 
-      gene_meta <- obj$genes
+            gene_meta <- obj$genes
 
-      display_expr <- edgeR::cpm(obj, log = TRUE)
+            display_expr <- edgeR::cpm(obj, log = TRUE)
 
     } else {
 
-      raw_counts <- as.matrix(obj)
+            raw_counts <- as.matrix(obj)
 
-      sample_meta <- data.frame(row.names = colnames(obj))
+            sample_meta <- data.frame(row.names = colnames(obj))
 
-      gene_meta <- NULL
+            gene_meta <- NULL
 
-      display_expr <- log2(raw_counts + 1)
+            display_expr <- log2(raw_counts + 1)
 
     }
 
-  } else if (backend == "deseq2") {
+    } else if (backend == "deseq2") {
 
     # IRON FIX (2026-07-01, D-4): namespace counts() to DESeq2::counts() so
     # we do not collide with Matrix::counts() or any other package export.
@@ -472,11 +472,11 @@ NULL
 
     display_expr <- log2(norm_counts + 1)
 
-  }
+    }
 
 
 
-  return(list(
+    return(list(
 
     raw_counts = raw_counts,
 
@@ -490,7 +490,7 @@ NULL
 
     dds_obj = if (backend == "deseq2") obj else NULL
 
-  ))
+    ))
 
 }
 
