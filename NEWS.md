@@ -2,6 +2,21 @@
 
 
 
+# GSEAlens 0.99.23
+
+Joint Canvas: single-pathway label refined.
+
+v0.99.22 added a `labs(subtitle)` to `p1` in `plot_directional_gsea()`
+when `n_lines == 1`, but this was redundant in the Joint Canvas where
+each sub-plot already has its own `main_title`.
+
+Reverted the subtitle approach. Instead, the Joint Canvas module
+(R/14) now includes the formatted pathway name directly in the
+`main_title` when only one pathway is selected:
+- Multi-pathway: `"RT vs M [3 pathways]"` (unchanged)
+- Single-pathway: `"RT vs M: Interferon Alpha Response"`
+
+
 # GSEAlens 0.99.22
 
 Joint Canvas: label single-pathway plots.

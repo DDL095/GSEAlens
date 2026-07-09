@@ -256,15 +256,31 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
 
 
 
-        main_title <- sprintf(
+        main_title <- if (length(pathways) == 1) {
 
-          "%s [%d pathways]",
+          # Single pathway: show pathway name instead of generic count
+          pw_label <- pathways[1]
+          tit <- unlist(strsplit(pw_label, split = "_"))
+          if (length(tit) > 1) {
+            pw_label <- paste(tools::toTitleCase(tolower(tit[-1])), collapse = " ")
+          } else {
+            pw_label <- tools::toTitleCase(tolower(pw_label))
+          }
+          sprintf("%s: %s", gsub("_vs_", " vs ", contrast_id), pw_label)
 
-          gsub("_vs_", " vs ", contrast_id),
+        } else {
 
-          length(pathways)
+          sprintf(
 
-        )
+            "%s [%d pathways]",
+
+            gsub("_vs_", " vs ", contrast_id),
+
+            length(pathways)
+
+          )
+
+        }
 
 
         p <- tryCatch(
