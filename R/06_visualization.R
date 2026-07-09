@@ -286,6 +286,13 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
 
     }
 
+  } else {
+
+    # n_lines == 1: no discrete legend exists (gradient scale used by .gsea_nb_core).
+    # Add the pathway name as a subtitle on p1 so the user can identify which
+    # pathway is being plotted, mirroring the main-table behavior.
+    pw_label <- .format_pathway_label(target_pathways[1])
+    p_list$p1 <- p_list$p1 + ggplot2::labs(subtitle = pw_label)
   }
 
 

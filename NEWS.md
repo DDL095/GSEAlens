@@ -2,6 +2,22 @@
 
 
 
+# GSEAlens 0.99.22
+
+Joint Canvas: label single-pathway plots.
+
+When only one pathway is plotted in the GSEA Joint Canvas (or any caller
+of `plot_directional_gsea()` that supplies a custom `main_title`), the
+pathway name was not displayed because the legend-override logic only ran
+for `n_lines > 1`, and the single-pathway path uses a gradient color
+scale (no discrete legend).
+
+Fixed by adding an `else` branch in `plot_directional_gsea()`: when
+`n_lines == 1`, the formatted pathway name is added as a `labs(subtitle)`
+on `p1`, mirroring the main-table behavior where the pathway name is
+shown as the title.
+
+
 # GSEAlens 0.99.21
 
 Export code: respect user-selected gene-set collections.
