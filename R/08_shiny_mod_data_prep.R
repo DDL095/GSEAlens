@@ -1376,7 +1376,9 @@ mod_data_prep_server <- function(id, gsea_res) {
 
         joint_contrasts = canvas_contrasts_val(),
 
-        joint_ncol = canvas_ncol_val()
+        joint_ncol = canvas_ncol_val(),
+
+        collections = collections
 
       )
 

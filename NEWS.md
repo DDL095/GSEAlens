@@ -2,6 +2,36 @@
 
 
 
+# GSEAlens 0.99.21
+
+Export code: respect user-selected gene-set collections.
+
+Previously all five publication plot code generators hardcoded
+`target_collection = "ALL"` in the exported `extract_gsea_task()` call,
+so the Pathway Volcano always showed all gene sets regardless of the
+collection filter selected in the data-prep module.
+
+Fixed by:
+- **R/08** (`mod_data_prep_server`): `process_data_core()` now includes
+  `collections` in its return list, propagating the user's selection.
+- **R/15**: `generate_volcano_code()`, `generate_dotplot_code()`,
+  `generate_network_code()`, and `generate_hubgene_code()` accept a new
+  `target_collection` parameter (default `"ALL"`) and emit it into the
+  generated R code. `generate_de_volcano_code()` is unaffected (uses
+  `get_de_table()`, not `extract_gsea_task()`).
+- **R/10** (`mod_quadrant_server`): passes `data_list$collections` to
+  `generate_volcano_code()`.
+- **R/13** (`mod_pathway_relation_server`): passes `data_list$collections`
+  to `generate_dotplot_code()` and `generate_network_code()`.
+- **R/16** (`mod_hubgene_vis_server`): passes `data_list$collections`
+  to `generate_hubgene_code()`.
+
+Now: selecting "H" produces `target_collection = c("H")`, selecting
+"C2" + "C2:CP" produces `target_collection = c("C2", "C2:CP")`, and
+the exported Pathway Volcano only plots pathways within the selected
+collection(s).
+
+
 # GSEAlens 0.99.20
 
 DotPlot direction annotation: move labels outside the plot panel border.

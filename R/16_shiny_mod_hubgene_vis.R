@@ -2219,6 +2219,8 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
                             seed = seed_val,
 
+                            target_collection = if (is.null(data_list$collections)) "ALL" else data_list$collections,
+
                             margin_top    = if (is.null(input$hub_exp_margin_top)    || is.na(input$hub_exp_margin_top))    18 else input$hub_exp_margin_top,
 
                             margin_bottom = if (is.null(input$hub_exp_margin_bottom) || is.na(input$hub_exp_margin_bottom)) 18 else input$hub_exp_margin_bottom,

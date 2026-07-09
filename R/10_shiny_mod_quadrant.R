@@ -3574,6 +3574,8 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
                             show_annotations = show_stats,
 
+                            target_collection = if (is.null(data_list$collections)) "ALL" else data_list$collections,
+
                             margin_top    = if (is.null(input$vol_exp_margin_top)    || is.na(input$vol_exp_margin_top))    15 else input$vol_exp_margin_top,
 
                             margin_bottom = if (is.null(input$vol_exp_margin_bottom) || is.na(input$vol_exp_margin_bottom)) 15 else input$vol_exp_margin_bottom,

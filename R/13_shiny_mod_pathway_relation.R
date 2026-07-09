@@ -2929,6 +2929,9 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
           left_group   = lg, right_group = rg,
 
           palette      = pal, point_range = pr,
+
+          target_collection = if (is.null(data_list$collections)) "ALL" else data_list$collections,
+
           margin_top    = if (is.null(input$exp_margin_top)    || is.na(input$exp_margin_top))    18 else input$exp_margin_top,
           margin_bottom = if (is.null(input$exp_margin_bottom) || is.na(input$exp_margin_bottom)) 18 else input$exp_margin_bottom,
           margin_left   = if (is.null(input$exp_margin_left)   || is.na(input$exp_margin_left))   18 else input$exp_margin_left,
@@ -2955,6 +2958,8 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
                          else input$network_edge_width_mode,
 
           seed = seed_val,
+
+          target_collection = if (is.null(data_list$collections)) "ALL" else data_list$collections,
 
           margin_top    = if (is.null(input$exp_margin_top)    || is.na(input$exp_margin_top))    18 else input$exp_margin_top,
 

@@ -1475,6 +1475,7 @@ generate_dotplot_code <- function(gsea_res_var = "gsea_res",
                                   right_group = "Right",
                                   palette = "D",
                                   point_range = c(3, 8),
+                                  target_collection = "ALL",
                                   base_size = 12,
                                   margin_top = 18,
                                   margin_bottom = 18,
@@ -1486,6 +1487,13 @@ generate_dotplot_code <- function(gsea_res_var = "gsea_res",
   }
 
   pathways_str <- paste(sprintf('    "%s"', pathways), collapse = ",\n")
+
+  # Format target_collection for R code output
+  tc_str <- if (length(target_collection) == 1 && toupper(target_collection) == "ALL") {
+    '"ALL"'
+  } else {
+    paste0('c(', paste0('"', target_collection, '"', collapse = ", "), ')')
+  }
 
   color_field <- switch(color_mode,
     "padj" = "-log10(p.adjust)",
@@ -1525,7 +1533,7 @@ GSEAlens_pathways <- c(
 
 # --- Extract task and build plot data ----------------------------------------
 GSEAlens_task <- GSEAlens::extract_gsea_task(%s,
-  contrast_id = GSEAlens_contrast_id, target_collection = "ALL")
+  contrast_id = GSEAlens_contrast_id, target_collection = %s)
 df <- as.data.frame(GSEAlens_task$gsea_res@result)
 df <- df[df$ID %%in%% GSEAlens_pathways, ]
 
@@ -1613,6 +1621,7 @@ print(p)
     contrast_id,
     pathways_str,
     gsea_res_var,
+    tc_str,
     color_field, color_title,
     size_field,  size_title,
     point_range[1], point_range[2],
@@ -1658,6 +1667,7 @@ generate_volcano_code <- function(gsea_res_var = "gsea_res",
                                   n_selected = 0L,
                                   selected_ids = character(0),
                                   show_annotations = FALSE,
+                                  target_collection = "ALL",
                                   base_size = 12,
                                   margin_top = 15, margin_bottom = 15,
                                   margin_left = 18, margin_right = 18) {
@@ -1665,6 +1675,13 @@ generate_volcano_code <- function(gsea_res_var = "gsea_res",
   selected_str <- if (length(selected_ids) > 0) {
     paste0('c(', paste0('"', selected_ids, '"', collapse = ", "), ')')
   } else "character(0)"
+
+  # Format target_collection for R code output
+  tc_str <- if (length(target_collection) == 1 && toupper(target_collection) == "ALL") {
+    '"ALL"'
+  } else {
+    paste0('c(', paste0('"', target_collection, '"', collapse = ", "), ')')
+  }
 
   labs_block <- if (show_annotations) {
     paste0(
@@ -1705,7 +1722,7 @@ GSEAlens_contrast_id <- "%s"
 
 # --- Extract task and build plot data ----------------------------------------
 GSEAlens_task <- GSEAlens::extract_gsea_task(%s,
-  contrast_id = GSEAlens_contrast_id, target_collection = "ALL")
+  contrast_id = GSEAlens_contrast_id, target_collection = %s)
 df <- as.data.frame(GSEAlens_task$gsea_res@result)
 
 # --- Selected pathway IDs (for ggrepel labels) -------------------------------
@@ -1777,6 +1794,7 @@ print(p)
     gsea_res_var,
     contrast_id,
     gsea_res_var,
+    tc_str,
     selected_str,
     n_selected,
     left_group, right_group,
@@ -1823,6 +1841,7 @@ generate_de_volcano_code <- function(gsea_res_var = "gsea_res",
                                      left_group = "Left",
                                      right_group = "Right",
                                      show_annotations = FALSE,
+                                     target_collection = "ALL",
                                      base_size = 12,
                                      margin_top = 15, margin_bottom = 15,
                                      margin_left = 18, margin_right = 18) {
@@ -1833,6 +1852,13 @@ generate_de_volcano_code <- function(gsea_res_var = "gsea_res",
   pathway_str <- if (length(pathway_genes) > 0) {
     paste0('c(', paste0('"', pathway_genes, '"', collapse = ", "), ')')
   } else "character(0)"
+
+  # Format target_collection for R code output
+  tc_str <- if (length(target_collection) == 1 && toupper(target_collection) == "ALL") {
+    '"ALL"'
+  } else {
+    paste0('c(', paste0('"', target_collection, '"', collapse = ", "), ')')
+  }
 
   labs_annot_block <- if (show_annotations) {
     paste0(
@@ -2018,6 +2044,7 @@ generate_network_code <- function(gsea_res_var = "gsea_res",
                                   min_shared_genes = 2,
                                   width_mode = "weight",
                                   seed = 42L,
+                                  target_collection = "ALL",
                                   base_size = 12,
                                   margin_top = 18, margin_bottom = 18,
                                   margin_left = 18, margin_right = 18) {
@@ -2027,6 +2054,13 @@ generate_network_code <- function(gsea_res_var = "gsea_res",
   }
 
   pathways_str <- paste(sprintf('    "%s"', pathways), collapse = ",\n")
+
+  # Format target_collection for R code output
+  tc_str <- if (length(target_collection) == 1 && toupper(target_collection) == "ALL") {
+    '"ALL"'
+  } else {
+    paste0('c(', paste0('"', target_collection, '"', collapse = ", "), ')')
+  }
 
   width_block <- if (width_mode == "rank") {
 '  # rank-based: assign edge width by Jaccard rank (1..n -> 1..5 px)
@@ -2059,7 +2093,7 @@ GSEAlens_pathways <- c(
 
 # --- Extract task and build network data -------------------------------------
 GSEAlens_task <- GSEAlens::extract_gsea_task(%s,
-  contrast_id = GSEAlens_contrast_id, target_collection = "ALL")
+  contrast_id = GSEAlens_contrast_id, target_collection = %s)
 df <- as.data.frame(GSEAlens_task$gsea_res@result)
 df <- df[df$ID %%in%% GSEAlens_pathways, ]
 
@@ -2140,6 +2174,7 @@ print(p)
     contrast_id,
     pathways_str,
     gsea_res_var,
+    tc_str,
     min_shared_genes,
     width_block,
     seed, base_size,
@@ -2177,6 +2212,7 @@ generate_hubgene_code <- function(gsea_res_var = "gsea_res",
                                   min_hub_degree = 2,
                                   pw_size_mode = "setsize",
                                   seed = 42L,
+                                  target_collection = "ALL",
                                   base_size = 12,
                                   margin_top = 18, margin_bottom = 18,
                                   margin_left = 18, margin_right = 18) {
@@ -2186,6 +2222,13 @@ generate_hubgene_code <- function(gsea_res_var = "gsea_res",
   }
 
   pathways_str <- paste(sprintf('    "%s"', pathways), collapse = ",\n")
+
+  # Format target_collection for R code output
+  tc_str <- if (length(target_collection) == 1 && toupper(target_collection) == "ALL") {
+    '"ALL"'
+  } else {
+    paste0('c(', paste0('"', target_collection, '"', collapse = ", "), ')')
+  }
 
   size_block <- switch(pw_size_mode,
     "fdr" =
@@ -2222,7 +2265,7 @@ GSEAlens_pathways <- c(
 
 # --- Extract task and build HubGene network ----------------------------------
 GSEAlens_task <- GSEAlens::extract_gsea_task(%s,
-  contrast_id = GSEAlens_contrast_id, target_collection = "ALL")
+  contrast_id = GSEAlens_contrast_id, target_collection = %s)
 
 GSEAlens_net <- GSEAlens::build_hubgene_network(
   GSEAlens_task,
@@ -2330,6 +2373,7 @@ print(p)
     contrast_id,
     pathways_str,
     gsea_res_var,
+    tc_str,
     min_hub_degree,
     size_block,
     seed, base_size,
