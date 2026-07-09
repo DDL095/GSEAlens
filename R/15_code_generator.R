@@ -427,11 +427,13 @@ print(GSEAlens_volcano_plot)
 
 # 6.3 Save plots to file (optional)
 
-# -----------------------------------------------------------------------------
-
-# ggsave("GSEAlens_combined_plot.pdf", GSEAlens_combined_plot, width = 12, height = 8)
-
-# ggsave("GSEAlens_volcano_plot.pdf", GSEAlens_volcano_plot, width = 10, height = 7)
+# --- Save to file (uncomment one) --------------------------------------------
+# ggsave("GSEAlens_combined_plot.pdf", GSEAlens_combined_plot, width = 12, height = 8, device = cairo_pdf)
+# ggsave("GSEAlens_combined_plot.png", GSEAlens_combined_plot, width = 12, height = 8, dpi = 300)
+# ggsave("GSEAlens_combined_plot.svg", GSEAlens_combined_plot, width = 12, height = 8)
+# ggsave("GSEAlens_volcano_plot.pdf", GSEAlens_volcano_plot, width = 10, height = 7, device = cairo_pdf)
+# ggsave("GSEAlens_volcano_plot.png", GSEAlens_volcano_plot, width = 10, height = 7, dpi = 300)
+# ggsave("GSEAlens_volcano_plot.svg", GSEAlens_volcano_plot, width = 10, height = 7)
 
 '
 
@@ -642,9 +644,13 @@ print(GSEAlens_combined)
 
 
 
-# Step 7: Save to file (optional)
+# Step 7: Save to file (uncomment one)
 
-# ggsave("GSEAlens_joint_canvas.pdf", GSEAlens_combined, width = 14, height = 10)
+# ggsave("GSEAlens_joint_canvas.pdf", GSEAlens_combined, width = 14, height = 10, device = cairo_pdf)
+
+# ggsave("GSEAlens_joint_canvas.png", GSEAlens_combined, width = 14, height = 10, dpi = 300)
+
+# ggsave("GSEAlens_joint_canvas.svg", GSEAlens_combined, width = 14, height = 10)
 
 '
 
@@ -1622,6 +1628,7 @@ print(p)
 # --- Save to file (uncomment one) --------------------------------------------
 # ggsave("dotplot.pdf", p, width = 9, height = 7, device = cairo_pdf)
 # ggsave("dotplot.png", p, width = 9, height = 7, dpi = 300)
+# ggsave("dotplot.svg", p, width = 9, height = 7)
 ',
     gsea_res_var,
     contrast_id,
@@ -1796,8 +1803,10 @@ if (length(selected_ids) > 0) {
 
 print(p)
 
+# --- Save to file (uncomment one) --------------------------------------------
 # ggsave("volcano.pdf", p, width = 8, height = 6, device = cairo_pdf)
 # ggsave("volcano.png", p, width = 8, height = 6, dpi = 300)
+# ggsave("volcano.svg", p, width = 8, height = 6)
 ',
     gsea_res_var,
     contrast_id,
@@ -2001,8 +2010,10 @@ if (nrow(de_df_label) > 0) {
 
 print(p)
 
+# --- Save to file (uncomment one) --------------------------------------------
 # ggsave("de_volcano.pdf", p, width = 8, height = 6, device = cairo_pdf)
 # ggsave("de_volcano.png", p, width = 8, height = 6, dpi = 300)
+# ggsave("de_volcano.svg", p, width = 8, height = 6)
 ',
     gsea_res_var,
     contrast_id,
@@ -2169,8 +2180,10 @@ p <- ggplot() +
 
 print(p)
 
+# --- Save to file (uncomment one) --------------------------------------------
 # ggsave("network.pdf", p, width = 10, height = 8, device = cairo_pdf)
 # ggsave("network.png", p, width = 10, height = 8, dpi = 300)
+# ggsave("network.svg", p, width = 10, height = 8)
 ',
     gsea_res_var,
     contrast_id,
@@ -2370,8 +2383,10 @@ p <- ggplot() +
 
 print(p)
 
+# --- Save to file (uncomment one) --------------------------------------------
 # ggsave("hubgene.pdf", p, width = 10, height = 8, device = cairo_pdf)
 # ggsave("hubgene.png", p, width = 10, height = 8, dpi = 300)
+# ggsave("hubgene.svg", p, width = 10, height = 8)
 ',
     gsea_res_var,
     contrast_id,
@@ -2773,6 +2788,8 @@ print(p)
 # ggsave("boxplot.pdf", p, width = 5, height = 5, device = cairo_pdf)
 
 # ggsave("boxplot.png", p, width = 5, height = 5, dpi = 300)
+
+# ggsave("boxplot.svg", p, width = 5, height = 5)
 
 ',
 

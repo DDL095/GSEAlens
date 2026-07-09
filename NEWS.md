@@ -2,6 +2,16 @@
 
 
 
+# GSEAlens 0.99.27
+
+Export code: unified save options (PDF + PNG + SVG).
+
+All publication plot code generators now consistently include three
+commented-out `ggsave()` lines covering PDF, PNG, and SVG output
+formats. Previously the save blocks were inconsistent — some had only
+PDF, some had PDF + PNG, and only one had all three.
+
+
 # GSEAlens 0.99.26
 
 Code style: convert 2-space indentation to 4-space across all R files.
