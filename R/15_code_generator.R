@@ -1579,7 +1579,7 @@ p <- ggplot(df, aes(
   coord_cartesian(clip = "off") +
   theme(
     plot.title    = element_text(face = "bold", hjust = 0.5),
-    plot.subtitle = element_text(color = "gray40", hjust = 0.5, margin = margin(b = 22)),
+    plot.subtitle = element_text(color = "gray40", hjust = 0.5, margin = margin(b = 20)),
     axis.text.y   = element_text(size = rel(0.85)),
     legend.position = "right",
     plot.margin     = margin(%d, %d, %d, %d)
@@ -1587,18 +1587,18 @@ p <- ggplot(df, aes(
 
 # --- Direction annotation: colored enriched-in labels above the plot ---------
 # Single-direction aware: if only one NES sign is present, show one label only.
-# y=1.0 + just="top": text grows upward from plot panel top into subtitle gap.
+# y=1.01 + just="bottom": text sits just outside the top border, growing upward.
 has_neg <- any(df$NES < 0, na.rm = TRUE)
 has_pos <- any(df$NES > 0, na.rm = TRUE)
 if (has_neg) {
   p <- p + annotation_custom(
-    grid::textGrob("Enriched in %s", x = 0.02, y = 1.0, just = c("left", "top"),
+    grid::textGrob("Enriched in %s", x = 0.02, y = 1.01, just = c("left", "bottom"),
                    gp = grid::gpar(col = "#3B6EA5", fontface = "bold", fontsize = %g)),
     xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf)
 }
 if (has_pos) {
   p <- p + annotation_custom(
-    grid::textGrob("Enriched in %s", x = 0.98, y = 1.0, just = c("right", "top"),
+    grid::textGrob("Enriched in %s", x = 0.98, y = 1.01, just = c("right", "bottom"),
                    gp = grid::gpar(col = "#C0392B", fontface = "bold", fontsize = %g)),
     xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf)
 }

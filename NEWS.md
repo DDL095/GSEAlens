@@ -2,6 +2,23 @@
 
 
 
+# GSEAlens 0.99.20
+
+DotPlot direction annotation: move labels outside the plot panel border.
+
+The previous fix (v0.99.19, `y=1.0` + `just="top"`) placed the enriched-in
+labels *inside* the plot panel, causing them to be overlapped by data
+points. Fixed by:
+- `y`: `1.0` -> `1.01` (just above the top border, outside the panel).
+- `just`: `"top"` -> `"bottom"` (text grows upward from y=1.01 into the
+  subtitle gap, sitting flush against the outside of the border).
+- subtitle `margin(b)`: `22` -> `20` (tightened now that text direction
+  is correct).
+
+Verified: labels render outside the border, flush against it, not
+overlapped by data points or subtitle, with default top margin (18pt).
+
+
 # GSEAlens 0.99.19
 
 DotPlot direction annotation layout fix: the enriched-in labels (blue left
