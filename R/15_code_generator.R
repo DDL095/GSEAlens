@@ -2546,6 +2546,10 @@ print(p)
 
 #' @param margin_right Numeric. Right plot margin (mm).
 
+#' @param fig_width Numeric. Figure width in inches for ggsave.
+
+#' @param fig_height Numeric. Figure height in inches for ggsave.
+
 #' @return Character scalar of executable R code.
 
 #' @export
@@ -2598,7 +2602,7 @@ generate_boxplot_image_code <- function(box_data_long,
 
                                         margin_top = 15, margin_bottom = 15,
 
-                                        margin_left = 18, margin_right = 18) {
+                                        margin_left = 18, margin_right = 18, fig_width = 5, fig_height = 5) {
 
     # Subset to the three essential columns + drop NA groups, mirroring the
 
@@ -2820,11 +2824,11 @@ print(p)
 
 # --- Save to file (uncomment one) --------------------------------------------
 
-# ggsave("boxplot.pdf", p, width = 5, height = 5, device = cairo_pdf)
+# ggsave("boxplot.pdf", p, width = %g, height = %g, device = cairo_pdf)
 
-# ggsave("boxplot.png", p, width = 5, height = 5, dpi = 300)
+# ggsave("boxplot.png", p, width = %g, height = %g, dpi = 300)
 
-# ggsave("boxplot.svg", p, width = 5, height = 5)
+# ggsave("boxplot.svg", p, width = %g, height = %g)
 
 ',
 
@@ -2842,7 +2846,13 @@ print(p)
 
     safe_expr,
 
-    margin_top, margin_right, margin_bottom, margin_left
+    margin_top, margin_right, margin_bottom, margin_left,
+
+    fig_width, fig_height,
+
+    fig_width, fig_height,
+
+    fig_width, fig_height
 
     )
 
