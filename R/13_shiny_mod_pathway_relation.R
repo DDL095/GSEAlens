@@ -2935,7 +2935,11 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
                     margin_top    = if (is.null(input$exp_margin_top)    || is.na(input$exp_margin_top))    18 else input$exp_margin_top,
                     margin_bottom = if (is.null(input$exp_margin_bottom) || is.na(input$exp_margin_bottom)) 18 else input$exp_margin_bottom,
                     margin_left   = if (is.null(input$exp_margin_left)   || is.na(input$exp_margin_left))   18 else input$exp_margin_left,
-                    margin_right  = if (is.null(input$exp_margin_right)  || is.na(input$exp_margin_right))  18 else input$exp_margin_right)
+                    margin_right  = if (is.null(input$exp_margin_right)  || is.na(input$exp_margin_right))  18 else input$exp_margin_right,
+
+                    fig_width     = if (is.null(input$exp_width)         || is.na(input$exp_width))          9 else input$exp_width,
+
+                    fig_height    = if (is.null(input$exp_height)        || is.na(input$exp_height))         7 else input$exp_height)
 
             } else if (tgt == "network") {
 
@@ -2967,7 +2971,11 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
 
                     margin_left   = if (is.null(input$exp_margin_left)   || is.na(input$exp_margin_left))   18 else input$exp_margin_left,
 
-                    margin_right  = if (is.null(input$exp_margin_right)  || is.na(input$exp_margin_right))  18 else input$exp_margin_right)
+                    margin_right  = if (is.null(input$exp_margin_right)  || is.na(input$exp_margin_right))  18 else input$exp_margin_right,
+
+                    fig_width     = if (is.null(input$exp_width)         || is.na(input$exp_width))         10 else input$exp_width,
+
+                    fig_height    = if (is.null(input$exp_height)        || is.na(input$exp_height))         8 else input$exp_height)
 
             } else ""
 

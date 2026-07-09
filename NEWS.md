@@ -2,6 +2,22 @@
 
 
 
+# GSEAlens 0.99.28
+
+Export code: pass figure dimensions (Width/Height) to ggsave.
+
+The "Width (inch)" and "Height (inch)" inputs in the Dimensions section
+of each export modal were not propagated to the generated code's
+`ggsave()` lines — they used hardcoded defaults.
+
+Fixed by adding `fig_width` and `fig_height` parameters to all 5
+publication plot generators (`generate_dotplot_code()`,
+`generate_volcano_code()`, `generate_de_volcano_code()`,
+`generate_network_code()`, `generate_hubgene_code()`), and passing
+`input$exp_width` / `input$exp_height` (and module-specific variants)
+from R/10, R/13, and R/16.
+
+
 # GSEAlens 0.99.27
 
 Export code: unified save options (PDF + PNG + SVG).

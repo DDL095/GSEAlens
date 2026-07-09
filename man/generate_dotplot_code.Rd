@@ -19,7 +19,9 @@ generate_dotplot_code(
   margin_top = 18,
   margin_bottom = 18,
   margin_left = 18,
-  margin_right = 18
+  margin_right = 18,
+  fig_width = 9,
+  fig_height = 7
 )
 }
 \arguments{
@@ -54,6 +56,10 @@ environment (default \code{"gsea_res"}).}
 \item{margin_left}{Numeric. Left plot margin (mm).}
 
 \item{margin_right}{Numeric. Right plot margin (mm).}
+
+\item{fig_width}{Numeric. Figure width in inches for ggsave.}
+
+\item{fig_height}{Numeric. Figure height in inches for ggsave.}
 }
 \value{
 Character scalar of executable R code.

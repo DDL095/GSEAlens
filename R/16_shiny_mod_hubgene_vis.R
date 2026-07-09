@@ -2227,7 +2227,11 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
                             margin_left   = if (is.null(input$hub_exp_margin_left)   || is.na(input$hub_exp_margin_left))   18 else input$hub_exp_margin_left,
 
-                            margin_right  = if (is.null(input$hub_exp_margin_right)  || is.na(input$hub_exp_margin_right))  18 else input$hub_exp_margin_right)
+                            margin_right  = if (is.null(input$hub_exp_margin_right)  || is.na(input$hub_exp_margin_right))  18 else input$hub_exp_margin_right,
+
+                            fig_width     = if (is.null(input$hub_exp_width)         || is.na(input$hub_exp_width))         10 else input$hub_exp_width,
+
+                            fig_height    = if (is.null(input$hub_exp_height)        || is.na(input$hub_exp_height))         8 else input$hub_exp_height)
 
     }
 

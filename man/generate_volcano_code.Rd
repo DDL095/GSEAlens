@@ -17,7 +17,9 @@ generate_volcano_code(
   margin_top = 15,
   margin_bottom = 15,
   margin_left = 18,
-  margin_right = 18
+  margin_right = 18,
+  fig_width = 8,
+  fig_height = 6
 )
 }
 \arguments{
@@ -47,6 +49,10 @@ Default \code{"ALL"}.}
 \item{margin_left}{Numeric. Left plot margin (mm).}
 
 \item{margin_right}{Numeric. Right plot margin (mm).}
+
+\item{fig_width}{Numeric. Figure width in inches for ggsave.}
+
+\item{fig_height}{Numeric. Figure height in inches for ggsave.}
 }
 \value{
 Character scalar of executable R code.
