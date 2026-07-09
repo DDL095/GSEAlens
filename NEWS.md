@@ -2,6 +2,24 @@
 
 
 
+# GSEAlens 0.99.19
+
+DotPlot direction annotation layout fix: the enriched-in labels (blue left
+/ red right) previously overlapped with the subtitle because
+`annotation_custom` used `y = 1.04` with `just = "bottom"`, placing them
+at the same vertical position as the subtitle text.
+
+Fixed by:
+- Changing `y` from `1.04` to `1.0` (exact top of plot panel).
+- Changing `just` from `"bottom"` to `"top"` (text grows upward into the
+  subtitle gap, not downward into the plot).
+- Increasing subtitle `margin(b)` from `14` to `22` (creates enough space
+  for the 12pt annotation text between subtitle and plot panel).
+
+Verified with 20-pathway bidirectional data: no overlap between title,
+subtitle, and colored direction labels.
+
+
 # GSEAlens 0.99.18
 
 DotPlot Canvas Margin fix + enriched-in direction annotation redesign:
