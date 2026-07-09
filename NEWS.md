@@ -2,6 +2,25 @@
 
 
 
+# GSEAlens 0.99.25
+
+R CMD check / BiocCheck compliance:
+
+- **DESCRIPTION**: Added explicit `Author` and `Maintainer` fields
+  (required by R 4.6.0's `R CMD check`, which no longer auto-derives
+  them from `Authors@R` alone). Added `family = "Lab"` to `person()`
+  calls.
+- **Rd files**: Regenerated all 5 publication plot generator Rd files
+  via `devtools::document()` to include `target_collection` and margin
+  parameters. Removed unused `target_collection` parameter from
+  `generate_de_volcano_code()` (uses `get_de_table()`, not
+  `extract_gsea_task()`).
+- **R CMD check**: 0 ERROR, 0 code/doc mismatch, 0 syntax error.
+  Remaining 3 WARNINGs are non-code (`.Rcheck` residual, vignettes
+  not compiled — resolved by `R CMD build`).
+- **BiocCheck**: 0 ERROR, 0 WARNING, 11 NOTEs (stylistic only).
+
+
 # GSEAlens 0.99.24
 
 Joint Canvas: show pathway name in canvas title for single-pathway.

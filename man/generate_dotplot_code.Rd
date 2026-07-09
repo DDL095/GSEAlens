@@ -14,7 +14,12 @@ generate_dotplot_code(
   right_group = "Right",
   palette = "D",
   point_range = c(3, 8),
-  base_size = 12
+  target_collection = "ALL",
+  base_size = 12,
+  margin_top = 18,
+  margin_bottom = 18,
+  margin_left = 18,
+  margin_right = 18
 )
 }
 \arguments{
@@ -37,7 +42,18 @@ environment (default \code{"gsea_res"}).}
 
 \item{point_range}{Numeric length 2. Min/max point size in mm.}
 
+\item{target_collection}{Character. Gene set collection(s) to extract
+(e.g. \code{"H"}, \code{c("C2", "C2:CP")}). Default \code{"ALL"}.}
+
 \item{base_size}{Numeric. theme_bw base font size.}
+
+\item{margin_top}{Numeric. Top plot margin (mm).}
+
+\item{margin_bottom}{Numeric. Bottom plot margin (mm).}
+
+\item{margin_left}{Numeric. Left plot margin (mm).}
+
+\item{margin_right}{Numeric. Right plot margin (mm).}
 }
 \value{
 Character scalar of executable R code.

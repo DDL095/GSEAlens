@@ -12,6 +12,7 @@ generate_volcano_code(
   n_selected = 0L,
   selected_ids = character(0),
   show_annotations = FALSE,
+  target_collection = "ALL",
   base_size = 12,
   margin_top = 15,
   margin_bottom = 15,
@@ -33,6 +34,9 @@ generate_volcano_code(
 \item{selected_ids}{Character vector. Pathway IDs for ggrepel annotation.}
 
 \item{show_annotations}{Logical. Add ggrepel labels for selected pathways.}
+
+\item{target_collection}{Character. Gene set collection(s) to extract.
+Default \code{"ALL"}.}
 
 \item{base_size}{Numeric.}
 

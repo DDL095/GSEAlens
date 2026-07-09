@@ -11,6 +11,7 @@ generate_hubgene_code(
   min_hub_degree = 2,
   pw_size_mode = "setsize",
   seed = 42L,
+  target_collection = "ALL",
   base_size = 12,
   margin_top = 18,
   margin_bottom = 18,
@@ -30,6 +31,9 @@ generate_hubgene_code(
 \item{pw_size_mode}{Character. One of "fixed", "fdr", "setsize".}
 
 \item{seed}{Integer.}
+
+\item{target_collection}{Character. Gene set collection(s) to extract.
+Default \code{"ALL"}.}
 
 \item{base_size}{Numeric.}
 

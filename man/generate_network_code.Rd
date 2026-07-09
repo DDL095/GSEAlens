@@ -11,6 +11,7 @@ generate_network_code(
   min_shared_genes = 2,
   width_mode = "weight",
   seed = 42L,
+  target_collection = "ALL",
   base_size = 12,
   margin_top = 18,
   margin_bottom = 18,
@@ -30,6 +31,9 @@ generate_network_code(
 \item{width_mode}{Character. "rank" or "weight".}
 
 \item{seed}{Integer. Layout seed.}
+
+\item{target_collection}{Character. Gene set collection(s) to extract.
+Default \code{"ALL"}.}
 
 \item{base_size}{Numeric.}
 

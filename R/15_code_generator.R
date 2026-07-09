@@ -1458,7 +1458,13 @@ extract_boxplot_data <- function(GSEAlens_res,
 #' @param right_group Character. Right contrast label.
 #' @param palette Character. Viridis option letter ("A"-"H").
 #' @param point_range Numeric length 2. Min/max point size in mm.
+#' @param target_collection Character. Gene set collection(s) to extract
+#'   (e.g. \code{"H"}, \code{c("C2", "C2:CP")}). Default \code{"ALL"}.
 #' @param base_size Numeric. theme_bw base font size.
+#' @param margin_top Numeric. Top plot margin (mm).
+#' @param margin_bottom Numeric. Bottom plot margin (mm).
+#' @param margin_left Numeric. Left plot margin (mm).
+#' @param margin_right Numeric. Right plot margin (mm).
 #' @return Character scalar of executable R code.
 #' @examples
 #' code <- generate_dotplot_code(
@@ -1650,6 +1656,8 @@ print(p)
 #' @param n_selected Integer. Number of selected pathways (subtitle).
 #' @param selected_ids Character vector. Pathway IDs for ggrepel annotation.
 #' @param show_annotations Logical. Add ggrepel labels for selected pathways.
+#' @param target_collection Character. Gene set collection(s) to extract.
+#'   Default \code{"ALL"}.
 #' @param margin_top Numeric. Top plot margin (mm).
 #' @param margin_bottom Numeric. Bottom plot margin (mm).
 #' @param margin_left Numeric. Left plot margin (mm).
@@ -1841,7 +1849,6 @@ generate_de_volcano_code <- function(gsea_res_var = "gsea_res",
                                      left_group = "Left",
                                      right_group = "Right",
                                      show_annotations = FALSE,
-                                     target_collection = "ALL",
                                      base_size = 12,
                                      margin_top = 15, margin_bottom = 15,
                                      margin_left = 18, margin_right = 18) {
@@ -1852,13 +1859,6 @@ generate_de_volcano_code <- function(gsea_res_var = "gsea_res",
   pathway_str <- if (length(pathway_genes) > 0) {
     paste0('c(', paste0('"', pathway_genes, '"', collapse = ", "), ')')
   } else "character(0)"
-
-  # Format target_collection for R code output
-  tc_str <- if (length(target_collection) == 1 && toupper(target_collection) == "ALL") {
-    '"ALL"'
-  } else {
-    paste0('c(', paste0('"', target_collection, '"', collapse = ", "), ')')
-  }
 
   labs_annot_block <- if (show_annotations) {
     paste0(
@@ -2026,6 +2026,8 @@ print(p)
 #' @param min_shared_genes Integer. Minimum shared core genes for an edge.
 #' @param width_mode Character. "rank" or "weight".
 #' @param seed Integer. Layout seed.
+#' @param target_collection Character. Gene set collection(s) to extract.
+#'   Default \code{"ALL"}.
 #' @param base_size Numeric.
 #' @return Character scalar of executable R code.
 #' @param margin_top Numeric. Top plot margin (mm).
@@ -2194,6 +2196,8 @@ print(p)
 #' @param min_hub_degree Integer. Minimum hub degree for gene inclusion.
 #' @param pw_size_mode Character. One of "fixed", "fdr", "setsize".
 #' @param seed Integer.
+#' @param target_collection Character. Gene set collection(s) to extract.
+#'   Default \code{"ALL"}.
 #' @param base_size Numeric.
 #' @return Character scalar of executable R code.
 #' @param margin_top Numeric. Top plot margin (mm).
