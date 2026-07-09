@@ -2,6 +2,17 @@
 
 
 
+# GSEAlens 0.99.24
+
+Joint Canvas: show pathway name in canvas title for single-pathway.
+
+The `plot_annotation` title previously showed `"x pathways"` even when
+only one pathway was selected. Now includes the formatted pathway name:
+- Multi: `"Joint GSEA Canvas: 4 contrast groups x 3 pathways"`
+- Single: `"Joint GSEA Canvas: 4 contrast groups x 1 pathway (Interferon
+  Alpha Response)"`
+
+
 # GSEAlens 0.99.23
 
 Joint Canvas: single-pathway label refined.

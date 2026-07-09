@@ -1,7 +1,7 @@
 Package: GSEAlens
 Type: Package
 Title: Gene Set Enrichment Analysis Interactive Explorer
-Version: 0.99.23
+Version: 0.99.24
 Authors@R: c(person(given = "Dudali", role = "aut"), person(given = "Dudali", role = "cre", email = "sealgod@qq.com", comment = c(ORCID = "0000-0002-1825-0097")))
 Description: GSEAlens provides an interactive exploration layer on top of
     standard Bioconductor RNA-seq workflows. It consumes fitted model objects

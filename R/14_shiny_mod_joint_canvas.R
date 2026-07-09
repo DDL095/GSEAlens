@@ -377,7 +377,22 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
 
       ) + patchwork::plot_annotation(
 
-        title = sprintf("Joint GSEA Canvas: %d contrast groups x %d pathways", n_plots, length(pathways)),
+        title = if (length(pathways) == 1) {
+
+          pw_label <- pathways[1]
+          tit <- unlist(strsplit(pw_label, split = "_"))
+          if (length(tit) > 1) {
+            pw_label <- paste(tools::toTitleCase(tolower(tit[-1])), collapse = " ")
+          } else {
+            pw_label <- tools::toTitleCase(tolower(pw_label))
+          }
+          sprintf("Joint GSEA Canvas: %d contrast groups x 1 pathway (%s)", n_plots, pw_label)
+
+        } else {
+
+          sprintf("Joint GSEA Canvas: %d contrast groups x %d pathways", n_plots, length(pathways))
+
+        },
 
         subtitle = sprintf("Arrangement: %s", paste(contrasts, collapse = " -> ")),
 
