@@ -3052,7 +3052,9 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         fig_width     = if (is.null(input$box_exp_width)         || is.na(input$box_exp_width))          5 else input$box_exp_width,
 
-        fig_height    = if (is.null(input$box_exp_height)        || is.na(input$box_exp_height))         5 else input$box_exp_height
+        fig_height    = if (is.null(input$box_exp_height)        || is.na(input$box_exp_height))         5 else input$box_exp_height,
+
+        fig_dpi    = if (is.null(input$box_exp_dpi)   || is.na(input$box_exp_dpi))   300 else input$box_exp_dpi
 
             )
 
@@ -3590,7 +3592,8 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
                             fig_width     = if (is.null(input$vol_exp_width)         || is.na(input$vol_exp_width))          8 else input$vol_exp_width,
 
-                            fig_height    = if (is.null(input$vol_exp_height)        || is.na(input$vol_exp_height))         6 else input$vol_exp_height)
+                            fig_height    = if (is.null(input$vol_exp_height)        || is.na(input$vol_exp_height))         6 else input$vol_exp_height,
+                            fig_dpi    = if (is.null(input$vol_exp_dpi)   || is.na(input$vol_exp_dpi))   300 else input$vol_exp_dpi)
 
     }
 
@@ -3989,7 +3992,9 @@ mod_quadrant_server <- function(id, data_prep_list, gsea_res, table_controller) 
 
         fig_width     = if (is.null(input$de_exp_width)         || is.na(input$de_exp_width))          8 else input$de_exp_width,
 
-        fig_height    = if (is.null(input$de_exp_height)        || is.na(input$de_exp_height))         6 else input$de_exp_height
+        fig_height    = if (is.null(input$de_exp_height)        || is.na(input$de_exp_height))         6 else input$de_exp_height,
+
+        fig_dpi    = if (is.null(input$de_exp_dpi)   || is.na(input$de_exp_dpi))   300 else input$de_exp_dpi
 
             )
 

@@ -20,7 +20,8 @@ generate_de_volcano_code(
   margin_left = 18,
   margin_right = 18,
   fig_width = 8,
-  fig_height = 6
+  fig_height = 6,
+  fig_dpi = 300
 )
 }
 \arguments{
@@ -55,6 +56,8 @@ generate_de_volcano_code(
 \item{fig_width}{Numeric. Figure width in inches for ggsave.}
 
 \item{fig_height}{Numeric. Figure height in inches for ggsave.}
+
+\item{fig_dpi}{Numeric. DPI for PNG raster output (default 300).}
 }
 \value{
 Character scalar of executable R code.

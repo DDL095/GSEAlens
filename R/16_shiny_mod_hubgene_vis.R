@@ -2231,7 +2231,8 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
                             fig_width     = if (is.null(input$hub_exp_width)         || is.na(input$hub_exp_width))         10 else input$hub_exp_width,
 
-                            fig_height    = if (is.null(input$hub_exp_height)        || is.na(input$hub_exp_height))         8 else input$hub_exp_height)
+                            fig_height    = if (is.null(input$hub_exp_height)        || is.na(input$hub_exp_height))         8 else input$hub_exp_height,
+                            fig_dpi    = if (is.null(input$hub_exp_dpi)   || is.na(input$hub_exp_dpi))   300 else input$hub_exp_dpi)
 
     }
 

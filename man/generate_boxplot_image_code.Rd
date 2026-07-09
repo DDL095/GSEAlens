@@ -18,7 +18,8 @@ generate_boxplot_image_code(
   margin_left = 18,
   margin_right = 18,
   fig_width = 5,
-  fig_height = 5
+  fig_height = 5,
+  fig_dpi = 300
 )
 }
 \arguments{
@@ -51,6 +52,8 @@ generate_boxplot_image_code(
 \item{fig_width}{Numeric. Figure width in inches for ggsave.}
 
 \item{fig_height}{Numeric. Figure height in inches for ggsave.}
+
+\item{fig_dpi}{Numeric. DPI for PNG raster output (default 300).}
 }
 \value{
 Character scalar of executable R code.

@@ -1473,6 +1473,7 @@ extract_boxplot_data <- function(GSEAlens_res,
 #' @param margin_right Numeric. Right plot margin (mm).
 #' @param fig_width Numeric. Figure width in inches for ggsave.
 #' @param fig_height Numeric. Figure height in inches for ggsave.
+#' @param fig_dpi Numeric. DPI for PNG raster output (default 300).
 #' @return Character scalar of executable R code.
 #' @examples
 #' code <- generate_dotplot_code(
@@ -1496,7 +1497,8 @@ generate_dotplot_code <- function(gsea_res_var = "gsea_res",
                                                                     margin_left = 18,
                                                                     margin_right = 18,
                                                                     fig_width = 9,
-                                                                    fig_height = 7) {
+                                                                    fig_height = 7,
+                                                                    fig_dpi = 300) {
 
     if (length(pathways) == 0) {
     return("# No pathways selected; nothing to plot.")
@@ -1631,7 +1633,7 @@ print(p)
 
 # --- Save to file (uncomment one) --------------------------------------------
 # ggsave("dotplot.pdf", p, width = %g, height = %g, device = cairo_pdf)
-# ggsave("dotplot.png", p, width = %g, height = %g, dpi = 300)
+# ggsave("dotplot.png", p, width = %g, height = %g, dpi = %g)
 # ggsave("dotplot.svg", p, width = %g, height = %g)
 ',
     gsea_res_var,
@@ -1651,7 +1653,7 @@ print(p)
     left_group,
     base_size,
     fig_width, fig_height,
-    fig_width, fig_height,
+    fig_width, fig_height, fig_dpi,
     fig_width, fig_height
     )
 }
@@ -1678,6 +1680,7 @@ print(p)
 #' @param margin_right Numeric. Right plot margin (mm).
 #' @param fig_width Numeric. Figure width in inches for ggsave.
 #' @param fig_height Numeric. Figure height in inches for ggsave.
+#' @param fig_dpi Numeric. DPI for PNG raster output (default 300).
 #' @examples
 #' code <- generate_volcano_code(
 #'   gsea_res_var = "gsea_res", contrast_id = "untrt_vs_trt",
@@ -1696,7 +1699,8 @@ generate_volcano_code <- function(gsea_res_var = "gsea_res",
                                                                     margin_top = 15, margin_bottom = 15,
                                                                     margin_left = 18, margin_right = 18,
                                                                     fig_width = 8,
-                                                                    fig_height = 6) {
+                                                                    fig_height = 6,
+                                                                    fig_dpi = 300) {
 
     selected_str <- if (length(selected_ids) > 0) {
     paste0('c(', paste0('"', selected_ids, '"', collapse = ", "), ')')
@@ -1816,7 +1820,7 @@ print(p)
 
 # --- Save to file (uncomment one) --------------------------------------------
 # ggsave("volcano.pdf", p, width = %g, height = %g, device = cairo_pdf)
-# ggsave("volcano.png", p, width = %g, height = %g, dpi = 300)
+# ggsave("volcano.png", p, width = %g, height = %g, dpi = %g)
 # ggsave("volcano.svg", p, width = %g, height = %g)
 ',
     gsea_res_var,
@@ -1831,7 +1835,7 @@ print(p)
     labs_block,
     margin_top, margin_right, margin_bottom, margin_left,
     fig_width, fig_height,
-    fig_width, fig_height,
+    fig_width, fig_height, fig_dpi,
     fig_width, fig_height
     )
 }
@@ -1859,6 +1863,7 @@ print(p)
 #' @param margin_right Numeric. Right plot margin (mm).
 #' @param fig_width Numeric. Figure width in inches for ggsave.
 #' @param fig_height Numeric. Figure height in inches for ggsave.
+#' @param fig_dpi Numeric. DPI for PNG raster output (default 300).
 #' @examples
 #' code <- generate_de_volcano_code(
 #'   gsea_res_var = "gsea_res", contrast_id = "untrt_vs_trt",
@@ -1878,7 +1883,8 @@ generate_de_volcano_code <- function(gsea_res_var = "gsea_res",
                                                                             margin_top = 15, margin_bottom = 15,
                                                                             margin_left = 18, margin_right = 18,
                                                                             fig_width = 8,
-                                                                            fig_height = 6) {
+                                                                            fig_height = 6,
+                                                                            fig_dpi = 300) {
 
     user_str <- if (length(user_genes) > 0) {
     paste0('c(', paste0('"', user_genes, '"', collapse = ", "), ')')
@@ -2030,7 +2036,7 @@ print(p)
 
 # --- Save to file (uncomment one) --------------------------------------------
 # ggsave("de_volcano.pdf", p, width = %g, height = %g, device = cairo_pdf)
-# ggsave("de_volcano.png", p, width = %g, height = %g, dpi = 300)
+# ggsave("de_volcano.png", p, width = %g, height = %g, dpi = %g)
 # ggsave("de_volcano.svg", p, width = %g, height = %g)
 ',
     gsea_res_var,
@@ -2041,7 +2047,7 @@ print(p)
     base_size,
     labs_annot_block,
     fig_width, fig_height,
-    fig_width, fig_height,
+    fig_width, fig_height, fig_dpi,
     fig_width, fig_height
     )
 }
@@ -2068,6 +2074,7 @@ print(p)
 #' @param margin_right Numeric. Right plot margin (mm).
 #' @param fig_width Numeric. Figure width in inches for ggsave.
 #' @param fig_height Numeric. Figure height in inches for ggsave.
+#' @param fig_dpi Numeric. DPI for PNG raster output (default 300).
 #' @examples
 #' code <- generate_network_code(
 #'   gsea_res_var = "gsea_res", contrast_id = "untrt_vs_trt",
@@ -2085,7 +2092,8 @@ generate_network_code <- function(gsea_res_var = "gsea_res",
                                                                     margin_top = 18, margin_bottom = 18,
                                                                     margin_left = 18, margin_right = 18,
                                                                     fig_width = 10,
-                                                                    fig_height = 8) {
+                                                                    fig_height = 8,
+                                                                    fig_dpi = 300) {
 
     if (length(pathways) == 0) {
     return("# No pathways selected; nothing to plot.")
@@ -2207,7 +2215,7 @@ print(p)
 
 # --- Save to file (uncomment one) --------------------------------------------
 # ggsave("network.pdf", p, width = %g, height = %g, device = cairo_pdf)
-# ggsave("network.png", p, width = %g, height = %g, dpi = 300)
+# ggsave("network.png", p, width = %g, height = %g, dpi = %g)
 # ggsave("network.svg", p, width = %g, height = %g)
 ',
     gsea_res_var,
@@ -2220,7 +2228,7 @@ print(p)
     seed, base_size,
     margin_top, margin_right, margin_bottom, margin_left,
     fig_width, fig_height,
-    fig_width, fig_height,
+    fig_width, fig_height, fig_dpi,
     fig_width, fig_height
     )
 }
@@ -2247,6 +2255,7 @@ print(p)
 #' @param margin_right Numeric. Right plot margin (mm).
 #' @param fig_width Numeric. Figure width in inches for ggsave.
 #' @param fig_height Numeric. Figure height in inches for ggsave.
+#' @param fig_dpi Numeric. DPI for PNG raster output (default 300).
 #' @examples
 #' code <- generate_hubgene_code(
 #'   gsea_res_var = "gsea_res", contrast_id = "untrt_vs_trt",
@@ -2264,7 +2273,8 @@ generate_hubgene_code <- function(gsea_res_var = "gsea_res",
                                                                     margin_top = 18, margin_bottom = 18,
                                                                     margin_left = 18, margin_right = 18,
                                                                     fig_width = 10,
-                                                                    fig_height = 8) {
+                                                                    fig_height = 8,
+                                                                    fig_dpi = 300) {
 
     if (length(pathways) == 0) {
     return("# No pathways selected; nothing to plot.")
@@ -2417,7 +2427,7 @@ print(p)
 
 # --- Save to file (uncomment one) --------------------------------------------
 # ggsave("hubgene.pdf", p, width = %g, height = %g, device = cairo_pdf)
-# ggsave("hubgene.png", p, width = %g, height = %g, dpi = 300)
+# ggsave("hubgene.png", p, width = %g, height = %g, dpi = %g)
 # ggsave("hubgene.svg", p, width = %g, height = %g)
 ',
     gsea_res_var,
@@ -2430,7 +2440,7 @@ print(p)
     seed, base_size,
     margin_top, margin_right, margin_bottom, margin_left,
     fig_width, fig_height,
-    fig_width, fig_height,
+    fig_width, fig_height, fig_dpi,
     fig_width, fig_height
     )
 }
@@ -2550,6 +2560,8 @@ print(p)
 
 #' @param fig_height Numeric. Figure height in inches for ggsave.
 
+#' @param fig_dpi Numeric. DPI for PNG raster output (default 300).
+
 #' @return Character scalar of executable R code.
 
 #' @export
@@ -2602,7 +2614,7 @@ generate_boxplot_image_code <- function(box_data_long,
 
                                         margin_top = 15, margin_bottom = 15,
 
-                                        margin_left = 18, margin_right = 18, fig_width = 5, fig_height = 5) {
+                                        margin_left = 18, margin_right = 18, fig_width = 5, fig_height = 5, fig_dpi = 300) {
 
     # Subset to the three essential columns + drop NA groups, mirroring the
 
@@ -2826,7 +2838,7 @@ print(p)
 
 # ggsave("boxplot.pdf", p, width = %g, height = %g, device = cairo_pdf)
 
-# ggsave("boxplot.png", p, width = %g, height = %g, dpi = 300)
+# ggsave("boxplot.png", p, width = %g, height = %g, dpi = %g)
 
 # ggsave("boxplot.svg", p, width = %g, height = %g)
 
@@ -2850,7 +2862,7 @@ print(p)
 
     fig_width, fig_height,
 
-    fig_width, fig_height,
+    fig_width, fig_height, fig_dpi,
 
     fig_width, fig_height
 

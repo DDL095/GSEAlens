@@ -2939,7 +2939,8 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
 
                     fig_width     = if (is.null(input$exp_width)         || is.na(input$exp_width))          9 else input$exp_width,
 
-                    fig_height    = if (is.null(input$exp_height)        || is.na(input$exp_height))         7 else input$exp_height)
+                    fig_height    = if (is.null(input$exp_height)        || is.na(input$exp_height))         7 else input$exp_height,
+                    fig_dpi    = if (is.null(input$exp_dpi)   || is.na(input$exp_dpi))   300 else input$exp_dpi)
 
             } else if (tgt == "network") {
 
@@ -2975,7 +2976,8 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
 
                     fig_width     = if (is.null(input$exp_width)         || is.na(input$exp_width))         10 else input$exp_width,
 
-                    fig_height    = if (is.null(input$exp_height)        || is.na(input$exp_height))         8 else input$exp_height)
+                    fig_height    = if (is.null(input$exp_height)        || is.na(input$exp_height))         8 else input$exp_height,
+                    fig_dpi    = if (is.null(input$exp_dpi)   || is.na(input$exp_dpi))   300 else input$exp_dpi)
 
             } else ""
 
