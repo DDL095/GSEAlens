@@ -654,15 +654,31 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
 
             }
 
-            fdr_thresh <- input$fdr_threshold
-
-            if (is.null(fdr_thresh)) fdr_thresh <- 0.25
-
             data_list <- data_prep_list$data()
 
             shiny::req(data_list)
 
             df <- data_list$df
+
+            # IRON FIX (2026-07-14): mode_select = user picked from Main Table.
+
+            # User intent takes priority - do NOT apply FDR filter again (would
+
+            # silently drop pathways with p.adjust >= threshold, e.g.
+
+            # KOHN_EMT_MESENCHYMAL p.adjust=0.30 > 0.25 in RZ_vs_RT contrast).
+
+            # FDR filter only applies to mode_topN (automatic selection).
+
+            if (network_mode() == "mode_select") {
+
+        return(pathways[pathways %in% df$ID])
+
+            }
+
+            fdr_thresh <- input$fdr_threshold
+
+            if (is.null(fdr_thresh)) fdr_thresh <- 0.25
 
             fdr_vec <- df$p.adjust[match(pathways, df$ID)]
 
@@ -800,7 +816,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
 
         sprintf("Pathways: %d", length(pathways)),
 
-        sprintf("FDR < %.2f", input$fdr_threshold)
+        if (network_mode() == "mode_select") "no FDR filter" else sprintf("FDR < %.2f", input$fdr_threshold)
 
             )
 
@@ -838,7 +854,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
 
         sprintf("Pathways: %d", length(pathways)),
 
-        sprintf("FDR < %.2f", input$fdr_threshold),
+        if (network_mode() == "mode_select") "no FDR filter" else sprintf("FDR < %.2f", input$fdr_threshold),
 
         sprintf("min_shared: %d", input$min_shared),
 

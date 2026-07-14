@@ -648,21 +648,33 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
             }
 
-            fdr_thresh <- input$vis_fdr
-
-            if (is.null(fdr_thresh)) fdr_thresh <- 0.25
-
             data_list <- data_prep_list$data()
 
             shiny::req(data_list)
 
             df <- data_list$df
 
-            fdr_vec <- df$p.adjust[match(pathways, df$ID)]
+            # IRON FIX (2026-07-14): mode_select = user picked from Table.
 
-            names(fdr_vec) <- pathways
+            # User intent takes priority - do NOT apply FDR filter again.
 
-            pathways[!is.na(fdr_vec) & fdr_vec < fdr_thresh]
+            if (vis_mode() == "mode_select") {
+
+        pathways[pathways %in% df$ID]
+
+            } else {
+
+        fdr_thresh <- input$vis_fdr
+
+        if (is.null(fdr_thresh)) fdr_thresh <- 0.25
+
+        fdr_vec <- df$p.adjust[match(pathways, df$ID)]
+
+        names(fdr_vec) <- pathways
+
+        pathways[!is.na(fdr_vec) & fdr_vec < fdr_thresh]
+
+            }
 
     })
 
@@ -1604,9 +1616,11 @@ mod_hubgene_vis_server <- function(id, data_prep_list, table_controller, gsea_re
 
         htmltools::tags$small(sprintf(
 
-                    "Physics: %s (Barnes-Hut) | FDR < %.2f | tooltipDelay: 300ms ",
+                    "Physics: %s (Barnes-Hut) | %s | tooltipDelay: 300ms ",
 
-                    physics, input$vis_fdr %||% 0.25
+                    physics,
+
+                    if (vis_mode() == "mode_select") "no FDR filter" else sprintf("FDR < %.2f", input$vis_fdr %||% 0.25)
 
         ))
 
