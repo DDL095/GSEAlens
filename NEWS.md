@@ -2,6 +2,22 @@
 
 
 
+# GSEAlens 0.99.29
+
+Fix mode_select FDR filter: user-selected pathways no longer silently dropped.
+
+`candidate_filtered()` in R/13 (dotplot/network) and R/16 (hubgene vis)
+applied `p.adjust < fdr_threshold` even in `mode_select` mode (user picked
+from Main Table), silently dropping pathways with p.adjust >= 0.25.
+
+Example: `KOHN_EMT_MESENCHYMAL` (p.adjust = 0.30 in RZ_vs_RT contrast) was
+invisible in the DotPlot despite being explicitly selected.
+
+Fix: `mode_select` skips FDR filter (user intent priority); `mode_topN`
+keeps automatic FDR filtering. Status messages updated to show "no FDR
+filter" in `mode_select` mode to avoid misleading labels.
+
+
 # GSEAlens 0.99.28
 
 Export code: pass figure dimensions (Width/Height) to ggsave.
