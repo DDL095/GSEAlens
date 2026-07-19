@@ -161,44 +161,29 @@ vignette("GSEAlens-preprocessing")
 
 ### Creating GSEA Pathway Object
 
-Use the `build_gsea_pathways` function to construct a pathway object for GSEA enrichment analysis.
+Use the `build_gsea_pathways` function to construct a pathway object for GSEA enrichment analysis. The real call downloads multiple MSigDB collections and is slow on the Bioconductor build machine, so it is shown commented out; instead we load a pre-computed lightweight pathway object (Hallmark + KEGG_LEGACY, 236 pathways, see `inst/scripts/make_gsea_pathwaysets_toy.R` for regeneration instructions).
 
-```{r build-gsea-pathways, eval=FALSE}
-# Real call (slow on the Bioconductor build machine because it loads
-# multiple MSigDB collections; skipped during build).
+```{r build-gsea-pathways}
+# Real call (slow on the Bioconductor build machine):
 # gsea_pathwaysets <- build_gsea_pathways(
 #   species = "HS", auto_select = c("H", "C2:CP:REACTOME", "C5:GO:BP")
 # )
-```
-
-```{r load-precomputed-pathways}
-# For the vignette we load a pre-computed lightweight pathway object
-# (Hallmark + KEGG_LEGACY, 236 pathways). See
-# inst/scripts/make_gsea_pathwaysets_toy.R for regeneration instructions.
+# For the vignette we load a pre-computed lightweight pathway object instead:
 data(gsea_pathwaysets_toy, package = "GSEAlens")
 gsea_pathwaysets <- gsea_pathwaysets_toy
 ```
 
 ### Assembling Computation Object
 
-Through the `setup_gsea_env` function, assemble a `GSEAEnv` object for computational analysis. Different workflows use the same function with different data inputs. For the limma-voom workflow, since the `fit` object does not contain the original gene read counts, the filtered `DGEList` used to generate the `fit` object must be additionally provided. In this example, it is the multi-step filtered `gsea_limma_voom_data`.
+Through the `setup_gsea_env` function, assemble a `GSEAEnv` object for computational analysis. Different workflows use the same function with different data inputs. For the limma-voom workflow, since the `fit` object does not contain the original gene read counts, the filtered `DGEList` used to generate the `fit` object must be additionally provided (here `gsea_limma_voom_data`). The three supported backends are assembled below.
 
-Assemble the limma-voom workflow object for analysis.
-
-```{r setup-gsea-limma}
-gseadata_limmavoom <- setup_gsea_env(fit = fit,pathway_obj = gsea_pathwaysets,expr_data = gsea_limma_voom_data)
-```
-
-Assemble the DESeq2 SummarizedExperiment object for analysis.
-
-```{r setup-gsea-se}
-gseadata_se <- setup_gsea_env(fit = dds_se,pathway_obj = gsea_pathwaysets)
-```
-
-Assemble the DESeq2 Count matrix workflow object for analysis.
-
-```{r setup-gsea-dds}
-gseadata_dds <- setup_gsea_env(fit = dds,pathway_obj = gsea_pathwaysets)
+```{r setup-gsea-env}
+# limma-voom workflow (needs the DGEList because fit alone lacks raw counts)
+gseadata_limmavoom <- setup_gsea_env(fit = fit, pathway_obj = gsea_pathwaysets, expr_data = gsea_limma_voom_data)
+# DESeq2 SummarizedExperiment workflow
+gseadata_se <- setup_gsea_env(fit = dds_se, pathway_obj = gsea_pathwaysets)
+# DESeq2 Count matrix workflow
+gseadata_dds <- setup_gsea_env(fit = dds, pathway_obj = gsea_pathwaysets)
 ```
 
 ### Running Processing
@@ -252,17 +237,13 @@ results. The app is launched by passing a `GseaRes` object (returned by
 
 ### Launching the App
 
+Launch the Shiny app by passing a `GseaRes` object (returned by `batch_calc_gsea` or loaded via `import_gsea_capsule`) to `launch_gsea_app`. Optionally pass an `addition_data` data frame (or path to `.csv` / `.rds` file) to merge pathway annotations into the main table; if `NULL`, the app auto-detects `addition_data_gsealens.rds` or `addition_data_gsealens.csv` in the working directory.
+
 ```{r launch-app, eval=FALSE}
+# Basic launch
 launch_gsea_app(gsea_res)
-```
-
-Optional: pass an `addition_data` data frame (or path to `.csv` / `.rds` file) to
-merge pathway annotations into the main table. If `NULL`, the app auto-detects
-`addition_data_gsealens.rds` or `addition_data_gsealens.csv` in the working
-directory.
-
-```{r launch-app-with-data, eval=FALSE}
-launch_gsea_app(gsea_res, addition_data = "pathway_annotations.csv")
+# With explicit pathway annotations:
+# launch_gsea_app(gsea_res, addition_data = "pathway_annotations.csv")
 ```
 
 ### Application Layout
@@ -431,19 +412,12 @@ Source: `R/14_shiny_mod_joint_canvas.R`, code generator `R/15_code_generator.R`.
 A practical interpretation guide:
 
 | Visualization | What to look for | Biological meaning |
-
 |---|---|---|
-
 | NES (Normalized Enrichment Score) | Sign and magnitude | Positive NES -> pathway up-regulated in the right-hand group of the contrast |
-
 | p.adjust | < 0.05 threshold | Statistical significance after BH correction |
-
 | Volcano (Tab 2) | Symmetry / asymmetry | Balanced volcano suggests global shift; skewed suggests targeted regulation |
-
 | Pathway network (Tab 3) | Cluster structure | Tightly connected clusters indicate co-regulated biological modules |
-
 | HubGene (Tab 4) | High-degree genes | Hub genes are candidate biomarkers or regulatory nodes |
-
 | Joint Canvas (Tab 6) | Curve overlap | Overlapping running-score curves suggest coordinated regulation |
 
 ### Reproducible Code Export
@@ -461,17 +435,11 @@ the plot in the Shiny app, then export the code for final customization.
 The `GseaEnv` object returned by the `setup_gsea_env` function contains the following components:
 
 | Component | Description |
-
 |-----------------|-------------------------------------------------------|
-
 | `backend_info` | Backend type information (limma-voom or DESeq2) |
-
 | `contrast_registry` | Contrast registry containing all pairwise comparison information |
-
 | `de_store` | Differential expression analysis results storage |
-
 | `expr_bundle` | Expression data bundle (raw counts, normalized matrix, sample metadata) |
-
 | `geneset` | Geneset information (TERM2GENE, metadata dictionary, species) |
 
 ## GseaRes Object
@@ -479,21 +447,13 @@ The `GseaEnv` object returned by the `setup_gsea_env` function contains the foll
 The `GseaRes` object returned by the `batch_calc_gsea` function contains the following components:
 
 | Component | Description |
-
 |-----------------|-------------------------------------------------------|
-
 | `metadata` | Computation metadata (runtime, cores used, parameter settings) |
-
 | `backend_info` | Backend type information |
-
 | `contrast_registry` | Contrast registry |
-
 | `de_store` | Differential expression analysis results storage |
-
 | `expr_bundle` | Expression data bundle |
-
 | `geneset_info` | Geneset information |
-
 | `results` | GSEA results list, one entry per contrast |
 
 ## GseaTask Object
@@ -501,11 +461,8 @@ The `GseaRes` object returned by the `batch_calc_gsea` function contains the fol
 The `GseaTask` object returned by the `extract_gsea_task` function is used for single-contrast analysis:
 
 | Component  | Description                                                    |
-
 |----------------|-------------------------------------------------------|
-
 | `gsea_res` | GSEA result object                                             |
-
 | `meta`     | Metadata (contrast information, geneset name, expression data) |
 
 # Session Info
