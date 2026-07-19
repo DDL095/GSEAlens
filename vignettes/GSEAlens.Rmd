@@ -111,17 +111,8 @@ dataset. Because GSEAlens does **not** perform DEG analysis itself, we assume th
 input objects (`fit`, `dds_se`, `dds`) have been prepared according to standard
 `r Biocpkg("limma")` / `r Biocpkg("DESeq2")` workflows.
 
-> **Note**: For detailed input preparation steps (limma-voom fitting, DESeq2 object
-
-> construction, gene filtering), please see the supplementary vignette:
-
->
-
-> ```r
-
-> vignette("GSEAlens-preprocessing")
-
-> ```
+For detailed input preparation steps (limma-voom fitting, DESeq2 object construction,
+gene filtering), please see the supplementary vignette `vignette("GSEAlens-preprocessing")`.
 
 ```{r setup-environment, results='hide'}
 library(GSEAlens)
@@ -136,25 +127,15 @@ make the vignette slow, we ship **pre-computed** versions of those objects in
 `inst/scripts/make_preprocessed_inputs.R` and follows the preprocessing
 vignette exactly.
 
-> **Note on the shipped `dds_se`**: to stay below the Bioconductor 5 MB
-
-> `extdata` limit, the `preprocessed_dds_se.rds` shipped here is a
-
-> *slimmed* `DESeqDataSet` produced by `slim_dds_se()` inside
-
-> `make_preprocessed_inputs.R`. The slimmed copy drops the `mu` / `H` /
-
-> `cooks` assay layers (DESeq() fitting intermediates) and flattens
-
-> `rowRanges` from `GRangesList` to `GRanges` (one representative range
-
-> per gene). `DESeq2::results()` and every GSEAlens entry point return
-
-> bit-identical output on the slimmed vs. the full object. To rebuild the
-
-> full, untrimmed `DESeqDataSet` for teaching DESeq2 itself, see the
-
-> preprocessing vignette.
+**Note on the shipped `dds_se`**: to stay below the Bioconductor 5 MB `extdata`
+limit, the `preprocessed_dds_se.rds` shipped here is a *slimmed* `DESeqDataSet`
+produced by `slim_dds_se()` inside `make_preprocessed_inputs.R`. The slimmed
+copy drops the `mu` / `H` / `cooks` assay layers (DESeq() fitting
+intermediates) and flattens `rowRanges` from `GRangesList` to `GRanges` (one
+representative range per gene). `DESeq2::results()` and every GSEAlens entry
+point return bit-identical output on the slimmed vs. the full object. To
+rebuild the full, untrimmed `DESeqDataSet` for teaching DESeq2 itself, see the
+preprocessing vignette.
 
 ```{r load-prepared-objects}
 data(preprocessed_limma, package = "GSEAlens")
@@ -431,11 +412,9 @@ citing leading-edge genes"). The generated prompt can be copied to clipboard.
 
 Source: `R/17_shiny_mod_AI.R`.
 
-> **Note**: This tab only generates prompts; it does not call external APIs
-
-> directly. The author explicitly designed this to keep API keys and network
-
-> calls under user control.
+**Note**: This tab only generates prompts; it does not call external APIs
+directly. The author explicitly designed this to keep API keys and network
+calls under user control.
 
 #### Tab 6 -- Joint GSEA Canvas
 

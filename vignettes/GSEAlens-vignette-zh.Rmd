@@ -104,20 +104,10 @@ pak::pkg_install("DDL095/GSEAlens")
 本节使用 `r Biocpkg("airway")` 数据集演示 GSEAlens 的完整工作流。由于 GSEAlens
 
 **本身不做 DEG 分析**，我们假定输入对象（`fit`、`dds_se`、`dds`）已按照标准
-
 `r Biocpkg("limma")` / `r Biocpkg("DESeq2")` 流程准备完毕。
 
-> **注意**：详细的输入准备步骤（limma-voom 拟合、DESeq2 对象构造、基因过滤）请参阅
-
-> 补充 vignette：
-
->
-
-> ```r
-
-> vignette("GSEAlens-preprocessing-zh")
-
-> ```
+详细的输入准备步骤（limma-voom 拟合、DESeq2 对象构造、基因过滤）请参阅
+补充 vignette `vignette("GSEAlens-preprocessing-zh")`。
 
 ```{r setup-environment, results='hide'}
 library(GSEAlens)
@@ -130,21 +120,14 @@ vignette 变慢，我们在 `inst/extdata/` 中附带了这些对象的**预计�
 重新生成它们的脚本位于 `inst/scripts/make_preprocessed_inputs.R`，
 完全遵循预处理 vignette 的步骤。
 
-> **关于附带的 `dds_se` 的说明**：为满足 Bioconductor `extdata` 文件不超过 5 MB
-
-> 的要求，本 vignette 使用的 `preprocessed_dds_se.rds` 是经由
-
-> `make_preprocessed_inputs.R` 中的 `slim_dds_se()` 函数**裁剪过**的
-
-> `DESeqDataSet`。裁剪操作去除了 `mu` / `H` / `cooks` 这三个 assay（`DESeq()`
-
-> 拟合的中间产物），并将 `rowRanges` 由 `GRangesList` 展平为 `GRanges`（每个基因
-
-> 仅保留一条代表性区间）。经 `DESeq2::results()` 与全部 GSEAlens 入口函数验证，
-
-> 裁剪前后的 `log2FoldChange` / `pvalue` / `padj` 完全一致。如需重建未裁剪的完整
-
-> `DESeqDataSet`（用于 DESeq2 教学），请参阅预处理 vignette。
+**关于附带的 `dds_se` 的说明**：为满足 Bioconductor `extdata` 文件不超过 5 MB 的要求，
+本 vignette 使用的 `preprocessed_dds_se.rds` 是经由
+`make_preprocessed_inputs.R` 中的 `slim_dds_se()` 函数**裁剪过**的
+`DESeqDataSet`。裁剪操作去除了 `mu` / `H` / `cooks` 这三个 assay（`DESeq()`
+拟合的中间产物），并将 `rowRanges` 由 `GRangesList` 展平为 `GRanges`（每个基因
+仅保留一条代表性区间）。经 `DESeq2::results()` 与全部 GSEAlens 入口函数验证，
+裁剪前后的 `log2FoldChange` / `pvalue` / `padj` 完全一致。如需重建未裁剪的完整
+`DESeqDataSet`（用于 DESeq2 教学），请参阅预处理 vignette。
 
 ```{r load-prepared-objects}
 data(preprocessed_limma, package = "GSEAlens")
@@ -391,9 +374,8 @@ launch_gsea_app(gsea_res, addition_data = "pathway_annotations.csv")
 解读"）。生成的 prompt 可一键复制到剪贴板。
 源文件：`R/17_shiny_mod_AI.R`
 
-> **注意**：本 tab 仅生成 prompt，不直接调用外部 API。作者刻意如此设计，以便用户
-
-> 自行管控 API key 与网络调用。
+**注意**：本 tab 仅生成 prompt，不直接调用外部 API。作者刻意如此设计，以便用户
+自行管控 API key 与网络调用。
 
 #### Tab 6 -- 联合 GSEA 画布（Joint GSEA Canvas）
 
