@@ -632,13 +632,33 @@ GSEAlens_combined <- patchwork::wrap_plots(
 
 
 
-# Step 6: Display combined plot
+# Step 6: Wrap the canvas so outer margin (canvas breathing room) does NOT
+
+# leak into the per-contrast 3-panel GSEA plot. Setting plot.margin on the
+
+# bare canvas via the and-operator would override the per-panel margin = 0
+
+# configured in plot_directional_gsea and .gsea_nb_core, re-inflating the
+
+# gaps between Panel 1 (RES curve), Panel 2 (hit strips) and Panel 3
+
+# (ranked list). wrap_elements(full = ...) keeps the title/subtitle
+
+# while confining the outer margin to the canvas border.
+
+GSEAlens_combined <- patchwork::wrap_elements(full = GSEAlens_combined) +
+
+    theme(plot.margin = margin(10, 10, 10, 10))
+
+
+
+# Step 7: Display combined plot
 
 print(GSEAlens_combined)
 
 
 
-# Step 7: Save to file (uncomment one)
+# Step 8: Save to file (uncomment one)
 
 # ggsave("GSEAlens_joint_canvas.pdf", GSEAlens_combined, width = 14, height = 10, device = cairo_pdf)
 

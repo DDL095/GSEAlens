@@ -639,28 +639,29 @@ mod_joint_canvas_server <- function(id, gsea_res, data_prep_list, table_result) 
 
 
 
-    # Post-process: apply user-adjustable canvas margin via patchwork's
-
-    # & operator (theme applied to all subplots = canvas breathing room).
-
-    # This lets users tweak margin live without re-generating the canvas.
-
+    # Post-process: apply user-adjustable canvas margin at the OUTER level
+    # (whole canvas) only. Previously this used the `&` operator which
+    # applies theme to EVERY sub-plot, overwriting the per-panel
+    # plot.margin = 0 set in vis-gsea-core.R and inflating the gaps
+    # between Panel 1 (RES), Panel 2 (hit strips) and Panel 3 (ranked
+    # list) inside each contrast's GSEA plot. That caused the visual
+    # mismatch between the Shiny preview (loose) and the Copy-R-Code
+    # standalone rendering (tight, since the copied code does not carry
+    # the `&` post-processing).
+    #
+    # Fix: wrap the canvas in patchwork::wrap_elements(full = ...) so the
+    # outer margin only pads the canvas as a whole. Title/subtitle from
+    # plot_annotation are preserved (they live on cr$plot); the wrap's
+    # outer theme only controls the canvas breathing room.
     .jc_preview_plot <- shiny::reactive({
-
             cr <- canvas_result()
-
             shiny::req(cr, cr$plot)
-
             mt <- if (is.null(input$jc_margin_top)    || is.na(input$jc_margin_top))    10 else input$jc_margin_top
-
             mb <- if (is.null(input$jc_margin_bottom) || is.na(input$jc_margin_bottom)) 10 else input$jc_margin_bottom
-
             ml <- if (is.null(input$jc_margin_left)   || is.na(input$jc_margin_left))   10 else input$jc_margin_left
-
             mr <- if (is.null(input$jc_margin_right)  || is.na(input$jc_margin_right))  10 else input$jc_margin_right
-
-            cr$plot & ggplot2::theme(plot.margin = ggplot2::margin(mt, mr, mb, ml))
-
+            patchwork::wrap_elements(full = cr$plot) +
+                ggplot2::theme(plot.margin = ggplot2::margin(mt, mr, mb, ml))
     })
 
 
