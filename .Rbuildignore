@@ -12,3 +12,4 @@
 ^\.github$
 ^\.\.Rcheck$
 ^.*\.Rcheck$
+^vignettes/.*\.html$

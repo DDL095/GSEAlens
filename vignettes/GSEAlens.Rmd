@@ -14,195 +14,102 @@ vignette: >
 
 # Package Introduction
 
-
-
 **GSEAlens** derives its name from **Lens**, symbolizing how this package acts as a **magnifying glass** to help researchers deeply explore key pathways in GSEA enrichment analysis.
-
-
 
 GSEAlens provides a web-based interactive platform for displaying pathway introductions and descriptions, integrating AI-assisted pathway enrichment result export functionality. By encapsulating workflows and standardizing input formats, this R package simplifies the process of viewing and exploring GSEA enrichment analysis results.
 
-
-
 ## Integration with Bioconductor Workflows
 
-
-
 GSEAlens is designed to plug into standard Bioconductor RNA-seq and functional
-
 enrichment workflows as a **post-DEG exploration layer**:
 
-
-
 - **Upstream (input preparation)**: GSEAlens accepts fitted model objects from
-
   `r Biocpkg("limma")` (the `MArrayLM` object returned by `limma::eBayes()`,
-
   based on the `r Biocpkg("edgeR")` + limma-voom pipeline) or `DESeqDataSet`
-
   objects from `r Biocpkg("DESeq2")`. The expression matrix and sample metadata
-
   can be passed as `r Biocpkg("SummarizedExperiment")` objects, ensuring
-
   interoperability with the core Bioconductor data containers.
 
-
-
 - **Enrichment computation**: Under the hood, GSEAlens wraps
-
   `r Biocpkg("clusterProfiler")` (`GSEA()` function) and uses gene set
-
   collections from `r CRANpkg("msigdbr")`. The statistical framework therefore
-
   inherits the methodology of `r Biocpkg("fgsea")` via `clusterProfiler`.
 
-
-
 - **Parallelization**: GSEAlens uses `r CRANpkg("future")` (`future::multisession`)
-
   for multi-contrast parallel computation. The user's original `future::plan()` and
-
   `future.globals.maxSize` option are saved before the parallel run and restored
-
   on exit via `on.exit()`, so the global state is never polluted. We anecdotally
-
   observed `future::multisession` to be noticeably faster than
-
   `r Biocpkg("BiocParallel")` (`SnowParam` / PSOCK serialization) on Windows for
-
   this package's typical workload, which serializes large globals (the full DE
-
   table plus the gene set dictionary and metadata dictionary). This is an informal
-
   observation from development, not a formal benchmark; users are free to re-run
-
   the analysis with `BiocParallel` if it better suits their environment.
 
-
-
 - **Visualization**: Plotting builds on `r Biocpkg("enrichplot")`,
-
   `r Biocpkg("ComplexHeatmap")`, `r CRANpkg("ggplot2")`,
-
   `r CRANpkg("patchwork")`, and `r CRANpkg("visNetwork")`, producing figures
-
   compatible with downstream publication pipelines.
 
-
-
 - **Downstream**: The "Generate R Code" feature in the Shiny application emits
-
   self-contained scripts that can be embedded in `r CRANpkg("rmarkdown")` /
-
   Quarto reports or integrated into multi-step pipelines.
 
-
-
 A typical end-to-end Bioconductor workflow is therefore:
-
-
 
 ```
 
 RNA-seq counts
 
    |
-
    +--[edgeR + limma-voom]--> MArrayLM fit --+
-
    |                                         |
-
    +--[DESeq2]--------------> DESeqDataSet --+
-
                                              |
-
                                              v
-
                                    [setup_gsea_env]
-
                                              |
-
                                              v
-
                                   [batch_calc_gsea]
-
                                              |
-
                                              v
-
                                     Shiny app exploration
-
                                              |
-
                                              v
-
                                   Reproducible R code export
 
 ```
 
-
-
 This makes GSEAlens a natural complement to existing Bioconductor enrichment
-
 packages: where `r Biocpkg("clusterProfiler")`, `r Biocpkg("GSVA")`,
-
 `r Biocpkg("gprofiler2")`, or `r Biocpkg("ReactomePA")` focus on **computing**
-
 enrichment, GSEAlens focuses on **interactive interpretation** of the resulting
-
 pathway lists.
-
-
 
 ## Installation
 
-
-
 GSEAlens is available on Bioconductor. Install the stable release with:
 
-
-
 ```{r install-package, eval=FALSE}
-
 if (!requireNamespace("BiocManager", quietly = TRUE))
-
     install.packages("BiocManager")
-
 BiocManager::install("GSEAlens")
-
 ```
-
-
 
 The development version can be installed from GitHub:
 
-
-
 ```{r install-github, eval=FALSE}
-
 if (!requireNamespace("pak", quietly = TRUE))
-
     install.packages("pak")
-
 pak::pkg_install("DDL095/GSEAlens")
-
 ```
-
-
 
 # Quick Start
 
-
-
 This section demonstrates a complete GSEAlens workflow using the `r Biocpkg("airway")`
-
 dataset. Because GSEAlens does **not** perform DEG analysis itself, we assume the
-
 input objects (`fit`, `dds_se`, `dds`) have been prepared according to standard
-
 `r Biocpkg("limma")` / `r Biocpkg("DESeq2")` workflows.
-
-
 
 > **Note**: For detailed input preparation steps (limma-voom fitting, DESeq2 object
 
@@ -216,33 +123,18 @@ input objects (`fit`, `dds_se`, `dds`) have been prepared according to standard
 
 > ```
 
-
-
 ```{r setup-environment, results='hide'}
-
 library(GSEAlens)
-
 library(airway)
-
 ```
 
-
-
 For reproducibility in this main vignette, the three input objects (`fit`,
-
 `dds_se`, `dds`) are prepared following the preprocessing vignette. Because
-
 re-running `DESeq2::DESeq()` and the limma-voom pipeline on every build would
-
 make the vignette slow, we ship **pre-computed** versions of those objects in
-
 `inst/extdata/`; the script that regenerates them lives in
-
 `inst/scripts/make_preprocessed_inputs.R` and follows the preprocessing
-
 vignette exactly.
-
-
 
 > **Note on the shipped `dds_se`**: to stay below the Bioconductor 5 MB
 
@@ -264,28 +156,19 @@ vignette exactly.
 
 > preprocessing vignette.
 
-
-
 ```{r load-prepared-objects}
 data(preprocessed_limma, package = "GSEAlens")
 preproc_limma         <- preprocessed_limma
 fit                   <- preproc_limma$fit
 gsea_limma_voom_data  <- preproc_limma$gsea_limma_voom_data
-
 data(preprocessed_dds_se, package = "GSEAlens")
 dds_se <- preprocessed_dds_se
-
 data(preprocessed_dds, package = "GSEAlens")
 dds <- preprocessed_dds
 ```
 
-
-
 To prepare these objects from your own data, follow the supplementary
-
 preprocessing vignette:
-
-
 
 ```r
 
@@ -293,35 +176,19 @@ vignette("GSEAlens-preprocessing")
 
 ```
 
-
-
 ## GSEAlens Processing
-
-
 
 ### Creating GSEA Pathway Object
 
-
-
 Use the `build_gsea_pathways` function to construct a pathway object for GSEA enrichment analysis.
 
-
-
 ```{r build-gsea-pathways, eval=FALSE}
-
 # Real call (slow on the Bioconductor build machine because it loads
-
 # multiple MSigDB collections; skipped during build).
-
 # gsea_pathwaysets <- build_gsea_pathways(
-
 #   species = "HS", auto_select = c("H", "C2:CP:REACTOME", "C5:GO:BP")
-
 # )
-
 ```
-
-
 
 ```{r load-precomputed-pathways}
 # For the vignette we load a pre-computed lightweight pathway object
@@ -331,205 +198,101 @@ data(gsea_pathwaysets_toy, package = "GSEAlens")
 gsea_pathwaysets <- gsea_pathwaysets_toy
 ```
 
-
-
 ### Assembling Computation Object
-
-
 
 Through the `setup_gsea_env` function, assemble a `GSEAEnv` object for computational analysis. Different workflows use the same function with different data inputs. For the limma-voom workflow, since the `fit` object does not contain the original gene read counts, the filtered `DGEList` used to generate the `fit` object must be additionally provided. In this example, it is the multi-step filtered `gsea_limma_voom_data`.
 
-
-
 Assemble the limma-voom workflow object for analysis.
 
-
-
 ```{r setup-gsea-limma}
-
 gseadata_limmavoom <- setup_gsea_env(fit = fit,pathway_obj = gsea_pathwaysets,expr_data = gsea_limma_voom_data)
-
 ```
-
-
 
 Assemble the DESeq2 SummarizedExperiment object for analysis.
 
-
-
 ```{r setup-gsea-se}
-
 gseadata_se <- setup_gsea_env(fit = dds_se,pathway_obj = gsea_pathwaysets)
-
 ```
-
-
 
 Assemble the DESeq2 Count matrix workflow object for analysis.
 
-
-
 ```{r setup-gsea-dds}
-
 gseadata_dds <- setup_gsea_env(fit = dds,pathway_obj = gsea_pathwaysets)
-
 ```
-
-
 
 ### Running Processing
 
-
-
 All objects are processed using the `batch_calc_gsea` function with no differences.
-
-
 
 Parallel computing note: Adjust the `workers` option based on your computer's performance to set the number of cores for computation. More contrasts recommend higher core settings for better computational efficiency.
 
-
-
 ```{r batch-calc-limma, eval=FALSE}
-
 # Write vignette outputs to a temporary directory to avoid polluting the
-
 # Bioconductor build machine's working directory.
-
 out_dir <- tempdir()
-
-
-
 # limma-voom workflow
-
 gsea_res_limmavoom <- batch_calc_gsea(gseadata_limmavoom,
-
                                                  custom_series_name = "limmavoom_data",
-
                                                  output_dir = out_dir,
-
                                                  workers = 2,
-
                                                  force = TRUE)
-
-
-
 # DESeq2 SummarizedExperiment workflow
-
 gsea_res_se <- batch_calc_gsea(gseadata_se,
-
                                           custom_series_name = "dds_se_data",
-
                                           output_dir = out_dir,
-
                                           workers = 2,
-
                                           force = TRUE)
-
-
-
 # DESeq2 Count matrix workflow
-
 gsea_res_dds <- batch_calc_gsea(gseadata_dds,
-
                                            custom_series_name = "dds_data",
-
                                            output_dir = out_dir,
-
                                            workers = 2,
-
                                            force = TRUE)
-
 ```
-
-
 
 ### Interactive Analysis and Viewing
 
-
-
 After running `batch_calc_gsea`, an RDS file (the "GSEA Capsule") is generated in
-
 the output directory. You can either read it directly with `readRDS` or use
-
 `import_gsea_capsule`, which automatically organizes related files into the
-
 working directory of your `.Rmd` / `.R` script and performs data inspection.
 
-
-
 ```{r import-capsule, eval=FALSE}
-
 gsea_res <- import_gsea_capsule("/path/to/your/files/")
-
 # Or read the RDS directly:
-
 # gsea_res <- readRDS("/path/of/your/file/")
-
 ```
-
-
 
 ## Interactive Exploration with the Shiny Application
 
-
-
 GSEAlens provides an interactive Shiny application for visual exploration of GSEA
-
 results. The app is launched by passing a `GseaRes` object (returned by
-
 `batch_calc_gsea` or loaded via `import_gsea_capsule`) to `launch_gsea_app`.
-
-
 
 ### Launching the App
 
-
-
 ```{r launch-app, eval=FALSE}
-
 launch_gsea_app(gsea_res)
-
 ```
-
-
 
 Optional: pass an `addition_data` data frame (or path to `.csv` / `.rds` file) to
-
 merge pathway annotations into the main table. If `NULL`, the app auto-detects
-
 `addition_data_gsealens.rds` or `addition_data_gsealens.csv` in the working
-
 directory.
 
-
-
 ```{r launch-app-with-data, eval=FALSE}
-
 launch_gsea_app(gsea_res, addition_data = "pathway_annotations.csv")
-
 ```
-
-
 
 ### Application Layout
 
-
-
 The app uses a **sidebar + main panel** layout with **6 tabs**. The sidebar
-
 (`Data Preprocessing` module) provides global controls; the main panel hosts the
-
 six feature tabs.
-
-
 
 #### Sidebar -- Data Preprocessing
 
-
-
 Provides global controls visible across all tabs:
-
-
 
 - **Contrast selection**: choose which pairwise comparison to explore
 
@@ -541,55 +304,30 @@ Provides global controls visible across all tabs:
 
 - **Expression metrics**: switch between CPM / logCPM / VST / FPKM
 
-
-
 Source: `R/08_shiny_mod_data_prep.R`.
-
-
 
 #### Tab 1 -- Main Workspace
 
-
-
 The default landing tab, combining two sub-modules:
 
-
-
 - **Master Table** (`DT::datatable`): interactive table of all enriched pathways
-
   with sortable columns (NES, pvalue, p.adjust, setSize) and checkbox selection.
-
   Selected rows are pushed to other tabs.
 
 - **Combined Pathway Plotting**: aggregates multiple selected pathways into a
-
   single composite figure (uses `patchwork` under the hood). The export modal
-
   includes a WYSIWYG Live Preview, PDF/PNG/SVG/TIFF output, and a "Copy R Code"
-
   button via `generate_combined_plot_code()`.
 
-
-
 Click any pathway row to open the **Pathway Detail Modal**, which shows the
-
 full description, leading-edge genes, and an option to add the pathway to the
-
 plot queue.
-
-
 
 Source: `R/09_shiny_mod_table.R`, `R/11_shiny_mod_modal.R`, `R/12_shiny_mod_multi_plot.R`.
 
-
-
 #### Tab 2 -- Holographic Quadruple Linkage
 
-
-
 Four synchronized panels:
-
-
 
 1. Top-left: pathway selector (linked to Main Workspace selection)
 
@@ -599,175 +337,99 @@ Four synchronized panels:
 
 4. Bottom-right: expression boxplot for the selected gene
 
-
-
 Selections are **bidirectionally synchronized** -- clicking a gene in the table
-
 highlights it in the volcano; clicking a point in the volcano scrolls the table.
-
-
 
 Source: `R/10_shiny_mod_quadrant.R`.
 
-
-
 #### Tab 3 -- Pathway Relationship Exploration
 
-
-
 Network visualization of pathway-to-pathway relationships, where nodes are
-
 pathways and edges represent shared genes (Jaccard similarity). Two selection
-
 modes:
-
-
 
 - **Single mode**: explore one pathway and its neighbors
 
 - **Batch mode**: select multiple pathways from Main Workspace and visualize
-
   their interconnections
-
-
-
 Two sub-panels are provided under this tab:
 
-
-
 - **DotPlot panel**: horizontal dot plot where the X axis is NES, dot color
-
   encodes significance (`-log10(FDR)` / `-log10(P-value)` / `|NES|`,
-
   dot size encodes gene-set magnitude. A data-driven size scale
-
   (no fixed limits, no transform) is used so that dot sizes faithfully
-
   reflect the underlying gene-set magnitude range. This mirrors the
-
   `ggplot2::scale_size_continuous(range=c(3,8))` convention used by
-
   `enrichplot::dotplot`, where size limits are derived from the data
-
   rather than imposed as a fixed domain.
 
 - **Network panel**: graph layout (Fruchterman-Reingold / Kamada-Kawai /
-
   Circle) with **two user-selectable edge-width encodings**:
 
   - *Weight-based* (default, `emapplot` convention): edge width is linearly
-
     proportional to the Jaccard value, faithfully reflecting the underlying
-
     similarity magnitude. Recommended for publication.
 
   - *Rank-based*: edge width is assigned by Jaccard rank, guaranteeing uniform
-
     visual spacing between edges regardless of absolute weight. Useful for
-
     dense networks with low weight variance.
-
   Node size reflects `|NES|`; node color reflects enrichment direction
-
   (red = up in left group, blue = up in right group).
-
-
 
 **Export Center** (both panels): clicking "Export Publication Plot" opens a
 
 modal with width / height / DPI / format (PDF, PNG, SVG, TIFF) controls and
-
 two actions: download a static `ggplot2`-rendered image via `ggsave` (no
-
 external dependencies such as kaleido/orca), or copy a fully reproducible
-
 R script (`generate_dotplot_code()` / `generate_network_code()`) to the
-
 clipboard. The static figures are byte-for-byte identical to what the copied
-
 code would produce.
 
-
-
 Source: `R/13_shiny_mod_pathway_relation.R`, helper `R/utils_hubgene.R`,
-
 code generators in `R/15_code_generator.R`.
-
-
 
 #### Tab 4 -- HubGene Network
 
-
-
 Identifies and visualizes hub genes (highly connected genes across multiple
-
 enriched pathways) using a `visNetwork` interactive plot. Adjustable parameters:
-
-
 
 - **Physics simulation**: toggle on/off, adjust force-directed parameters
 
 - **Pathway node size encoding**: three user-selectable modes
 
   - *By gene-set size* (`setSize`, default): matches the `enrichplot::cnetplot`
-
     convention; pathway node size is proportional to the number of genes in
-
     the set (sqrt-scaled). Recommended for biological interpretation.
 
   - *By significance* (`-log10(FDR)`): emphasizes the most statistically
-
     trustworthy pathways.
 
   - *Fixed size*: constant node size controlled by the slider (legacy behavior).
-
   The slider value always acts as the **base** size; the chosen encoding
-
   scales around it within `[0.6x, 1.4x]` to keep visNetwork's force-directed
-
   layout stable (size variance beyond ~2.3x causes visible layout jitter).
-
   Gene-node size is unaffected (always `base + degree * 3`).
 
 - **Network statistics**: summary panel showing node count, edge count, density
 
-
-
 **Export Center**: same modal pattern as Tab 3. The static reproduction uses
 
 `generate_hubgene_code()` and renders pathway nodes as diamonds and gene nodes
-
 as circles in a bipartite layout via `igraph` + `ggplot2` (no `ggraph`
-
 dependency). The current size-encoding mode is preserved in the generated
-
 script.
 
-
-
 Source: `R/16_shiny_mod_hubgene_vis.R`, code generator in
-
 `R/15_code_generator.R`.
-
-
 
 #### Tab 5 -- AI Interpretation
 
-
-
 Generates a structured prompt for an external LLM (e.g. GPT-4, Claude) to
-
 interpret the selected pathways. Supports custom templates so users can enforce
-
 a particular output format (e.g. "produce a 3-paragraph biological interpretation
-
 citing leading-edge genes"). The generated prompt can be copied to clipboard.
 
-
-
 Source: `R/17_shiny_mod_AI.R`.
-
-
 
 > **Note**: This tab only generates prompts; it does not call external APIs
 
@@ -775,35 +437,19 @@ Source: `R/17_shiny_mod_AI.R`.
 
 > calls under user control.
 
-
-
 #### Tab 6 -- Joint GSEA Canvas
 
-
-
 Aggregates enrichment running-score curves for multiple selected pathways into
-
 a single composite canvas. The image export modal includes a WYSIWYG Live
-
 Preview, PDF/PNG/SVG/TIFF output, adjustable canvas margins, and a "Copy R
-
 Code" button that generates a self-contained R script via
-
 `generate_joint_canvas_code()` for reproduction outside the Shiny environment.
-
-
 
 Source: `R/14_shiny_mod_joint_canvas.R`, code generator `R/15_code_generator.R`.
 
-
-
 ### Interpreting Outputs
 
-
-
 A practical interpretation guide:
-
-
 
 | Visualization | What to look for | Biological meaning |
 
@@ -821,35 +467,19 @@ A practical interpretation guide:
 
 | Joint Canvas (Tab 6) | Curve overlap | Overlapping running-score curves suggest coordinated regulation |
 
-
-
 ### Reproducible Code Export
 
-
-
 Tabs 1 (Combined Pathway Plotting), 2, 3, 4, and 6 include a **"Copy R Code"**
-
 button integrated directly into each module's image export modal, producing a
-
 self-contained R script reproducing the current visualization. This is the
-
 recommended way to generate publication-quality figures: iteratively refine
-
 the plot in the Shiny app, then export the code for final customization.
-
-
 
 # Package Intermediate Object Descriptions
 
-
-
 ## GseaEnv Object
 
-
-
 The `GseaEnv` object returned by the `setup_gsea_env` function contains the following components:
-
-
 
 | Component | Description |
 
@@ -865,15 +495,9 @@ The `GseaEnv` object returned by the `setup_gsea_env` function contains the foll
 
 | `geneset` | Geneset information (TERM2GENE, metadata dictionary, species) |
 
-
-
 ## GseaRes Object
 
-
-
 The `GseaRes` object returned by the `batch_calc_gsea` function contains the following components:
-
-
 
 | Component | Description |
 
@@ -893,15 +517,9 @@ The `GseaRes` object returned by the `batch_calc_gsea` function contains the fol
 
 | `results` | GSEA results list, one entry per contrast |
 
-
-
 ## GseaTask Object
 
-
-
 The `GseaTask` object returned by the `extract_gsea_task` function is used for single-contrast analysis:
-
-
 
 | Component  | Description                                                    |
 
@@ -911,19 +529,10 @@ The `GseaTask` object returned by the `extract_gsea_task` function is used for s
 
 | `meta`     | Metadata (contrast information, geneset name, expression data) |
 
-
-
 # Session Info
 
-
-
 ```{r sessionInfo}
-
 sessionInfo()
-
 ```
 
-
-
 # References
-
