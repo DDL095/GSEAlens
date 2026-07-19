@@ -300,7 +300,7 @@
 
             panel.grid = ggplot2::element_blank(),
 
-            plot.margin = ggplot2::margin(t = 0.2, r = 0.2, b = 0, l = 0.2, unit = "cm")
+            plot.margin = ggplot2::margin(t = 0, r = 0.2, b = 0, l = 0.2, unit = "cm")
 
     ) +
 
@@ -626,7 +626,7 @@
 
         axis.text = ggplot2::element_text(colour = "black"),
 
-        plot.margin = ggplot2::margin(t = -0.1, r = 0.2, b = 0.2, l = 0.2, unit = "cm")
+        plot.margin = ggplot2::margin(t = 0, r = 0.2, b = 0.2, l = 0.2, unit = "cm")
 
             ) +
 

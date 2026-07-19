@@ -2,6 +2,49 @@
 
 
 
+# GSEAlens 0.99.31
+
+## Visualization
+
+* Tightened vertical spacing in `plot_directional_gsea` Combined Pathway
+  Plotting and Joint Canvas outputs. Previously the gene-hit strip panel
+  (Panel 2) was visually floating between the running-score curve
+  (Panel 1) and the ranked-list bars (Panel 3), with gaps as large as
+  Panel 2's own height. Root cause: the `plot.margin` and `heights`
+  parameters, inherited unchanged from the GseaVis internalization
+  (fe8b2a6), were tuned for single-pathway GSEA and never revisited for
+  the multi-pathway `facet_wrap` case.
+
+* `R/06_visualization.R`: `heights` is now n_lines-aware. Single pathway
+  keeps the classic `c(0.5, 0.2, 0.3)`; multi-pathway uses
+  `c(0.45, 0.30, 0.25)` so each Panel 2 facet gets usable height.
+
+* `R/vis-gsea-core.R`: Panel 1, Panel 2, and Panel 3 `plot.margin` t/b
+  are now all 0 (previously `t=0.2 / b=0.2 / t=-0.1`). Panel 2
+  `panel.spacing` is now `unit(0, "cm")` so multi-pathway facets abut.
+  Removes the preview-vs-export discrepancy where the Shiny renderPlot
+  preview looked tight but `ggsave` output carried inflated whitespace.
+
+## Vignettes
+
+* Added a global `knitr::opts_chunk$set(message=FALSE, warning=FALSE)`
+  setup chunk to `GSEAlens.Rmd` and `GSEAlens-vignette-zh.Rmd`, matching
+  the preprocessing vignettes which already had it. Eliminated ~46
+  package-loading message blocks (`## Loading required package: ...`)
+  per main vignette in the rendered HTML. Only the `sessionInfo()`
+  output under "Session Info" is preserved, as required by Bioconductor.
+
+* Compacted fragmented markdown tables and merged thin consecutive code
+  chunks across all four vignettes for cleaner HTML rendering.
+
+* Removed misused markdown blockquote (`> **Note**: ...`) patterns that
+  rendered as fragmenting blockquotes in the HTML output.
+
+* Removed double-spacing inside code chunks and collapsed excessive
+  blank lines that fragmented paragraphs.
+
+
+
 # GSEAlens 0.99.30
 
 Addressed Bioconductor reviewer (mireia-bioinfo) round 2 comments on
