@@ -12,6 +12,10 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
 # 包简介
 
 **GSEAlens** 的名称源自 **Lens**（透镜），象征本包像 **放大镜** 一样，帮助研究者深入

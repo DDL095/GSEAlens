@@ -12,6 +12,10 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
 # Package Introduction
 
 **GSEAlens** derives its name from **Lens**, symbolizing how this package acts as a **magnifying glass** to help researchers deeply explore key pathways in GSEA enrichment analysis.
