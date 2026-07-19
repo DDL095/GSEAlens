@@ -2,6 +2,33 @@
 
 
 
+# GSEAlens 0.99.32
+
+## Visualization
+
+* Fixed Joint Canvas (Tab 6) outer-margin leak. The user-adjustable
+  "Canvas Margin" was previously applied via patchwork's `&` operator
+  in `R/14_shiny_mod_joint_canvas.R`, which propagates `theme()` to
+  every sub-plot. This overwrote the per-panel `plot.margin = 0` set
+  in `vis-gsea-core.R` and re-inflated the gaps between Panel 1 (RES
+  curve), Panel 2 (hit strips), and Panel 3 (ranked list) inside each
+  contrast's GSEA plot by ~30% of Panel 2's height. It also caused a
+  visible mismatch between the Shiny preview (loose) and the Copy R
+  Code standalone rendering (tight, since the copied code did not
+  carry the `&` post-processing).
+
+* Fix: wrap the canvas in `patchwork::wrap_elements(full = ...)`
+  before adding the outer `theme(plot.margin = ...)`, so the margin
+  only pads the canvas as a whole. Mirrored the same `wrap_elements`
+  step in the Copy R Code output (`generate_joint_canvas_code` in
+  `R/15_code_generator.R`) so the two paths render identically.
+
+* Visual verification: P1<->P2 gap ~30% -> ~10% of Panel 2 height;
+  P2<->P3 gap ~32% -> ~12%. Shiny preview vs Copy R Code standalone
+  now at ~98% visual parity.
+
+
+
 # GSEAlens 0.99.31
 
 ## Visualization
