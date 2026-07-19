@@ -465,7 +465,21 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
 
     df_clean <- df_clean |>
 
-    dplyr::filter(p.adjust <= p_adjust_cutoff) |>
+    dplyr::filter(p.adjust <= p_adjust_cutoff)
+
+
+
+    # Probe column availability up-front so the mutate() below can use base R
+    # `if` (lazy evaluation) instead of the magrittr `.` placeholder, which
+    # is undefined under native pipe `|>`.
+    has_combo      <- "Combo_Name"     %in% names(df_clean)
+    has_collection <- "Collection"     %in% names(df_clean)
+    has_url        <- "URL"            %in% names(df_clean)
+    has_desc_y     <- "Description.y"  %in% names(df_clean)
+
+
+
+    df_clean <- df_clean |>
 
     dplyr::mutate(
 
@@ -475,11 +489,11 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
 
             ),
 
-            Display_Collection = if ("Combo_Name" %in% names(.)) Combo_Name else if ("Collection" %in% names(.)) Collection else "Unknown",
+            Display_Collection = if (has_combo) Combo_Name else if (has_collection) Collection else "Unknown",
 
             Display_Collection = as.factor(ifelse(is.na(Display_Collection), "Unknown", Display_Collection)),
 
-            Pathway_Link = if ("URL" %in% names(.)) {
+            Pathway_Link = if (has_url) {
 
         ifelse(is.na(URL) | URL == "", sprintf("<b>%s</b>", ID),
 
@@ -493,7 +507,7 @@ generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
 
             },
 
-            Description = if ("Description.y" %in% names(.)) Description.y else Description
+            Description = if (has_desc_y) Description.y else Description
 
     ) |>
 
