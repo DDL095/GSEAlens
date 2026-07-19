@@ -1,6 +1,19 @@
-# Data Generation for inst/extdata
+# Data Generation
 
-This directory contains scripts and documentation describing how the data in `inst/extdata/` was generated.
+This directory contains scripts and documentation describing how the example data shipped with GSEAlens is generated.
+
+## Distribution layout
+
+GSEAlens ships two kinds of example data:
+
+| Directory | Contents | Loaded via |
+| --- | --- | --- |
+| `inst/extdata/` | `pathway_annotations.csv` (raw CSV) | `system.file("extdata", "pathway_annotations.csv", package = "GSEAlens")` |
+| `data/` | Six pre-processed `.rda` files (see below) | `data(<name>, package = "GSEAlens")` |
+
+The split follows the Bioconductor guideline: `inst/extdata/` for raw
+text-like files (CSV), and `data/` for processed R objects that are
+loadable via `data()`.
 
 ## pathway_annotations.csv
 
@@ -28,19 +41,19 @@ This annotation file can be loaded via the `create_addition_data()` function to 
 ## Pre-computed Vignette Objects
 
 The main vignette (`vignettes/GSEAlens.Rmd` and `vignettes/GSEAlens-vignette-zh.Rmd`)
-consumes five pre-computed RDS files from `inst/extdata/`. They exist so the
+consumes six pre-computed `.rda` files from `data/`. They exist so the
 vignette can set `eval=TRUE` on its data-loading and object-assembly chunks
 without re-running the slow upstream steps (DESeq2 DESeq, limma-voom, msigdbr
 bulk loading) on every Bioconductor build.
 
 | File                                  | Generator script                | Contents                                                                                                                                                                                                                                                                                                                                |
 | ------------------------------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `gsea_pathwaysets_toy_hallmark.rds` | `make_gsea_pathwaysets_toy.R` | `build_gsea_pathways("HS", "H")` result; 50 Hallmark pathways x 4384 genes (~22 KB)                                                                                                                                                                                                                                                   |
-| `gsea_pathwaysets_toy.rds`          | `make_gsea_pathwaysets_toy.R` | `build_gsea_pathways("HS", c("H","C2:CP:KEGG_LEGACY"))` result; 236 pathways x 7337 genes (~46 KB)                                                                                                                                                                                                                                    |
-| `preprocessed_limma.rds`            | `make_preprocessed_inputs.R`  | `list(fit = ..., gsea_limma_voom_data = ...)` from airway, limma-voom (~1 MB)                                                                                                                                                                                                                                                         |
-| `preprocessed_dds_se.rds`           | `make_preprocessed_inputs.R`  | DESeq-transformed RangedSummarizedExperiment (13246 x 8) (~3 MB, **slimmed**; see below)                                                                                                                                                                                                                         |
-| `preprocessed_dds.rds`              | `make_preprocessed_inputs.R`  | DESeqDataSet from count matrix (13246 x 8) (~4 MB)                                                                                                                                                                                                                                                                                      |
-| `precomputed_gseares.rds`           | `make_precomputed_gseares.R`  | `batch_calc_gsea()` result ("GseaRes" list) from `preprocessed_limma.rds` + `gsea_pathwaysets_toy.rds`; 2 contrasts, ~20 enriched pathways each (~1.3 MB). Used by accessor examples (`get_expr_matrix`, `get_de_table`, `extract_gsea_task`, `inspect_gsea_res`, ...) so they can run in < 1 s without recomputing GSEA. |
+| `gsea_pathwaysets_toy_hallmark.rda` | `make_gsea_pathwaysets_toy.R` | `build_gsea_pathways("HS", "H")` result; 50 Hallmark pathways x 4384 genes (~22 KB)                                                                                                                                                                                                                                                   |
+| `gsea_pathwaysets_toy.rda`          | `make_gsea_pathwaysets_toy.R` | `build_gsea_pathways("HS", c("H","C2:CP:KEGG_LEGACY"))` result; 236 pathways x 7337 genes (~46 KB)                                                                                                                                                                                                                                    |
+| `preprocessed_limma.rda`            | `make_preprocessed_inputs.R`  | `list(fit = ..., gsea_limma_voom_data = ...)` from airway, limma-voom (~1 MB)                                                                                                                                                                                                                                                         |
+| `preprocessed_dds_se.rda`           | `make_preprocessed_inputs.R`  | DESeq-transformed RangedSummarizedExperiment (13246 x 8) (~3 MB, **slimmed**; see below)                                                                                                                                                                                                                         |
+| `preprocessed_dds.rda`              | `make_preprocessed_inputs.R`  | DESeqDataSet from count matrix (13246 x 8) (~4 MB)                                                                                                                                                                                                                                                                                      |
+| `precomputed_gseares.rda`           | `make_precomputed_gseares.R`  | `batch_calc_gsea()` result ("GseaRes" list) from `preprocessed_limma.rda` + `gsea_pathwaysets_toy.rda`; 2 contrasts, ~20 enriched pathways each (~1.3 MB). Used by accessor examples (`get_expr_matrix`, `get_de_table`, `extract_gsea_task`, `inspect_gsea_res`, ...) so they can run in < 1 s without recomputing GSEA. |
 
 **Regeneration**:
 
@@ -49,6 +62,8 @@ bulk loading) on every Bioconductor build.
 Rscript inst/scripts/make_gsea_pathwaysets_toy.R
 Rscript inst/scripts/make_preprocessed_inputs.R
 Rscript inst/scripts/make_precomputed_gseares.R
+# After regeneration, convert .rds to .rda so data() can load them:
+Rscript inst/scripts/convert_data_to_rda.R
 ```
 
 Run these whenever `msigdbr`, `airway`, `DESeq2`, `limma`, `clusterProfiler`,
@@ -57,7 +72,8 @@ or `fgsea` see a version bump, or when `build_gsea_pathways()` /
 
 **Note on dependency order**: `make_precomputed_gseares.R` consumes the
 outputs of the other two scripts, so re-run it **last** if you regenerate
-all three.
+all three. `convert_data_to_rda.R` must always be run last because it
+deletes the `.rds` intermediates.
 
 **Versions used for the current shipped copies**:
 

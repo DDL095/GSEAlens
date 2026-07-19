@@ -25,11 +25,12 @@ Safely load a computation capsule. If the file is moved from its
   relocate the capsule. Fully compatible with GseaEnv and GseaRes objects.
 }
 \examples{
-# Copy the pre-computed GseaRes capsule shipped with the package to a
-# temp file and import it (auto_relocate = FALSE to avoid side effects).
-src <- system.file("extdata", "precomputed_gseares.rds", package = "GSEAlens")
+# Load the pre-computed GseaRes capsule shipped with the package, write it
+# to a temp file, then import it (auto_relocate = FALSE to avoid side
+# effects).
+data(precomputed_gseares, package = "GSEAlens")
 tmp_capsule <- file.path(tempdir(), "import_demo.rds")
-file.copy(src, tmp_capsule, overwrite = TRUE)
+saveRDS(precomputed_gseares, tmp_capsule)
 
 gsea_res <- import_gsea_capsule(
   tmp_capsule,

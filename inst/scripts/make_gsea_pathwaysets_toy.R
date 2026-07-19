@@ -14,7 +14,7 @@
 
 # the "vignette rebuilding took > 60s" NOTE, we ship a pre-computed
 
-# lightweight object in inst/extdata/.
+# lightweight object in data/.
 
 #
 
@@ -28,7 +28,7 @@
 
 #
 
-# Output files (written to inst/extdata/):
+# Output files (written to data/):
 
 #   - gsea_pathwaysets_toy_hallmark.rds  (~80 KB, H only, 50 pathways)
 
@@ -46,7 +46,7 @@ library(GSEAlens)
 
 
 
-out_dir <- file.path("inst", "extdata")
+out_dir <- file.path("data")
 
 dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 

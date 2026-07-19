@@ -1,30 +1,16 @@
 ---
-
 title: "GSEAlens: An Interactive Exploration Platform for Gene Set Enrichment Analysis"
-
 author: "Dudali"
-
 date: "`r Sys.Date()`"
-
 output:
-
   BiocStyle::html_document:
-
     toc_float: true
-
     number_sections: true
-
 vignette: >
-
   %\VignetteIndexEntry{GSEAlens: An Interactive Exploration Platform for Gene Set Enrichment Analysis}
-
   %\VignetteEngine{knitr::rmarkdown}
-
   %\VignetteEncoding{UTF-8}
-
 ---
-
-
 
 # Package Introduction
 
@@ -132,13 +118,13 @@ RNA-seq counts
 
                                              v
 
-                                   [GSEAlens::setup_gsea_env]
+                                   [setup_gsea_env]
 
                                              |
 
                                              v
 
-                                  [GSEAlens::batch_calc_gsea]
+                                  [batch_calc_gsea]
 
                                              |
 
@@ -281,31 +267,16 @@ vignette exactly.
 
 
 ```{r load-prepared-objects}
-
-preproc_limma <- readRDS(system.file(
-
-  "extdata", "preprocessed_limma.rds", package = "GSEAlens"
-
-))
-
+data(preprocessed_limma, package = "GSEAlens")
+preproc_limma         <- preprocessed_limma
 fit                   <- preproc_limma$fit
-
 gsea_limma_voom_data  <- preproc_limma$gsea_limma_voom_data
 
+data(preprocessed_dds_se, package = "GSEAlens")
+dds_se <- preprocessed_dds_se
 
-
-dds_se <- readRDS(system.file(
-
-  "extdata", "preprocessed_dds_se.rds", package = "GSEAlens"
-
-))
-
-dds    <- readRDS(system.file(
-
-  "extdata", "preprocessed_dds.rds", package = "GSEAlens"
-
-))
-
+data(preprocessed_dds, package = "GSEAlens")
+dds <- preprocessed_dds
 ```
 
 
@@ -342,7 +313,7 @@ Use the `build_gsea_pathways` function to construct a pathway object for GSEA en
 
 # multiple MSigDB collections; skipped during build).
 
-# gsea_pathwaysets <- GSEAlens::build_gsea_pathways(
+# gsea_pathwaysets <- build_gsea_pathways(
 
 #   species = "HS", auto_select = c("H", "C2:CP:REACTOME", "C5:GO:BP")
 
@@ -353,19 +324,11 @@ Use the `build_gsea_pathways` function to construct a pathway object for GSEA en
 
 
 ```{r load-precomputed-pathways}
-
 # For the vignette we load a pre-computed lightweight pathway object
-
 # (Hallmark + KEGG_LEGACY, 236 pathways). See
-
 # inst/scripts/make_gsea_pathwaysets_toy.R for regeneration instructions.
-
-gsea_pathwaysets <- readRDS(system.file(
-
-  "extdata", "gsea_pathwaysets_toy.rds", package = "GSEAlens"
-
-))
-
+data(gsea_pathwaysets_toy, package = "GSEAlens")
+gsea_pathwaysets <- gsea_pathwaysets_toy
 ```
 
 
@@ -384,7 +347,7 @@ Assemble the limma-voom workflow object for analysis.
 
 ```{r setup-gsea-limma}
 
-gseadata_limmavoom <- GSEAlens::setup_gsea_env(fit = fit,pathway_obj = gsea_pathwaysets,expr_data = gsea_limma_voom_data)
+gseadata_limmavoom <- setup_gsea_env(fit = fit,pathway_obj = gsea_pathwaysets,expr_data = gsea_limma_voom_data)
 
 ```
 
@@ -396,7 +359,7 @@ Assemble the DESeq2 SummarizedExperiment object for analysis.
 
 ```{r setup-gsea-se}
 
-gseadata_se <- GSEAlens::setup_gsea_env(fit = dds_se,pathway_obj = gsea_pathwaysets)
+gseadata_se <- setup_gsea_env(fit = dds_se,pathway_obj = gsea_pathwaysets)
 
 ```
 
@@ -408,7 +371,7 @@ Assemble the DESeq2 Count matrix workflow object for analysis.
 
 ```{r setup-gsea-dds}
 
-gseadata_dds <- GSEAlens::setup_gsea_env(fit = dds,pathway_obj = gsea_pathwaysets)
+gseadata_dds <- setup_gsea_env(fit = dds,pathway_obj = gsea_pathwaysets)
 
 ```
 
@@ -438,7 +401,7 @@ out_dir <- tempdir()
 
 # limma-voom workflow
 
-gsea_res_limmavoom <- GSEAlens::batch_calc_gsea(gseadata_limmavoom,
+gsea_res_limmavoom <- batch_calc_gsea(gseadata_limmavoom,
 
                                                  custom_series_name = "limmavoom_data",
 
@@ -452,7 +415,7 @@ gsea_res_limmavoom <- GSEAlens::batch_calc_gsea(gseadata_limmavoom,
 
 # DESeq2 SummarizedExperiment workflow
 
-gsea_res_se <- GSEAlens::batch_calc_gsea(gseadata_se,
+gsea_res_se <- batch_calc_gsea(gseadata_se,
 
                                           custom_series_name = "dds_se_data",
 
@@ -466,7 +429,7 @@ gsea_res_se <- GSEAlens::batch_calc_gsea(gseadata_se,
 
 # DESeq2 Count matrix workflow
 
-gsea_res_dds <- GSEAlens::batch_calc_gsea(gseadata_dds,
+gsea_res_dds <- batch_calc_gsea(gseadata_dds,
 
                                            custom_series_name = "dds_data",
 

@@ -53,37 +53,25 @@
 #' @export
 
 #' @examples
-
-#' \dontrun{
-
-#' # Human mode (default) -- launches interactive menu, do not run in tests
-
-#' pathways <- build_gsea_pathways(species = "HS")
-
+#' \donttest{
+#' # Automated selection by collection name -- safe for non-interactive use
+#' pathways <- build_gsea_pathways(species = "HS",
+#'                                 auto_select = c("H", "C5:GO:BP"))
 #'
-
-#' # Mouse mode -- also interactive
-
-#' pathways <- build_gsea_pathways(species = "MM")
-
-#' }
-
-#'
-
-#' # Automated selection by name (safe for non-interactive use)
-
-#' pathways <- build_gsea_pathways(species = "HS", auto_select = c("H", "C5:GO:BP"))
-
 #' # MM uses M-prefixed collection codes (MH, M5:GO:BP, ...)
-
-#' pathways_mm <- build_gsea_pathways(species = "MM", auto_select = c("MH", "M5:GO:BP"))
-
+#' pathways_mm <- build_gsea_pathways(species = "MM",
+#'                                    auto_select = c("MH", "M5:GO:BP"))
+#' }
 #'
-
-#' # Load all collections
-
+#' \dontrun{
+#' # Interactive menu -- only runs when user is at a terminal
+#' if (interactive()) {
+#'   pathways <- build_gsea_pathways(species = "HS")
+#' }
+#'
+#' # Load ALL collections -- downloads the entire MSigDB (slow, needs network)
 #' pathways <- build_gsea_pathways(species = "HS", auto_select = "ALL")
-
+#' }
 #' @importFrom dplyr arrange left_join select distinct mutate all_of bind_rows filter
 
 #' @importFrom msigdbr msigdbr_collections msigdbr

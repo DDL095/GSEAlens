@@ -2,6 +2,64 @@
 
 
 
+# GSEAlens 0.99.30
+
+Addressed Bioconductor reviewer (mireia-bioinfo) round 2 comments on
+Bioconductor/Contributions #4251.
+
+## Man pages
+
+* Replaced `\dontrun` with `\donttest` where possible so that `R CMD check`
+  validates example syntax. Affected: `build_gsea_pathways`,
+  `generate_gsea_html_report`, `generate_joint_canvas_code`,
+  `generate_boxplot_data_code`, `generate_boxplot_image_code`.
+* For `build_gsea_pathways`, kept `\dontrun` only for the interactive
+  `menu()` path and the `auto_select = "ALL"` path (downloads the entire
+  MSigDB, slow). The non-interactive `auto_select = c("H", ...)` paths
+  now use `\donttest`.
+* Added runnable `\donttest{}` examples for `generate_gsea_html_report`
+  and `generate_joint_canvas_code` using the `precomputed_gseares` data
+  object.
+* Added package-level man page (`GSEAlens-package`), reachable via
+  `?GSEAlens` or `?GSEAlens-package`, listing main entry points
+  (`setup_gsea_env`, `batch_calc_gsea`, `build_gsea_pathways`,
+  `extract_gsea_task`) and the Shiny app launcher (`launch_gsea_app`).
+
+## Data
+
+* Migrated six `.rds` files from `inst/extdata/` to `data/` and converted
+  to `.rda` format so they can be loaded via `data(<name>)`. Affected
+  objects: `precomputed_gseares`, `preprocessed_dds`,
+  `preprocessed_dds_se`, `preprocessed_limma`, `gsea_pathwaysets_toy`,
+  `gsea_pathwaysets_toy_hallmark`.
+* `pathway_annotations.csv` retained in `inst/extdata/` (raw CSV per
+  Bioconductor guidelines).
+* Set `LazyData: true` in DESCRIPTION for faster package load.
+* Added roxygen documentation for all six data objects (now accessible
+  via `?precomputed_gseares` etc.).
+* Added `inst/scripts/convert_data_to_rda.R` for converting `.rds`
+  intermediates to `.rda` after regeneration.
+* Updated vignettes and examples to load data via `data()` instead of
+  `readRDS(system.file("extdata", ...))`.
+
+## Vignettes
+
+* Removed redundant `GSEAlens::` prefixes from both main vignettes
+  (`GSEAlens.Rmd` and `GSEAlens-vignette-zh.Rmd`); 18 occurrences
+  cleaned.
+* Fixed vignette YAML rendering failure: the YAML frontmatter contained
+  blank lines between every field, which broke the `vignette: >` folded
+  scalar (per YAML spec, blank lines inside a folded scalar are preserved
+  as newlines, causing the `%\VignetteEngine{...}` directive to be split
+  and `knitr` to fail parsing the frontmatter). All four `.Rmd` files
+  now have compact YAML headers.
+
+## BiocCheck hygiene
+
+* Removed `GSEAlens.BiocCheck/` directory from the package source tree
+  (was causing "Remove 'GSEAlens.BiocCheck' from the package directory"
+  ERROR).
+
 # GSEAlens 0.99.29
 
 Fix mode_select FDR filter: user-selected pathways no longer silently dropped.

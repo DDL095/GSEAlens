@@ -37,19 +37,23 @@ Provides an interactive or automated gene set selection interface
   species.
 }
 \examples{
-\dontrun{
-# Human mode (default) -- launches interactive menu, do not run in tests
-pathways <- build_gsea_pathways(species = "HS")
+\donttest{
+# Automated selection by collection name -- safe for non-interactive use
+pathways <- build_gsea_pathways(species = "HS",
+                                auto_select = c("H", "C5:GO:BP"))
 
-# Mouse mode -- also interactive
-pathways <- build_gsea_pathways(species = "MM")
+# MM uses M-prefixed collection codes (MH, M5:GO:BP, ...)
+pathways_mm <- build_gsea_pathways(species = "MM",
+                                   auto_select = c("MH", "M5:GO:BP"))
 }
 
-# Automated selection by name (safe for non-interactive use)
-pathways <- build_gsea_pathways(species = "HS", auto_select = c("H", "C5:GO:BP"))
-# MM uses M-prefixed collection codes (MH, M5:GO:BP, ...)
-pathways_mm <- build_gsea_pathways(species = "MM", auto_select = c("MH", "M5:GO:BP"))
+\dontrun{
+# Interactive menu -- only runs when user is at a terminal
+if (interactive()) {
+  pathways <- build_gsea_pathways(species = "HS")
+}
 
-# Load all collections
+# Load ALL collections -- downloads the entire MSigDB (slow, needs network)
 pathways <- build_gsea_pathways(species = "HS", auto_select = "ALL")
+}
 }

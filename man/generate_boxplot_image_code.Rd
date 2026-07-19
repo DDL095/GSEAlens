@@ -66,10 +66,14 @@ Return an executable ggplot2 script reproducing the Quadrant
   group order.
 }
 \examples{
-\dontrun{
-# Shown via the "Export Publication Plot" button in panel 4 of the
-# Quadrant module. Generates a self-contained ggplot2 script.
-box_long <- extract_boxplot_data(gsea_res, "untrt_vs_trt", "GAPDH")$long
+\donttest{
+# Build a minimal long-format expression data frame (self-contained)
+box_long <- data.frame(
+  Sample     = c("S1", "S2", "S3", "S4"),
+  Group      = factor(c("untrt", "untrt", "trt", "trt"),
+                      levels = c("untrt", "trt")),
+  Expression = c(8.1, 8.3, 9.5, 9.7)
+)
 code <- generate_boxplot_image_code(
   box_data_long = box_long,
   gene_symbol   = "GAPDH",

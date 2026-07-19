@@ -32,7 +32,10 @@ and outputs comfortable web reports with dual p-value display and heatmaps.
 Uses the ComplexHeatmap engine to draw high-quality heatmaps, perfectly replicating pheatmap aesthetics.
 }
 \examples{
-\dontrun{
-generate_gsea_html_report(res_obj, output_base_dir = tempdir())
+\donttest{
+data(precomputed_gseares, package = "GSEAlens")
+task <- extract_gsea_task(precomputed_gseares, contrast_id = "untrt_vs_trt")
+report_path <- generate_gsea_html_report(task,
+                                         output_base_dir = tempdir())
 }
 }

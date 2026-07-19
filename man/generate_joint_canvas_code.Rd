@@ -27,10 +27,13 @@ A character string containing executable R code
 Generate Joint Canvas Code
 }
 \examples{
-\dontrun{
-code <- generate_joint_canvas_code(GSEAlens_res = gsea_res,
-                                   contrast_ids = c("A_vs_B"),
-                                   target_pathways = c("HALLMARK_INFLAMMATORY_RESPONSE"))
+\donttest{
+data(precomputed_gseares, package = "GSEAlens")
+task <- extract_gsea_task(precomputed_gseares, contrast_id = "untrt_vs_trt")
+target <- as.data.frame(task$gsea_res)$ID[1]
+code <- generate_joint_canvas_code(GSEAlens_res = precomputed_gseares,
+                                   contrast_ids = "untrt_vs_trt",
+                                   target_pathways = target)
 cat(code)
 }
 }

@@ -16,7 +16,7 @@
 
 # triggers the "vignette rebuilding took > 60s" NOTE. By shipping the
 
-# pre-computed objects in inst/extdata/, the main vignette can set
+# pre-computed objects in data/, the main vignette can set
 
 # `eval=TRUE` on the downstream setup_gsea_env() chunks so reviewers see a
 
@@ -32,7 +32,7 @@
 
 #
 
-# Output files (written to inst/extdata/):
+# Output files (written to data/):
 
 #   - preprocessed_limma.rds    (list with fit + gsea_limma_voom_data)
 
@@ -282,7 +282,7 @@ dds <- DESeq(dds)
 
 # ===== Save ----------------------------------------------------------------------
 
-out_dir <- file.path("inst", "extdata")
+out_dir <- file.path("data")
 
 dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 

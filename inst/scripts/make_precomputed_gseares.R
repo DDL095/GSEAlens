@@ -4,7 +4,7 @@
 
 # Pre-compute the `batch_calc_gsea()` result object ("GseaRes") that ships in
 
-# `inst/extdata/precomputed_gseares.rds` and is consumed by:
+# `data/precomputed_gseares.rds` and is consumed by:
 
 #
 
@@ -52,7 +52,7 @@
 
 #
 
-# Output file (written to inst/extdata/):
+# Output file (written to data/):
 
 #   - precomputed_gseares.rds  (~1.3 MB, GseaRes list for 2 contrasts)
 
@@ -72,7 +72,7 @@
 
 pkg_root <- getwd()
 
-if (!dir.exists(file.path(pkg_root, "inst", "extdata"))) {
+if (!dir.exists(file.path(pkg_root, "data"))) {
 
   stop("Run from the package root: `Rscript inst/scripts/make_precomputed_gseares.R`")
 
@@ -102,7 +102,7 @@ stopifnot(
 
 
 
-out_dir <- file.path(pkg_root, "inst", "extdata")
+out_dir <- file.path(pkg_root, "data")
 
 extdata <- out_dir
 

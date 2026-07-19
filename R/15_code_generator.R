@@ -466,19 +466,15 @@ print(GSEAlens_volcano_plot)
 
 
 #' @examples
-
-#' \dontrun{
-
-#' code <- generate_joint_canvas_code(GSEAlens_res = gsea_res,
-
-#'                                    contrast_ids = c("A_vs_B"),
-
-#'                                    target_pathways = c("HALLMARK_INFLAMMATORY_RESPONSE"))
-
+#' \donttest{
+#' data(precomputed_gseares, package = "GSEAlens")
+#' task <- extract_gsea_task(precomputed_gseares, contrast_id = "untrt_vs_trt")
+#' target <- as.data.frame(task$gsea_res)$ID[1]
+#' code <- generate_joint_canvas_code(GSEAlens_res = precomputed_gseares,
+#'                                    contrast_ids = "untrt_vs_trt",
+#'                                    target_pathways = target)
 #' cat(code)
-
 #' }
-
 generate_joint_canvas_code <- function(GSEAlens_res,
 
                                                                                 contrast_ids,
@@ -802,31 +798,17 @@ print(GSEAlens_p)
 #' @export
 
 #'
-
 #' @examples
-
-#' \dontrun{
-
-#' # Show the code in the Shiny app via the "Export Boxplot Data Code" button
-
-#' # in the Quadrant module (panel 4).
-
+#' \donttest{
+#' data(precomputed_gseares, package = "GSEAlens")
 #' code <- generate_boxplot_data_code(
-
-#'   GSEAlens_res = gsea_res,
-
-#'   contrast_id = "Treat_vs_Control",
-
-#'   gene_symbol = "GAPDH",
-
-#'   expr_type   = "logcpm"
-
+#'   GSEAlens_res = precomputed_gseares,
+#'   contrast_id  = "untrt_vs_trt",
+#'   gene_symbol  = "GAPDH",
+#'   expr_type    = "logcpm"
 #' )
-
 #' cat(code)
-
 #' }
-
 generate_boxplot_data_code <- function(GSEAlens_res,
 
                                                                                 contrast_id,
@@ -2567,35 +2549,24 @@ print(p)
 #' @export
 
 #'
-
 #' @examples
-
-#' \dontrun{
-
-#' # Shown via the "Export Publication Plot" button in panel 4 of the
-
-#' # Quadrant module. Generates a self-contained ggplot2 script.
-
-#' box_long <- extract_boxplot_data(gsea_res, "untrt_vs_trt", "GAPDH")$long
-
-#' code <- generate_boxplot_image_code(
-
-#'   box_data_long = box_long,
-
-#'   gene_symbol   = "GAPDH",
-
-#'   expr_type     = "logcpm",
-
-#'   left_group    = "untrt",
-
-#'   right_group   = "trt"
-
+#' \donttest{
+#' # Build a minimal long-format expression data frame (self-contained)
+#' box_long <- data.frame(
+#'   Sample     = c("S1", "S2", "S3", "S4"),
+#'   Group      = factor(c("untrt", "untrt", "trt", "trt"),
+#'                       levels = c("untrt", "trt")),
+#'   Expression = c(8.1, 8.3, 9.5, 9.7)
 #' )
-
+#' code <- generate_boxplot_image_code(
+#'   box_data_long = box_long,
+#'   gene_symbol   = "GAPDH",
+#'   expr_type     = "logcpm",
+#'   left_group    = "untrt",
+#'   right_group   = "trt"
+#' )
 #' cat(code)
-
 #' }
-
 generate_boxplot_image_code <- function(box_data_long,
 
                                         gene_symbol = "Gene",

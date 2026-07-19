@@ -14,6 +14,7 @@ fledge更新脚本.R
 GSEAlens.BiocCheck
 *.log
 *.Rcheck
+*.tar.gz
 ..Rcheck
 
 # Local one-off repair scripts + personal dev note (added 2026-07-01, not shipped)

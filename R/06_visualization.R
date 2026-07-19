@@ -377,13 +377,12 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
 
 
 #' @examples
-
-#' \dontrun{
-
-#' generate_gsea_html_report(res_obj, output_base_dir = tempdir())
-
+#' \donttest{
+#' data(precomputed_gseares, package = "GSEAlens")
+#' task <- extract_gsea_task(precomputed_gseares, contrast_id = "untrt_vs_trt")
+#' report_path <- generate_gsea_html_report(task,
+#'                                          output_base_dir = tempdir())
 #' }
-
 generate_gsea_html_report <- function(res_obj, output_base_dir = NULL,
 
                                                                             p_adjust_cutoff = 1, top_plots = c(15, 15),

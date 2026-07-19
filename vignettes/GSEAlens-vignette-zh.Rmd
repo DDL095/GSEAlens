@@ -1,30 +1,16 @@
 ---
-
 title: "GSEAlens：基因集富集分析的交互式探索平台"
-
 author: "Dudali"
-
 date: "`r Sys.Date()`"
-
 output:
-
   BiocStyle::html_document:
-
     toc_float: true
-
     number_sections: true
-
 vignette: >
-
   %\VignetteIndexEntry{GSEAlens（中文版）：基因集富集分析的交互式探索平台}
-
   %\VignetteEngine{knitr::rmarkdown}
-
   %\VignetteEncoding{UTF-8}
-
 ---
-
-
 
 # 包简介
 
@@ -126,13 +112,13 @@ RNA-seq counts
 
                                              v
 
-                                   [GSEAlens::setup_gsea_env]
+                                   [setup_gsea_env]
 
                                              |
 
                                              v
 
-                                  [GSEAlens::batch_calc_gsea]
+                                  [batch_calc_gsea]
 
                                              |
 
@@ -259,31 +245,16 @@ vignette 变慢，我们在 `inst/extdata/` 中附带了这些对象的**预计�
 
 
 ```{r load-prepared-objects}
-
-preproc_limma <- readRDS(system.file(
-
-  "extdata", "preprocessed_limma.rds", package = "GSEAlens"
-
-))
-
+data(preprocessed_limma, package = "GSEAlens")
+preproc_limma         <- preprocessed_limma
 fit                   <- preproc_limma$fit
-
 gsea_limma_voom_data  <- preproc_limma$gsea_limma_voom_data
 
+data(preprocessed_dds_se, package = "GSEAlens")
+dds_se <- preprocessed_dds_se
 
-
-dds_se <- readRDS(system.file(
-
-  "extdata", "preprocessed_dds_se.rds", package = "GSEAlens"
-
-))
-
-dds    <- readRDS(system.file(
-
-  "extdata", "preprocessed_dds.rds", package = "GSEAlens"
-
-))
-
+data(preprocessed_dds, package = "GSEAlens")
+dds <- preprocessed_dds
 ```
 
 
@@ -316,7 +287,7 @@ vignette("GSEAlens-preprocessing-zh")
 
 # 实际调用（在 Bioconductor 构建机上较慢，因需加载多个 MSigDB 集合；编译时跳过）
 
-# gsea_pathwaysets <- GSEAlens::build_gsea_pathways(
+# gsea_pathwaysets <- build_gsea_pathways(
 
 #   species = "HS", auto_select = c("H", "C2:CP:REACTOME", "C5:GO:BP")
 
@@ -327,19 +298,11 @@ vignette("GSEAlens-preprocessing-zh")
 
 
 ```{r load-precomputed-pathways}
-
 # 为加速 vignette 编译，此处加载预计算的轻量级基因集对象
-
 # （Hallmark + KEGG_LEGACY，共 236 条通路）。
-
 # 重新生成方法见 inst/scripts/make_gsea_pathwaysets_toy.R。
-
-gsea_pathwaysets <- readRDS(system.file(
-
-  "extdata", "gsea_pathwaysets_toy.rds", package = "GSEAlens"
-
-))
-
+data(gsea_pathwaysets_toy, package = "GSEAlens")
+gsea_pathwaysets <- gsea_pathwaysets_toy
 ```
 
 
@@ -358,7 +321,7 @@ limma-voom 流程对象纳入分析。
 
 ```{r setup-gsea-limma}
 
-gseadata_limmavoom <- GSEAlens::setup_gsea_env(fit = fit,pathway_obj = gsea_pathwaysets,expr_data = gsea_limma_voom_data)
+gseadata_limmavoom <- setup_gsea_env(fit = fit,pathway_obj = gsea_pathwaysets,expr_data = gsea_limma_voom_data)
 
 ```
 
@@ -370,7 +333,7 @@ DESeq2 的 SummarizedExperiment 对象纳入分析。
 
 ```{r setup-gsea-se}
 
-gseadata_se <- GSEAlens::setup_gsea_env(fit = dds_se,pathway_obj = gsea_pathwaysets)
+gseadata_se <- setup_gsea_env(fit = dds_se,pathway_obj = gsea_pathwaysets)
 
 ```
 
@@ -382,7 +345,7 @@ DESeq2 的 Count matrix 流程的对象纳入分析。
 
 ```{r setup-gsea-dds}
 
-gseadata_dds <- GSEAlens::setup_gsea_env(fit = dds,pathway_obj = gsea_pathwaysets)
+gseadata_dds <- setup_gsea_env(fit = dds,pathway_obj = gsea_pathwaysets)
 
 ```
 
@@ -410,7 +373,7 @@ out_dir <- tempdir()
 
 # limma-voom 流程
 
-gsea_res_limmavoom <- GSEAlens::batch_calc_gsea(gseadata_limmavoom,
+gsea_res_limmavoom <- batch_calc_gsea(gseadata_limmavoom,
 
                                                  custom_series_name = "limmavoom_data",
 
@@ -424,7 +387,7 @@ gsea_res_limmavoom <- GSEAlens::batch_calc_gsea(gseadata_limmavoom,
 
 # DESeq2 SummarizedExperiment 流程
 
-gsea_res_se <- GSEAlens::batch_calc_gsea(gseadata_se,
+gsea_res_se <- batch_calc_gsea(gseadata_se,
 
                                           custom_series_name = "dds_se_data",
 
@@ -438,7 +401,7 @@ gsea_res_se <- GSEAlens::batch_calc_gsea(gseadata_se,
 
 # DESeq2 Count matrix 流程
 
-gsea_res_dds <- GSEAlens::batch_calc_gsea(gseadata_dds,
+gsea_res_dds <- batch_calc_gsea(gseadata_dds,
 
                                            custom_series_name = "dds_data",
 

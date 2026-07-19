@@ -1,0 +1,57 @@
+#' @name GSEAlens-package
+#' @aliases GSEAlens GSEAlens-package
+#' @title GSEAlens: Gene Set Enrichment Analysis Interactive Explorer
+#'
+#' @description
+#' GSEAlens provides an interactive exploration layer on top of standard
+#' Bioconductor RNA-seq workflows. It consumes fitted model objects from
+#' limma (MArrayLM) or DESeq2 (DESeqDataSet) as input and accepts expression
+#' matrices and sample metadata as SummarizedExperiment objects, ensuring
+#' interoperability with core Bioconductor data containers.
+#'
+#' For core computation, GSEAlens wraps [clusterProfiler::GSEA()] as its
+#' statistical engine (thereby inheriting the fgsea fast GSEA methodology)
+#' and draws on MSigDB gene set collections via the msigdbr package from CRAN.
+#' Multi-contrast parallel computation is handled by future
+#' (future::multisession).
+#'
+#' Visualization output relies on Bioconductor graphics packages including
+#' enrichplot, ComplexHeatmap, and circlize, producing figures suitable for
+#' publication pipelines. The package also includes a built-in Shiny
+#' application for interactive exploration of enrichment results after DEG
+#' analysis, with the ability to export self-contained reproducible R scripts.
+#'
+#' @details
+#' **Main entry points:**
+#'
+#' - [setup_gsea_env()]: Initialize a GSEA analysis environment from limma or
+#'   DESeq2 fitted objects.
+#' - [batch_calc_gsea()]: Run GSEA across multiple contrasts in parallel.
+#' - [build_gsea_pathways()]: Build MSigDB pathway database (interactive or
+#'   automated selection).
+#' - [extract_gsea_task()]: Extract a single contrast for downstream
+#'   visualization and reporting.
+#'
+#' **Built-in Shiny application:**
+#'
+#' Launch the interactive explorer via [launch_gsea_app()] after DEG analysis.
+#' The app provides pathway-level drill-down, multi-contrast joint canvases,
+#' quadrant plots, hub-gene networks, and one-click export of self-contained
+#' reproducible R scripts.
+#'
+#' **Vignettes:**
+#'
+#' - `vignette("GSEAlens", package = "GSEAlens")`: Main workflow
+#' - `vignette("GSEAlens-preprocessing", package = "GSEAlens")`: Data
+#'   preprocessing
+#'
+#' @references
+#' <https://github.com/DDL095/GSEAlens>
+#'
+#' @author Dudali Lab Maintainer \email{sealgod@@qq.com}
+#'
+#' @examples
+#' library(GSEAlens)
+#' packageDescription("GSEAlens")$Version
+"_PACKAGE"
+

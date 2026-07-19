@@ -39,14 +39,13 @@ Produce a self-contained, reproducible R script that extracts
   (e.g. GraphPad Prism, Excel, R) for downstream plotting.
 }
 \examples{
-\dontrun{
-# Show the code in the Shiny app via the "Export Boxplot Data Code" button
-# in the Quadrant module (panel 4).
+\donttest{
+data(precomputed_gseares, package = "GSEAlens")
 code <- generate_boxplot_data_code(
-  GSEAlens_res = gsea_res,
-  contrast_id = "Treat_vs_Control",
-  gene_symbol = "GAPDH",
-  expr_type   = "logcpm"
+  GSEAlens_res = precomputed_gseares,
+  contrast_id  = "untrt_vs_trt",
+  gene_symbol  = "GAPDH",
+  expr_type    = "logcpm"
 )
 cat(code)
 }
