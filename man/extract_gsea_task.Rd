@@ -23,9 +23,9 @@ Extract results for a specified contrast from a GseaRes capsule.
 }
 \examples{
 # Load a pre-computed GseaRes shipped with the package
-gsea_res <- readRDS(system.file(
-  "extdata", "precomputed_gseares.rds", package = "GSEAlens"
-))
+data(precomputed_gseares, package = "GSEAlens")
+
+gsea_res <- precomputed_gseares
 task <- extract_gsea_task(gsea_res, contrast_id = "untrt_vs_trt")
 class(task)
 }

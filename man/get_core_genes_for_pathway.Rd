@@ -20,9 +20,9 @@ Parse the core_enrichment field from GSEA results to extract the gene list.
 }
 \examples{
 # Load a pre-computed GseaRes and extract a task
-gsea_res <- readRDS(system.file(
-  "extdata", "precomputed_gseares.rds", package = "GSEAlens"
-))
+data(precomputed_gseares, package = "GSEAlens")
+
+gsea_res <- precomputed_gseares
 task <- extract_gsea_task(gsea_res, contrast_id = "untrt_vs_trt")
 res_df <- as.data.frame(task$gsea_res)
 pw_id <- res_df$ID[1]

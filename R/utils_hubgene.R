@@ -58,11 +58,9 @@
 
 #' # Load pre-computed GseaRes shipped with the package and pick a task
 
-#' gsea_res <- readRDS(system.file(
-
-#'   "extdata", "precomputed_gseares.rds", package = "GSEAlens"
-
-#' ))
+#' data(precomputed_gseares, package = "GSEAlens")
+#'
+#' gsea_res <- precomputed_gseares
 
 #' task <- extract_gsea_task(gsea_res, contrast_id = "untrt_vs_trt")
 
@@ -356,11 +354,9 @@ build_hubgene_network <- function(gsea_task, pathway_ids,
 
 #' # Load pre-computed GseaRes shipped with the package and pick a task
 
-#' gsea_res <- readRDS(system.file(
-
-#'   "extdata", "precomputed_gseares.rds", package = "GSEAlens"
-
-#' ))
+#' data(precomputed_gseares, package = "GSEAlens")
+#'
+#' gsea_res <- precomputed_gseares
 
 #' task <- extract_gsea_task(gsea_res, contrast_id = "untrt_vs_trt")
 

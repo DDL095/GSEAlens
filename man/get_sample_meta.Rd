@@ -20,9 +20,9 @@ Extract and process sample metadata, handling DFrame conversion
 }
 \examples{
 # Load a pre-computed GseaRes shipped with the package
-gsea_res <- readRDS(system.file(
-  "extdata", "precomputed_gseares.rds", package = "GSEAlens"
-))
+data(precomputed_gseares, package = "GSEAlens")
+
+gsea_res <- precomputed_gseares
 meta <- get_sample_meta(gsea_res)
 head(meta)
 }

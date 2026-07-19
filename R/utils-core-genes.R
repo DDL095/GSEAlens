@@ -18,11 +18,9 @@
 
 #' # Load a pre-computed GseaRes and extract a task
 
-#' gsea_res <- readRDS(system.file(
-
-#'   "extdata", "precomputed_gseares.rds", package = "GSEAlens"
-
-#' ))
+#' data(precomputed_gseares, package = "GSEAlens")
+#'
+#' gsea_res <- precomputed_gseares
 
 #' task <- extract_gsea_task(gsea_res, contrast_id = "untrt_vs_trt")
 
@@ -164,11 +162,9 @@ get_core_genes_for_pathway <- function(gsea_res_obj, pathway_id) {
 
 #' # Load a pre-computed GseaRes and extract a task
 
-#' gsea_res <- readRDS(system.file(
-
-#'   "extdata", "precomputed_gseares.rds", package = "GSEAlens"
-
-#' ))
+#' data(precomputed_gseares, package = "GSEAlens")
+#'
+#' gsea_res <- precomputed_gseares
 
 #' task <- extract_gsea_task(gsea_res, contrast_id = "untrt_vs_trt")
 
@@ -316,11 +312,9 @@ calculate_overlap_ratio <- function(pathway_genes, de_genes, ratio_mode = c("ora
 
 #' # Load a pre-computed GseaRes shipped with the package
 
-#' gsea_res <- readRDS(system.file(
-
-#'   "extdata", "precomputed_gseares.rds", package = "GSEAlens"
-
-#' ))
+#' data(precomputed_gseares, package = "GSEAlens")
+#'
+#' gsea_res <- precomputed_gseares
 
 #' pw_id <- gsea_res$geneset_info$term2gene$gs_name[1]
 

@@ -33,12 +33,12 @@ a standardized GseaEnv object.
 }
 \examples{
 # Limma-voom workflow using pre-computed inputs shipped with the package
-precomp <- readRDS(system.file(
-  "extdata", "preprocessed_limma.rds", package = "GSEAlens"
-))
-pathways <- readRDS(system.file(
-  "extdata", "gsea_pathwaysets_toy.rds", package = "GSEAlens"
-))
+data(preprocessed_limma, package = "GSEAlens")
+
+precomp <- preprocessed_limma
+data(gsea_pathwaysets_toy, package = "GSEAlens")
+
+pathways <- gsea_pathwaysets_toy
 env <- setup_gsea_env(
   fit       = precomp$fit,
   pathway_obj = pathways,

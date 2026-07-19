@@ -19,9 +19,9 @@ Batch data preparation for 03 module Network/UpSet/Chord visualizations.
 }
 \examples{
 # Load a pre-computed GseaRes and extract a task
-gsea_res <- readRDS(system.file(
-  "extdata", "precomputed_gseares.rds", package = "GSEAlens"
-))
+data(precomputed_gseares, package = "GSEAlens")
+
+gsea_res <- precomputed_gseares
 task <- extract_gsea_task(gsea_res, contrast_id = "untrt_vs_trt")
 res_df <- as.data.frame(task$gsea_res)
 pw_ids <- head(res_df$ID, 3)

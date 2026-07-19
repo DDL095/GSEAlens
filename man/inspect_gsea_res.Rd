@@ -17,8 +17,8 @@ Print detailed summary of GseaRes object to console.
 }
 \examples{
 # Load a pre-computed GseaRes shipped with the package
-gsea_res <- readRDS(system.file(
-  "extdata", "precomputed_gseares.rds", package = "GSEAlens"
-))
+data(precomputed_gseares, package = "GSEAlens")
+
+gsea_res <- precomputed_gseares
 inspect_gsea_res(gsea_res)
 }

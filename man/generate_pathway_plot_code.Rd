@@ -34,9 +34,9 @@ Generate Pathway Plotting Code
 }
 \examples{
 # Generate plotting code for the top enriched pathway in a pre-computed task
-gsea_res <- readRDS(system.file(
-  "extdata", "precomputed_gseares.rds", package = "GSEAlens"
-))
+data(precomputed_gseares, package = "GSEAlens")
+
+gsea_res <- precomputed_gseares
 task <- extract_gsea_task(gsea_res, contrast_id = "untrt_vs_trt")
 res_df <- as.data.frame(task$gsea_res)
 top_pathway <- res_df$ID[1]

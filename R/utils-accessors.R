@@ -30,12 +30,12 @@ NULL
 #'
 #' @examples
 #' # Load pre-computed inputs shipped with the package
-#' precomp <- readRDS(system.file(
-#'   "extdata", "preprocessed_limma.rds", package = "GSEAlens"
-#' ))
-#' pathways <- readRDS(system.file(
-#'   "extdata", "gsea_pathwaysets_toy.rds", package = "GSEAlens"
-#' ))
+#' data(preprocessed_limma, package = "GSEAlens")
+#'
+#' precomp <- preprocessed_limma
+#' data(gsea_pathwaysets_toy, package = "GSEAlens")
+#'
+#' pathways <- gsea_pathwaysets_toy
 #' gsea_env <- setup_gsea_env(
 #'   fit = precomp$fit,
 #'   pathway_obj = pathways,
@@ -233,9 +233,9 @@ get_expr_matrix.GseaRes <- function(obj, type = "default", ...) {
 #'
 #' @examples
 #' # Load a pre-computed GseaRes shipped with the package
-#' gsea_res <- readRDS(system.file(
-#'   "extdata", "precomputed_gseares.rds", package = "GSEAlens"
-#' ))
+#' data(precomputed_gseares, package = "GSEAlens")
+#'
+#' gsea_res <- precomputed_gseares
 #' de_result <- get_de_table(gsea_res, contrast_id = "untrt_vs_trt")
 #' head(de_result)
 get_de_table <- function(obj, contrast_id) {
@@ -298,9 +298,9 @@ get_de_table.GseaRes <- function(obj, contrast_id) {
 #'
 #' @examples
 #' # Load a pre-computed GseaRes shipped with the package
-#' gsea_res <- readRDS(system.file(
-#'   "extdata", "precomputed_gseares.rds", package = "GSEAlens"
-#' ))
+#' data(precomputed_gseares, package = "GSEAlens")
+#'
+#' gsea_res <- precomputed_gseares
 #' meta <- get_sample_meta(gsea_res)
 #' head(meta)
 get_sample_meta <- function(obj) {
@@ -553,9 +553,9 @@ get_sample_meta.GseaRes <- function(obj) {
 #'
 #' @examples
 #' # Load a pre-computed GseaRes shipped with the package
-#' gsea_res <- readRDS(system.file(
-#'   "extdata", "precomputed_gseares.rds", package = "GSEAlens"
-#' ))
+#' data(precomputed_gseares, package = "GSEAlens")
+#'
+#' gsea_res <- precomputed_gseares
 #' registry <- get_contrast_registry(gsea_res)
 #' print(registry)
 get_contrast_registry <- function(obj) {
@@ -582,9 +582,9 @@ get_contrast_registry.GseaRes <- function(obj) {
 #'
 #' @examples
 #' # Load a pre-computed GseaRes shipped with the package
-#' gsea_res <- readRDS(system.file(
-#'   "extdata", "precomputed_gseares.rds", package = "GSEAlens"
-#' ))
+#' data(precomputed_gseares, package = "GSEAlens")
+#'
+#' gsea_res <- precomputed_gseares
 #' gs_info <- get_geneset_info(gsea_res)
 #' names(gs_info)
 get_geneset_info <- function(obj) {
@@ -803,9 +803,9 @@ creat_addition_data_rdsfile <- function(csv_path,
 #' @examples
 #' # Load pre-computed GseaRes shipped with the package and write a template
 #' # CSV to a temporary file (no side effects on the user's filesystem).
-#' gsea_res <- readRDS(system.file(
-#'   "extdata", "precomputed_gseares.rds", package = "GSEAlens"
-#' ))
+#' data(precomputed_gseares, package = "GSEAlens")
+#'
+#' gsea_res <- precomputed_gseares
 #' out_csv <- file.path(tempdir(), "addition_template_demo.csv")
 #' create_addition_template(gsea_res, output_path = out_csv)
 #'

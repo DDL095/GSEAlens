@@ -19,9 +19,9 @@ Extract complete gene list for a pathway from geneset_info.
 }
 \examples{
 # Load a pre-computed GseaRes shipped with the package
-gsea_res <- readRDS(system.file(
-  "extdata", "precomputed_gseares.rds", package = "GSEAlens"
-))
+data(precomputed_gseares, package = "GSEAlens")
+
+gsea_res <- precomputed_gseares
 pw_id <- gsea_res$geneset_info$term2gene$gs_name[1]
 genes <- get_term_genes(gsea_res, pw_id)
 head(genes)

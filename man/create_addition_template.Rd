@@ -30,9 +30,9 @@ Generate a template CSV file containing all pathway IDs from
 \examples{
 # Load pre-computed GseaRes shipped with the package and write a template
 # CSV to a temporary file (no side effects on the user's filesystem).
-gsea_res <- readRDS(system.file(
-  "extdata", "precomputed_gseares.rds", package = "GSEAlens"
-))
+data(precomputed_gseares, package = "GSEAlens")
+
+gsea_res <- precomputed_gseares
 out_csv <- file.path(tempdir(), "addition_template_demo.csv")
 create_addition_template(gsea_res, output_path = out_csv)
 

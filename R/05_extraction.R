@@ -222,11 +222,9 @@ import_gsea_capsule <- function(file_path, auto_relocate = TRUE, inspect = TRUE)
 
 #' # Load a pre-computed GseaRes shipped with the package
 
-#' gsea_res <- readRDS(system.file(
-
-#'   "extdata", "precomputed_gseares.rds", package = "GSEAlens"
-
-#' ))
+#' data(precomputed_gseares, package = "GSEAlens")
+#'
+#' gsea_res <- precomputed_gseares
 
 #' task <- extract_gsea_task(gsea_res, contrast_id = "untrt_vs_trt")
 
@@ -454,11 +452,9 @@ extract_gsea_task <- function(gsea_res, contrast_id, target_collection = "ALL") 
 
 #' # Load a pre-computed GseaRes shipped with the package
 
-#' gsea_res <- readRDS(system.file(
-
-#'   "extdata", "precomputed_gseares.rds", package = "GSEAlens"
-
-#' ))
+#' data(precomputed_gseares, package = "GSEAlens")
+#'
+#' gsea_res <- precomputed_gseares
 
 #' inspect_gsea_res(gsea_res)
 

@@ -25,9 +25,9 @@ Extract differential expression results for a specific contrast
 }
 \examples{
 # Load a pre-computed GseaRes shipped with the package
-gsea_res <- readRDS(system.file(
-  "extdata", "precomputed_gseares.rds", package = "GSEAlens"
-))
+data(precomputed_gseares, package = "GSEAlens")
+
+gsea_res <- precomputed_gseares
 de_result <- get_de_table(gsea_res, contrast_id = "untrt_vs_trt")
 head(de_result)
 }
