@@ -243,7 +243,6 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
     )
 
 
-
     # 4. 终极图例拦截与覆写逻辑
 
     if (n_lines > 1) {
@@ -274,8 +273,6 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
 
     )
 
-
-
     p_list$p1 <- p_list$p1 + override_scale
 
     if (subPlot >= 2 && !is.null(p_list$p2)) {
@@ -289,26 +286,26 @@ plot_directional_gsea <- function(directional_gsea_obj, target_pathways,
 
 
     # 5. 组合子图
-
     plots <- list(p_list$p1)
-
     if (subPlot >= 2 && !is.null(p_list$p2)) {
-
-    plots[[2]] <- p_list$p2
-
+            plots[[2]] <- p_list$p2
     }
-
     if (subPlot == 3 && !is.null(p_list$p3)) {
-
-    plots[[3]] <- p_list$p3
-
+            plots[[3]] <- p_list$p3
     }
 
-
-
-    heights <- c(0.5, 0.2, 0.3)[seq_len(length(plots))]
-
-
+    # Vertical height ratios (Panel1 : Panel2 : Panel3).
+    # Single pathway: classic GSEA 0.5/0.2/0.3.
+    # Multi-pathway: Panel 2 is faceted into N rows, so give it more vertical
+    # room (0.30) so each facet gets usable height instead of being squished
+    # and surrounded by inflated whitespace.
+    if (length(plots) == 3) {
+            heights <- if (n_lines >= 2) c(0.45, 0.30, 0.25) else c(0.5, 0.2, 0.3)
+    } else if (length(plots) == 2) {
+            heights <- if (n_lines >= 2) c(0.60, 0.40) else c(0.7, 0.3)
+    } else {
+            heights <- 1
+    }
 
     p_base <- patchwork::wrap_plots(plots, ncol = 1, heights = heights)
 

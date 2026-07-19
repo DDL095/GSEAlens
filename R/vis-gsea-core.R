@@ -552,9 +552,9 @@
 
         strip.text = ggplot2::element_blank(),
 
-        panel.spacing = ggplot2::unit(0.1, "cm"),
+        panel.spacing = ggplot2::unit(0, "cm"),
 
-        plot.margin = ggplot2::margin(t = 0, r = 0.2, b = 0.2, l = 0.2, unit = "cm")
+        plot.margin = ggplot2::margin(t = 0, r = 0.2, b = 0, l = 0.2, unit = "cm")
 
             ) +
 
