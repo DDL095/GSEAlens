@@ -1598,7 +1598,7 @@ p <- ggplot(df, aes(
     theme_bw(base_size = %g) +
     labs(
     title    = sprintf("Pathway DotPlot: %%s vs %%s", "%s", "%s"),
-    subtitle = sprintf("Color: %%s (viridis)  |  Size: %%s", color_title, size_title),
+    subtitle = sprintf("Color: %%s  |  Size: %%s", color_title, size_title),
     x = "NES (Normalized Enrichment Score)",
     y = NULL
     ) +

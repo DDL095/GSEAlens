@@ -2,6 +2,36 @@
 
 
 
+# GSEAlens 0.99.33
+
+## Bioconductor Review
+
+* Removed `LazyData: true` and `LazyDataCompression: xz` from DESCRIPTION
+  per Bioconductor reviewer guidance (mireia-bioinfo). Bioconductor
+  discourages LazyData because it implicitly injects `data/` objects
+  into the user's environment on package attach, obscuring data
+  provenance and violating reproducibility principles. All package
+  vignettes already use explicit `data(x, package = "GSEAlens")` calls,
+  so this change has zero functional impact.
+
+## Visualization
+
+* Unified the plotly DotPlot colorscale direction with the static
+  `generate_dotplot_code()` ggplot2 export. Previously the interactive
+  preview used forward viridis-D (high value = bright yellow) while the
+  exported PDF used `scale_fill_viridis_c(direction = -1)` (high value =
+  dark purple), producing mirror-opposite colors for the same pathway.
+  The plotly colorscale is now reversed to match the export.
+
+* Removed hardcoded "(viridis)" suffix from the `generate_dotplot_code()`
+  subtitle template. The export modal's Color palette dropdown already
+  supports Viridis-D / Viridis-C / Magma / Inferno via dynamic
+  `scale_fill_viridis_c(option = ...)` injection, so the static
+  "(viridis)" label was misleading when a non-viridis palette was
+  selected.
+
+
+
 # GSEAlens 0.99.32
 
 ## Visualization

@@ -1,4 +1,4 @@
-#' @title Pathway Relationship Exploration Module UI
+﻿#' @title Pathway Relationship Exploration Module UI
 
 #' @description Network visualization module with dual-mode pathway selection
 
@@ -1154,25 +1154,22 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
 
                     color = color_vals,
 
-                    # IRON FIX (2026-06-29): unify with the PDF/ggplot2 export, which
-
-                    # uses scale_fill_viridis_c(option="D", direction=-1). Previously
-
-                    # the interactive DotPlot used "RdYlBu_r", so switching "Color by"
-
-                    # changed the value mapping but the visual hue was visibly different
-
-                    # from the exported PDF. Viridis-D reversed is perceptually uniform
-
-                    # and colorblind-safe (publication-grade).
+                    # IRON FIX (2026-06-29, updated 2026-07-21): unify with the
+                    # PDF/ggplot2 export, which uses scale_fill_viridis_c(option="D",
+                    # direction=-1). The colorscale below is the reversed viridis-D
+                    # palette (high value = dark purple, low value = bright yellow),
+                    # matching ggplot2's `direction = -1` semantics so that the
+                    # interactive preview and the exported PDF render identically.
+                    # Viridis-D reversed is perceptually uniform and colorblind-safe
+                    # (publication-grade).
 
                     colorscale = list(
 
-            list(0.0, "#440154"), list(0.25, "#3B528B"),
+            list(0.0, "#FDE725"), list(0.25, "#5EC962"),
 
-            list(0.5,  "#21918C"), list(0.75, "#5EC962"),
+            list(0.5,  "#21918C"), list(0.75, "#3B528B"),
 
-            list(1.0,  "#FDE725")
+            list(1.0,  "#440154")
 
                     ),
 
@@ -1200,7 +1197,7 @@ mod_pathway_relation_server <- function(id, data_prep_list, gsea_res, table_resu
 
             text = sprintf(
 
-                            "<b>Pathway DotPlot: %s vs %s</b><br><sub style='font-size:10px;'><span style='color:#3B6EA5;font-weight:bold;'>Enriched in %s</span>   |   <span style='color:#C0392B;font-weight:bold;'>Enriched in %s</span></sub>",
+                            "<b>Pathway DotPlot: %s vs %s</b><br><sub style='font-size:10px; text-align: center;'><span style='color:#3B6EA5'>Enriched in %s</span> | <span style='color:#C0392B'>Enriched in %s</span></sub>",
 
                             data_list$left_group, data_list$right_group,
 
