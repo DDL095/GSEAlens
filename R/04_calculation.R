@@ -18,6 +18,24 @@
 
 #' @param pvalueCutoff P-value threshold, default 1
 
+#' @param seed Integer or NULL. Base random seed for per-contrast GSEA
+
+#'   permutation, default 123. Each contrast derives its own deterministic
+
+#'   seed from the base seed and the contrast id, so results are reproducible
+
+#'   across runs and independent of `workers`/`chunk_size`. On
+
+#'   clusterProfiler <= 4.20.x (where the `seed` argument of `GSEA()` is
+
+#'   silently dropped) reproducibility is guaranteed by seeding the worker R
+
+#'   RNG via `withr::local_seed()`; on clusterProfiler >= 4.21.x the derived
+
+#'   seed is also forwarded to `clusterProfiler::GSEA(seed = ...)`. Set to
+
+#'   NULL to restore native (non-reproducible) engine sampling.
+
 #' @param force Logical. Whether to force recalculation, default FALSE
 
 #' @param use_progress Logical. Whether to show progress bar, default TRUE
@@ -70,6 +88,8 @@ batch_calc_gsea <- function(gsea_env,
                             maxGSSize = 500,
 
                             pvalueCutoff = 1,
+
+                            seed = 123,
 
                             force = FALSE,
 
@@ -264,6 +284,20 @@ batch_calc_gsea <- function(gsea_env,
 
 
 
+    # Derive one deterministic seed per task up front, in the MAIN process,
+    # so future workers only receive a plain named integer vector and never
+    # depend on helper-function visibility across worker serialization.
+    # .derive_task_seed() ranks tasks against the alphabetically sorted full
+    # task list, making each seed independent of workers / chunk_size.
+    task_seeds <- vapply(
+    task_names,
+    function(tid) {
+        v <- .derive_task_seed(seed, tid, task_names)
+        if (is.null(v)) NA_integer_ else v
+    },
+    integer(1)
+    )
+
     p <- progressr::progressor(steps = total_tasks, enable = use_progress)
 
 
@@ -287,6 +321,8 @@ batch_calc_gsea <- function(gsea_env,
                                         maxGSSize,
 
                                         pvalueCutoff,
+
+                                        task_seeds,
 
                                         progressor_fn) {
 
@@ -503,6 +539,10 @@ batch_calc_gsea <- function(gsea_env,
 
 
 
+        seed_val <- task_seeds[[task_name]]
+
+        if (length(seed_val) == 1L && !is.na(seed_val)) withr::local_seed(seed_val)
+
         gsea_res <- tryCatch(
 
                     {
@@ -523,7 +563,7 @@ batch_calc_gsea <- function(gsea_env,
 
                             verbose = FALSE,
 
-                            seed = 123,
+                            seed = if (is.na(seed_val)) FALSE else seed_val,
 
                             eps = 0
 
@@ -590,6 +630,8 @@ batch_calc_gsea <- function(gsea_env,
     maxGSSize = maxGSSize,
 
     pvalueCutoff = pvalueCutoff,
+
+    task_seeds = task_seeds,
 
     progressor_fn = if (use_progress) p else NULL,
 
@@ -661,7 +703,9 @@ batch_calc_gsea <- function(gsea_env,
 
         maxGSSize = maxGSSize,
 
-        pvalueCutoff = pvalueCutoff
+        pvalueCutoff = pvalueCutoff,
+
+        seed = seed
 
             ),
 
@@ -744,6 +788,26 @@ batch_calc_gsea <- function(gsea_env,
 
 
 
+
+#' @title Derive Deterministic Per-Task Seed
+#'
+#' @param seed Integer or NULL. Base seed chosen by the user.
+#' @param task_id Character. Contrast task identifier.
+#' @param all_task_ids Character vector. All task ids in the current run.
+#' @return Integer seed derived from the base seed and the task's rank in the
+#'   alphabetically sorted task list, or NULL when `seed` is NULL, NA or
+#'   non-numeric. Ranking
+#'   against the sorted full task list (not the chunk-local order) makes the
+#'   derived seed independent of `workers` and `chunk_size`.
+#' @keywords internal
+.derive_task_seed <- function(seed, task_id, all_task_ids) {
+    if (is.null(seed) || length(seed) == 0L ||
+        !is.numeric(seed) || is.na(seed[1])) return(NULL)
+    seed <- as.numeric(seed[1])
+    idx <- match(task_id, sort(all_task_ids))
+    if (is.na(idx)) idx <- 1L
+    as.integer((seed + idx - 1) %% .Machine$integer.max)
+}
 
 #' @title Fast Rank Vector Preparation
 

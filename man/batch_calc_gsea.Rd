@@ -13,6 +13,7 @@ batch_calc_gsea(
   minGSSize = 10,
   maxGSSize = 500,
   pvalueCutoff = 1,
+  seed = 123,
   force = FALSE,
   use_progress = FALSE,
   chunk_size = NULL
@@ -34,6 +35,16 @@ batch_calc_gsea(
 \item{maxGSSize}{Maximum gene set size, default 500}
 
 \item{pvalueCutoff}{P-value threshold, default 1}
+
+\item{seed}{Integer or NULL. Base random seed for per-contrast GSEA
+permutation, default 123. Each contrast derives its own deterministic
+seed from the base seed and the contrast id, so results are reproducible
+across runs and independent of `workers`/`chunk_size`. On
+clusterProfiler <= 4.20.x (where the `seed` argument of `GSEA()` is
+silently dropped) reproducibility is guaranteed by seeding the worker R
+RNG via `withr::local_seed()`; on clusterProfiler >= 4.21.x the derived
+seed is also forwarded to `clusterProfiler::GSEA(seed = ...)`. Set to
+NULL to restore native (non-reproducible) engine sampling.}
 
 \item{force}{Logical. Whether to force recalculation, default FALSE}
 

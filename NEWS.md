@@ -2,6 +2,40 @@
 
 
 
+# GSEAlens 0.99.34
+
+## Reproducibility
+
+* `batch_calc_gsea()` gains a `seed` argument (default 123) that makes GSEA
+  results fully reproducible, fixing an upstream regression that affected all
+  Bioconductor 3.23 users. Since clusterProfiler 4.19.3 the `GSEA()` engine
+  switched to enrichit, and in 4.20.0 (the Bioc 3.23 release) the `seed`
+  argument is silently dropped: it lands in `...` and is never forwarded to
+  `enrichit::gsea_gson()`, so the multilevel permutation engine draws a fresh
+  seed from the worker R RNG on every call. Combined with
+  `future_lapply(future.seed = TRUE)` deriving its worker seed stream from the
+  main-session RNG state at call time, running the same data twice could flip
+  borderline pathways across the significance cutoff (observed p-value drift
+  up to ±0.016), reproducing the "same code, different pathway counts"
+  issue reported for clusterProfiler 4.20.0.
+* Each contrast now derives its own deterministic seed from
+  `(seed, alphabetical rank of the contrast id)` via the new internal helper
+  `.derive_task_seed()`. Seeding is applied inside the future worker with
+  `withr::local_seed()` (which restores the caller's RNG state on exit, per
+  reviewer guidance against bare `set.seed()`), and the derived seed is also
+  forwarded as `clusterProfiler::GSEA(seed = ...)`: on clusterProfiler
+  <= 4.20.x the `local_seed()` guarantees reproducibility, and once
+  clusterProfiler >= 4.21.1 restores the `seed` argument (devel NEWS,
+  2026-08-14) the forwarded seed takes over natively. Results are identical
+  across repeated runs and independent of `workers` and `chunk_size`, so a
+  re-run on a different machine core count yields the same pathways.
+* The effective `seed` is recorded in the returned capsule
+  (`metadata$parameters$seed`) for provenance. Set `seed = NULL` to restore
+  the previous native (non-reproducible) engine sampling. Note that results
+  produced before this fix, or under different clusterProfiler engine
+  generations, will differ from the new deterministic output; this one-time
+  shift is unavoidable and is the cost of stable results going forward.
+
 # GSEAlens 0.99.33
 
 ## Bioconductor Review
