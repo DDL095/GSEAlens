@@ -1,6 +1,6 @@
 ---
 title: "GSEAlens: An Interactive Exploration Platform for Gene Set Enrichment Analysis"
-author: "Dudali"
+author: "Shenhui Xu"
 date: "`r Sys.Date()`"
 output:
   BiocStyle::html_document:

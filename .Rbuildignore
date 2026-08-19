@@ -13,3 +13,5 @@
 ^\.\.Rcheck$
 ^.*\.Rcheck$
 ^vignettes/.*\.html$
+^\.pi-subagents$
+.*\.tar\.gz$

@@ -2,6 +2,24 @@
 
 
 
+# GSEAlens 0.99.35
+
+## Metadata
+
+* Corrected the maintainer record in DESCRIPTION: the ORCID
+  0000-0002-1825-0097 belonged to ORCID's fictional demo account
+  (Josiah Carberry) and has been replaced with the author's real ORCID
+  0000-0002-2616-5132. The author field now uses the author's real
+  name (Shenhui Xu, role aut + cre, unchanged email) instead of the
+  placeholder "Dudali Lab" persona, in line with Bioconductor's
+  guidance that the maintainer be an identifiable individual. No code
+  or data changes.
+
+* Added contributor and reviewer credits in DESCRIPTION Authors@R:
+  Yuanhang Zhao (ctb) and Mireia Ramos-Rodríguez (rev, Bioconductor
+  reviewer of the initial submission, see
+  https://github.com/mireia-bioinfo).
+
 # GSEAlens 0.99.34
 
 ## Reproducibility

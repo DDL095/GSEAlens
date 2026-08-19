@@ -64,5 +64,5 @@ Useful links:
 
 }
 \author{
-Dudali Lab Maintainer \email{sealgod@qq.com}
+Shenhui Xu \email{sealgod@qq.com}
 }

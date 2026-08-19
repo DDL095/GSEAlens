@@ -1,6 +1,6 @@
 ---
 title: "GSEAlens: Preparing Input Data from limma-voom and DESeq2 Workflows"
-author: "Dudali"
+author: "Shenhui Xu"
 date: "`r Sys.Date()`"
 output:
   BiocStyle::html_document:

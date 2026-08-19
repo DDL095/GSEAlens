@@ -48,7 +48,7 @@
 #' @references
 #' <https://github.com/DDL095/GSEAlens>
 #'
-#' @author Dudali Lab Maintainer \email{sealgod@@qq.com}
+#' @author Shenhui Xu \email{sealgod@@qq.com}
 #'
 #' @examples
 #' library(GSEAlens)
